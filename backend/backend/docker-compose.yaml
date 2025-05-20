@@ -1,0 +1,72 @@
+services:
+  api:
+    &api
+    build:
+      context: .
+    image: backend:latest
+    container_name: backend-api
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/app/migrations
+    develop:
+      watch:
+        - action: sync
+          path: ./backend
+          target: /app/backend
+        - action: sync
+          path: ./tests
+          target: /app/tests
+        - action: rebuild
+          path: pyproject.toml
+        - action: rebuild
+          path: uv.lock
+  
+  
+  postgres:
+    image: postgres:17.4-bookworm
+    hostname: backend-pg
+    container_name: backend-pg
+    environment:
+      POSTGRES_PASSWORD: backend
+      POSTGRES_USER: backend
+      POSTGRES_DB: backend
+    volumes:
+    - backend-pg-data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: pg_isready -U backend
+      interval: 2s
+      timeout: 3s
+      retries: 40
+  
+  redis:
+    image: bitnami/redis:7.4
+    container_name: backend-redis
+    ports:
+      - "6379:6379"
+    restart: always
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    healthcheck:
+      test: redis-cli ping
+      interval: 2s
+      timeout: 3s
+      retries: 40
+    volumes:
+      - backend-redis-data:/bitnami/redis/data
+  
+  
+  
+volumes:
+  backend-pg-data:
+  backend-redis-data:
+  

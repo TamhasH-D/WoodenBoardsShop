@@ -1,0 +1,57 @@
+# Used for post project generation tasks
+# You may delete this file!
+
+paths:
+  use_postgres:
+    enabled: true
+    paths: []
+    
+  use_alembic:
+    enabled: true
+    paths:
+      - migrations
+
+  use_builtin_auth:
+    enabled: false
+    paths:
+      - backend/dependencies/auth_dependencies.py
+      - backend/dtos/auth_dtos.py
+      - backend/routes/auth_routes.py
+      - backend/utils/auth_utils.py
+
+  use_redis:
+    enabled: true
+    paths:
+      - backend/services/redis
+
+  use_rabbitmq:
+    enabled: false
+    paths:
+      - backend/services/rabbitmq
+
+  use_taskiq:
+    enabled: false
+    paths:
+      - backend/services/taskiq
+  
+  use_prometheus:
+    enabled: false
+    paths:
+      - observability/prometheus
+
+  constants:
+    requires_all:
+      - use_builtin_auth
+      - use_rabbitmq
+    paths:
+      - backend/constants.py
+
+  observability:
+    requires_all:
+      - use_prometheus
+    paths:
+      - observability
+
+  
+
+  

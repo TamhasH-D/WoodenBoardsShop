@@ -1,0 +1,118 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.8",
+    "uvicorn>=0.34.0",
+    "pydantic-settings>=2.7.1",
+    "pydantic>=2.10.6",
+    "email-validator>=2.2.0",
+    "loguru>=0.7.3",
+    "yarl>=1.18.3",
+    "ruff>=0.9.4",
+    "mypy>=1.15.0","sqlalchemy[asyncio]>=2.0.37",
+    "asyncpg>=0.30.0",
+    "alembic>=1.14.1",
+    "pytest>=8.3.4",
+    "pytest-env>=1.1.5",
+    "pytest-cov>=6.1.1",
+    "httpx==0.28.1",
+    "factory-boy>=3.3.3","redis>=5.2.1",
+    "fakeredis>=2.28.1",
+    
+]
+
+[tool.pytest.ini_options]
+env = [
+    "BACKEND_PG_DATABASE=test",
+    "BACKEND_ENV=test",
+]
+
+[tool.ruff]
+exclude = ["migrations",".venv/", "Lib"]
+target-version = "py312"
+line-length = 88
+indent-width = 4
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    #### modules
+    "ANN", #
+    "COM", #
+    "C90", #
+    "DJ",  #
+    "EXE", #
+    "T10", #
+    "TID", #
+
+    #### specific rules
+    "A001",
+    "A002",
+    "ARG002",
+    "ARG001",
+    "B008",
+    "B904",
+    "BLE001",
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D106",
+    "D107",
+    "D200",
+    "D203",
+    "D205",
+    "D212",
+    "D400",
+    "D401",
+    "D404",
+    "D415",
+    "E402",
+    "E501",
+    "EM102",
+    "FBT001",
+    "FBT002",
+    "FBT003",
+    "N805",
+    "T201",
+    "TRY003",
+    "TRY201",
+    "TRY203",
+    "TRY300",
+    "TD002",
+    "TD003",
+    "FIX002",
+    "PLR0913",
+    "PLR2004",
+    "PGH003",
+    "RUF012",
+    "S701",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "PT006"]
+"__init__.py" = ["F401"]
+
+[tool.mypy]
+warn_return_any = false
+namespace_packages = true
+strict = true
+ignore_missing_imports = true
+pretty = true
+show_error_codes = true
+implicit_reexport = true
+disable_error_code = ["prop-decorator", "override", "import-untyped"]
+plugins = ["pydantic.mypy", "sqlalchemy.ext.mypy.plugin"]
+exclude = ["migrations"]

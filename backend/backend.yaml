@@ -1,0 +1,769 @@
+project:
+  project_name: backend
+  use_postgres: true
+  use_alembic: true
+  use_builtin_auth: false
+  use_redis: true
+  use_rabbitmq: false
+  use_taskiq: false
+  use_prometheus: false
+  models:
+  - name: buyer
+    fields:
+    - name: keycloak_uuid
+      type: UUID
+      type_enum: null
+      primary_key: true
+      nullable: false
+      unique: true
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: created_at
+      type: DateTime
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: false
+      default_value: datetime.now(timezone.utc)
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: true
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: updated_at
+      type: DateTime
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: false
+      default_value: datetime.now(timezone.utc)
+      extra_kwargs:
+        onupdate: datetime.now(timezone.utc)
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: true
+        is_foreign_key: false
+    - name: is_online
+      type: Boolean
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: true
+      default_value: 'False'
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    relationships: []
+    metadata:
+      create_endpoints: true
+      create_tests: true
+      create_daos: true
+      create_dtos: true
+      is_auth_model: false
+  - name: seller
+    fields:
+    - name: keycloak_uuid
+      type: UUID
+      type_enum: null
+      primary_key: true
+      nullable: false
+      unique: true
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: created_at
+      type: DateTime
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: false
+      default_value: datetime.now(timezone.utc)
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: true
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: updated_at
+      type: DateTime
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: false
+      default_value: datetime.now(timezone.utc)
+      extra_kwargs:
+        onupdate: datetime.now(timezone.utc)
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: true
+        is_foreign_key: false
+    - name: is_online
+      type: Boolean
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: true
+      default_value: 'False'
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    relationships: []
+    metadata:
+      create_endpoints: true
+      create_tests: true
+      create_daos: true
+      create_dtos: true
+      is_auth_model: false
+  - name: wood_type
+    fields:
+    - name: id
+      type: UUID
+      type_enum: null
+      primary_key: true
+      nullable: false
+      unique: true
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: neme
+      type: String
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: true
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: description
+      type: String
+      type_enum: null
+      primary_key: false
+      nullable: true
+      unique: false
+      index: false
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    relationships: []
+    metadata:
+      create_endpoints: true
+      create_tests: true
+      create_daos: true
+      create_dtos: true
+      is_auth_model: false
+  - name: wood_type_price
+    fields:
+    - name: id
+      type: UUID
+      type_enum: null
+      primary_key: true
+      nullable: false
+      unique: true
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: created_at
+      type: DateTime
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: false
+      default_value: datetime.now(timezone.utc)
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: true
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: price_per_m3
+      type: Float
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: wood_type_id
+      type: UUID
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: true
+    relationships:
+    - field_name: wood_type_id
+      target_model: wood_type_price
+      back_populates: wood_type_price
+      on_delete: CASCADE
+      nullable: false
+      unique: false
+      index: true
+    metadata:
+      create_endpoints: true
+      create_tests: true
+      create_daos: true
+      create_dtos: true
+      is_auth_model: false
+  - name: product
+    fields:
+    - name: id
+      type: UUID
+      type_enum: null
+      primary_key: true
+      nullable: false
+      unique: true
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: volume
+      type: Float
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: price
+      type: Float
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: title
+      type: String
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: descrioption
+      type: String
+      type_enum: null
+      primary_key: false
+      nullable: true
+      unique: false
+      index: false
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: delivery_possible
+      type: Boolean
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: true
+      default_value: 'False'
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: pickup_location
+      type: String
+      type_enum: null
+      primary_key: false
+      nullable: true
+      unique: false
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: created_at
+      type: DateTime
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: false
+      default_value: datetime.now(timezone.utc)
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: true
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: updated_at
+      type: DateTime
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: false
+      default_value: datetime.now(timezone.utc)
+      extra_kwargs:
+        onupdate: datetime.now(timezone.utc)
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: true
+        is_foreign_key: false
+    - name: seller_id
+      type: UUID
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: true
+    - name: wood_type_id
+      type: UUID
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: true
+    relationships:
+    - field_name: seller_id
+      target_model: seller
+      back_populates: product
+      on_delete: CASCADE
+      nullable: false
+      unique: false
+      index: true
+    - field_name: wood_type_id
+      target_model: wood_type
+      back_populates: product
+      on_delete: CASCADE
+      nullable: false
+      unique: false
+      index: true
+    metadata:
+      create_endpoints: true
+      create_tests: true
+      create_daos: true
+      create_dtos: true
+      is_auth_model: false
+  - name: wooden_board
+    fields:
+    - name: id
+      type: UUID
+      type_enum: null
+      primary_key: true
+      nullable: false
+      unique: true
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: height
+      type: Float
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: false
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: width
+      type: Float
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: false
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: lenght
+      type: Float
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: false
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: image_id
+      type: UUID
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: true
+    relationships:
+    - field_name: image_id
+      target_model: image
+      back_populates: wooden_board
+      on_delete: CASCADE
+      nullable: false
+      unique: false
+      index: true
+    metadata:
+      create_endpoints: true
+      create_tests: true
+      create_daos: true
+      create_dtos: true
+      is_auth_model: false
+  - name: image
+    fields:
+    - name: id
+      type: UUID
+      type_enum: null
+      primary_key: true
+      nullable: false
+      unique: true
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: image_path
+      type: String
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: true
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: product_id
+      type: UUID
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: true
+    relationships:
+    - field_name: product_id
+      target_model: product
+      back_populates: image
+      on_delete: CASCADE
+      nullable: false
+      unique: false
+      index: true
+    metadata:
+      create_endpoints: true
+      create_tests: true
+      create_daos: true
+      create_dtos: true
+      is_auth_model: false
+  - name: chat_thread
+    fields:
+    - name: id
+      type: UUID
+      type_enum: null
+      primary_key: true
+      nullable: false
+      unique: true
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: created_at
+      type: DateTime
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: false
+      default_value: datetime.now(timezone.utc)
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: true
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: buyer_id
+      type: UUID
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: true
+    - name: seller_id
+      type: UUID
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: true
+    relationships:
+    - field_name: buyer_id
+      target_model: buyer
+      back_populates: chat_thread
+      on_delete: CASCADE
+      nullable: false
+      unique: false
+      index: true
+    - field_name: seller_id
+      target_model: seller
+      back_populates: chat_thread
+      on_delete: CASCADE
+      nullable: false
+      unique: false
+      index: true
+    metadata:
+      create_endpoints: true
+      create_tests: true
+      create_daos: true
+      create_dtos: true
+      is_auth_model: false
+  - name: chat_message
+    fields:
+    - name: id
+      type: UUID
+      type_enum: null
+      primary_key: true
+      nullable: false
+      unique: true
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: message
+      type: String
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: false
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: is_read_by_buyer
+      type: Boolean
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: false
+      default_value: 'False'
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: is_read_by_seller
+      type: Boolean
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: false
+      default_value: 'False'
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: created_at
+      type: DateTime
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: false
+      default_value: datetime.now(timezone.utc)
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: true
+        is_updated_at_timestamp: false
+        is_foreign_key: false
+    - name: thread_id
+      type: UUID
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: true
+    - name: buyer_id
+      type: UUID
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: true
+    - name: seller_id
+      type: UUID
+      type_enum: null
+      primary_key: false
+      nullable: false
+      unique: false
+      index: true
+      default_value: null
+      extra_kwargs: null
+      metadata:
+        is_created_at_timestamp: false
+        is_updated_at_timestamp: false
+        is_foreign_key: true
+    relationships:
+    - field_name: thread_id
+      target_model: chat_thread
+      back_populates: chat_message
+      on_delete: CASCADE
+      nullable: false
+      unique: false
+      index: true
+    - field_name: buyer_id
+      target_model: buyer
+      back_populates: chat_message
+      on_delete: CASCADE
+      nullable: false
+      unique: false
+      index: true
+    - field_name: seller_id
+      target_model: seller
+      back_populates: chat_message
+      on_delete: CASCADE
+      nullable: false
+      unique: false
+      index: true
+    metadata:
+      create_endpoints: true
+      create_tests: true
+      create_daos: true
+      create_dtos: true
+      is_auth_model: false
+  custom_enums:
+  - name: UserRole
+    values:
+    - name: USER
+      value: auto()
+    - name: ADMIN
+      value: auto()
