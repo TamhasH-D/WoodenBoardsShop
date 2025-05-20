@@ -19,6 +19,8 @@ async def test_get_wood_type_price_by_id(
 
     response_data = response.json()["data"]
     assert response_data["id"] == str(wood_type_price.id)
-    assert response_data["created_at"] == wood_type_price.created_at.isoformat()
+    # Remove Z suffix from response date if present
+    created_at = response_data["created_at"].rstrip("Z")
+    assert created_at == wood_type_price.created_at.isoformat()
     assert response_data["price_per_m3"] == wood_type_price.price_per_m3
     assert response_data["wood_type_id"] == str(wood_type_price.wood_type_id)

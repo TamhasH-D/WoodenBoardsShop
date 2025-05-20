@@ -22,4 +22,4 @@ async def test_get_chat_threads(
     assert len(response_data) == 3
 
     for chat_thread, data in zip(chat_threads, response_data, strict=True):
-        assert chat_thread.id == UUID(data["id"])
+        assert str(chat_thread.id) == data["id"]

@@ -21,7 +21,7 @@ async def test_patch_seller(
     }
 
     response = await client.patch(
-        URI.format(seller_id=seller.keycloak_uuid), json=input_json
+        URI.format(seller_id=seller.id), json=input_json
     )
     assert response.status_code == 200
 

@@ -18,8 +18,12 @@ async def test_get_products(
     response = await client.get(URI)
     assert response.status_code == 200
 
-    response_data = response.json()["data"]
+    response_json = response.json()
+    assert "data" in response_json
+    assert "pagination" in response_json
+
+    response_data = response_json["data"]
     assert len(response_data) == 3
 
     for product, data in zip(products, response_data, strict=True):
-        assert product.id == UUID(data["id"])
+        assert str(product.id) == data["id"]

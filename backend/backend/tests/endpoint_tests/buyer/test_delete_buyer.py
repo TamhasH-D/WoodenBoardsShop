@@ -16,8 +16,8 @@ async def test_delete_buyer(
     """Test delete Buyer: 200."""
     buyer = await factories.BuyerFactory.create()
 
-    response = await client.delete(URI.format(buyer_id=buyer.keycloak_uuid))
+    response = await client.delete(URI.format(buyer_id=buyer.id))
     assert response.status_code == 200
 
-    db_buyer = await daos.buyer.filter_first(keycloak_uuid=buyer.keycloak_uuid)
+    db_buyer = await daos.buyer.filter_first(id=buyer.id)
     assert db_buyer is None

@@ -22,4 +22,4 @@ async def test_get_wood_types(
     assert len(response_data) == 3
 
     for wood_type, data in zip(wood_types, response_data, strict=True):
-        assert wood_type.id == UUID(data["id"])
+        assert str(wood_type.id) == data["id"]

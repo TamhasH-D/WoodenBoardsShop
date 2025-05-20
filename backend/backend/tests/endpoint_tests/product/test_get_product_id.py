@@ -25,7 +25,10 @@ async def test_get_product_by_id(
     assert response_data["descrioption"] == product.descrioption
     assert response_data["delivery_possible"] == product.delivery_possible
     assert response_data["pickup_location"] == product.pickup_location
-    assert response_data["created_at"] == product.created_at.isoformat()
-    assert response_data["updated_at"] == product.updated_at.isoformat()
+    # Remove Z suffix from response date if present
+    created_at = response_data["created_at"].rstrip("Z")
+    updated_at = response_data["updated_at"].rstrip("Z")
+    assert created_at == product.created_at.isoformat()
+    assert updated_at == product.updated_at.isoformat()
     assert response_data["seller_id"] == str(product.seller_id)
     assert response_data["wood_type_id"] == str(product.wood_type_id)

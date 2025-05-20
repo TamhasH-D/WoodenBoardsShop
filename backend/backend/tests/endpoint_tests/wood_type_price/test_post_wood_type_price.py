@@ -15,7 +15,7 @@ async def test_post_wood_type_price(
     daos: AllDAOs,
 ) -> None:
     """Test create WoodTypePrice: 201."""
-    wood_type = await factories.WoodTypePriceFactory.create()
+    wood_type = await factories.WoodTypeFactory.create()
 
     input_json = {
         "id": str(uuid4()),

@@ -90,6 +90,8 @@ class BuyerFactory(BaseFactory[Buyer]):
     class Meta:
         model = Buyer
 
+    id = factory.Faker("uuid4")
+    keycloak_uuid = factory.Faker("uuid4")
     created_at = factory.Faker("date_time")
     updated_at = factory.Faker("date_time")
     is_online = factory.Faker("boolean")
@@ -101,6 +103,8 @@ class SellerFactory(BaseFactory[Seller]):
     class Meta:
         model = Seller
 
+    id = factory.Faker("uuid4")
+    keycloak_uuid = factory.Faker("uuid4")
     created_at = factory.Faker("date_time")
     updated_at = factory.Faker("date_time")
     is_online = factory.Faker("boolean")
@@ -112,6 +116,7 @@ class WoodTypeFactory(BaseFactory[WoodType]):
     class Meta:
         model = WoodType
 
+    id = factory.Faker("uuid4")
     neme = factory.Faker("text")
     description = factory.Faker("text")
 
@@ -122,6 +127,7 @@ class WoodTypePriceFactory(BaseFactory[WoodTypePrice]):
     class Meta:
         model = WoodTypePrice
 
+    id = factory.Faker("uuid4")
     created_at = factory.Faker("date_time")
     price_per_m3 = factory.Faker("pyfloat", positive=True, min_value=0.1, max_value=100)
 
@@ -131,7 +137,7 @@ class WoodTypePriceFactory(BaseFactory[WoodTypePrice]):
     ) -> BaseFactory[WoodTypePrice]:
         """Create a new instance of the model."""
         if "wood_type" not in kwargs:
-            kwargs["wood_type"] = await WoodTypePriceFactory.create()
+            kwargs["wood_type"] = await WoodTypeFactory.create()
         return await super()._create_model(model_class, *args, **kwargs)
 
 
@@ -141,6 +147,7 @@ class ProductFactory(BaseFactory[Product]):
     class Meta:
         model = Product
 
+    id = factory.Faker("uuid4")
     volume = factory.Faker("pyfloat", positive=True, min_value=0.1, max_value=100)
     price = factory.Faker("pyfloat", positive=True, min_value=0.1, max_value=100)
     title = factory.Faker("text")
@@ -168,6 +175,7 @@ class WoodenBoardFactory(BaseFactory[WoodenBoard]):
     class Meta:
         model = WoodenBoard
 
+    id = factory.Faker("uuid4")
     height = factory.Faker("pyfloat", positive=True, min_value=0.1, max_value=100)
     width = factory.Faker("pyfloat", positive=True, min_value=0.1, max_value=100)
     lenght = factory.Faker("pyfloat", positive=True, min_value=0.1, max_value=100)
@@ -188,6 +196,7 @@ class ImageFactory(BaseFactory[Image]):
     class Meta:
         model = Image
 
+    id = factory.Faker("uuid4")
     image_path = factory.Faker("text")
 
     @classmethod
@@ -206,6 +215,7 @@ class ChatThreadFactory(BaseFactory[ChatThread]):
     class Meta:
         model = ChatThread
 
+    id = factory.Faker("uuid4")
     created_at = factory.Faker("date_time")
 
     @classmethod
@@ -226,6 +236,7 @@ class ChatMessageFactory(BaseFactory[ChatMessage]):
     class Meta:
         model = ChatMessage
 
+    id = factory.Faker("uuid4")
     message = factory.Faker("text")
     is_read_by_buyer = factory.Faker("boolean")
     is_read_by_seller = factory.Faker("boolean")

@@ -15,7 +15,7 @@ async def test_patch_wood_type_price(
     daos: AllDAOs,
 ) -> None:
     """Test patch WoodTypePrice: 200."""
-    wood_type = await factories.WoodTypePriceFactory.create()
+    wood_type = await factories.WoodTypeFactory.create()
     wood_type_price = await factories.WoodTypePriceFactory.create()
 
     input_json = {

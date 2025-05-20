@@ -15,6 +15,7 @@ async def test_post_buyer(
 ) -> None:
     """Test create Buyer: 201."""
     input_json = {
+        "id": str(uuid4()),
         "keycloak_uuid": str(uuid4()),
         "is_online": False,
     }

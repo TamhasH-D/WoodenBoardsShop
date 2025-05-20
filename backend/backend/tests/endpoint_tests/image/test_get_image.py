@@ -22,4 +22,4 @@ async def test_get_images(
     assert len(response_data) == 3
 
     for image, data in zip(images, response_data, strict=True):
-        assert image.id == UUID(data["id"])
+        assert str(image.id) == data["id"]

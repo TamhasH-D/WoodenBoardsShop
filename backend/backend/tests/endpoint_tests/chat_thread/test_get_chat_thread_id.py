@@ -19,6 +19,8 @@ async def test_get_chat_thread_by_id(
 
     response_data = response.json()["data"]
     assert response_data["id"] == str(chat_thread.id)
-    assert response_data["created_at"] == chat_thread.created_at.isoformat()
+    # Remove Z suffix from response date if present
+    created_at = response_data["created_at"].rstrip("Z")
+    assert created_at == chat_thread.created_at.isoformat()
     assert response_data["buyer_id"] == str(chat_thread.buyer_id)
     assert response_data["seller_id"] == str(chat_thread.seller_id)

@@ -22,4 +22,4 @@ async def test_get_sellers(
     assert len(response_data) == 3
 
     for seller, data in zip(sellers, response_data, strict=True):
-        assert seller.keycloak_uuid == UUID(data["keycloak_uuid"])
+        assert str(seller.keycloak_uuid) == data["keycloak_uuid"]

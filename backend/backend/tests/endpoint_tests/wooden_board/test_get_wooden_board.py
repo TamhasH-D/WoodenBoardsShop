@@ -22,4 +22,4 @@ async def test_get_wooden_boards(
     assert len(response_data) == 3
 
     for wooden_board, data in zip(wooden_boards, response_data, strict=True):
-        assert wooden_board.id == UUID(data["id"])
+        assert str(wooden_board.id) == data["id"]
