@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import List, TYPE_CHECKING
 from uuid import UUID
 
 import sqlalchemy as sa
@@ -7,6 +8,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.db import Base
 from backend.models.seller_models import Seller
 from backend.models.wood_type_models import WoodType
+
+if TYPE_CHECKING:
+    from backend.models.image_models import Image
 
 
 class Product(Base):
@@ -49,4 +53,7 @@ class Product(Base):
     )
     wood_type: Mapped[WoodType] = relationship(
         foreign_keys=[wood_type_id], back_populates="product", uselist=False
+    )
+    image: Mapped[List["Image"]] = relationship(
+        back_populates="product"
     )

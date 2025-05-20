@@ -1,3 +1,4 @@
+from typing import List, TYPE_CHECKING
 from uuid import UUID
 
 import sqlalchemy as sa
@@ -5,6 +6,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.db import Base
 from backend.models.product_models import Product
+
+if TYPE_CHECKING:
+    from backend.models.wooden_board_models import WoodenBoard
 
 
 class Image(Base):
@@ -24,4 +28,7 @@ class Image(Base):
 
     product: Mapped[Product] = relationship(
         foreign_keys=[product_id], back_populates="image", uselist=False
+    )
+    wooden_board: Mapped["WoodenBoard"] = relationship(
+        back_populates="image", uselist=False
     )

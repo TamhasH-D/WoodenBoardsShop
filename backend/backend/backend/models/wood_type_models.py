@@ -1,9 +1,14 @@
+from typing import List, TYPE_CHECKING
 from uuid import UUID
 
 import sqlalchemy as sa
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.db import Base
+
+if TYPE_CHECKING:
+    from backend.models.product_models import Product
+    from backend.models.wood_type_price_models import WoodTypePrice
 
 
 class WoodType(Base):
@@ -16,3 +21,11 @@ class WoodType(Base):
     )
     neme: Mapped[str] = mapped_column(sa.String, unique=True, index=True)
     description: Mapped[str | None] = mapped_column(sa.String)
+
+    # Relationships
+    product: Mapped[List["Product"]] = relationship(
+        back_populates="wood_type"
+    )
+    wood_type_price: Mapped[List["WoodTypePrice"]] = relationship(
+        back_populates="wood_type"
+    )

@@ -1,10 +1,16 @@
 from datetime import UTC, datetime
+from typing import List, TYPE_CHECKING
 from uuid import UUID
 
 import sqlalchemy as sa
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.db import Base
+
+if TYPE_CHECKING:
+    from backend.models.chat_message_models import ChatMessage
+    from backend.models.chat_thread_models import ChatThread
+    from backend.models.product_models import Product
 
 
 class Seller(Base):
@@ -12,8 +18,11 @@ class Seller(Base):
 
     __tablename__ = "seller"
 
-    keycloak_uuid: Mapped[UUID] = mapped_column(
+    id: Mapped[UUID] = mapped_column(
         sa.UUID(as_uuid=True), primary_key=True, unique=True, index=True
+    )
+    keycloak_uuid: Mapped[UUID] = mapped_column(
+        sa.UUID(as_uuid=True), unique=True, index=True
     )
     is_online: Mapped[bool] = mapped_column(sa.Boolean, index=True, default=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -23,4 +32,15 @@ class Seller(Base):
         sa.DateTime(timezone=True),
         default=datetime.now(UTC),
         onupdate=datetime.now(UTC),
+    )
+
+    # Relationships
+    chat_message: Mapped[List["ChatMessage"]] = relationship(
+        back_populates="seller"
+    )
+    chat_thread: Mapped[List["ChatThread"]] = relationship(
+        back_populates="seller"
+    )
+    product: Mapped[List["Product"]] = relationship(
+        back_populates="seller"
     )
