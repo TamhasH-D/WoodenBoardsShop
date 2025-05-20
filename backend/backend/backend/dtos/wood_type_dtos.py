@@ -18,6 +18,7 @@ class WoodTypeDTO(BaseOrmModel):
 class WoodTypeInputDTO(BaseModel):
     """WoodType input DTO."""
 
+    id: UUID
     neme: str
     description: str | None
 

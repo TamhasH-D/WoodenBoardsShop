@@ -18,6 +18,7 @@ class ChatThreadDTO(BaseOrmModel):
 class ChatThreadInputDTO(BaseModel):
     """ChatThread input DTO."""
 
+    id: UUID
     buyer_id: UUID
     seller_id: UUID
 

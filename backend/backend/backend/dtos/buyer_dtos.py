@@ -9,6 +9,7 @@ from backend.dtos import BaseOrmModel
 class BuyerDTO(BaseOrmModel):
     """Buyer DTO."""
 
+    id: UUID
     keycloak_uuid: UUID
     is_online: bool
     created_at: datetime
@@ -18,6 +19,8 @@ class BuyerDTO(BaseOrmModel):
 class BuyerInputDTO(BaseModel):
     """Buyer input DTO."""
 
+    id: UUID
+    keycloak_uuid: UUID
     is_online: bool = False
 
 

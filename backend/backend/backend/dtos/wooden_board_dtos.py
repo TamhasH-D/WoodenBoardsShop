@@ -20,6 +20,7 @@ class WoodenBoardDTO(BaseOrmModel):
 class WoodenBoardInputDTO(BaseModel):
     """WoodenBoard input DTO."""
 
+    id: UUID
     height: float
     width: float
     lenght: float
