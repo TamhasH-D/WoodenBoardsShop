@@ -20,7 +20,7 @@ down: # Stop the project with Docker Compose.
 
 .PHONY: test
 test: # Run all tests in the codebase.
-	$(DOCKER_CMD) pytest ./tests -v -s
+	$(DOCKER_CMD) pytest ./tests -v -s -W ignore::DeprecationWarning
 
 .PHONY: test-filter
 test-filter: # Run tests with a specific filter.
