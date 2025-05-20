@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 import sqlalchemy as sa
@@ -54,6 +54,4 @@ class Product(Base):
     wood_type: Mapped[WoodType] = relationship(
         foreign_keys=[wood_type_id], back_populates="product", uselist=False
     )
-    image: Mapped[List["Image"]] = relationship(
-        back_populates="product"
-    )
+    image: Mapped[list["Image"]] = relationship(back_populates="product")

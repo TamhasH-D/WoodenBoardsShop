@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 import sqlalchemy as sa
@@ -39,6 +39,4 @@ class ChatThread(Base):
     seller: Mapped[Seller] = relationship(
         foreign_keys=[seller_id], back_populates="chat_thread", uselist=False
     )
-    chat_message: Mapped[List["ChatMessage"]] = relationship(
-        back_populates="thread"
-    )
+    chat_message: Mapped[list["ChatMessage"]] = relationship(back_populates="thread")

@@ -1,4 +1,4 @@
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 import sqlalchemy as sa
@@ -23,9 +23,7 @@ class WoodType(Base):
     description: Mapped[str | None] = mapped_column(sa.String)
 
     # Relationships
-    product: Mapped[List["Product"]] = relationship(
-        back_populates="wood_type"
-    )
-    wood_type_price: Mapped[List["WoodTypePrice"]] = relationship(
+    product: Mapped[list["Product"]] = relationship(back_populates="wood_type")
+    wood_type_price: Mapped[list["WoodTypePrice"]] = relationship(
         back_populates="wood_type"
     )

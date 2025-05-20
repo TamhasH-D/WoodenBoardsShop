@@ -1,4 +1,4 @@
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 import sqlalchemy as sa

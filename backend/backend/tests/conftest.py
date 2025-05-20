@@ -1,6 +1,6 @@
+import warnings
 from collections.abc import AsyncGenerator
 from typing import Any
-import warnings
 
 # Подавляем предупреждения о устаревшем параметре retry_on_timeout в fakeredis
 warnings.filterwarnings("ignore", message=".*retry_on_timeout.*")

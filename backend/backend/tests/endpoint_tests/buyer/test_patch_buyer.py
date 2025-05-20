@@ -1,4 +1,3 @@
-
 import pytest
 from httpx import AsyncClient
 
@@ -20,9 +19,7 @@ async def test_patch_buyer(
         "is_online": False,
     }
 
-    response = await client.patch(
-        URI.format(buyer_id=buyer.id), json=input_json
-    )
+    response = await client.patch(URI.format(buyer_id=buyer.id), json=input_json)
     assert response.status_code == 200
 
     db_buyer = await daos.buyer.filter_first(keycloak_uuid=buyer.keycloak_uuid)
