@@ -41,7 +41,7 @@ async def delete_buyer(
     daos: GetDAOs,
 ) -> EmptyResponse:
     """Delete a Buyer by id."""
-    await daos.buyer.delete(keycloak_uuid=buyer_id)
+    await daos.buyer.delete(id=buyer_id)
     return EmptyResponse()
 
 
@@ -63,5 +63,5 @@ async def get_buyer(
     daos: GetDAOs,
 ) -> DataResponse[BuyerDTO]:
     """Get a Buyer by id."""
-    buyer = await daos.buyer.filter_first(keycloak_uuid=buyer_id)
+    buyer = await daos.buyer.filter_first(id=buyer_id)
     return DataResponse(data=BuyerDTO.model_validate(buyer))
