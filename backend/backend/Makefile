@@ -1,7 +1,5 @@
 DOCKER_CMD = docker compose exec -it api
 
-default: help
-
 .PHONY: help
 help: # Show help for each of the Makefile recipes.
 	@grep -E '^[a-zA-Z0-9 -]+:.*#'  Makefile | sort | while read -r l; do printf "\033[1;32m$$(echo $$l | cut -f 1 -d':')\033[00m:$$(echo $$l | cut -f 2- -d'#')\n"; done
@@ -12,11 +10,19 @@ run: # Run the application.
 
 .PHONY: up
 up: # Start the project with Docker Compose.
-	docker-compose up --watch
+	docker compose --env-file .env up --build  -d
 
 .PHONY: down
 down: # Stop the project with Docker Compose.
-	docker-compose down
+	docker compose --env-file .env down
+
+.PHONY: build
+build: # Build the project with Docker Compose.
+	docker compose --env-file .env build --no-cache
+
+.PHONY: logs
+logs: # Show the logs of the project with Docker Compose.
+	docker compose --env-file .env logs -f
 
 .PHONY: test
 test: # Run all tests in the codebase.
