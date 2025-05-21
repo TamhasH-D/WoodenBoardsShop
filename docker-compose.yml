@@ -25,8 +25,18 @@ services:
       - BACKEND_REDIS_PASSWORD=${BACKEND_REDIS_PASSWORD:-}
       - BACKEND_REDIS_MAX_CONNECTIONS=${BACKEND_REDIS_MAX_CONNECTIONS:-50}
     networks:
-      - app-network
+      - backend-network
+
+  postgres:
+    extends:
+      file: ./backend/backend/docker-compose.yaml
+      service: postgres
+
+  redis:
+    extends:
+      file: ./backend/backend/docker-compose.yaml
+      service: redis
 
 networks:
-  app-network:
+  backend-network:
     driver: bridge

@@ -6,8 +6,6 @@ services:
     image: backend:latest
     container_name: backend-api
     restart: always
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
