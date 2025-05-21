@@ -1,0 +1,64 @@
+version: '3.8' # Убедимся, что версия указана
+
+env_file:
+  - .env
+
+services:
+  backend:
+    extends:
+      file: ./backend/backend/docker-compose.yaml
+      service: api
+    ports:
+      - "${BACKEND_PORT:-8000}:${BACKEND_PORT:-8000}"
+    env_file:
+      - .env
+    networks:
+      - backend-network
+
+  admin-app:
+    build:
+      context: ./frontend/admin
+      dockerfile: Dockerfile
+    ports:
+      - "${ADMIN_APP_PORT:-3001}:80"
+    volumes:
+      - ./frontend/admin/src:/app/src # Для live reload в разработке
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - REACT_APP_KEYCLOAK_URL=${KEYCLOAK_URL}
+      - REACT_APP_KEYCLOAK_REALM=${KEYCLOAK_REALM}
+      - REACT_APP_KEYCLOAK_CLIENT_ID=${ADMIN_KEYCLOAK_CLIENT_ID}
+    depends_on:
+      - backend # Опционально, если фронтенд делает запросы при сборке или запуске к бэкенду
+
+  buyer-app:
+    build:
+      context: ./frontend/buyer
+      dockerfile: Dockerfile
+    ports:
+      - "${BUYER_APP_PORT:-3002}:80"
+    volumes:
+      - ./frontend/buyer/src:/app/src # Для live reload в разработке
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - REACT_APP_KEYCLOAK_URL=${KEYCLOAK_URL}
+      - REACT_APP_KEYCLOAK_REALM=${KEYCLOAK_REALM}
+      - REACT_APP_KEYCLOAK_CLIENT_ID=${BUYER_KEYCLOAK_CLIENT_ID}
+    depends_on:
+      - backend
+
+  seller-app:
+    build:
+      context: ./frontend/seller
+      dockerfile: Dockerfile
+    ports:
+      - "${SELLER_APP_PORT:-3003}:80"
+    volumes:
+      - ./frontend/seller/src:/app/src # Для live reload в разработке
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - REACT_APP_KEYCLOAK_URL=${KEYCLOAK_URL}
+      - REACT_APP_KEYCLOAK_REALM=${KEYCLOAK_REALM}
+      - REACT_APP_KEYCLOAK_CLIENT_ID=${SELLER_KEYCLOAK_CLIENT_ID}
+    depends_on:
+      - backend
