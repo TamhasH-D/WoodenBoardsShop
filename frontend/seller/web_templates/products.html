@@ -1,0 +1,236 @@
+<html>
+  <head>
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="" />
+    <link
+      rel="stylesheet"
+      as="style"
+      onload="this.rel='stylesheet'"
+      href="https://fonts.googleapis.com/css2?display=swap&amp;family=Manrope%3Awght%40400%3B500%3B700%3B800&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900"
+    />
+
+    <title>Stitch Design</title>
+    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  </head>
+  <body>
+    <div class="relative flex size-full min-h-screen flex-col bg-[#fbfaf9] group/design-root overflow-x-hidden" style='font-family: Manrope, "Noto Sans", sans-serif;'>
+      <div class="layout-container flex h-full grow flex-col">
+        <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#f1ecea] px-10 py-3">
+          <div class="flex items-center gap-4 text-[#181410]">
+            <div class="size-4">
+              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g clip-path="url(#clip0_6_330)">
+                  <path
+                    fill-rule="evenodd"
+                    clip-rule="evenodd"
+                    d="M24 0.757355L47.2426 24L24 47.2426L0.757355 24L24 0.757355ZM21 35.7574V12.2426L9.24264 24L21 35.7574Z"
+                    fill="currentColor"
+                  ></path>
+                </g>
+                <defs>
+                  <clipPath id="clip0_6_330"><rect width="48" height="48" fill="white"></rect></clipPath>
+                </defs>
+              </svg>
+            </div>
+            <h2 class="text-[#181410] text-lg font-bold leading-tight tracking-[-0.015em]">BoardPallet</h2>
+          </div>
+          <div class="flex flex-1 justify-end gap-8">
+            <div class="flex items-center gap-9">
+              <a class="text-[#181410] text-sm font-medium leading-normal" href="#">Dashboard</a>
+              <a class="text-[#181410] text-sm font-medium leading-normal" href="#">Orders</a>
+              <a class="text-[#181410] text-sm font-medium leading-normal" href="#">Products</a>
+              <a class="text-[#181410] text-sm font-medium leading-normal" href="#">Customers</a>
+              <a class="text-[#181410] text-sm font-medium leading-normal" href="#">Analytics</a>
+            </div>
+            <button
+              class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-[#f1ecea] text-[#181410] gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5"
+            >
+              <div class="text-[#181410]" data-icon="Bell" data-size="20px" data-weight="regular">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">
+                  <path
+                    d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216ZM48,184c7.7-13.24,16-43.92,16-80a64,64,0,1,1,128,0c0,36.05,8.28,66.73,16,80Z"
+                  ></path>
+                </svg>
+              </div>
+            </button>
+            <div
+              class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
+              style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDDuzULDGSrZivhnNC5zzO3bJM7Ftk0r-B5EUED4GjE8npsJaqlEYU-wN-BxaTkGcNw-RmftIEsbZi9cMnVuhau_W9utHHfmJREpYYmgwS88hjkRbFHm6JDotqb7ZtAunS6VWZXgdFmpnOtoQ__vywUfzSNI9Tw-GD6cKvu0pPrWl8GGpraW-IveloqwdqBKQ-GHRs4IHc0PbPLxE4ssxgiJZ5dYsp71K4Ufhucf7LuFda9luN96UyaxI1ujZNpRsrjZp64NXM97Ac");'
+            ></div>
+          </div>
+        </header>
+        <div class="px-40 flex flex-1 justify-center py-5">
+          <div class="layout-content-container flex flex-col max-w-[960px] flex-1">
+            <div class="flex flex-wrap justify-between gap-3 p-4">
+              <p class="text-[#181410] tracking-light text-[32px] font-bold leading-tight min-w-72">Products</p>
+              <button
+                class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-[#f1ecea] text-[#181410] text-sm font-medium leading-normal"
+              >
+                <span class="truncate">Add product</span>
+              </button>
+            </div>
+            <div class="px-4 py-3">
+              <label class="flex flex-col min-w-40 h-12 w-full">
+                <div class="flex w-full flex-1 items-stretch rounded-lg h-full">
+                  <div
+                    class="text-[#8a6e5c] flex border-none bg-[#f1ecea] items-center justify-center pl-4 rounded-l-lg border-r-0"
+                    data-icon="MagnifyingGlass"
+                    data-size="24px"
+                    data-weight="regular"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" fill="currentColor" viewBox="0 0 256 256">
+                      <path
+                        d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"
+                      ></path>
+                    </svg>
+                  </div>
+                  <input
+                    placeholder="Search products"
+                    class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#181410] focus:outline-0 focus:ring-0 border-none bg-[#f1ecea] focus:border-none h-full placeholder:text-[#8a6e5c] px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal"
+                    value=""
+                  />
+                </div>
+              </label>
+            </div>
+            <div class="px-4 py-3 @container">
+              <div class="flex overflow-hidden rounded-lg border border-[#e2dad4] bg-[#fbfaf9]">
+                <table class="flex-1">
+                  <thead>
+                    <tr class="bg-[#fbfaf9]">
+                      <th class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-56 px-4 py-3 text-left text-[#181410] w-14 text-sm font-medium leading-normal">Product</th>
+                      <th class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-176 px-4 py-3 text-left text-[#181410] w-[400px] text-sm font-medium leading-normal">Type</th>
+                      <th class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-296 px-4 py-3 text-left text-[#181410] w-[400px] text-sm font-medium leading-normal">
+                        Quantity
+                      </th>
+                      <th class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-416 px-4 py-3 text-left text-[#181410] w-[400px] text-sm font-medium leading-normal">Price</th>
+                      <th class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-536 px-4 py-3 text-left text-[#181410] w-60 text-sm font-medium leading-normal">Status</th>
+                      <th
+                        class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-656 px-4 py-3 text-left text-[#181410] w-60 text-[#8a6e5c] text-sm font-medium leading-normal"
+                      ></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="border-t border-t-[#e2dad4]">
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-56 h-[72px] px-4 py-2 w-14 text-sm font-normal leading-normal">
+                        <div
+                          class="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-10"
+                          style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCEBiuh1FBcnroEF-bUAGYtd7uiCGpQtx619eJekTbpjXZ-SZbHhdHVDUpPEyWqGUdBIVD0BJyr_vcKHViodhgh4q9JwT77kU49y-dAvWDBjEfQIjwO1dm20S1S5TYlhIREm3DtvlBnn1sGQHPLZwo-koPNzzDM9IfHkXtnZ2_KiFeC1mopXF7uXSQslE8Ly-fu5VuK-arp9kJbRdndjEs8SMHGNhvrtzI5h9OGXt68_gzQl1X6EgIkW8_85t_rMbJ0fX5J6Xgepgk");'
+                        ></div>
+                      </td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-176 h-[72px] px-4 py-2 w-[400px] text-[#181410] text-sm font-normal leading-normal">Oak</td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-296 h-[72px] px-4 py-2 w-[400px] text-[#8a6e5c] text-sm font-normal leading-normal">100</td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-416 h-[72px] px-4 py-2 w-[400px] text-[#8a6e5c] text-sm font-normal leading-normal">$500</td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-536 h-[72px] px-4 py-2 w-60 text-sm font-normal leading-normal">
+                        <button
+                          class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-[#f1ecea] text-[#181410] text-sm font-medium leading-normal w-full"
+                        >
+                          <span class="truncate">Active</span>
+                        </button>
+                      </td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-656 h-[72px] px-4 py-2 w-60 text-[#8a6e5c] text-sm font-bold leading-normal tracking-[0.015em]">
+                        Edit
+                      </td>
+                    </tr>
+                    <tr class="border-t border-t-[#e2dad4]">
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-56 h-[72px] px-4 py-2 w-14 text-sm font-normal leading-normal">
+                        <div
+                          class="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-10"
+                          style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCprFFIXzsr-F7K4AJcIXbZuMUF_8FDRYhz0cyzH6IO4Ds4iOUY8-lxg66BYeq4ZdxJicaJYEPuzGVd3HudqBQ9TJsLK5ou9yq-NdEBLmn5v2Vg5SFecrCF2nyCdaguilGE5z7k8xezKCxzmq36R0UeMW5BwB8rmZX7Lj69P6p7BAaUrjVBEcmgHt-gDgswBcObkPJ06x9sczAYCRJZx8IRlWc6BbLX0kQiPLCJIq78hNvyxf-UQyd7zr0ps4KeVCjvR0ZtQSYm8eo");'
+                        ></div>
+                      </td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-176 h-[72px] px-4 py-2 w-[400px] text-[#181410] text-sm font-normal leading-normal">Pine</td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-296 h-[72px] px-4 py-2 w-[400px] text-[#8a6e5c] text-sm font-normal leading-normal">150</td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-416 h-[72px] px-4 py-2 w-[400px] text-[#8a6e5c] text-sm font-normal leading-normal">$400</td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-536 h-[72px] px-4 py-2 w-60 text-sm font-normal leading-normal">
+                        <button
+                          class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-[#f1ecea] text-[#181410] text-sm font-medium leading-normal w-full"
+                        >
+                          <span class="truncate">Active</span>
+                        </button>
+                      </td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-656 h-[72px] px-4 py-2 w-60 text-[#8a6e5c] text-sm font-bold leading-normal tracking-[0.015em]">
+                        Edit
+                      </td>
+                    </tr>
+                    <tr class="border-t border-t-[#e2dad4]">
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-56 h-[72px] px-4 py-2 w-14 text-sm font-normal leading-normal">
+                        <div
+                          class="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-10"
+                          style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA-DLtRI7C98cnYglm91Q3_m4jvuzoEawIZCO7rb7_Yb1yr95dMijc8jSeIMZ7XAnlUIs3ZyTcePJS4ycNeJIsFc-l26EmWdU7ItHmN-6Ov_q9sN8_tXPEJWxEnzv7ryE3R41nC0PkzibRePPIcqTPylkVdkRlR80JoC7WoEP5SfS3bckzlttEhsxWu3rLAsx6LCF3nlVHAt9OXOztXkAPk6pIeSPlkRGui1cnf5U8LZsjMMUq2KJghwPSsyY81x9iPAr_PHYIpIkg");'
+                        ></div>
+                      </td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-176 h-[72px] px-4 py-2 w-[400px] text-[#181410] text-sm font-normal leading-normal">Maple</td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-296 h-[72px] px-4 py-2 w-[400px] text-[#8a6e5c] text-sm font-normal leading-normal">200</td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-416 h-[72px] px-4 py-2 w-[400px] text-[#8a6e5c] text-sm font-normal leading-normal">$600</td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-536 h-[72px] px-4 py-2 w-60 text-sm font-normal leading-normal">
+                        <button
+                          class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-[#f1ecea] text-[#181410] text-sm font-medium leading-normal w-full"
+                        >
+                          <span class="truncate">Active</span>
+                        </button>
+                      </td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-656 h-[72px] px-4 py-2 w-60 text-[#8a6e5c] text-sm font-bold leading-normal tracking-[0.015em]">
+                        Edit
+                      </td>
+                    </tr>
+                    <tr class="border-t border-t-[#e2dad4]">
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-56 h-[72px] px-4 py-2 w-14 text-sm font-normal leading-normal">
+                        <div
+                          class="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-10"
+                          style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCSdYe8eznxE6QQ0AS_mw-KFb-5LQPPvgkw1w4V135ErI3cxRA2jTC3p6_JYFNo-_Jp7Othzo28bv_ehm_u3vr8T5Zw3FqaRpuZl8Md_FuszcOhBUohNedfdY_bGR2yJzpqFKzjIOGYG3iKJbu4dVO7UqDoVa9EDWEVvLLH7d_Na_YXXAPVNiRpOCVxMnrB7X04zkvkobxk_uF46tK8NPGxjWN5M2qudV2C7dFbaIvqoxomFdvME_4bqqCg8Sx4R0v89Y3mPQKmYFM");'
+                        ></div>
+                      </td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-176 h-[72px] px-4 py-2 w-[400px] text-[#181410] text-sm font-normal leading-normal">Cherry</td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-296 h-[72px] px-4 py-2 w-[400px] text-[#8a6e5c] text-sm font-normal leading-normal">50</td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-416 h-[72px] px-4 py-2 w-[400px] text-[#8a6e5c] text-sm font-normal leading-normal">$700</td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-536 h-[72px] px-4 py-2 w-60 text-sm font-normal leading-normal">
+                        <button
+                          class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-[#f1ecea] text-[#181410] text-sm font-medium leading-normal w-full"
+                        >
+                          <span class="truncate">Inactive</span>
+                        </button>
+                      </td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-656 h-[72px] px-4 py-2 w-60 text-[#8a6e5c] text-sm font-bold leading-normal tracking-[0.015em]">
+                        Edit
+                      </td>
+                    </tr>
+                    <tr class="border-t border-t-[#e2dad4]">
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-56 h-[72px] px-4 py-2 w-14 text-sm font-normal leading-normal">
+                        <div
+                          class="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-10"
+                          style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBdNSXYn186aR2ZGhH_zqwAqIqBp3176URqj8tm-m7i0N8-r3emwhoAbt8w0pBa_nW7FlP7Of9PA76a33aKTbX-efZQmJJ-uNgiGDNhvQPS4N77CJMxVXDcwIw8h54KJHTlrOoMqPveLXsNMwqbxzJlvm-6BnQPyNh3yB4xO7QFNCjDz9nXRuCwgLKOCP3dFw_1GA_blvI2hVEPS4_tMtaG6lXC1xBdL4MRlhhiOLV6aNlgwjbb1WNMYk8jSvEIGK9_ot0TV4vWotw");'
+                        ></div>
+                      </td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-176 h-[72px] px-4 py-2 w-[400px] text-[#181410] text-sm font-normal leading-normal">Walnut</td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-296 h-[72px] px-4 py-2 w-[400px] text-[#8a6e5c] text-sm font-normal leading-normal">75</td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-416 h-[72px] px-4 py-2 w-[400px] text-[#8a6e5c] text-sm font-normal leading-normal">$800</td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-536 h-[72px] px-4 py-2 w-60 text-sm font-normal leading-normal">
+                        <button
+                          class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-[#f1ecea] text-[#181410] text-sm font-medium leading-normal w-full"
+                        >
+                          <span class="truncate">Inactive</span>
+                        </button>
+                      </td>
+                      <td class="table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-656 h-[72px] px-4 py-2 w-60 text-[#8a6e5c] text-sm font-bold leading-normal tracking-[0.015em]">
+                        Edit
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <style>
+                          @container(max-width:56px){.table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-56{display: none;}}
+                @container(max-width:176px){.table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-176{display: none;}}
+                @container(max-width:296px){.table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-296{display: none;}}
+                @container(max-width:416px){.table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-416{display: none;}}
+                @container(max-width:536px){.table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-536{display: none;}}
+                @container(max-width:656px){.table-dc881e7a-159c-437a-b37c-9a7f29d7d611-column-656{display: none;}}
+              </style>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
