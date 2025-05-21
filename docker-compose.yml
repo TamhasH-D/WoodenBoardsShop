@@ -1,1 +1,32 @@
-# Updated docker-compose.yml
+services:
+  backend:
+    extends:
+      file: ./backend/backend/docker-compose.yaml
+      service: api
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      # Server Settings
+      - BACKEND_HOST=${BACKEND_HOST:-0.0.0.0}
+      - BACKEND_PORT=${BACKEND_PORT:-8000}
+      - BACKEND_DEBUG=${BACKEND_DEBUG:-True}
+      - BACKEND_LOG_LEVEL=${BACKEND_LOG_LEVEL:-info}
+      - BACKEND_RELOAD=${BACKEND_RELOAD:-True}
+      - BACKEND_WORKERS=${BACKEND_WORKERS:-1}
+      # PostgreSQL Settings
+      - BACKEND_PG_HOST=${BACKEND_PG_HOST:-postgres}
+      - BACKEND_PG_PORT=${BACKEND_PG_PORT:-5432}
+      - BACKEND_PG_USER=${BACKEND_PG_USER:-backend}
+      - BACKEND_PG_PASSWORD=${BACKEND_PG_PASSWORD:-backend}
+      - BACKEND_PG_DATABASE=${BACKEND_PG_DATABASE:-backend}
+      # Redis Settings
+      - BACKEND_REDIS_HOST=${BACKEND_REDIS_HOST:-redis}
+      - BACKEND_REDIS_PORT=${BACKEND_REDIS_PORT:-6379}
+      - BACKEND_REDIS_PASSWORD=${BACKEND_REDIS_PASSWORD:-}
+      - BACKEND_REDIS_MAX_CONNECTIONS=${BACKEND_REDIS_MAX_CONNECTIONS:-50}
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
