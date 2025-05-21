@@ -37,6 +37,10 @@ services:
       file: ./backend/backend/docker-compose.yaml
       service: redis
 
+volumes:
+  backend-pg-data:
+  backend-redis-data:
+
 networks:
   backend-network:
     driver: bridge
