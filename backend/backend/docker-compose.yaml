@@ -7,7 +7,7 @@ services:
     container_name: backend-api
     restart: always
     ports:
-      - "${BACKEND_PORT}:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -15,6 +15,8 @@ services:
         condition: service_healthy
     volumes:
       - ./migrations:/app/migrations
+    networks:
+      - backend-network
     develop:
       watch:
         - action: sync
@@ -40,6 +42,8 @@ services:
     volumes:
     - backend-pg-data:/var/lib/postgresql/data
     restart: always
+    networks:
+      - backend-network
     healthcheck:
       test: pg_isready -U ${BACKEND_PG_USER:-backend}
       interval: 2s
@@ -70,3 +74,7 @@ services:
 volumes:
   backend-pg-data:
   backend-redis-data:
+
+networks:
+  backend-network:
+    driver: bridge
