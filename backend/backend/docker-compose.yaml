@@ -6,6 +6,8 @@ services:
     image: backend:latest
     container_name: backend-api
     restart: always
+    ports:
+      - "${BACKEND_PORT:-8000}:${BACKEND_PORT:-8000}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -19,7 +21,7 @@ services:
       watch:
         - action: sync
           path: ./backend
-          target: /app/backend
+          target: /app/back end
         - action: sync
           path: ./tests
           target: /app/tests
