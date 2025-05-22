@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  seller-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: seller-frontend-dev
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=${FRONTEND_SELLER_PORT:-3000}
+    ports:
+      - "${FRONTEND_SELLER_PORT:-3000}:3000"
+    restart: unless-stopped
+    networks:
+      - diplom-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  diplom-network:
+    external: true

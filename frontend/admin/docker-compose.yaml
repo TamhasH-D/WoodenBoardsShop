@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  admin-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=${NODE_ENV:-production}
+    container_name: admin-frontend
+    ports:
+      - "${FRONTEND_ADMIN_PORT:-80}:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - diplom-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  diplom-network:
+    external: true
