@@ -8,6 +8,10 @@ services:
       args:
         - NODE_ENV=${NODE_ENV:-production}
     container_name: buyer-frontend
+    env_file:
+      - .env
+    environment:
+      - REACT_APP_API_URL=${FRONTEND_BUYER_API_URL:-http://localhost:8000}
     ports:
       - "${FRONTEND_BUYER_PORT:-80}:80"
     restart: unless-stopped
