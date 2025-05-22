@@ -1,43 +1,52 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Particles from 'react-tsparticles';
-import { loadFull } from 'tsparticles';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { motion } from 'framer-motion';
+
+// Layout and Pages
 import SellerLayout from './components/SellerLayout';
 import SellerDashboard from './components/SellerDashboard';
 import SellerProducts from './components/SellerProducts';
 import SellerOrders from './components/SellerOrders';
-import SellerSettings from './components/SellerSettings'; // Import SellerSettings
+import SellerSettings from './components/SellerSettings';
+import SellerChat from './components/SellerChat';
+import ProductForm from './components/ProductForm';
 
-// Dynamic background with particles
-
-import { particleOptions } from './config/particlesConfig';
-
-import Header from './components/Header/Header';
-
-import HeroSection from './components/HeroSection/HeroSection';
-
-import ProductSection from './components/ProductSection/ProductSection';
-
-import Footer from './components/Footer/Footer';
-
-import HomePageLayout from './components/HomePageLayout/HomePageLayout';
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 30000,
+    },
+  },
+});
 
 function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-100">
-        <Routes>
-          <Route path="/" element={<SellerLayout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<SellerDashboard />} />
-            <Route path="products" element={<SellerProducts />} />
-            <Route path="orders" element={<SellerOrders />} />
-            <Route path="settings" element={<SellerSettings />} /> {/* Add settings route */}
-          </Route>
-        </Routes>
-      </div>
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <div className="min-h-screen bg-gray-100">
+          <Routes>
+            <Route path="/" element={<SellerLayout />}>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<SellerDashboard />} />
+              <Route path="products" element={<SellerProducts />} />
+              <Route path="products/new" element={<ProductForm />} />
+              <Route path="products/edit/:id" element={<ProductForm />} />
+              <Route path="orders" element={<SellerOrders />} />
+              <Route path="chat" element={<SellerChat />} />
+              <Route path="chat/:threadId" element={<SellerChat />} />
+              <Route path="settings" element={<SellerSettings />} />
+            </Route>
+          </Routes>
+          <ToastContainer position="top-right" autoClose={3000} />
+        </div>
+      </Router>
+    </QueryClientProvider>
   );
 }
 
