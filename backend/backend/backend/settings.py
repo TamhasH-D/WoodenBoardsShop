@@ -1,6 +1,7 @@
 import pathlib
+from typing import List
 
-from pydantic import SecretStr
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings as PydanticBaseSettings
 from pydantic_settings import SettingsConfigDict
 from yarl import URL
@@ -68,6 +69,27 @@ class RedisSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_prefix=f"{PREFIX}REDIS_")
 
 
+class CORSSettings(BaseSettings):
+    """Configuration for CORS settings."""
+
+    allow_origins: List[str] = ["*"]
+    allow_credentials: bool = True
+    allow_methods: List[str] = ["*"]
+    allow_headers: List[str] = ["*"]
+
+    @field_validator("allow_origins", mode="before")
+    def validate_allow_origins(cls, v):
+        """Convert comma-separated string to list if needed."""
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(",")]
+        return v
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix=f"{PREFIX}CORS_",
+    )
+
+
 class Settings(BaseSettings):
     """Main settings."""
 
@@ -80,6 +102,7 @@ class Settings(BaseSettings):
 
     db: DBSettings = DBSettings()
     redis: RedisSettings = RedisSettings()
+    cors: CORSSettings = CORSSettings()
 
     model_config = SettingsConfigDict(
         env_file=DOTENV,
