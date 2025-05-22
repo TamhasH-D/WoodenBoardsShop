@@ -1,61 +1,30 @@
-services:
-  # Backend services - Always runs regardless of profile
-  backend:
-    extends:
-      file: ./backend/backend/docker-compose.yaml
-    ports:
-      - "${BACKEND_PORT:-8000}:${BACKEND_PORT:-8000}"
-    env_file:
-      - .env
-    environment:
-      - BACKEND_CORS_ALLOW_ORIGINS=${BACKEND_CORS_ALLOW_ORIGINS:-"http://localhost:3000,http://localhost:8080,http://localhost:8081,http://localhost:8082,http://admin-frontend:80,http://seller-frontend:80,http://buyer-frontend:80"}
-      - BACKEND_CORS_ALLOW_CREDENTIALS=${BACKEND_CORS_ALLOW_CREDENTIALS:-True}
-      - BACKEND_CORS_ALLOW_METHODS=${BACKEND_CORS_ALLOW_METHODS:-"*"}
-      - BACKEND_CORS_ALLOW_HEADERS=${BACKEND_CORS_ALLOW_HEADERS:-"*"}
-    networks:
-      - diplom-network
+name: diplom
 
-  # Frontend services with profile selection
-  admin-frontend:
-    extends:
-      file: ${COMPOSE_FILE_PATH:-./frontend/admin/docker-compose}${COMPOSE_FILE_EXT:-.yaml}
-    ports:
-      - "${FRONTEND_ADMIN_PORT:-${FRONTEND_PORT:-80}}:${CONTAINER_PORT:-80}"
-    env_file:
-      - .env
-    environment:
-      - NODE_ENV=${NODE_ENV:-production}
-    networks:
-      - diplom-network
+include:
+  # Backend services
+  - path: ./backend/backend/docker-compose.yaml
+    env_file: .env
 
-  seller-frontend:
-    extends:
-      file: ${COMPOSE_FILE_PATH:-./frontend/seller/docker-compose}${COMPOSE_FILE_EXT:-.yaml}
-    ports:
-      - "${FRONTEND_SELLER_PORT:-${FRONTEND_PORT:-80}}:${CONTAINER_PORT:-80}"
-    env_file:
-      - .env
-    environment:
-      - NODE_ENV=${NODE_ENV:-production}
-    networks:
-      - diplom-network
+  # Frontend services - Admin
+  - path: ${COMPOSE_FILE_PATH:-./frontend/admin/docker-compose}${COMPOSE_FILE_EXT:-.yaml}
+    env_file: .env
+    project_directory: ./frontend/admin
 
-  buyer-frontend:
-    extends:
-      file: ${COMPOSE_FILE_PATH:-./frontend/buyer/docker-compose}${COMPOSE_FILE_EXT:-.yaml}
-    ports:
-      - "${FRONTEND_BUYER_PORT:-${FRONTEND_PORT:-80}}:${CONTAINER_PORT:-80}"
-    env_file:
-      - .env
-    environment:
-      - NODE_ENV=${NODE_ENV:-production}
-    networks:
-      - diplom-network
+  # Frontend services - Seller
+  - path: ${COMPOSE_FILE_PATH:-./frontend/seller/docker-compose}${COMPOSE_FILE_EXT:-.yaml}
+    env_file: .env
+    project_directory: ./frontend/seller
 
-volumes:
-  backend-pg-data:
-  backend-redis-data:
+  # Frontend services - Buyer
+  - path: ${COMPOSE_FILE_PATH:-./frontend/buyer/docker-compose}${COMPOSE_FILE_EXT:-.yaml}
+    env_file: .env
+    project_directory: ./frontend/buyer
 
+# Define networks for the entire project
 networks:
-  diplom-network:
+  frontend-network:
     driver: bridge
+  backend-network:
+    driver: bridge
+
+

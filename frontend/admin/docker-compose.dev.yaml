@@ -16,7 +16,7 @@ services:
       - "${FRONTEND_ADMIN_PORT:-3000}:3000"
     restart: unless-stopped
     networks:
-      - diplom-network
+      - frontend-network
     logging:
       driver: "json-file"
       options:
@@ -24,5 +24,5 @@ services:
         max-file: "3"
 
 networks:
-  diplom-network:
+  frontend-network:
     external: true

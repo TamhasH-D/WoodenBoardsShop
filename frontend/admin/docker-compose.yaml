@@ -18,7 +18,7 @@ services:
       retries: 3
       start_period: 10s
     networks:
-      - diplom-network
+      - frontend-network
     logging:
       driver: "json-file"
       options:
@@ -26,5 +26,5 @@ services:
         max-file: "3"
 
 networks:
-  diplom-network:
+  frontend-network:
     external: true
