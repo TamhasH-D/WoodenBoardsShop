@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   buyer-frontend:
@@ -35,4 +34,4 @@ services:
 
 networks:
   frontend-network:
-    external: true
+    driver: bridge

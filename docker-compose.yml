@@ -20,11 +20,3 @@ include:
     env_file: .env
     project_directory: ./frontend/buyer
 
-# Define networks for the entire project
-networks:
-  frontend-network:
-    driver: bridge
-  backend-network:
-    driver: bridge
-
-
