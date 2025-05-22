@@ -1,4 +1,5 @@
 import pathlib
+from typing import List
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings as PydanticBaseSettings
@@ -68,6 +69,41 @@ class RedisSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_prefix=f"{PREFIX}REDIS_")
 
 
+class CORSSettings(BaseSettings):
+    """Configuration for CORS settings."""
+
+    allow_origins: str = "*"
+    allow_credentials: bool = True
+    allow_methods: str = "*"
+    allow_headers: str = "*"
+
+    @property
+    def origins_list(self) -> List[str]:
+        """Convert comma-separated string to list."""
+        if self.allow_origins == "*":
+            return ["*"]
+        return [origin.strip() for origin in self.allow_origins.split(",")]
+
+    @property
+    def methods_list(self) -> List[str]:
+        """Convert comma-separated string to list."""
+        if self.allow_methods == "*":
+            return ["*"]
+        return [method.strip() for method in self.allow_methods.split(",")]
+
+    @property
+    def headers_list(self) -> List[str]:
+        """Convert comma-separated string to list."""
+        if self.allow_headers == "*":
+            return ["*"]
+        return [header.strip() for header in self.allow_headers.split(",")]
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix=f"{PREFIX}CORS_",
+    )
+
+
 class Settings(BaseSettings):
     """Main settings."""
 
@@ -80,6 +116,7 @@ class Settings(BaseSettings):
 
     db: DBSettings = DBSettings()
     redis: RedisSettings = RedisSettings()
+    cors: CORSSettings = CORSSettings()
 
     model_config = SettingsConfigDict(
         env_file=DOTENV,

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 version: '3.8'
 
 services:
@@ -15,3 +16,42 @@ services:
       # - REACT_APP_KEYCLOAK_URL=http://localhost:8080/auth
       # - REACT_APP_KEYCLOAK_REALM=myrealm
       # - REACT_APP_KEYCLOAK_CLIENT_ID=myclient
+=======
+
+services:
+  admin-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=${NODE_ENV:-production}
+    container_name: admin-frontend
+    env_file:
+      - .env
+    environment:
+      - REACT_APP_API_URL=${FRONTEND_ADMIN_API_URL:-http://localhost:8000}
+      - REACT_APP_API_TIMEOUT=${FRONTEND_ADMIN_API_TIMEOUT:-30000}
+      - REACT_APP_ENABLE_ANALYTICS=${FRONTEND_ADMIN_ENABLE_ANALYTICS:-false}
+      - REACT_APP_ENABLE_DEBUG_TOOLS=${FRONTEND_ADMIN_ENABLE_DEBUG_TOOLS:-false}
+      - PORT=${FRONTEND_ADMIN_PORT:-80}
+    ports:
+      - "${FRONTEND_ADMIN_PORT:-80}:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - frontend-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  frontend-network:
+    driver: bridge
+>>>>>>> ce59488e7852f9d2693d44ef147f24d4b922250d

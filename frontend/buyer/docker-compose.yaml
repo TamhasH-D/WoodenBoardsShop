@@ -1,0 +1,37 @@
+
+services:
+  buyer-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=${NODE_ENV:-production}
+    container_name: buyer-frontend
+    env_file:
+      - .env
+    environment:
+      - REACT_APP_API_URL=${FRONTEND_BUYER_API_URL:-http://localhost:8000}
+      - REACT_APP_API_TIMEOUT=${FRONTEND_BUYER_API_TIMEOUT:-30000}
+      - REACT_APP_ENABLE_ANALYTICS=${FRONTEND_BUYER_ENABLE_ANALYTICS:-false}
+      - REACT_APP_ENABLE_DEBUG_TOOLS=${FRONTEND_BUYER_ENABLE_DEBUG_TOOLS:-false}
+      - PORT=${FRONTEND_BUYER_PORT:-80}
+    ports:
+      - "${FRONTEND_BUYER_PORT:-80}:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - frontend-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  frontend-network:
+    driver: bridge

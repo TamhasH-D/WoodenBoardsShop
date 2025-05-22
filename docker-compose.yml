@@ -1,0 +1,22 @@
+name: diplom
+
+include:
+  # Backend services
+  - path: ./backend/backend/docker-compose.yaml
+    env_file: .env
+
+  # Frontend services - Admin
+  - path: ${COMPOSE_FILE_PATH:-./frontend/admin/docker-compose}${COMPOSE_FILE_EXT:-.yaml}
+    env_file: .env
+    project_directory: ./frontend/admin
+
+  # Frontend services - Seller
+  - path: ${COMPOSE_FILE_PATH:-./frontend/seller/docker-compose}${COMPOSE_FILE_EXT:-.yaml}
+    env_file: .env
+    project_directory: ./frontend/seller
+
+  # Frontend services - Buyer
+  - path: ${COMPOSE_FILE_PATH:-./frontend/buyer/docker-compose}${COMPOSE_FILE_EXT:-.yaml}
+    env_file: .env
+    project_directory: ./frontend/buyer
+

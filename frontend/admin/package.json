@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "name": "admin-app",
   "version": "0.1.0",
   "private": true,
@@ -38,3 +39,18 @@
     "tailwindcss": "^3.4.1"
   }
 }
+=======
+  "name": "admin-frontend",
+  "version": "1.0.0",
+  "description": "Admin frontend for the diplom project",
+  "main": "main.js",
+  "scripts": {
+    "start": "live-server --port=3000 --no-browser"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "live-server": "^1.2.1"
+  }
+}
+>>>>>>> ce59488e7852f9d2693d44ef147f24d4b922250d
