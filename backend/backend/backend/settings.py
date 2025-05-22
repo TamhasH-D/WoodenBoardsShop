@@ -1,7 +1,7 @@
 import pathlib
 from typing import List
 
-from pydantic import SecretStr, field_validator
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings as PydanticBaseSettings
 from pydantic_settings import SettingsConfigDict
 from yarl import URL
@@ -72,17 +72,31 @@ class RedisSettings(BaseSettings):
 class CORSSettings(BaseSettings):
     """Configuration for CORS settings."""
 
-    allow_origins: List[str] = ["*"]
+    allow_origins: str = "*"
     allow_credentials: bool = True
-    allow_methods: List[str] = ["*"]
-    allow_headers: List[str] = ["*"]
+    allow_methods: str = "*"
+    allow_headers: str = "*"
 
-    @field_validator("allow_origins", mode="before")
-    def validate_allow_origins(cls, v):
-        """Convert comma-separated string to list if needed."""
-        if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",")]
-        return v
+    @property
+    def origins_list(self) -> List[str]:
+        """Convert comma-separated string to list."""
+        if self.allow_origins == "*":
+            return ["*"]
+        return [origin.strip() for origin in self.allow_origins.split(",")]
+
+    @property
+    def methods_list(self) -> List[str]:
+        """Convert comma-separated string to list."""
+        if self.allow_methods == "*":
+            return ["*"]
+        return [method.strip() for method in self.allow_methods.split(",")]
+
+    @property
+    def headers_list(self) -> List[str]:
+        """Convert comma-separated string to list."""
+        if self.allow_headers == "*":
+            return ["*"]
+        return [header.strip() for header in self.allow_headers.split(",")]
 
     model_config = SettingsConfigDict(
         env_file=".env",

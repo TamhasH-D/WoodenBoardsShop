@@ -7,10 +7,10 @@ def _add_cors_middleware(app: FastAPI) -> None:
     """Add CORS Middleware."""
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors.allow_origins,
+        allow_origins=settings.cors.origins_list,
         allow_credentials=settings.cors.allow_credentials,
-        allow_methods=settings.cors.allow_methods,
-        allow_headers=settings.cors.allow_headers,
+        allow_methods=settings.cors.methods_list,
+        allow_headers=settings.cors.headers_list,
     )
 
 def add_middleware(app: FastAPI) -> None:
