@@ -1,18 +1,13 @@
 {
-<<<<<<< HEAD
   "name": "buyer-app",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@tsparticles/react": "^3.0.0",
-    "@tsparticles/slim": "^3.8.1",
     "framer-motion": "^12.12.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.30.1",
+    "react-router-dom": "^6.22.3",
     "react-scripts": "5.0.1",
-    "react-tsparticles": "^2.12.2",
-    "tsparticles": "^3.8.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -40,21 +35,7 @@
     ]
   },
   "devDependencies": {
+    "@stagewise/toolbar-react": "^0.1.2",
     "tailwindcss": "^3.4.1"
   }
 }
-=======
-  "name": "buyer-frontend",
-  "version": "1.0.0",
-  "description": "Buyer frontend for the diplom project",
-  "main": "main.js",
-  "scripts": {
-    "start": "live-server --port=3000 --no-browser"
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "live-server": "^1.2.1"
-  }
-}
->>>>>>> ce59488e7852f9d2693d44ef147f24d4b922250d

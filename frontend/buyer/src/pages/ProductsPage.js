@@ -1,103 +1,259 @@
-import React, { useEffect, useState } from 'react';import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import Layout from '../components/layout/Layout';
+import ProductGrid from '../components/product/ProductGrid';
+import FilterSidebar from '../components/filter/FilterSidebar';
+import { useApi } from '../context/ApiContext';
 
 const ProductsPage = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { apiService } = useApi();
+  const [searchParams] = useSearchParams();
 
+  const [products, setProducts] = useState([]);
+  const [woodTypes, setWoodTypes] = useState([]);
+  const [loading, setLoading] = useState({
+    products: true,
+    woodTypes: true
+  });
+  const [error, setError] = useState(null);
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 100000 });
+  const [filters, setFilters] = useState({
+    woodTypes: [],
+    priceRange: [0, 100000],
+    deliveryOnly: false
+  });
+  const [sortOption, setSortOption] = useState('default');
+  const [pagination, setPagination] = useState({
+    offset: 0,
+    limit: 20,
+    total: 0
+  });
+
+  // Load wood types
   useEffect(() => {
-    const fetchProducts = async () => {
+    const loadWoodTypes = async () => {
       try {
-        // Replace with your actual API endpoint
-        const response = await fetch('/api/products');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        setLoading(prev => ({ ...prev, woodTypes: true }));
+        const response = await apiService.getWoodTypes();
+
+        // Transform the wood types data
+        const transformedWoodTypes = response.data.map(type => ({
+          id: type.id,
+          name: type.neme // API has a typo in the field name
+        }));
+
+        setWoodTypes(transformedWoodTypes);
+
+        // Check if there's a wood type filter in the URL
+        const woodTypeParam = searchParams.get('woodType');
+        if (woodTypeParam) {
+          setFilters(prev => ({
+            ...prev,
+            woodTypes: [woodTypeParam]
+          }));
         }
-        const data = await response.json();
-        setProducts(data);
       } catch (error) {
-        setError(error);
-        console.error("Error fetching products:", error);
+        console.error('Error loading wood types:', error);
+        setError('Не удалось загрузить типы древесины. Пожалуйста, попробуйте позже.');
       } finally {
-        setLoading(false);
+        setLoading(prev => ({ ...prev, woodTypes: false }));
       }
     };
 
-    fetchProducts();
-  }, []);
+    loadWoodTypes();
+  }, [apiService, searchParams]);
 
-  if (loading) {
-    return <div className="text-white">Загрузка товаров...</div>;
-  }
+  // Load products
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(prev => ({ ...prev, products: true }));
 
+        // Get products from API
+        const response = await apiService.getProducts(pagination.offset, pagination.limit);
+
+        // Update pagination info
+        setPagination(prev => ({
+          ...prev,
+          total: response.pagination?.total || 0
+        }));
+
+        // Transform products and add wood type names
+        const enhancedProducts = await Promise.all(response.data.map(async (product) => {
+          try {
+            // Get wood type for each product
+            const woodTypeResponse = await apiService.getWoodType(product.wood_type_id);
+            const woodType = woodTypeResponse.data;
+
+            // Calculate min and max prices for the filter
+            if (product.price < priceRange.min) {
+              setPriceRange(prev => ({ ...prev, min: product.price }));
+            }
+            if (product.price > priceRange.max) {
+              setPriceRange(prev => ({ ...prev, max: product.price }));
+            }
+
+            return {
+              id: product.id,
+              title: product.title,
+              description: product.descrioption, // API has a typo in the field name
+              price: product.price,
+              volume: product.volume,
+              woodType: woodType.neme || 'Неизвестный тип', // API has a typo in the field name
+              woodTypeId: product.wood_type_id,
+              imageSrc: `https://via.placeholder.com/300x200?text=${encodeURIComponent(product.title)}`,
+              deliveryPossible: product.delivery_possible,
+              pickupLocation: product.pickup_location,
+              createdAt: product.created_at,
+              updatedAt: product.updated_at,
+              sellerId: product.seller_id
+            };
+          } catch (error) {
+            console.error(`Error fetching wood type for product ${product.id}:`, error);
+            return {
+              id: product.id,
+              title: product.title,
+              description: product.descrioption, // API has a typo in the field name
+              price: product.price,
+              volume: product.volume,
+              woodType: 'Неизвестный тип',
+              woodTypeId: product.wood_type_id,
+              imageSrc: `https://via.placeholder.com/300x200?text=${encodeURIComponent(product.title)}`,
+              deliveryPossible: product.delivery_possible,
+              pickupLocation: product.pickup_location,
+              createdAt: product.created_at,
+              updatedAt: product.updated_at,
+              sellerId: product.seller_id
+            };
+          }
+        }));
+
+        setProducts(enhancedProducts);
+      } catch (error) {
+        console.error('Error loading products:', error);
+        setError('Не удалось загрузить товары. Пожалуйста, попробуйте позже.');
+      } finally {
+        setLoading(prev => ({ ...prev, products: false }));
+      }
+    };
+
+    loadProducts();
+  }, [apiService, pagination.offset, pagination.limit]);
+
+  // Apply filters and sorting
+  const filteredProducts = products.filter(product => {
+    // Filter by wood type
+    if (filters.woodTypes.length > 0) {
+      // Direct comparison with woodTypeId since we now have it in the product
+      if (!filters.woodTypes.includes(product.woodTypeId)) {
+        return false;
+      }
+    }
+
+    // Filter by price
+    if (product.price < filters.priceRange[0] || product.price > filters.priceRange[1]) {
+      return false;
+    }
+
+    // Filter by delivery
+    if (filters.deliveryOnly && !product.deliveryPossible) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // Sort products
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    switch (sortOption) {
+      case 'price-asc':
+        return a.price - b.price;
+      case 'price-desc':
+        return b.price - a.price;
+      case 'name-asc':
+        return a.title.localeCompare(b.title);
+      case 'name-desc':
+        return b.title.localeCompare(a.title);
+      default:
+        return 0;
+    }
+  });
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+  };
+
+  const handleSortChange = (e) => {
+    setSortOption(e.target.value);
+  };
+
+  // Show error message if there's an error
   if (error) {
-    return <div className="text-red-500">Ошибка при загрузке товаров: {error.message}</div>;
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-16 text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Ошибка загрузки данных</h2>
+          <p className="mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-wood-accent hover:bg-wood-accent-dark text-white font-bold py-2 px-4 rounded"
+          >
+            Попробовать снова
+          </button>
+        </div>
+      </Layout>
+    );
   }
 
   return (
-    <div className="px-40 flex flex-1 justify-center py-5">
-      <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
-        <div className="flex flex-wrap justify-between gap-3 p-4">
-          <div className="flex min-w-72 flex-col gap-3">
-            <p className="text-white tracking-light text-[32px] font-bold leading-tight">Наши товары</p>
-            <p className="text-[#90adcb] text-sm font-normal leading-normal">Изучите наш широкий ассортимент высококачественных поддонов и досок, идеально подходящих для любого проекта.</p>
+    <Layout>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-wood-text mb-8">Каталог товаров</h1>
+
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Sidebar */}
+          <div className="w-full md:w-64 flex-shrink-0">
+            <FilterSidebar
+              woodTypes={woodTypes}
+              priceRange={priceRange}
+              onFilterChange={handleFilterChange}
+            />
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-grow">
+            {/* Sort Controls */}
+            <div className="flex justify-between items-center mb-6">
+              <p className="text-wood-text">
+                Найдено товаров: <span className="font-semibold">{sortedProducts.length}</span>
+              </p>
+              <div className="flex items-center">
+                <label htmlFor="sort" className="mr-2 text-wood-text">Сортировать:</label>
+                <select
+                  id="sort"
+                  value={sortOption}
+                  onChange={handleSortChange}
+                  className="rounded-lg border-gray-300 focus:border-wood-accent focus:ring focus:ring-wood-accent focus:ring-opacity-50"
+                >
+                  <option value="default">По умолчанию</option>
+                  <option value="price-asc">Цена (по возрастанию)</option>
+                  <option value="price-desc">Цена (по убыванию)</option>
+                  <option value="name-asc">Название (А-Я)</option>
+                  <option value="name-desc">Название (Я-А)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Products Grid */}
+            <ProductGrid
+              products={sortedProducts}
+              loading={loading.products || loading.woodTypes}
+              error={error}
+            />
           </div>
         </div>
-        {/* Filter buttons - keep for now, but might need dynamic logic later */}
-        <div className="flex gap-3 p-3 flex-wrap pr-4">
-          <button className="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-xl bg-[#223649] pl-4 pr-4">
-            <p className="text-white text-sm font-medium leading-normal">Все</p>
-          </button>
-          <button className="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-xl bg-[#223649] pl-4 pr-4">
-            <p className="text-white text-sm font-medium leading-normal">Поддоны</p>
-          </button>
-          <button className="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-xl bg-[#223649] pl-4 pr-4">
-            <p className="text-white text-sm font-medium leading-normal">Доски</p>
-          </button>
-          <button className="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-xl bg-[#223649] pl-4 pr-4">
-            <p className="text-white text-sm font-medium leading-normal">Индивидуальные заказы</p>
-          </button>
-        </div>
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 p-4">
-          {products.map(product => (
-            <Link key={product.id} to={`/product/${product.id}`} className="flex flex-col gap-3 pb-3">
-              <div
-                className="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-xl"
-                style={{
-                  backgroundImage:
-                    `url("${product.imageUrl || 'https://via.placeholder.com/150'}")`,
-                }}
-              ></div>
-              <div>
-                <p className="text-white text-base font-medium leading-normal">{product.name}</p>
-                <p className="text-[#90adcb] text-sm font-normal leading-normal">{product.description}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-        {/* Pagination - keep for now, but might need dynamic logic later */}
-        <div className="flex items-center justify-center p-4">
-          <button className="flex size-10 items-center justify-center">
-            <div className="text-white" data-icon="CaretLeft" data-size="18px" data-weight="regular">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18px" height="18px" fill="currentColor" viewBox="0 0 256 256">
-                <path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"></path>
-              </svg>
-            </div>
-          </button>
-          <button className="text-sm font-bold leading-normal tracking-[0.015em] flex size-10 items-center justify-center text-white rounded-full bg-[#223649]">1</button>
-          <button className="text-sm font-normal leading-normal flex size-10 items-center justify-center text-white rounded-full">2</button>
-          <button className="text-sm font-normal leading-normal flex size-10 items-center justify-center text-white rounded-full">3</button>
-          <button className="text-sm font-normal leading-normal flex size-10 items-center justify-center text-white rounded-full">Next</button>
-          <button className="flex size-10 items-center justify-center">
-            <div className="text-white" data-icon="CaretRight" data-size="18px" data-weight="regular">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18px" height="18px" fill="currentColor" viewBox="0 0 256 256">
-                <path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"></path>
-              </svg>
-            </div>
-          </button>
-        </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 
