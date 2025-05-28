@@ -22,7 +22,7 @@ class BaseSettings(PydanticBaseSettings):
 class DBSettings(BaseSettings):
     """Configuration for PostgreSQL connection."""
 
-    host: str = "localhost"
+    host: str = "0.0.0.0"
     port: int = 5432
     user: str = "postgres"
     password: SecretStr = SecretStr("postgres")
@@ -108,7 +108,7 @@ class Settings(BaseSettings):
     """Main settings."""
 
     env: str = "local"
-    host: str = "localhost"
+    host: str = "0.0.0.0"
     port: int = 8000
     workers: int = 1
     log_level: str = "info"

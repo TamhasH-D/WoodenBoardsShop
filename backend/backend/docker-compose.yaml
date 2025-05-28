@@ -14,7 +14,7 @@ services:
       redis:
         condition: service_healthy
     environment:
-      - BACKEND_CORS_ALLOW_ORIGINS=${BACKEND_CORS_ALLOW_ORIGINS:-"http://localhost:3000,http://localhost:8080,http://localhost:8081,http://localhost:8082,http://admin-frontend:80,http://seller-frontend:80,http://buyer-frontend:80"}
+      - BACKEND_CORS_ALLOW_ORIGINS=${BACKEND_CORS_ALLOW_ORIGINS:-"*"}
       - BACKEND_CORS_ALLOW_CREDENTIALS=${BACKEND_CORS_ALLOW_CREDENTIALS:-True}
       - BACKEND_CORS_ALLOW_METHODS=${BACKEND_CORS_ALLOW_METHODS:-"*"}
       - BACKEND_CORS_ALLOW_HEADERS=${BACKEND_CORS_ALLOW_HEADERS:-"*"}
