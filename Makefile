@@ -38,6 +38,9 @@ help: # Show help
 	@echo "  make build-dev    - Build all services in development mode"
 	@echo "  make build-prod   - Build all services in production mode"
 	@echo "  make build        - Build all services (default - production mode)"
+	@echo "  make rebuild-dev  - Rebuild and restart all services in development mode"
+	@echo "  make rebuild-prod - Rebuild and restart all services in production mode"
+	@echo "  make rebuild      - Rebuild and restart all services (default - production mode)"
 	@echo "  make restart      - Restart all services"
 	@echo "  make logs         - View logs from all containers"
 	@echo "  make ps           - List all running containers"
@@ -67,6 +70,15 @@ build-dev: # Build all microservices in development mode
 .PHONY: build-prod
 build-prod: # Build all microservices in production mode
 	$(USE_COMPOSE_PROD) build --no-cache
+
+.PHONY: rebuild
+rebuild: rebuild-prod # Rebuild and restart all microservices (default - production mode)
+
+.PHONY: rebuild-dev
+rebuild-dev: down build-dev up-dev # Rebuild and restart all microservices in development mode
+
+.PHONY: rebuild-prod
+rebuild-prod: down build-prod up-prod # Rebuild and restart all microservices in production mode
 
 .PHONY: restart
 restart: # Restart all microservices

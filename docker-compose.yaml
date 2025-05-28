@@ -10,10 +10,14 @@ services:
       service: api
     ports:
       - "${BACKEND_PORT:-8000}:${BACKEND_PORT:-8000}"
-    env_file:
-      - .env
     networks:
       - backend-network
+    environment:
+      - BACKEND_PORT=${BACKEND_PORT}
+      - BACKEND_CORS_ALLOW_ORIGINS=${BACKEND_CORS_ALLOW_ORIGINS}
+      - BACKEND_CORS_ALLOW_CREDENTIALS=${BACKEND_CORS_ALLOW_CREDENTIALS}
+      - BACKEND_CORS_ALLOW_METHODS=${BACKEND_CORS_ALLOW_METHODS}
+      - BACKEND_CORS_ALLOW_HEADERS=${BACKEND_CORS_ALLOW_HEADERS}
 
   admin-app:
     build:
