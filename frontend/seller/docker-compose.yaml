@@ -7,8 +7,6 @@ services:
       args:
         - NODE_ENV=${NODE_ENV:-production}
     container_name: seller-frontend
-    env_file:
-      - .env
     environment:
       - REACT_APP_API_URL=${FRONTEND_SELLER_API_URL:-http://localhost:8000}
       - REACT_APP_API_TIMEOUT=${FRONTEND_SELLER_API_TIMEOUT:-30000}
