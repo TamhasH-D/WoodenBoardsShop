@@ -1,3 +1,6 @@
+# Prosto Board Detect Service .dockerignore
+
+# Python
 **/__pycache__
 **/*.pyc
 **/*.pyo
@@ -5,10 +8,24 @@
 **/.Python
 **/*.py[cod]
 **/*$py.class
-**/.env
-**/.venv
-**/env/
-**/venv/
+**/*.so
+**/build/
+**/develop-eggs/
+**/dist/
+**/downloads/
+**/eggs/
+**/.eggs/
+**/lib/
+**/lib64/
+**/parts/
+**/sdist/
+**/var/
+**/wheels/
+**/*.egg-info/
+**/*.egg
+**/MANIFEST
+
+# Testing and Coverage
 **/.tox/
 **/.coverage
 **/.coverage.*
@@ -18,23 +35,162 @@
 **/*.cover
 **/*.py,cover
 **/.pytest_cache/
+**/.hypothesis/
+**/htmlcov/
+**/tests/
+**/test_*.py
+**/*_test.py
+**/old_*.py
+
+# Linting and Type Checking
 **/.ruff_cache/
 **/.mypy_cache/
+**/.pyre/
+**/.pytype/
+
+# Environments
+**/.env
+**/.env.*
+**/.venv
+**/env/
+**/venv/
+**/ENV/
+**/env.bak/
+**/venv.bak/
+.python-version
+
+# IDE and editors
 **/.idea/
 **/.vscode/
-**/htmlcov/
-**/build/
-**/dist/
-**/*.egg-info/
-**/*.egg
+**/*.swp
+**/*.swo
+**/*~
+
+# OS generated files
+**/.DS_Store
+**/.DS_Store?
+**/._*
+**/.Spotlight-V100
+**/.Trashes
+**/ehthumbs.db
+**/Thumbs.db
+
+# Logs
+**/logs/
+**/*.log
+
+# Database
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+**/data/
+**/database/
+
+# Documentation
 **/docs/
-**/tests/
 README.md
+**/*.md
+
+# Git
 .git
 .gitignore
-.python-version
-**/test_*.py
-**/old_*.py
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+docker-compose*.yaml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Temporary files
+**/tmp/
+**/temp/
+**/*.tmp
+**/*.bak
+**/*.backup
+**/*.old
+
+# Development tools
+.pre-commit-config.yaml
+.flake8
+.bandit
+pyproject.toml
+setup.cfg
+tox.ini
+
+# UV specific
+uv.lock
+
+# Machine Learning and Computer Vision specific
+**/checkpoints/
+**/tensorboard/
+**/runs/
+**/experiments/
+**/wandb/
+**/mlruns/
+**/*.pth
+**/*.pt
+
+# Data files (large datasets)
+**/datasets/
+**/*.csv
+**/*.xml
+**/*.parquet
+
+# Video files
+**/*.mp4
+**/*.avi
+**/*.mov
+**/*.mkv
+**/*.flv
+**/*.wmv
+
+# Audio files
+**/*.mp3
+**/*.wav
+**/*.flac
+**/*.aac
+
+# Jupyter notebooks
+**/*.ipynb
+**/.ipynb_checkpoints/
+
+# OpenCV cache
+**/.opencv/
+
+# CUDA cache
+**/.nv/
+
+# Configuration files (keep examples)
+**/config.ini
+**/config.yaml
+!**/config.example.*
+
+# SSL certificates
+**/*.pem
+**/*.key
+**/*.crt
+**/*.cert
+
+# Test images and results (uncomment if not needed)
+# **/test_images/
+# **/results/
+# **/output/
+# **/predictions/
+
+# Annotation files (uncomment if not needed)
+# **/annotations/
+
+# Large binary files
+**/*.bin
+**/*.dat
+**/*.idx
 
 # Не игнорируем модели YOLO, так как они нужны для работы
 !models/
+!**/*.pt
+!**/*.onnx
+!**/*.weights

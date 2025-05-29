@@ -1,4 +1,4 @@
-# Prosto Board Frontend App .dockerignore
+# Prosto Board Frontend .dockerignore
 
 # Dependencies
 node_modules/
@@ -7,34 +7,29 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# Build output
-dist/
+# Production build (exclude if building inside container)
 build/
+dist/
 
-# Version control
-.git/
-.gitignore
-
-# Environment files
-.env
-.env.*
+# Development
 .env.local
-.env.development
 .env.development.local
-.env.test
 .env.test.local
-.env.production
 .env.production.local
-!.env.example
 
-# IDE files
-.idea/
+# Testing
+coverage/
+.nyc_output/
+.jest/
+
+# IDE and editors
 .vscode/
+.idea/
 *.swp
 *.swo
 *~
 
-# OS files
+# OS generated files
 .DS_Store
 .DS_Store?
 ._*
@@ -52,13 +47,6 @@ pids/
 *.pid
 *.seed
 *.pid.lock
-
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
-
-# nyc test coverage
-.nyc_output
 
 # Optional npm cache directory
 .npm
@@ -85,12 +73,17 @@ coverage/
 .cache
 .parcel-cache
 
-# Vite specific
-.vite/
+# Storybook build outputs
+.out
+.storybook-out
 
 # Temporary folders
 tmp/
 temp/
+
+# Git
+.git/
+.gitignore
 
 # Documentation
 README.md
@@ -107,14 +100,27 @@ docker-compose*.yaml
 .github/
 .gitlab-ci.yml
 
-# Source maps (optional)
+# Source maps (optional - comment out if needed for debugging)
 *.map
 
 # Hot reload
 .hot-update.*
 
+# Webpack
+.webpack/
+
+# ESLint
+.eslintrc*
+
+# Prettier
+.prettierrc*
+.prettierignore
+
 # TypeScript
 *.tsbuildinfo
+
+# Vite specific
+.vite/
 
 # Test files
 src/**/*.test.js
@@ -130,9 +136,7 @@ __tests__/
 # Mock files
 __mocks__/
 
-# ESLint
-.eslintrc*
-
-# Prettier
-.prettierrc*
-.prettierignore
+# Environment files (keep .env.example if it exists)
+.env
+.env.*
+!.env.example

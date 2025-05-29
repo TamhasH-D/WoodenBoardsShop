@@ -1,0 +1,110 @@
+# Keycloak .dockerignore
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+*.md
+docs/
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Docker files (if not needed in container)
+Dockerfile*
+docker-compose*.yml
+docker-compose*.yaml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Environment files (keep examples)
+.env
+.env.*
+!.env.example
+
+# Keycloak specific
+data/
+standalone/log/
+standalone/tmp/
+standalone/data/
+domain/log/
+domain/tmp/
+domain/data/
+
+# SSL certificates (if managed externally)
+*.pem
+*.key
+*.crt
+*.cert
+*.jks
+*.p12
+
+# Configuration backups
+*.json.bak
+*.xml.bak
+
+# Cache
+.cache/
+
+# Build artifacts
+target/
+*.jar
+*.war
+
+# Maven
+.m2/
+pom.xml.versionsBackup
+
+# Gradle
+.gradle/
+gradle/
+
+# Node.js (if using custom themes)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+
+# Custom themes development
+themes/*/node_modules/
+themes/*/.cache/
+themes/*/dist/
+
+# Database files (if using embedded H2)
+*.h2.db
+*.mv.db
+*.trace.db
+
+# Makefile
+Makefile
