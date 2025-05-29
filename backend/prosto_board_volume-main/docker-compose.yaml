@@ -1,0 +1,73 @@
+services:
+  detect:
+    build:
+      context: ./detect
+      dockerfile: Dockerfile
+    ports:
+      - "${DETECT_PORT}:${DETECT_PORT}"
+    networks:
+      - app_network
+    volumes:
+      - ./detect/models:/app/models
+    environment:
+      - PORT=${DETECT_PORT}
+      - PATH_TO_YOLO_SEGMENT_MODEL=${PATH_TO_YOLO_SEGMENT_MODEL}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${DETECT_PORT}/health"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+      start_interval: 1s
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    networks:
+      - app_network
+    depends_on:
+      detect:
+        condition: service_healthy
+    environment:
+      - PORT=${BACKEND_PORT}
+      - YOLO_SERVICE_SEGMENT_URL=http://detect:${DETECT_PORT}/detect_seg/
+      - CONFIDENCE_THRESHOLD=${CONFIDENCE_THRESHOLD}
+      - CORS_URL=${CORS_URL}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${BACKEND_PORT}/health"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+      start_interval: 1s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "${FRONTEND_PORT}:80"
+    networks:
+      - app_network
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - VITE_API_URL=${VITE_API_URL}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+      start_interval: 1s
+    restart: unless-stopped
+
+networks:
+  app_network:
+    driver: bridge
