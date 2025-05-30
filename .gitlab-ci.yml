@@ -72,19 +72,9 @@ validate:project-structure:
       # Check required files and directories
       echo "📁 Checking project structure..."
 
-      required_files=(
-        "docker-compose.yaml"
-        "${CI_ENV_FILE}"
-        "${CI_COMPOSE_FILE}"
-        "Makefile"
-        "README.md"
-        "backend/backend/pyproject.toml"
-        "frontend/admin/package.json"
-        "frontend/buyer/package.json"
-        "frontend/seller/package.json"
-      )
+      required_files="docker-compose.yaml ${CI_ENV_FILE} ${CI_COMPOSE_FILE} Makefile README.md backend/backend/pyproject.toml frontend/admin/package.json frontend/buyer/package.json frontend/seller/package.json"
 
-      for file in "${required_files[@]}"; do
+      for file in $required_files; do
         if [ ! -f "$file" ]; then
           echo "❌ Required file not found: $file"
           exit 1
@@ -93,15 +83,9 @@ validate:project-structure:
         fi
       done
 
-      required_dirs=(
-        "backend"
-        "frontend"
-        "ci/config"
-        "ci/scripts"
-        "docs"
-      )
+      required_dirs="backend frontend ci/config ci/scripts docs"
 
-      for dir in "${required_dirs[@]}"; do
+      for dir in $required_dirs; do
         if [ ! -d "$dir" ]; then
           echo "❌ Required directory not found: $dir"
           exit 1
@@ -119,9 +103,9 @@ validate:project-structure:
     - |
       # Check that all expected services are defined
       services=$(docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} config --services)
-      expected_services=("api" "postgres" "redis" "admin-frontend" "seller-frontend" "buyer-frontend" "detect" "backend")
+      expected_services="api postgres redis admin-frontend seller-frontend buyer-frontend detect backend"
 
-      for service in "${expected_services[@]}"; do
+      for service in $expected_services; do
         if echo "$services" | grep -q "^${service}$"; then
           echo "✅ Service defined: $service"
         else
@@ -190,9 +174,9 @@ build:all-services:
     - echo "🔍 Verifying built images..."
     - |
       # Verify all expected images were built
-      services=("api" "admin-frontend" "seller-frontend" "buyer-frontend" "detect" "backend")
+      services="api admin-frontend seller-frontend buyer-frontend detect backend"
 
-      for service in "${services[@]}"; do
+      for service in $services; do
         if docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} images $service | grep -q $service; then
           echo "✅ Image built successfully: $service"
         else
@@ -522,9 +506,9 @@ test:frontend-quality:
       }
 
       # Test all frontend applications
-      frontend_apps=("admin" "buyer" "seller")
+      frontend_apps="admin buyer seller"
 
-      for app in "${frontend_apps[@]}"; do
+      for app in $frontend_apps; do
         test_frontend_app "$app" || echo "⚠️ $app frontend testing failed (non-blocking)"
         echo "---"
       done
@@ -577,9 +561,9 @@ security:docker-scan:
     - echo "🔍 Scanning base images for vulnerabilities..."
     - |
       # Scan base images used in the project
-      base_images=("python:3.12-slim" "node:18-alpine" "postgres:17.4-bookworm" "redis:7-alpine")
+      base_images="python:3.12-slim node:18-alpine postgres:17.4-bookworm redis:7-alpine"
 
-      for image in "${base_images[@]}"; do
+      for image in $base_images; do
         echo "🔍 Scanning $image..."
         trivy image --exit-code 0 --severity HIGH,CRITICAL --format table "$image" || echo "⚠️ Vulnerabilities found in $image"
       done
@@ -587,9 +571,9 @@ security:docker-scan:
     - echo "🔍 Scanning built application images..."
     - |
       # Scan our built images
-      services=("api" "admin-frontend" "seller-frontend" "buyer-frontend" "detect" "backend")
+      services="api admin-frontend seller-frontend buyer-frontend detect backend"
 
-      for service in "${services[@]}"; do
+      for service in $services; do
         image_name=$(docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} images -q $service 2>/dev/null || echo "")
         if [ -n "$image_name" ]; then
           echo "🔍 Scanning $service image: $image_name"
@@ -635,9 +619,9 @@ security:dependency-scan:
     - echo "🌐 Scanning Node.js dependencies..."
     - |
       # Scan frontend dependencies
-      frontend_apps=("admin" "buyer" "seller")
+      frontend_apps="admin buyer seller"
 
-      for app in "${frontend_apps[@]}"; do
+      for app in $frontend_apps; do
         if [ -f "frontend/$app/package.json" ]; then
           echo "🔍 Scanning $app frontend dependencies..."
           cd "frontend/$app"
