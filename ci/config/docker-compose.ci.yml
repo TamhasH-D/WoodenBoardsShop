@@ -41,9 +41,9 @@ services:
   admin-frontend:
     environment:
       - NODE_ENV=production
-      - REACT_APP_API_URL=http://api:8000/
+      - REACT_APP_API_URL=http://api:8000
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -53,9 +53,9 @@ services:
   seller-frontend:
     environment:
       - NODE_ENV=production
-      - REACT_APP_API_URL=http://api:8000/
+      - REACT_APP_API_URL=http://api:8000
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -65,9 +65,9 @@ services:
   buyer-frontend:
     environment:
       - NODE_ENV=production
-      - REACT_APP_API_URL=http://api:8000/
+      - REACT_APP_API_URL=http://api:8000
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -3,20 +3,21 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: buyer-frontend
     ports:
       - "${FRONTEND_BUYER_PORT:-8082}:80"
     environment:
       - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
     networks:
-      - default
+      - diplom_default
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
+    restart: unless-stopped
 
 networks:
-  default:
-    name: diplom_default
+  diplom_default:
     external: true
