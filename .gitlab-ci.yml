@@ -728,39 +728,37 @@ deploy:staging:
     - build:all-services
   variables:
     DEPLOY_ENV: "staging"
-  script:
-    - echo "🚀 Deploying to staging environment..."
-    - echo "🌿 Branch: ${CI_COMMIT_REF_NAME}"
-    - echo "📋 Commit: ${CI_COMMIT_SHORT_SHA}"
+  script: |
+    echo "🚀 Deploying to staging environment..."
+    echo "🌿 Branch: ${CI_COMMIT_REF_NAME}"
+    echo "📋 Commit: ${CI_COMMIT_SHORT_SHA}"
 
-    - echo "🔧 Preparing deployment configuration..."
-    - |
-      # Create deployment-specific environment file
-      cp ${CI_ENV_FILE} .env.staging
+    echo "🔧 Preparing deployment configuration..."
+    # Create deployment-specific environment file
+    cp ${CI_ENV_FILE} .env.staging
 
-      # Update URLs for staging environment
-      sed -i 's|http://api:8000/|https://staging-api.yourdomain.com/|g' .env.staging
+    # Update URLs for staging environment
+    sed -i 's|http://api:8000/|https://api.staging.yourdomain.com/|g' .env.staging
 
-    - echo "📦 Tagging images for staging deployment..."
-    - |
-      # Tag images with staging tags
-      services=("api" "admin-frontend" "seller-frontend" "buyer-frontend" "detect" "backend")
+    echo "📦 Tagging images for staging deployment..."
+    # Tag images with staging tags
+    services=("api" "admin-frontend" "seller-frontend" "buyer-frontend" "detect" "backend")
 
-      for service in "${services[@]}"; do
-        image_id=$(docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} images -q $service 2>/dev/null || echo "")
-        if [ -n "$image_id" ]; then
-          docker tag "$image_id" "${CI_REGISTRY_IMAGE}/${service}:staging-${CI_COMMIT_SHORT_SHA}"
-          echo "✅ Tagged $service for staging"
-        fi
-      done
+    for service in "${services[@]}"; do
+      image_id=$(docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} images -q $service 2>/dev/null || echo "")
+      if [ -n "$image_id" ]; then
+        docker tag "$image_id" "${CI_REGISTRY_IMAGE}/${service}:staging-${CI_COMMIT_SHORT_SHA}"
+        echo "✅ Tagged $service for staging"
+      fi
+    done
 
-    - echo "🚀 Deployment commands would go here:"
-    - echo "  - Push images to registry: docker push \${CI_REGISTRY_IMAGE}/\${service}:staging-\${CI_COMMIT_SHORT_SHA}"
-    - echo "  - SSH to staging server: ssh deploy@staging.yourdomain.com"
-    - echo "  - Pull and restart services: docker compose pull && docker compose up -d"
-    - echo "  - Run health checks: curl https://staging.yourdomain.com/health"
+    echo "🚀 Deployment commands would go here:"
+    echo "  - Push images to registry: docker push \${CI_REGISTRY_IMAGE}/\${service}:staging-\\${CI_COMMIT_SHORT_SHA}"
+    echo "  - SSH to staging server: ssh deploy@staging.yourdomain.com"
+    echo "  - Pull and restart services: docker compose pull && docker compose up -d"
+    echo "  - Run health checks: curl https://staging.yourdomain.com/health"
 
-    - echo "✅ Staging deployment preparation completed"
+    echo "✅ Staging deployment preparation completed"
 
   environment:
     name: staging
