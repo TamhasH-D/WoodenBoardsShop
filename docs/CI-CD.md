@@ -1,4 +1,8 @@
-# CI/CD Documentation for Diplom Project
+# Production-Ready GitLab CI/CD Pipeline Documentation
+
+## 🚀 Overview
+
+This document describes the comprehensive, production-ready GitLab CI/CD pipeline for the Diplom project. The pipeline is designed to handle all microservices with robust testing, security scanning, and deployment capabilities.
 
 ## 📁 Project Structure
 
@@ -15,43 +19,179 @@ diplom/
 │   ├── CI-CD.md                 # This file
 │   └── DEPLOYMENT.md            # Deployment guide
 ├── backend/                      # Backend services
+│   ├── backend/                 # Main FastAPI backend
+│   └── prosto_board_volume-main/ # Detection services
 ├── frontend/                     # Frontend applications
+│   ├── admin/                   # Admin React app
+│   ├── buyer/                   # Buyer React app
+│   └── seller/                  # Seller React app
 ├── .gitlab-ci.yml               # GitLab CI/CD pipeline
 ├── docker-compose.yaml          # Main compose file
 ├── .env                         # Environment variables
 └── Makefile                     # Build automation
 ```
 
-## 🔄 GitLab CI/CD Pipeline
+## 🔄 Pipeline Architecture
 
 ### Pipeline Stages
 
-1. **validate** - Validates project structure and Docker configuration
-2. **build** - Builds all Docker containers
-3. **test** - Runs integration tests, linting, and frontend tests
-4. **deploy** - Deploys to staging/production environments
+1. **🔍 validate** - Project structure validation and Docker configuration checks
+2. **🏗️ build** - Parallel building of all Docker containers
+3. **🧪 test** - Integration tests, unit tests, linting, and health checks
+4. **🔒 security** - Security scanning and vulnerability assessment
+5. **🚀 deploy** - Automated staging deployment and manual production deployment
 
-### Pipeline Jobs
+### Service Coverage
 
-#### Validate Stage
-- **validate**: Checks project structure and Docker Compose configuration
+The pipeline handles all project microservices:
 
-#### Build Stage
-- **build**: Builds all services using CI configuration
+- **Backend API** (FastAPI with PostgreSQL and Redis) - Port 8000
+- **Admin Frontend** (React) - Port 8080
+- **Seller Frontend** (React) - Port 8081
+- **Buyer Frontend** (React) - Port 8082
+- **Prosto Board Backend** - Port 8001
+- **Detection Service** (YOLO) - Port 8002
+- **PostgreSQL Database**
+- **Redis Cache**
 
-#### Test Stage
-- **test:integration**: Runs full integration tests with all services
-- **test:lint**: Runs backend linting and unit tests
-- **test:frontend**: Tests all frontend applications
+## 📋 Detailed Pipeline Jobs
 
-#### Deploy Stage
-- **deploy:staging**: Manual deployment to staging (dev branch)
-- **deploy:production**: Manual deployment to production (main branch)
+### 🔍 VALIDATION STAGE
 
-### Triggers
-- Push to `main` or `dev` branches
-- Merge requests to `main` or `dev` branches
-- Manual pipeline execution
+#### `validate:project-structure`
+- **Purpose**: Comprehensive project structure and configuration validation
+- **Features**:
+  - Validates presence of all required files and directories
+  - Checks Docker Compose configuration syntax
+  - Verifies all expected services are defined
+  - Ensures CI configuration files are present
+- **Triggers**: All branches, MRs, manual execution
+- **Duration**: ~2-3 minutes
+
+### 🏗️ BUILD STAGE
+
+#### `build:all-services`
+- **Purpose**: Parallel building of all Docker containers with retry mechanism
+- **Features**:
+  - Parallel building for optimal performance
+  - Retry mechanism for network issues (3 attempts)
+  - Build verification and image validation
+  - Resource monitoring and optimization
+  - BuildKit optimization for faster builds
+- **Artifacts**: Built Docker images, environment files
+- **Duration**: ~10-15 minutes
+- **Dependencies**: validate:project-structure
+
+### 🧪 TEST STAGE
+
+#### `test:integration`
+- **Purpose**: Comprehensive integration testing with all services
+- **Features**:
+  - Starts all services with health checks
+  - Waits for services with intelligent retry logic
+  - Tests all API endpoints and frontend accessibility
+  - Detailed error reporting and logging
+  - Service status monitoring
+- **Tests**:
+  - Backend API endpoints (docs, health, API v1)
+  - Frontend accessibility (admin, seller, buyer)
+  - Prosto Board services (backend, detection)
+  - Database and cache connectivity
+- **Duration**: ~15-20 minutes
+- **Dependencies**: build:all-services
+
+#### `test:backend-quality`
+- **Purpose**: Backend code quality and testing
+- **Features**:
+  - Ruff linting with GitLab integration
+  - MyPy type checking with JUnit reports
+  - Pytest unit testing with coverage
+  - Code quality reports and artifacts
+- **Reports**: JUnit XML, coverage reports, code quality
+- **Duration**: ~5-8 minutes
+
+#### `test:frontend-quality`
+- **Purpose**: Frontend code quality and build testing
+- **Features**:
+  - Tests all three frontend applications
+  - Dependency installation and caching
+  - Build verification and size analysis
+  - Linting and unit testing
+  - Security vulnerability scanning
+- **Reports**: JUnit XML, coverage reports, build artifacts
+- **Duration**: ~8-12 minutes
+
+#### `test:performance`
+- **Purpose**: Basic performance testing and benchmarking
+- **Features**:
+  - API response time testing
+  - Load testing with Apache Bench
+  - Frontend performance testing
+  - Performance metrics collection
+- **Duration**: ~10-15 minutes
+- **Triggers**: main and dev branches only
+
+### 🔒 SECURITY STAGE
+
+#### `security:docker-scan`
+- **Purpose**: Comprehensive Docker security scanning
+- **Features**:
+  - Trivy security scanner integration
+  - Base image vulnerability scanning
+  - Application image security analysis
+  - Security reports in GitLab format
+- **Reports**: Container scanning reports
+- **Duration**: ~8-12 minutes
+- **Allow Failure**: Yes (non-blocking)
+
+#### `security:dependency-scan`
+- **Purpose**: Dependency vulnerability scanning
+- **Features**:
+  - Python dependency scanning with Safety
+  - Node.js dependency scanning with npm audit
+  - Security reports for all applications
+  - Vulnerability tracking and reporting
+- **Reports**: Security audit reports
+- **Duration**: ~5-8 minutes
+- **Allow Failure**: Yes (non-blocking)
+
+### 🚀 DEPLOYMENT STAGE
+
+#### `deploy:staging`
+- **Purpose**: Automated staging deployment preparation
+- **Features**:
+  - Image tagging for staging environment
+  - Environment-specific configuration
+  - Deployment preparation and validation
+  - Ready-to-execute deployment commands
+- **Environment**: staging.yourdomain.com
+- **Triggers**: dev branch (manual approval)
+- **Dependencies**: build:all-services
+
+#### `deploy:production`
+- **Purpose**: Production deployment preparation
+- **Features**:
+  - Production image tagging (latest + commit SHA)
+  - Production environment configuration
+  - Comprehensive deployment checklist
+  - Database migration preparation
+- **Environment**: yourdomain.com
+- **Triggers**: main branch (manual approval)
+- **Dependencies**: build:all-services
+
+## 🎯 Pipeline Triggers and Rules
+
+### Automatic Triggers
+- **Push to main branch**: Full pipeline with production deployment option
+- **Push to dev branch**: Full pipeline with staging deployment option
+- **Merge Requests**: Full pipeline except deployment
+- **Manual execution**: Full pipeline available
+
+### Branch-Specific Behavior
+- **main branch**: All jobs + production deployment + performance testing
+- **dev branch**: All jobs + staging deployment + performance testing
+- **feature branches**: Validation, build, and test stages only
+- **merge requests**: All jobs except deployment
 
 ## 🛠️ Local Development
 
