@@ -1,61 +1,101 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import ChatInterface from '../components/chat/ChatInterface';
-import { useApi } from '../context/ApiContext';
-import { useAuth } from '../context/AuthContext';
+import apiService from '../apiService';
 
 const ChatPage = () => {
   const { sellerId } = useParams();
-  const { apiService } = useApi();
-  const { isAuthenticated } = useAuth();
-  
-  const [seller, setSeller] = useState(null);
-  const [chatThreads, setChatThreads] = useState([]);
   const [activeSellerId, setActiveSellerId] = useState(sellerId || null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  // Load chat threads
-  useEffect(() => {
-    const loadChatThreads = async () => {
-      if (!isAuthenticated()) return;
-      
-      try {
-        setLoading(true);
-        
-        // Get all chat threads
-        const response = await apiService.getChatThreads();
-        setChatThreads(response.data);
-        
-        // If no active seller is set, use the first thread's seller
-        if (!activeSellerId && response.data.length > 0) {
-          setActiveSellerId(response.data[0].seller_id);
-        }
-        
-        // Load seller info if we have an active seller
-        if (activeSellerId) {
-          // This would normally be an API call to get seller info
-          // For now, we'll use mock data
-          setSeller({
-            id: activeSellerId,
-            name: 'Продавец',
-            rating: 4.5,
-            location: 'Москва'
-          });
-        }
-      } catch (error) {
-        console.error('Error loading chat threads:', error);
-        setError('Не удалось загрузить чаты. Пожалуйста, попробуйте позже.');
-      } finally {
-        setLoading(false);
+
+  // Mock authentication - replace with real auth
+  const isAuthenticated = () => true; // Replace with real auth check
+  const buyerId = 'buyer-id'; // Replace with real buyer ID
+
+  // Fetch chat messages for buyer
+  const { data: sentMessagesData, isLoading: sentLoading } = useQuery({
+    queryKey: ['buyerSentMessages', buyerId],
+    queryFn: () => apiService.getChatMessages({
+      limit: 100,
+      filters: { sender_id: buyerId },
+      sortBy: 'created_at',
+      sortDirection: 'desc'
+    }),
+    enabled: isAuthenticated(),
+    refetchInterval: 10000, // Poll for new messages every 10 seconds
+  });
+
+  // Fetch received messages
+  const { data: receivedMessagesData, isLoading: receivedLoading } = useQuery({
+    queryKey: ['buyerReceivedMessages', buyerId],
+    queryFn: () => apiService.getChatMessages({
+      limit: 100,
+      filters: { receiver_id: buyerId },
+      sortBy: 'created_at',
+      sortDirection: 'desc'
+    }),
+    enabled: isAuthenticated(),
+    refetchInterval: 10000,
+  });
+
+  const isLoading = sentLoading || receivedLoading;
+
+  // Organize conversations by seller
+  const conversations = useMemo(() => {
+    const allMessages = [
+      ...(sentMessagesData?.data || []),
+      ...(receivedMessagesData?.data || [])
+    ];
+
+    // Group messages by conversation partner (seller)
+    const conversationMap = {};
+
+    allMessages.forEach(msg => {
+      const sellerId = msg.sender_id === buyerId ? msg.receiver_id : msg.sender_id;
+
+      if (!conversationMap[sellerId]) {
+        conversationMap[sellerId] = {
+          sellerId,
+          messages: [],
+          lastMessage: null,
+          unreadCount: 0
+        };
       }
-    };
-    
-    loadChatThreads();
-  }, [apiService, activeSellerId, isAuthenticated]);
+
+      conversationMap[sellerId].messages.push(msg);
+
+      // Update last message
+      if (!conversationMap[sellerId].lastMessage ||
+          new Date(msg.created_at) > new Date(conversationMap[sellerId].lastMessage.created_at)) {
+        conversationMap[sellerId].lastMessage = msg;
+      }
+
+      // Count unread messages (messages received by buyer)
+      if (msg.receiver_id === buyerId) {
+        conversationMap[sellerId].unreadCount++;
+      }
+    });
+
+    // Sort conversations by last message time
+    return Object.values(conversationMap).sort((a, b) => {
+      if (!a.lastMessage) return 1;
+      if (!b.lastMessage) return -1;
+      return new Date(b.lastMessage.created_at) - new Date(a.lastMessage.created_at);
+    });
+  }, [sentMessagesData, receivedMessagesData, buyerId]);
+
+  // Set active seller from URL or first conversation
+  useEffect(() => {
+    if (sellerId) {
+      setActiveSellerId(sellerId);
+    } else if (conversations.length > 0 && !activeSellerId) {
+      setActiveSellerId(conversations[0].sellerId);
+    }
+  }, [sellerId, conversations, activeSellerId]);
   
   // Not authenticated view
   if (!isAuthenticated()) {
@@ -78,7 +118,7 @@ const ChatPage = () => {
   }
   
   // Loading state
-  if (loading) {
+  if (isLoading) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-12">
@@ -130,7 +170,7 @@ const ChatPage = () => {
   }
   
   // No chats view
-  if (chatThreads.length === 0) {
+  if (conversations.length === 0 && !isLoading) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-12">
@@ -163,19 +203,35 @@ const ChatPage = () => {
             <Card>
               <h2 className="text-xl font-semibold text-wood-text mb-4">Продавцы</h2>
               <div className="space-y-2">
-                {chatThreads.map(thread => (
+                {conversations.map(conversation => (
                   <button
-                    key={thread.id}
+                    key={conversation.sellerId}
                     className={`w-full text-left px-4 py-3 rounded-lg transition duration-150 ${
-                      thread.seller_id === activeSellerId
+                      conversation.sellerId === activeSellerId
                         ? 'bg-wood-accent text-white'
                         : 'hover:bg-gray-100 text-wood-text'
                     }`}
-                    onClick={() => setActiveSellerId(thread.seller_id)}
+                    onClick={() => setActiveSellerId(conversation.sellerId)}
                   >
-                    <div className="font-medium">Продавец {thread.seller_id}</div>
-                    <div className="text-sm opacity-80">
-                      {new Date(thread.updated_at).toLocaleDateString()}
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium">Продавец {conversation.sellerId.slice(0, 8)}...</div>
+                      {conversation.unreadCount > 0 && (
+                        <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
+                          {conversation.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm opacity-80 truncate">
+                      {conversation.lastMessage ?
+                        conversation.lastMessage.message :
+                        'Нет сообщений'
+                      }
+                    </div>
+                    <div className="text-xs opacity-60">
+                      {conversation.lastMessage ?
+                        new Date(conversation.lastMessage.created_at).toLocaleDateString('ru-RU') :
+                        ''
+                      }
                     </div>
                   </button>
                 ))}
@@ -185,8 +241,18 @@ const ChatPage = () => {
           
           {/* Chat Interface */}
           <div className="md:col-span-3">
-            {activeSellerId && (
-              <ChatInterface sellerId={activeSellerId} />
+            {activeSellerId ? (
+              <ChatInterface
+                sellerId={activeSellerId}
+                buyerId={buyerId}
+                conversation={conversations.find(c => c.sellerId === activeSellerId)}
+              />
+            ) : (
+              <Card>
+                <div className="flex items-center justify-center h-96">
+                  <p className="text-gray-500">Выберите чат для начала общения</p>
+                </div>
+              </Card>
             )}
           </div>
         </div>

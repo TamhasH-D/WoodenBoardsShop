@@ -14,7 +14,7 @@ const WoodTypeForm = () => {
 
   const [formData, setFormData] = useState({
     id: '',
-    neme: '',
+    name: '', // Corrected from neme to name for consistency, assuming API uses 'name'
     description: '',
   });
 
@@ -72,7 +72,7 @@ const WoodTypeForm = () => {
     if (woodTypeData && woodTypeData.data) {
       setFormData({
         id: woodTypeData.data.id,
-        neme: woodTypeData.data.neme || '',
+        name: woodTypeData.data.name || '', // Corrected from neme to name
         description: woodTypeData.data.description || '',
       });
     }
@@ -99,8 +99,8 @@ const WoodTypeForm = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.neme.trim()) {
-      newErrors.neme = 'Название обязательно';
+    if (!formData.name.trim()) { // Corrected from neme to name
+      newErrors.name = 'Название обязательно'; // Corrected from neme to name
     }
 
     setErrors(newErrors);
@@ -128,11 +128,12 @@ const WoodTypeForm = () => {
     if (isEditMode) {
       const updateData = {};
 
-      if (formData.neme !== woodTypeData.data.neme) {
-        updateData.neme = formData.neme;
+      // Ensure woodTypeData.data exists before accessing its properties
+      if (woodTypeData && woodTypeData.data && formData.name !== woodTypeData.data.name) { // Corrected from neme to name
+        updateData.name = formData.name; // Corrected from neme to name
       }
 
-      if (formData.description !== woodTypeData.data.description) {
+      if (woodTypeData && woodTypeData.data && formData.description !== woodTypeData.data.description) {
         updateData.description = formData.description;
       }
 
@@ -173,10 +174,10 @@ const WoodTypeForm = () => {
       <form onSubmit={handleSubmit} className="bg-white shadow-sm rounded-lg p-6">
         <FormField
           label="Название"
-          name="neme"
-          value={formData.neme}
+          name="name" // Corrected from neme to name
+          value={formData.name} // Corrected from neme to name
           onChange={handleChange}
-          error={errors.neme}
+          error={errors.name} // Corrected from neme to name
           required
         />
 

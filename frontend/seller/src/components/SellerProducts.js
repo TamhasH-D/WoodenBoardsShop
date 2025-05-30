@@ -1,50 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FiEdit, FiTrash2, FiPlus, FiSearch, FiFilter } from 'react-icons/fi';
+import { FiEdit, FiTrash2, FiPlus, FiSearch, FiFilter, FiDownload } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import { productService, woodTypeService } from '../services';
+import apiService from '../apiService';
 
 function SellerProducts() {
   const queryClient = useQueryClient();
-  const sellerId = localStorage.getItem('sellerId') || 'demo-seller-id'; // Replace with actual auth logic
+  const sellerId = 'seller-test-001'; // Use test seller ID
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(0);
-  const [itemsPerPage] = useState(10);
-  const [sortField, setSortField] = useState('title');
-  const [sortDirection, setSortDirection] = useState('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [sortField, setSortField] = useState('created_at');
+  const [sortDirection, setSortDirection] = useState('desc');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
 
-  // Fetch products
-  const { data: productsData, isLoading: isLoadingProducts } = useQuery({
-    queryKey: ['sellerProducts', sellerId, currentPage, itemsPerPage],
-    queryFn: () => productService.getProductsBySellerId(
-      sellerId,
-      currentPage * itemsPerPage,
-      itemsPerPage
-    ),
+  // Debounced search
+  const debouncedSearch = useMemo(
+    () => {
+      const timer = setTimeout(() => {
+        setCurrentPage(1); // Reset to first page when searching
+      }, 300);
+      return () => clearTimeout(timer);
+    },
+    [searchTerm]
+  );
+
+  // Fetch products with real API call
+  const { data: productsData, isLoading: isLoadingProducts, error } = useQuery({
+    queryKey: ['sellerProducts', sellerId, currentPage, itemsPerPage, searchTerm, sortField, sortDirection],
+    queryFn: () => apiService.getProducts({
+      page: currentPage,
+      limit: itemsPerPage,
+      search: searchTerm,
+      sortBy: sortField,
+      sortDirection: sortDirection,
+      filters: { seller_id: sellerId }
+    }),
     enabled: !!sellerId,
+    keepPreviousData: true,
+    staleTime: 30000, // 30 seconds
   });
 
   // Fetch wood types for display
   const { data: woodTypesData } = useQuery({
     queryKey: ['woodTypes'],
-    queryFn: () => woodTypeService.getAllWoodTypes(),
+    queryFn: () => apiService.getWoodTypes({ limit: 100 }),
   });
 
   // Delete product mutation
   const deleteProductMutation = useMutation({
-    mutationFn: (productId) => productService.deleteProduct(productId),
+    mutationFn: (productId) => apiService.deleteProduct(productId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sellerProducts'] });
       toast.success('Товар успешно удален');
       setShowDeleteModal(false);
+      setProductToDelete(null);
     },
     onError: (error) => {
       console.error('Error deleting product:', error);
-      toast.error('Ошибка при удалении товара');
+      toast.error(`Ошибка при удалении товара: ${error.message}`);
     },
   });
 
@@ -69,6 +86,7 @@ function SellerProducts() {
       setSortField(field);
       setSortDirection('asc');
     }
+    setCurrentPage(1);
   };
 
   // Get wood type name by ID
@@ -78,19 +96,75 @@ function SellerProducts() {
     return woodType ? woodType.neme : 'Неизвестно';
   };
 
-  // Filter products by search term
-  const filteredProducts = productsData?.data?.filter(product =>
-    product.title.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  // Handle search input
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
 
-  // Sort products
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    if (sortDirection === 'asc') {
-      return a[sortField] > b[sortField] ? 1 : -1;
-    } else {
-      return a[sortField] < b[sortField] ? 1 : -1;
+  // Handle pagination
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  // Export products
+  const handleExport = () => {
+    if (!productsData?.data?.length) {
+      toast.warning('Нет данных для экспорта');
+      return;
     }
-  });
+
+    const exportData = productsData.data.map(product => ({
+      'Название': product.title,
+      'Описание': product.descrioption || '',
+      'Цена': product.price,
+      'Объем': product.volume,
+      'Тип древесины': getWoodTypeName(product.wood_type_id),
+      'Доставка': product.delivery_possible ? 'Да' : 'Нет',
+      'Место самовывоза': product.pickup_location || '',
+      'Дата создания': new Date(product.created_at).toLocaleDateString('ru-RU'),
+    }));
+
+    // Simple CSV export
+    const headers = Object.keys(exportData[0]);
+    const csvContent = [
+      headers.join(','),
+      ...exportData.map(row => headers.map(header => `"${row[header]}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `products-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success('Данные экспортированы');
+  };
+
+  const products = productsData?.data || [];
+  const pagination = productsData?.pagination || {};
+  const totalPages = Math.ceil(pagination.total / itemsPerPage);
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="text-red-500 text-4xl mb-4">⚠️</div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Ошибка загрузки товаров</h3>
+          <p className="text-gray-600 mb-4">{error.message}</p>
+          <button
+            onClick={() => queryClient.invalidateQueries(['sellerProducts'])}
+            className="bg-brand-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-80"
+          >
+            Попробовать снова
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -98,14 +172,28 @@ function SellerProducts() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-brand-primary font-heading">Управление Товарами</h1>
-        <Link
-          to="/products/new"
-          className="bg-brand-accent hover:bg-opacity-80 text-white font-bold py-2 px-4 rounded-lg transition duration-300 font-sans flex items-center"
-        >
-          <FiPlus className="mr-2" /> Добавить Товар
-        </Link>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-brand-primary font-heading">Управление Товарами</h1>
+          <p className="text-gray-600 mt-1">
+            Всего товаров: {pagination.total || 0}
+          </p>
+        </div>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={handleExport}
+            disabled={!products.length}
+            className="bg-gray-500 hover:bg-gray-600 disabled:bg-gray-300 text-white font-bold py-2 px-4 rounded-lg transition duration-300 font-sans flex items-center"
+          >
+            <FiDownload className="mr-2" /> Экспорт
+          </button>
+          <Link
+            to="/products/new"
+            className="bg-brand-accent hover:bg-opacity-80 text-white font-bold py-2 px-4 rounded-lg transition duration-300 font-sans flex items-center"
+          >
+            <FiPlus className="mr-2" /> Добавить Товар
+          </Link>
+        </div>
       </div>
 
       {/* Search and Filter */}
@@ -120,13 +208,23 @@ function SellerProducts() {
               placeholder="Поиск товаров..."
               className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
             />
           </div>
           <div className="flex items-center space-x-2">
-            <button className="flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-              <FiFilter className="mr-2" /> Фильтры
-            </button>
+            <select
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary"
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+            >
+              <option value={5}>5 на странице</option>
+              <option value={10}>10 на странице</option>
+              <option value={20}>20 на странице</option>
+              <option value={50}>50 на странице</option>
+            </select>
           </div>
         </div>
       </div>
@@ -174,8 +272,8 @@ function SellerProducts() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedProducts.length > 0 ? (
-                    sortedProducts.map((product) => (
+                  {products.length > 0 ? (
+                    products.map((product) => (
                       <tr key={product.id} className="hover:bg-gray-50">
                         <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
                           <p className="text-gray-900 whitespace-no-wrap font-heading">{product.title}</p>
@@ -229,23 +327,44 @@ function SellerProducts() {
             </div>
 
             {/* Pagination */}
-            {productsData?.pagination?.total > itemsPerPage && (
+            {totalPages > 1 && (
               <div className="px-5 py-4 bg-white border-t flex flex-col xs:flex-row items-center xs:justify-between">
                 <div className="text-xs text-gray-500">
-                  Показано {currentPage * itemsPerPage + 1} - {Math.min((currentPage + 1) * itemsPerPage, productsData.pagination.total)} из {productsData.pagination.total}
+                  Показано {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, pagination.total)} из {pagination.total}
                 </div>
-                <div className="flex mt-2 xs:mt-0">
+                <div className="flex mt-2 xs:mt-0 items-center space-x-2">
                   <button
-                    onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-                    disabled={currentPage === 0}
-                    className={`text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-l ${currentPage === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     Предыдущая
                   </button>
+
+                  {/* Page numbers */}
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const page = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          className={`text-sm py-2 px-3 rounded ${
+                            currentPage === page
+                              ? 'bg-brand-primary text-white'
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   <button
-                    onClick={() => setCurrentPage(prev => prev + 1)}
-                    disabled={(currentPage + 1) * itemsPerPage >= productsData.pagination.total}
-                    className={`text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-r ${(currentPage + 1) * itemsPerPage >= productsData.pagination.total ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={`text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     Следующая
                   </button>

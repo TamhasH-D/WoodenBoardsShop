@@ -4,17 +4,26 @@ FROM node:18-alpine AS build
 # Set working directory
 WORKDIR /app
 
-# Set to production environment
-ENV NODE_ENV=production
-
 # Copy package files
-COPY package*.json ./
+COPY package.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies (including devDependencies for build)
+RUN npm install --legacy-peer-deps
 
 # Copy application code
 COPY . .
+
+# Accept build arguments for environment variables
+ARG REACT_APP_API_URL
+ARG REACT_APP_API_TIMEOUT
+ARG REACT_APP_ENABLE_ANALYTICS
+ARG REACT_APP_ENABLE_DEBUG_TOOLS
+
+# Set environment variables for build
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
+ENV REACT_APP_API_TIMEOUT=$REACT_APP_API_TIMEOUT
+ENV REACT_APP_ENABLE_ANALYTICS=$REACT_APP_ENABLE_ANALYTICS
+ENV REACT_APP_ENABLE_DEBUG_TOOLS=$REACT_APP_ENABLE_DEBUG_TOOLS
 
 # Build the app for production
 RUN npm run build

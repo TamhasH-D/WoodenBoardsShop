@@ -1,66 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from 'react-query';
-import { FiPlus, FiEdit, FiTrash2, FiEye } from 'react-icons/fi';
-
-// This is a placeholder component. In a real implementation, you would:
-// 1. Fetch data from your API
-// 2. Implement proper error handling
-// 3. Add pagination, filtering, and sorting
-// 4. Add proper form validation
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { FiPlus } from 'react-icons/fi';
+import apiService from '../../../apiService';
+import DataTable from '../../common/DataTable';
+import { toast } from 'react-toastify';
 
 const WoodTypePricesList = () => {
+  const queryClient = useQueryClient();
+  const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  
-  // Mock data - replace with actual API call
-  const { data: woodTypePrices, isLoading, error } = useQuery('woodTypePrices', async () => {
-    // Simulate API call
-    return [
-      { 
-        id: '1', 
-        wood_type: 'Pine', 
-        wood_type_id: '1',
-        price_per_cubic_meter: 300.00, 
-        min_order_volume: 0.5,
-        effective_date: '2023-01-01',
-        is_active: true
-      },
-      { 
-        id: '2', 
-        wood_type: 'Oak', 
-        wood_type_id: '2',
-        price_per_cubic_meter: 500.00, 
-        min_order_volume: 0.3,
-        effective_date: '2023-01-01',
-        is_active: true
-      },
-      { 
-        id: '3', 
-        wood_type: 'Birch', 
-        wood_type_id: '3',
-        price_per_cubic_meter: 350.00, 
-        min_order_volume: 0.4,
-        effective_date: '2023-01-01',
-        is_active: true
-      },
-      { 
-        id: '4', 
-        wood_type: 'Pine', 
-        wood_type_id: '1',
-        price_per_cubic_meter: 280.00, 
-        min_order_volume: 0.5,
-        effective_date: '2022-07-01',
-        is_active: false
-      },
-    ];
-  });
 
-  // Filter wood type prices based on search term
-  const filteredWoodTypePrices = woodTypePrices?.filter(price => 
-    price.wood_type.toLowerCase().includes(searchTerm.toLowerCase())
+  const { data: woodTypePricesData, isLoading, error } = useQuery(
+    ['woodTypePrices', currentPage, searchTerm],
+    () => apiService.woodTypePrices.getWoodTypePrices({ page: currentPage, limit: 10, search: searchTerm }),
+    { keepPreviousData: true }
   );
 
-  if (isLoading) return <div className="text-center p-6">Loading wood type prices...</div>;
+  const deleteWoodTypePriceMutation = useMutation(
+    (priceId) => apiService.woodTypePrices.deleteWoodTypePrice(priceId),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('woodTypePrices');
+        toast.success('Wood type price deleted successfully!');
+      },
+      onError: (err) => {
+        toast.error(`Error deleting wood type price: ${err.message}`);
+      },
+    }
+  );
+
+  const handleDeleteWoodTypePrice = (priceId) => {
+    if (window.confirm('Are you sure you want to delete this wood type price?')) {
+      deleteWoodTypePriceMutation.mutate(priceId);
+    }
+  };
+
+  const columns = useMemo(() => [
+    {
+      header: 'Wood Type',
+      key: 'wood_type',
+      render: (item) => (
+        <Link to={`/wood-types/${item.wood_type.id}`} className="text-blue-500 hover:underline">
+          {item.wood_type.name}
+        </Link>
+      ),
+    },
+    { 
+      header: 'Price',
+      key: 'price_per_cubic_meter',
+      render: (item) => `${item.price_per_cubic_meter.toFixed(2)} ${item.currency}` 
+    },
+    { header: 'Min Order (m³)', key: 'min_order_volume' },
+    { header: 'Effective Date', key: 'effective_date', render: (item) => new Date(item.effective_date).toLocaleDateString() },
+    {
+      header: 'Status',
+      key: 'is_active',
+      render: (item) => (
+        <span className={`px-2 py-1 rounded-full text-xs ${          item.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'        }`}>          {item.is_active ? 'Active' : 'Inactive'}
+        </span>
+      ),
+    },
+  ], []);
+
+  const pagination = woodTypePricesData?.meta ? {
+    currentPage: woodTypePricesData.meta.page,
+    totalPages: woodTypePricesData.meta.pages,
+    totalItems: woodTypePricesData.meta.total,
+    pageSize: woodTypePricesData.meta.limit,
+  } : null;
+
   if (error) return <div className="text-center p-6 text-red-500">Error loading wood type prices: {error.message}</div>;
 
   return (
@@ -75,74 +84,29 @@ const WoodTypePricesList = () => {
         </Link>
       </div>
 
-      {/* Search */}
       <div className="mb-6">
         <input
           type="text"
-          placeholder="Search by wood type..."
+          placeholder="Search by wood type name..."
           className="w-full p-2 border border-gray-300 rounded-md"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1); // Reset to first page on new search
+          }}
         />
       </div>
 
-      {/* Wood Type Prices Table */}
-      <div className="bg-white shadow-md rounded-md overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Wood Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price ($/m³)</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Min Order (m³)</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Effective Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredWoodTypePrices?.length > 0 ? (
-              filteredWoodTypePrices.map((price) => (
-                <tr key={price.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Link to={`/wood-types/${price.wood_type_id}`} className="text-blue-500 hover:underline">
-                      {price.wood_type}
-                    </Link>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">${price.price_per_cubic_meter.toFixed(2)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{price.min_order_volume}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{new Date(price.effective_date).toLocaleDateString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      price.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {price.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex space-x-2">
-                      <Link to={`/wood-type-prices/${price.id}`} className="text-blue-500 hover:text-blue-700">
-                        <FiEye />
-                      </Link>
-                      <Link to={`/wood-type-prices/edit/${price.id}`} className="text-yellow-500 hover:text-yellow-700">
-                        <FiEdit />
-                      </Link>
-                      <button className="text-red-500 hover:text-red-700">
-                        <FiTrash2 />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" className="px-6 py-4 text-center">
-                  {searchTerm ? 'No wood type prices found matching your search.' : 'No wood type prices found.'}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        columns={columns}
+        data={woodTypePricesData?.items || []}
+        isLoading={isLoading || deleteWoodTypePriceMutation.isLoading}
+        pagination={pagination}
+        onPageChange={setCurrentPage}
+        onDelete={handleDeleteWoodTypePrice}
+        viewPath="/wood-type-prices"
+        editPath="/wood-type-prices/edit"
+      />
     </div>
   );
 };

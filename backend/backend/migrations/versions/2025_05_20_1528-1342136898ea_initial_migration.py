@@ -55,7 +55,7 @@ def upgrade() -> None:
     sa.Column('price_per_m3', sa.Float(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('wood_type_id', sa.UUID(), nullable=False),
-    sa.ForeignKeyConstraint(['wood_type_id'], ['wood_type_price.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['wood_type_id'], ['wood_type.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_wood_type_price_id'), 'wood_type_price', ['id'], unique=True)

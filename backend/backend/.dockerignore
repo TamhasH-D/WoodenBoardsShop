@@ -186,14 +186,8 @@ docker-compose*.yaml
 .pre-commit-config.yaml
 .flake8
 .bandit
-pyproject.toml
 setup.cfg
 tox.ini
-
-# FastAPI specific
-.pytest_cache/
-alembic.ini
-migrations/versions/*.py
 
 # Media files (if not needed in container)
 media/

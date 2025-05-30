@@ -1,119 +1,143 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from 'react-query';
-import { FiArrowLeft, FiSave } from 'react-icons/fi';
 
-// This is a placeholder component. In a real implementation, you would:
-// 1. Fetch data from your API for editing
-// 2. Implement form submission to create/update
-// 3. Add proper form validation
-// 4. Add error handling
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { toast } from 'react-toastify';
+import { FiArrowLeft, FiSave } from 'react-icons/fi';
+import apiService from '../../../apiService';
+import FormField from '../../common/FormField';
 
 const BuyerForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const isEditMode = !!id;
-  
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     address: '',
+    // user_id: '', // If you need to associate with a user
   });
-  
+
   const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // For edit mode, fetch the buyer data
-  const { data: buyerData, isLoading } = useQuery(
+
+  // Fetch buyer data if in edit mode
+  const { data: buyerData, isLoading: isLoadingBuyer } = useQuery(
     ['buyer', id],
-    async () => {
-      // Simulate API call for edit mode
-      return {
-        id,
-        name: 'John Doe',
-        email: 'john@example.com',
-        phone: '+1234567890',
-        address: '123 Main St, Anytown, USA',
-      };
-    },
+    () => apiService.getBuyer(id),
     {
       enabled: isEditMode,
       onSuccess: (data) => {
-        if (data) {
+        if (data && data.data) {
+          const buyer = data.data;
           setFormData({
-            name: data.name || '',
-            email: data.email || '',
-            phone: data.phone || '',
-            address: data.address || '',
+            name: buyer.name || '',
+            email: buyer.user?.email || '', // Assuming email is part of the nested user object
+            phone: buyer.phone || '',
+            address: buyer.address || '',
+            // user_id: buyer.user_id || '',
           });
         }
       },
+      onError: (error) => {
+        toast.error(`Error fetching buyer: ${error.message}`);
+        navigate('/buyers');
+      },
     }
   );
-  
+
+  const createBuyerMutation = useMutation(
+    (buyerData) => apiService.createBuyer(buyerData),
+    {
+      onSuccess: () => {
+        toast.success('Buyer created successfully!');
+        queryClient.invalidateQueries('buyers');
+        navigate('/buyers');
+      },
+      onError: (error) => {
+        toast.error(`Error creating buyer: ${error.message}`);
+        setErrors(error.response?.data?.errors || {});
+      },
+    }
+  );
+
+  const updateBuyerMutation = useMutation(
+    ({ id, buyerData }) => apiService.updateBuyer(id, buyerData),
+    {
+      onSuccess: () => {
+        toast.success('Buyer updated successfully!');
+        queryClient.invalidateQueries('buyers');
+        queryClient.invalidateQueries(['buyer', id]);
+        navigate('/buyers');
+      },
+      onError: (error) => {
+        toast.error(`Error updating buyer: ${error.message}`);
+        setErrors(error.response?.data?.errors || {});
+      },
+    }
+  );
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
-    
-    // Clear error when field is edited
     if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: '',
-      }));
+      setErrors((prev) => ({ ...prev, [name]: null }));
     }
   };
-  
+
   const validateForm = () => {
     const newErrors = {};
-    
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    }
-    
+    if (!formData.name.trim()) newErrors.name = 'Name is required';
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
-      newErrors.email = 'Invalid email address';
+    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      newErrors.email = 'Invalid email format';
     }
-    
+    // Add other validations as needed (e.g., phone format)
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!validateForm()) {
+      toast.error('Please correct the form errors.');
       return;
     }
-    
-    setIsSubmitting(true);
-    
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      console.log('Form submitted:', formData);
-      
-      // Redirect after successful submission
-      navigate('/buyers');
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setErrors((prev) => ({
-        ...prev,
-        form: 'Failed to submit form. Please try again.',
-      }));
-    } finally {
-      setIsSubmitting(false);
+
+    // For buyers, the API might expect user data separately or nested.
+    // Adjust payload based on your API structure.
+    // This example assumes 'email' might be part of a user object creation/update.
+    // If your API creates/updates the user implicitly via the buyer endpoint, this is simpler.
+    // If user_id is required and not handled by backend, you might need a user selection/creation step.
+
+    const buyerPayload = {
+      name: formData.name,
+      phone: formData.phone,
+      address: formData.address,
+      // If your backend handles user creation/linking via email on buyer create/update:
+      email: formData.email, 
+      // Or, if you manage user_id separately:
+      // user_id: formData.user_id 
+    };
+
+    if (isEditMode) {
+      // For update, you might only send changed fields or the full payload
+      // depending on your API (PATCH vs PUT)
+      updateBuyerMutation.mutate({ id, buyerData: buyerPayload });
+    } else {
+      createBuyerMutation.mutate(buyerPayload);
     }
   };
-  
-  if (isEditMode && isLoading) {
+
+  const isLoading = isLoadingBuyer || createBuyerMutation.isLoading || updateBuyerMutation.isLoading;
+
+  if (isEditMode && isLoadingBuyer) {
     return <div className="text-center p-6">Loading buyer data...</div>;
   }
   
@@ -138,69 +162,55 @@ const BuyerForm = () => {
         
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-gray-700 font-medium mb-2" htmlFor="name">
-                Name *
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className={`w-full p-2 border rounded-md ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="Enter buyer name"
-              />
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 font-medium mb-2" htmlFor="email">
-                Email *
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`w-full p-2 border rounded-md ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="Enter email address"
-              />
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 font-medium mb-2" htmlFor="phone">
-                Phone
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-md"
-                placeholder="Enter phone number"
-              />
-            </div>
-            
-            <div className="md:col-span-2">
-              <label className="block text-gray-700 font-medium mb-2" htmlFor="address">
-                Address
-              </label>
-              <textarea
-                id="address"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                rows="3"
-                className="w-full p-2 border border-gray-300 rounded-md"
-                placeholder="Enter address"
-              ></textarea>
-            </div>
+            <FormField
+              label="Name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              error={errors.name}
+              placeholder="Enter buyer name"
+              required
+            />
+            <FormField
+              label="Email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              error={errors.email}
+              placeholder="Enter email address"
+              required
+            />
+            <FormField
+              label="Phone"
+              name="phone"
+              type="tel"
+              value={formData.phone}
+              onChange={handleChange}
+              error={errors.phone}
+              placeholder="Enter phone number"
+            />
+            <FormField
+              label="Address"
+              name="address"
+              type="textarea"
+              value={formData.address}
+              onChange={handleChange}
+              error={errors.address}
+              placeholder="Enter address"
+              className="md:col-span-2"
+            />
+            {/* Example if user_id needs to be selected/entered manually */}
+            {/* <FormField
+              label="User ID (Optional)"
+              name="user_id"
+              value={formData.user_id}
+              onChange={handleChange}
+              error={errors.user_id}
+              placeholder="Enter existing User ID if applicable"
+            /> */}
           </div>
-          
+
           <div className="mt-6 flex justify-end">
             <button
               type="button"
@@ -211,11 +221,11 @@ const BuyerForm = () => {
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isLoading}
               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center"
             >
               <FiSave className="mr-2" />
-              {isSubmitting ? 'Saving...' : 'Save Buyer'}
+              {isLoading ? 'Saving...' : 'Save Buyer'}
             </button>
           </div>
         </form>

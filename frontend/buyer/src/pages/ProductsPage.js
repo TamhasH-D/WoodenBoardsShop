@@ -1,183 +1,157 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import Layout from '../components/layout/Layout';
 import ProductGrid from '../components/product/ProductGrid';
 import FilterSidebar from '../components/filter/FilterSidebar';
-import { useApi } from '../context/ApiContext';
+import apiService from '../apiService';
 
 const ProductsPage = () => {
-  const { apiService } = useApi();
   const [searchParams] = useSearchParams();
-
-  const [products, setProducts] = useState([]);
-  const [woodTypes, setWoodTypes] = useState([]);
-  const [loading, setLoading] = useState({
-    products: true,
-    woodTypes: true
-  });
   const [error, setError] = useState(null);
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 100000 });
   const [filters, setFilters] = useState({
     woodTypes: [],
     priceRange: [0, 100000],
     deliveryOnly: false
   });
   const [sortOption, setSortOption] = useState('default');
-  const [pagination, setPagination] = useState({
-    offset: 0,
-    limit: 20,
-    total: 0
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(20);
+
+  // Get search query from URL
+  const searchQuery = searchParams.get('search') || '';
+  const woodTypeParam = searchParams.get('woodType');
+
+  // Fetch products with real API call
+  const { data: productsData, isLoading: productsLoading, error: productsError } = useQuery({
+    queryKey: ['products', currentPage, pageSize, searchQuery, filters],
+    queryFn: () => apiService.getProducts({
+      page: currentPage,
+      limit: pageSize,
+      search: searchQuery,
+      sortBy: 'created_at',
+      sortDirection: 'desc',
+      filters: {
+        ...(filters.woodTypes.length > 0 && { wood_type_id: filters.woodTypes }),
+        ...(filters.deliveryOnly && { delivery_possible: true }),
+      }
+    }),
+    keepPreviousData: true,
+    staleTime: 30000, // 30 seconds
   });
 
-  // Load wood types
-  useEffect(() => {
-    const loadWoodTypes = async () => {
-      try {
-        setLoading(prev => ({ ...prev, woodTypes: true }));
-        const response = await apiService.getWoodTypes();
+  // Fetch wood types
+  const { data: woodTypesData, isLoading: woodTypesLoading } = useQuery({
+    queryKey: ['woodTypes'],
+    queryFn: () => apiService.getWoodTypes({ limit: 100 }),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
 
-        // Transform the wood types data
-        const transformedWoodTypes = response.data.map(type => ({
-          id: type.id,
-          name: type.neme // API has a typo in the field name
-        }));
+  const products = productsData?.data || [];
+  const woodTypes = woodTypesData?.data || [];
+  const paginationInfo = productsData?.pagination || {};
+  const isLoading = productsLoading || woodTypesLoading;
 
-        setWoodTypes(transformedWoodTypes);
+  // Transform wood types for the filter
+  const transformedWoodTypes = useMemo(() => {
+    return woodTypes.map(type => ({
+      id: type.id,
+      name: type.neme || 'Неизвестный тип' // API has a typo in the field name
+    }));
+  }, [woodTypes]);
 
-        // Check if there's a wood type filter in the URL
-        const woodTypeParam = searchParams.get('woodType');
-        if (woodTypeParam) {
-          setFilters(prev => ({
-            ...prev,
-            woodTypes: [woodTypeParam]
-          }));
-        }
-      } catch (error) {
-        console.error('Error loading wood types:', error);
-        setError('Не удалось загрузить типы древесины. Пожалуйста, попробуйте позже.');
-      } finally {
-        setLoading(prev => ({ ...prev, woodTypes: false }));
-      }
+  // Transform products for display
+  const transformedProducts = useMemo(() => {
+    return products.map(product => ({
+      id: product.id,
+      title: product.title,
+      description: product.descrioption || '', // API has a typo in the field name
+      price: product.price,
+      volume: product.volume,
+      woodType: woodTypes.find(wt => wt.id === product.wood_type_id)?.neme || 'Неизвестный тип',
+      woodTypeId: product.wood_type_id,
+      imageSrc: `https://via.placeholder.com/300x200?text=${encodeURIComponent(product.title)}`,
+      deliveryPossible: product.delivery_possible,
+      pickupLocation: product.pickup_location || '',
+      createdAt: product.created_at,
+      updatedAt: product.updated_at,
+      sellerId: product.seller_id
+    }));
+  }, [products, woodTypes]);
+
+  // Calculate price range from products
+  const priceRange = useMemo(() => {
+    if (products.length === 0) return { min: 0, max: 100000 };
+
+    const prices = products.map(p => p.price);
+    return {
+      min: Math.min(...prices),
+      max: Math.max(...prices)
     };
+  }, [products]);
 
-    loadWoodTypes();
-  }, [apiService, searchParams]);
-
-  // Load products
+  // Set initial filter from URL params
   useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        setLoading(prev => ({ ...prev, products: true }));
-
-        // Get products from API
-        const response = await apiService.getProducts(pagination.offset, pagination.limit);
-
-        // Update pagination info
-        setPagination(prev => ({
+    if (woodTypeParam && transformedWoodTypes.length > 0) {
+      const woodType = transformedWoodTypes.find(wt => wt.id === woodTypeParam);
+      if (woodType) {
+        setFilters(prev => ({
           ...prev,
-          total: response.pagination?.total || 0
+          woodTypes: [woodTypeParam]
         }));
-
-        // Transform products and add wood type names
-        const enhancedProducts = await Promise.all(response.data.map(async (product) => {
-          try {
-            // Get wood type for each product
-            const woodTypeResponse = await apiService.getWoodType(product.wood_type_id);
-            const woodType = woodTypeResponse.data;
-
-            // Calculate min and max prices for the filter
-            if (product.price < priceRange.min) {
-              setPriceRange(prev => ({ ...prev, min: product.price }));
-            }
-            if (product.price > priceRange.max) {
-              setPriceRange(prev => ({ ...prev, max: product.price }));
-            }
-
-            return {
-              id: product.id,
-              title: product.title,
-              description: product.descrioption, // API has a typo in the field name
-              price: product.price,
-              volume: product.volume,
-              woodType: woodType.neme || 'Неизвестный тип', // API has a typo in the field name
-              woodTypeId: product.wood_type_id,
-              imageSrc: `https://via.placeholder.com/300x200?text=${encodeURIComponent(product.title)}`,
-              deliveryPossible: product.delivery_possible,
-              pickupLocation: product.pickup_location,
-              createdAt: product.created_at,
-              updatedAt: product.updated_at,
-              sellerId: product.seller_id
-            };
-          } catch (error) {
-            console.error(`Error fetching wood type for product ${product.id}:`, error);
-            return {
-              id: product.id,
-              title: product.title,
-              description: product.descrioption, // API has a typo in the field name
-              price: product.price,
-              volume: product.volume,
-              woodType: 'Неизвестный тип',
-              woodTypeId: product.wood_type_id,
-              imageSrc: `https://via.placeholder.com/300x200?text=${encodeURIComponent(product.title)}`,
-              deliveryPossible: product.delivery_possible,
-              pickupLocation: product.pickup_location,
-              createdAt: product.created_at,
-              updatedAt: product.updated_at,
-              sellerId: product.seller_id
-            };
-          }
-        }));
-
-        setProducts(enhancedProducts);
-      } catch (error) {
-        console.error('Error loading products:', error);
-        setError('Не удалось загрузить товары. Пожалуйста, попробуйте позже.');
-      } finally {
-        setLoading(prev => ({ ...prev, products: false }));
       }
-    };
+    }
+  }, [woodTypeParam, transformedWoodTypes]);
 
-    loadProducts();
-  }, [apiService, pagination.offset, pagination.limit]);
+  // Handle errors
+  useEffect(() => {
+    if (productsError) {
+      console.error('Error loading products:', productsError);
+      setError('Не удалось загрузить товары. Пожалуйста, попробуйте позже.');
+    }
+  }, [productsError]);
 
-  // Apply filters and sorting
-  const filteredProducts = products.filter(product => {
-    // Filter by wood type
-    if (filters.woodTypes.length > 0) {
-      // Direct comparison with woodTypeId since we now have it in the product
-      if (!filters.woodTypes.includes(product.woodTypeId)) {
+  // Apply client-side filters and sorting to transformed products
+  const filteredProducts = useMemo(() => {
+    return transformedProducts.filter(product => {
+      // Filter by wood type
+      if (filters.woodTypes.length > 0) {
+        if (!filters.woodTypes.includes(product.woodTypeId)) {
+          return false;
+        }
+      }
+
+      // Filter by price
+      if (product.price < filters.priceRange[0] || product.price > filters.priceRange[1]) {
         return false;
       }
-    }
 
-    // Filter by price
-    if (product.price < filters.priceRange[0] || product.price > filters.priceRange[1]) {
-      return false;
-    }
+      // Filter by delivery
+      if (filters.deliveryOnly && !product.deliveryPossible) {
+        return false;
+      }
 
-    // Filter by delivery
-    if (filters.deliveryOnly && !product.deliveryPossible) {
-      return false;
-    }
-
-    return true;
-  });
+      return true;
+    });
+  }, [transformedProducts, filters]);
 
   // Sort products
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    switch (sortOption) {
-      case 'price-asc':
-        return a.price - b.price;
-      case 'price-desc':
-        return b.price - a.price;
-      case 'name-asc':
-        return a.title.localeCompare(b.title);
-      case 'name-desc':
-        return b.title.localeCompare(a.title);
-      default:
-        return 0;
-    }
-  });
+  const sortedProducts = useMemo(() => {
+    return [...filteredProducts].sort((a, b) => {
+      switch (sortOption) {
+        case 'price-asc':
+          return a.price - b.price;
+        case 'price-desc':
+          return b.price - a.price;
+        case 'name-asc':
+          return a.title.localeCompare(b.title);
+        case 'name-desc':
+          return b.title.localeCompare(a.title);
+        default:
+          return 0;
+      }
+    });
+  }, [filteredProducts, sortOption]);
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
@@ -214,9 +188,10 @@ const ProductsPage = () => {
           {/* Sidebar */}
           <div className="w-full md:w-64 flex-shrink-0">
             <FilterSidebar
-              woodTypes={woodTypes}
+              woodTypes={transformedWoodTypes}
               priceRange={priceRange}
               onFilterChange={handleFilterChange}
+              loading={woodTypesLoading}
             />
           </div>
 
@@ -226,6 +201,11 @@ const ProductsPage = () => {
             <div className="flex justify-between items-center mb-6">
               <p className="text-wood-text">
                 Найдено товаров: <span className="font-semibold">{sortedProducts.length}</span>
+                {paginationInfo.total && (
+                  <span className="text-gray-500 ml-2">
+                    (всего в каталоге: {paginationInfo.total})
+                  </span>
+                )}
               </p>
               <div className="flex items-center">
                 <label htmlFor="sort" className="mr-2 text-wood-text">Сортировать:</label>
@@ -247,9 +227,36 @@ const ProductsPage = () => {
             {/* Products Grid */}
             <ProductGrid
               products={sortedProducts}
-              loading={loading.products || loading.woodTypes}
+              loading={isLoading}
               error={error}
             />
+
+            {/* Pagination */}
+            {paginationInfo.total > pageSize && (
+              <div className="mt-8 flex justify-center">
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Предыдущая
+                  </button>
+
+                  <span className="px-4 py-2 text-wood-text">
+                    Страница {currentPage} из {Math.ceil(paginationInfo.total / pageSize)}
+                  </span>
+
+                  <button
+                    onClick={() => setCurrentPage(prev => prev + 1)}
+                    disabled={currentPage >= Math.ceil(paginationInfo.total / pageSize)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  >
+                    Следующая
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

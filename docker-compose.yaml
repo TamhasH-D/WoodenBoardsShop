@@ -1,68 +1,27 @@
-version: '3.8' # Убедимся, что версия указана
+name: diplom
 
-env_file:
-  - .env
+include:
+  # Backend services
+  - path: ./backend/backend/docker-compose.yaml
+    env_file: .env
 
-services:
-  backend:
-    extends:
-      file: ./backend/backend/docker-compose.yaml
-      service: api
-    ports:
-      - "${BACKEND_PORT:-8000}:${BACKEND_PORT:-8000}"
-    networks:
-      - backend-network
-    environment:
-      - BACKEND_PORT=${BACKEND_PORT}
-      - BACKEND_CORS_ALLOW_ORIGINS=${BACKEND_CORS_ALLOW_ORIGINS}
-      - BACKEND_CORS_ALLOW_CREDENTIALS=${BACKEND_CORS_ALLOW_CREDENTIALS}
-      - BACKEND_CORS_ALLOW_METHODS=${BACKEND_CORS_ALLOW_METHODS}
-      - BACKEND_CORS_ALLOW_HEADERS=${BACKEND_CORS_ALLOW_HEADERS}
+  # Frontend services - Admin
+  - path: ${COMPOSE_FILE_PATH:-./frontend/admin/docker-compose}${COMPOSE_FILE_EXT:-.yaml}
+    env_file: .env
+    project_directory: ./frontend/admin
 
-  admin-app:
-    build:
-      context: ./frontend/admin
-      dockerfile: Dockerfile
-    ports:
-      - "${ADMIN_APP_PORT:-3001}:80"
-    volumes:
-      - ./frontend/admin/src:/app/src # Для live reload в разработке
-    environment:
-      - NODE_ENV=${NODE_ENV:-development}
-      - REACT_APP_KEYCLOAK_URL=${KEYCLOAK_URL}
-      - REACT_APP_KEYCLOAK_REALM=${KEYCLOAK_REALM}
-      - REACT_APP_KEYCLOAK_CLIENT_ID=${ADMIN_KEYCLOAK_CLIENT_ID}
-    depends_on:
-      - backend # Опционально, если фронтенд делает запросы при сборке или запуске к бэкенду
+  # Frontend services - Seller
+  - path: ${COMPOSE_FILE_PATH:-./frontend/seller/docker-compose}${COMPOSE_FILE_EXT:-.yaml}
+    env_file: .env
+    project_directory: ./frontend/seller
 
-  buyer-app:
-    build:
-      context: ./frontend/buyer
-      dockerfile: Dockerfile
-    ports:
-      - "${BUYER_APP_PORT:-3002}:80"
-    volumes:
-      - ./frontend/buyer/src:/app/src # Для live reload в разработке
-    environment:
-      - NODE_ENV=${NODE_ENV:-development}
-      - REACT_APP_KEYCLOAK_URL=${KEYCLOAK_URL}
-      - REACT_APP_KEYCLOAK_REALM=${KEYCLOAK_REALM}
-      - REACT_APP_KEYCLOAK_CLIENT_ID=${BUYER_KEYCLOAK_CLIENT_ID}
-    depends_on:
-      - backend
+  # Frontend services - Buyer
+  - path: ${COMPOSE_FILE_PATH:-./frontend/buyer/docker-compose}${COMPOSE_FILE_EXT:-.yaml}
+    env_file: .env
+    project_directory: ./frontend/buyer
 
-  seller-app:
-    build:
-      context: ./frontend/seller
-      dockerfile: Dockerfile
-    ports:
-      - "${SELLER_APP_PORT:-3003}:80"
-    volumes:
-      - ./frontend/seller/src:/app/src # Для live reload в разработке
-    environment:
-      - NODE_ENV=${NODE_ENV:-development}
-      - REACT_APP_KEYCLOAK_URL=${KEYCLOAK_URL}
-      - REACT_APP_KEYCLOAK_REALM=${KEYCLOAK_REALM}
-      - REACT_APP_KEYCLOAK_CLIENT_ID=${SELLER_KEYCLOAK_CLIENT_ID}
-    depends_on:
-      - backend
+  # Prosto Board Volume Main
+  - path: ./backend/prosto_board_volume-main/docker-compose.yaml
+    env_file: .env
+    project_directory: ./backend/prosto_board_volume-main
+

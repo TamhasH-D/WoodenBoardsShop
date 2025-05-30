@@ -1,25 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { FiHome, FiPackage, FiShoppingCart, FiMessageSquare, FiSettings, FiLogOut, FiUser } from 'react-icons/fi';
-import { useQuery } from '@tanstack/react-query';
-import { sellerService } from '../services';
+import { useAuth } from '../context/AuthContext';
 
 function SellerLayout() {
   const location = useLocation();
-  const [isOnline, setIsOnline] = useState(false);
-  const sellerId = localStorage.getItem('sellerId') || 'demo-seller-id'; // Replace with actual auth logic
-
-  // Fetch seller data
-  const { data: sellerData } = useQuery({
-    queryKey: ['seller', sellerId],
-    queryFn: () => sellerService.getSellerById(sellerId),
-    enabled: !!sellerId,
-    onSuccess: (data) => {
-      if (data && data.data) {
-        setIsOnline(data.data.is_online);
-      }
-    }
-  });
+  const { currentUser, toggleOnlineStatus } = useAuth();
+  const [isOnline, setIsOnline] = useState(currentUser?.settings?.isOnline || false);
 
   const navLinks = [
     { to: 'dashboard', text: 'Обзор', icon: <FiHome className="mr-2" /> },
@@ -30,13 +17,9 @@ function SellerLayout() {
   ];
 
   // Toggle online status
-  const toggleOnlineStatus = async () => {
-    try {
-      await sellerService.toggleOnlineStatus(sellerId, !isOnline);
-      setIsOnline(!isOnline);
-    } catch (error) {
-      console.error('Error toggling online status:', error);
-    }
+  const handleToggleOnlineStatus = () => {
+    toggleOnlineStatus();
+    setIsOnline(!isOnline);
   };
 
   return (
@@ -53,11 +36,12 @@ function SellerLayout() {
             <FiUser size={20} />
           </div>
           <div>
-            <p className="font-sans font-medium">Продавец</p>
-            <div className="flex items-center">
+            <p className="font-sans font-medium">{currentUser?.name || 'Продавец'}</p>
+            <p className="text-xs text-gray-200">{currentUser?.businessInfo?.companyName}</p>
+            <div className="flex items-center mt-1">
               <span className={`w-2 h-2 rounded-full mr-2 ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></span>
               <button
-                onClick={toggleOnlineStatus}
+                onClick={handleToggleOnlineStatus}
                 className="text-xs font-sans hover:underline"
               >
                 {isOnline ? 'Онлайн' : 'Оффлайн'}

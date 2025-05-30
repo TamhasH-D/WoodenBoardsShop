@@ -1,162 +1,341 @@
 import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useQuery } from 'react-query';
-import { FiArrowLeft, FiEdit, FiTrash2 } from 'react-icons/fi';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { motion } from 'framer-motion';
+import {
+  ArrowLeftIcon,
+  PencilIcon,
+  TrashIcon,
+  ShoppingBagIcon,
+  CurrencyDollarIcon,
+  CubeIcon,
+  TruckIcon,
+  MapPinIcon,
+  UserIcon,
+  CalendarIcon,
+  ClockIcon
+} from '@heroicons/react/24/outline';
+import { toast } from 'react-toastify';
 
-// This is a placeholder component. In a real implementation, you would:
-// 1. Fetch data from your API
-// 2. Implement proper error handling
-// 3. Add loading states
-// 4. Implement delete functionality
+import apiService from '../../../apiService';
+import Card from '../../ui/Card';
+import Button from '../../ui/Button';
+import Badge from '../../ui/Badge';
+import LoadingSpinner from '../../ui/LoadingSpinner';
+import { formatDate, formatDateTime, formatCurrency } from '../../../utils/helpers';
 
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  
-  // Mock data - replace with actual API call
-  const { data: product, isLoading, error } = useQuery(['product', id], async () => {
-    // Simulate API call
-    return {
-      id,
-      title: 'Standard Pallet (1200x800)',
-      descrioption: 'High-quality standard wooden pallet suitable for various industrial applications. Made from durable pine wood.',
-      price: 15.00,
-      volume: 0.5,
-      wood_type: 'Pine',
-      wood_type_id: '1',
-      seller: 'Wood Crafters Inc.',
-      seller_id: '1',
-      delivery_possible: true,
-      pickup_location: '456 Forest Ave, Woodland, USA',
-      created_at: '2023-01-15',
-      images: [
-        'https://via.placeholder.com/400x300?text=Pallet+Image+1',
-        'https://via.placeholder.com/400x300?text=Pallet+Image+2'
-      ]
-    };
-  });
+  const queryClient = useQueryClient();
+
+  // Fetch product data
+  const { data: product, isLoading, error } = useQuery(
+    ['product', id],
+    () => apiService.getProduct(id),
+    {
+      enabled: !!id,
+    }
+  );
+
+  // Fetch wood type data
+  const { data: woodType } = useQuery(
+    ['woodType', product?.data?.wood_type_id],
+    () => apiService.getWoodType(product.data.wood_type_id),
+    {
+      enabled: !!product?.data?.wood_type_id,
+    }
+  );
+
+  // Fetch seller data
+  const { data: seller } = useQuery(
+    ['seller', product?.data?.seller_id],
+    () => apiService.getSeller(product.data.seller_id),
+    {
+      enabled: !!product?.data?.seller_id,
+    }
+  );
+
+  // Delete product mutation
+  const deleteProductMutation = useMutation(
+    () => apiService.deleteProduct(id),
+    {
+      onSuccess: () => {
+        toast.success('Товар успешно удален');
+        queryClient.invalidateQueries('products');
+        navigate('/products');
+      },
+      onError: (error) => {
+        toast.error(`Ошибка при удалении товара: ${error.message}`);
+      },
+    }
+  );
 
   const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      // Implement delete API call
-      console.log('Deleting product:', id);
-      navigate('/products');
+    if (window.confirm(`Вы уверены, что хотите удалить товар "${product?.data?.title}"?`)) {
+      deleteProductMutation.mutate();
     }
   };
 
-  if (isLoading) return <div className="text-center p-6">Loading product details...</div>;
-  if (error) return <div className="text-center p-6 text-red-500">Error loading product: {error.message}</div>;
-  if (!product) return <div className="text-center p-6">Product not found</div>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="xl" text="Загрузка товара..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <Card>
+          <Card.Body>
+            <div className="text-center py-8">
+              <div className="text-danger-500 text-4xl mb-4">⚠️</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Ошибка загрузки товара</h3>
+              <p className="text-gray-600 mb-4">{error.message}</p>
+              <Button onClick={() => navigate('/products')} variant="primary">
+                Вернуться к списку товаров
+              </Button>
+            </div>
+          </Card.Body>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!product?.data) {
+    return (
+      <div className="p-6">
+        <Card>
+          <Card.Body>
+            <div className="text-center py-8">
+              <div className="text-gray-400 text-4xl mb-4">📦</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Товар не найден</h3>
+              <p className="text-gray-600 mb-4">Запрашиваемый товар не существует</p>
+              <Button onClick={() => navigate('/products')} variant="primary">
+                Вернуться к списку товаров
+              </Button>
+            </div>
+          </Card.Body>
+        </Card>
+      </div>
+    );
+  }
+
+  const productData = product.data;
 
   return (
-    <div className="p-6">
-      <div className="flex items-center mb-6">
-        <button 
-          onClick={() => navigate('/products')}
-          className="mr-4 p-2 rounded-full hover:bg-gray-100"
-        >
-          <FiArrowLeft />
-        </button>
-        <h1 className="text-2xl font-bold">Product Details</h1>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="p-6 max-w-7xl mx-auto space-y-6"
+    >
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="ghost"
+            icon={<ArrowLeftIcon className="w-4 h-4" />}
+            onClick={() => navigate('/products')}
+          >
+            Назад
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">{productData.title}</h1>
+            <p className="text-gray-600 mt-1">ID: {productData.id}</p>
+          </div>
+        </div>
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="secondary"
+            icon={<PencilIcon className="w-4 h-4" />}
+            as={Link}
+            to={`/products/edit/${productData.id}`}
+          >
+            Редактировать
+          </Button>
+          <Button
+            variant="danger"
+            icon={<TrashIcon className="w-4 h-4" />}
+            onClick={handleDelete}
+            loading={deleteProductMutation.isLoading}
+          >
+            Удалить
+          </Button>
+        </div>
       </div>
 
-      <div className="bg-white shadow-md rounded-md overflow-hidden">
-        <div className="p-6">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h2 className="text-xl font-semibold">{product.title}</h2>
-              <p className="text-gray-500">ID: {product.id}</p>
-            </div>
-            <div className="flex space-x-2">
-              <Link 
-                to={`/products/edit/${product.id}`}
-                className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md flex items-center"
-              >
-                <FiEdit className="mr-2" /> Edit
-              </Link>
-              <button 
-                onClick={handleDelete}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center"
-              >
-                <FiTrash2 className="mr-2" /> Delete
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Product Images */}
-            <div className="md:col-span-1">
-              {product.images && product.images.length > 0 ? (
-                <div className="space-y-4">
-                  {product.images.map((image, index) => (
-                    <img 
-                      key={index}
-                      src={image}
-                      alt={`${product.title} - Image ${index + 1}`}
-                      className="w-full h-auto rounded-md shadow-sm"
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-gray-100 h-64 flex items-center justify-center rounded-md">
-                  <p className="text-gray-500">No images available</p>
-                </div>
-              )}
-            </div>
-
-            {/* Product Details */}
-            <div className="md:col-span-2">
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Product Information */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <Card.Header>
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                <ShoppingBagIcon className="w-5 h-5 mr-2" />
+                Основная информация
+              </h2>
+            </Card.Header>
+            <Card.Body>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Product Information</h3>
-                  <div className="space-y-2">
-                    <p><span className="font-medium">Price:</span> ${product.price.toFixed(2)}</p>
-                    <p><span className="font-medium">Volume:</span> {product.volume} m³</p>
-                    <p>
-                      <span className="font-medium">Wood Type:</span>{' '}
-                      <Link to={`/wood-types/${product.wood_type_id}`} className="text-blue-500 hover:underline">
-                        {product.wood_type}
-                      </Link>
-                    </p>
-                    <p>
-                      <span className="font-medium">Seller:</span>{' '}
-                      <Link to={`/sellers/${product.seller_id}`} className="text-blue-500 hover:underline">
-                        {product.seller}
-                      </Link>
-                    </p>
-                    <p><span className="font-medium">Created:</span> {new Date(product.created_at).toLocaleDateString()}</p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Название товара
+                    </label>
+                    <p className="text-gray-900 font-medium">{productData.title}</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Цена
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <CurrencyDollarIcon className="w-4 h-4 text-success-500" />
+                      <span className="text-xl font-bold text-success-600">
+                        {formatCurrency(productData.price)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Объем
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <CubeIcon className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-900">{productData.volume} м³</span>
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Delivery Information</h3>
-                  <div className="space-y-2">
-                    <p>
-                      <span className="font-medium">Delivery:</span>{' '}
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        product.delivery_possible ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {product.delivery_possible ? 'Available' : 'Not Available'}
-                      </span>
-                    </p>
-                    {product.pickup_location && (
-                      <p><span className="font-medium">Pickup Location:</span> {product.pickup_location}</p>
-                    )}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Тип древесины
+                    </label>
+                    <Badge variant="gray">
+                      {woodType?.data?.neme || 'Загрузка...'}
+                    </Badge>
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Доставка
+                    </label>
+                    <div className="flex items-center space-x-2">
+                      <TruckIcon className="w-4 h-4 text-gray-400" />
+                      <Badge variant={productData.delivery_possible ? 'success' : 'warning'}>
+                        {productData.delivery_possible ? 'Доставка возможна' : 'Только самовывоз'}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {productData.pickup_location && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Место самовывоза
+                      </label>
+                      <div className="flex items-start space-x-2">
+                        <MapPinIcon className="w-4 h-4 text-gray-400 mt-0.5" />
+                        <span className="text-gray-900">{productData.pickup_location}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {product.descrioption && (
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold mb-2">Description</h3>
-                  <p className="text-gray-700">{product.descrioption}</p>
+              {productData.descrioption && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Описание
+                  </label>
+                  <p className="text-gray-700 leading-relaxed">{productData.descrioption}</p>
                 </div>
               )}
-            </div>
-          </div>
+            </Card.Body>
+          </Card>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Seller Information */}
+          <Card>
+            <Card.Header>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <UserIcon className="w-5 h-5 mr-2" />
+                Продавец
+              </h3>
+            </Card.Header>
+            <Card.Body>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    ID продавца
+                  </label>
+                  <Link
+                    to={`/sellers/${productData.seller_id}`}
+                    className="text-primary-600 hover:text-primary-700 font-medium"
+                  >
+                    {productData.seller_id}
+                  </Link>
+                </div>
+
+                {seller?.data && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Статус
+                    </label>
+                    <Badge variant={seller.data.is_online ? 'success' : 'gray'}>
+                      {seller.data.is_online ? 'Онлайн' : 'Оффлайн'}
+                    </Badge>
+                  </div>
+                )}
+              </div>
+            </Card.Body>
+          </Card>
+
+          {/* Timestamps */}
+          <Card>
+            <Card.Header>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <ClockIcon className="w-5 h-5 mr-2" />
+                Временные метки
+              </h3>
+            </Card.Header>
+            <Card.Body>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Дата создания
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <CalendarIcon className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-900 text-sm">
+                      {formatDateTime(productData.created_at)}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Последнее обновление
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <ClockIcon className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-900 text-sm">
+                      {formatDateTime(productData.updated_at)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Card.Body>
+          </Card>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

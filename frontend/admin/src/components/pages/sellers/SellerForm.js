@@ -1,125 +1,139 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { toast } from 'react-toastify';
 import { FiArrowLeft, FiSave } from 'react-icons/fi';
-
-// This is a placeholder component. In a real implementation, you would:
-// 1. Fetch data from your API for editing
-// 2. Implement form submission to create/update
-// 3. Add proper form validation
-// 4. Add error handling
+import apiService from '../../../apiService';
+import FormField from '../../common/FormField';
+import CheckboxField from '../../common/CheckboxField';
 
 const SellerForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const isEditMode = !!id;
-  
+
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
+    email: '', // This will be part of the user object
     phone: '',
     address: '',
     description: '',
-    isOnline: false,
+    is_online: false, // API uses is_online
+    // user_id: '', // If you need to associate with an existing user
   });
-  
+
   const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // For edit mode, fetch the seller data
-  const { data: sellerData, isLoading } = useQuery(
+
+  // Fetch seller data if in edit mode
+  const { data: sellerData, isLoading: isLoadingSeller } = useQuery(
     ['seller', id],
-    async () => {
-      // Simulate API call for edit mode
-      return {
-        id,
-        name: 'Wood Crafters Inc.',
-        email: 'contact@woodcrafters.com',
-        phone: '+1234567890',
-        address: '456 Forest Ave, Woodland, USA',
-        description: 'Specializing in high-quality wooden pallets and custom wood products.',
-        isOnline: true,
-      };
-    },
+    () => apiService.getSeller(id),
     {
       enabled: isEditMode,
       onSuccess: (data) => {
-        if (data) {
+        if (data && data.data) {
+          const seller = data.data;
           setFormData({
-            name: data.name || '',
-            email: data.email || '',
-            phone: data.phone || '',
-            address: data.address || '',
-            description: data.description || '',
-            isOnline: data.isOnline || false,
+            name: seller.name || '',
+            email: seller.user?.email || '', // Assuming email is part of the nested user object
+            phone: seller.phone || '',
+            address: seller.address || '',
+            description: seller.description || '',
+            is_online: seller.is_online || false,
+            // user_id: seller.user_id || '',
           });
         }
       },
+      onError: (error) => {
+        toast.error(`Error fetching seller: ${error.message}`);
+        navigate('/sellers');
+      },
     }
   );
-  
+
+  const createSellerMutation = useMutation(
+    (sellerData) => apiService.createSeller(sellerData),
+    {
+      onSuccess: () => {
+        toast.success('Seller created successfully!');
+        queryClient.invalidateQueries('sellers');
+        navigate('/sellers');
+      },
+      onError: (error) => {
+        toast.error(`Error creating seller: ${error.message}`);
+        setErrors(error.response?.data?.errors || {});
+      },
+    }
+  );
+
+  const updateSellerMutation = useMutation(
+    ({ id, sellerData }) => apiService.updateSeller(id, sellerData),
+    {
+      onSuccess: () => {
+        toast.success('Seller updated successfully!');
+        queryClient.invalidateQueries('sellers');
+        queryClient.invalidateQueries(['seller', id]);
+        navigate('/sellers');
+      },
+      onError: (error) => {
+        toast.error(`Error updating seller: ${error.message}`);
+        setErrors(error.response?.data?.errors || {});
+      },
+    }
+  );
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
-    
-    // Clear error when field is edited
     if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: '',
-      }));
+      setErrors((prev) => ({ ...prev, [name]: null }));
     }
   };
-  
+
   const validateForm = () => {
     const newErrors = {};
-    
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    }
-    
+    if (!formData.name.trim()) newErrors.name = 'Company Name is required';
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
-      newErrors.email = 'Invalid email address';
+    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      newErrors.email = 'Invalid email format';
     }
-    
+    // Add other validations as needed
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!validateForm()) {
+      toast.error('Please correct the form errors.');
       return;
     }
-    
-    setIsSubmitting(true);
-    
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      console.log('Form submitted:', formData);
-      
-      // Redirect after successful submission
-      navigate('/sellers');
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setErrors((prev) => ({
-        ...prev,
-        form: 'Failed to submit form. Please try again.',
-      }));
-    } finally {
-      setIsSubmitting(false);
+
+    const sellerPayload = {
+      name: formData.name,
+      phone: formData.phone,
+      address: formData.address,
+      description: formData.description,
+      is_online: formData.is_online,
+      email: formData.email, // API expects email for user creation/linking
+      // user_id: formData.user_id, // If linking to an existing user by ID
+    };
+
+    if (isEditMode) {
+      updateSellerMutation.mutate({ id, sellerData: sellerPayload });
+    } else {
+      createSellerMutation.mutate(sellerPayload);
     }
   };
-  
-  if (isEditMode && isLoading) {
+
+  const isLoading = isLoadingSeller || createSellerMutation.isLoading || updateSellerMutation.isLoading;
+
+  if (isEditMode && isLoadingSeller) {
     return <div className="text-center p-6">Loading seller data...</div>;
   }
   
@@ -142,120 +156,91 @@ const SellerForm = () => {
           </div>
         )}
         
-        <form onSubmit={handleSubmit}>
+<form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-gray-700 font-medium mb-2" htmlFor="name">
-                Company Name *
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className={`w-full p-2 border rounded-md ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="Enter company name"
-              />
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 font-medium mb-2" htmlFor="email">
-                Email *
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`w-full p-2 border rounded-md ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="Enter email address"
-              />
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 font-medium mb-2" htmlFor="phone">
-                Phone
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-md"
-                placeholder="Enter phone number"
-              />
-            </div>
-            
-            <div className="md:col-span-2">
-              <label className="block text-gray-700 font-medium mb-2" htmlFor="address">
-                Address
-              </label>
-              <textarea
-                id="address"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                rows="2"
-                className="w-full p-2 border border-gray-300 rounded-md"
-                placeholder="Enter address"
-              ></textarea>
-            </div>
-            
-            <div className="md:col-span-2">
-              <label className="block text-gray-700 font-medium mb-2" htmlFor="description">
-                Description
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows="3"
-                className="w-full p-2 border border-gray-300 rounded-md"
-                placeholder="Enter company description"
-              ></textarea>
-            </div>
-            
-            <div>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="isOnline"
-                  name="isOnline"
-                  checked={formData.isOnline}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                />
-                <label className="ml-2 block text-gray-700" htmlFor="isOnline">
-                  Online Status
-                </label>
-              </div>
-              <p className="text-sm text-gray-500 mt-1">
-                Set the seller as online or offline
-              </p>
-            </div>
+            <FormField
+              label="Company Name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              error={errors.name}
+              placeholder="Enter company name"
+              required
+            />
+            <FormField
+              label="Email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              error={errors.email}
+              placeholder="Enter email address for the user account"
+              required
+            />
+            <FormField
+              label="Phone"
+              name="phone"
+              type="tel"
+              value={formData.phone}
+              onChange={handleChange}
+              error={errors.phone}
+              placeholder="Enter phone number"
+            />
+            <FormField
+              label="Address"
+              name="address"
+              type="textarea"
+              value={formData.address}
+              onChange={handleChange}
+              error={errors.address}
+              placeholder="Enter address"
+              className="md:col-span-2"
+            />
+            <FormField
+              label="Description"
+              name="description"
+              type="textarea"
+              value={formData.description}
+              onChange={handleChange}
+              error={errors.description}
+              placeholder="Enter a description for the seller"
+              className="md:col-span-2"
+              rows={4}
+            />
+            <CheckboxField
+              label="Seller is Online"
+              name="is_online" // Changed from isOnline to is_online
+              checked={formData.is_online}
+              onChange={handleChange}
+              className="md:col-span-2"
+            />
+            {/* If you need to link to an existing user by ID */}
+            {/* <FormField
+              label="User ID (Optional)"
+              name="user_id"
+              value={formData.user_id}
+              onChange={handleChange}
+              error={errors.user_id}
+              placeholder="Enter existing User ID if applicable"
+            /> */}
           </div>
-          
-          <div className="mt-6 flex justify-end">
+
+          <div className="mt-8 flex justify-end">
             <button
               type="button"
               onClick={() => navigate('/sellers')}
-              className="mr-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              className="mr-4 px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+              disabled={isLoading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+              disabled={isLoading}
             >
               <FiSave className="mr-2" />
-              {isSubmitting ? 'Saving...' : 'Save Seller'}
+              {isLoading ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Create Seller')}
             </button>
           </div>
         </form>

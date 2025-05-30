@@ -1,4 +1,4 @@
-DOCKER_CMD = docker compose exec -it api
+DOCKER_CMD = docker exec -it backend-api
 
 .PHONY: help
 help: # Show help for each of the Makefile recipes.
@@ -19,6 +19,9 @@ down: # Stop the project with Docker Compose.
 .PHONY: build
 build: # Build the project with Docker Compose.
 	docker compose --env-file .env build --no-cache
+
+.PHONY: rebuild
+rebuild: down build up # Rebuild and restart all microservices
 
 .PHONY: logs
 logs: # Show the logs of the project with Docker Compose.

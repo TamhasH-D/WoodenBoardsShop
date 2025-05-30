@@ -1,160 +1,163 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useQuery } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { toast } from 'react-toastify';
 import { FiArrowLeft, FiSave } from 'react-icons/fi';
-
-// This is a placeholder component. In a real implementation, you would:
-// 1. Fetch data from your API for editing
-// 2. Implement form submission to create/update
-// 3. Add proper form validation
-// 4. Add error handling
+import apiService from '../../../apiService';
+import FormField from '../../common/FormField';
+import CheckboxField from '../../common/CheckboxField';
 
 const WoodTypePriceForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const isEditMode = !!id;
-  
-  // Get wood type ID from query params if available
+
   const queryParams = new URLSearchParams(location.search);
   const woodTypeIdFromQuery = queryParams.get('woodType');
-  
+
   const [formData, setFormData] = useState({
     wood_type_id: woodTypeIdFromQuery || '',
     price_per_cubic_meter: '',
     min_order_volume: '',
-    effective_date: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
+    effective_date: new Date().toISOString().split('T')[0],
     expiration_date: '',
     is_active: true,
     notes: '',
   });
-  
+
   const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Fetch wood types for dropdown
-  const { data: woodTypes } = useQuery('woodTypes', async () => {
-    // Simulate API call
-    return [
-      { id: '1', neme: 'Pine' },
-      { id: '2', neme: 'Oak' },
-      { id: '3', neme: 'Birch' },
-      { id: '4', neme: 'Maple' },
-    ];
-  });
-  
-  // For edit mode, fetch the price data
-  const { data: priceData, isLoading } = useQuery(
+  const { data: woodTypesData, isLoading: isLoadingWoodTypes } = useQuery(
+    'woodTypes',
+    apiService.getWoodTypes,
+    {
+      select: (data) => data?.data?.items || [], // Ensure we get the array of wood types
+      onError: (error) => {
+        toast.error(`Error fetching wood types: ${error.message}`);
+      }
+    }
+  );
+
+  // Fetch wood type price data if in edit mode
+  const { data: priceData, isLoading: isLoadingPrice } = useQuery(
     ['woodTypePrice', id],
-    async () => {
-      // Simulate API call for edit mode
-      return {
-        id,
-        wood_type_id: '1',
-        price_per_cubic_meter: 300.00,
-        min_order_volume: 0.5,
-        effective_date: '2023-01-01',
-        expiration_date: '2023-12-31',
-        is_active: true,
-        notes: 'Standard pricing for pine wood in 2023.'
-      };
-    },
+    () => apiService.getWoodTypePrice(id),
     {
       enabled: isEditMode,
       onSuccess: (data) => {
-        if (data) {
+        if (data && data.data) {
+          const price = data.data;
           setFormData({
-            wood_type_id: data.wood_type_id || '',
-            price_per_cubic_meter: data.price_per_cubic_meter || '',
-            min_order_volume: data.min_order_volume || '',
-            effective_date: data.effective_date || '',
-            expiration_date: data.expiration_date || '',
-            is_active: data.is_active || false,
-            notes: data.notes || '',
+            wood_type_id: price.wood_type_id || '',
+            price_per_cubic_meter: price.price_per_cubic_meter || '',
+            min_order_volume: price.min_order_volume || '',
+            effective_date: price.effective_date ? new Date(price.effective_date).toISOString().split('T')[0] : '',
+            expiration_date: price.expiration_date ? new Date(price.expiration_date).toISOString().split('T')[0] : '',
+            is_active: price.is_active || false,
+            notes: price.notes || '',
           });
         }
       },
+      onError: (error) => {
+        toast.error(`Error fetching wood type price: ${error.message}`);
+        navigate('/wood-type-prices');
+      },
     }
   );
-  
+
+  const createPriceMutation = useMutation(
+    (priceData) => apiService.createWoodTypePrice(priceData),
+    {
+      onSuccess: () => {
+        toast.success('Wood type price created successfully!');
+        queryClient.invalidateQueries('woodTypePrices');
+        navigate('/wood-type-prices');
+      },
+      onError: (error) => {
+        toast.error(`Error creating price: ${error.message}`);
+        setErrors(error.response?.data?.errors || {});
+      },
+    }
+  );
+
+  const updatePriceMutation = useMutation(
+    ({ id, priceData }) => apiService.updateWoodTypePrice(id, priceData),
+    {
+      onSuccess: () => {
+        toast.success('Wood type price updated successfully!');
+        queryClient.invalidateQueries('woodTypePrices');
+        queryClient.invalidateQueries(['woodTypePrice', id]);
+        navigate('/wood-type-prices');
+      },
+      onError: (error) => {
+        toast.error(`Error updating price: ${error.message}`);
+        setErrors(error.response?.data?.errors || {});
+      },
+    }
+  );
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
-    
-    // Clear error when field is edited
     if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: '',
-      }));
+      setErrors((prev) => ({ ...prev, [name]: null }));
     }
   };
-  
+
   const validateForm = () => {
     const newErrors = {};
-    
-    if (!formData.wood_type_id) {
-      newErrors.wood_type_id = 'Wood type is required';
-    }
-    
+    if (!formData.wood_type_id) newErrors.wood_type_id = 'Wood type is required';
     if (!formData.price_per_cubic_meter) {
       newErrors.price_per_cubic_meter = 'Price is required';
     } else if (isNaN(formData.price_per_cubic_meter) || parseFloat(formData.price_per_cubic_meter) <= 0) {
       newErrors.price_per_cubic_meter = 'Price must be a positive number';
     }
-    
     if (!formData.min_order_volume) {
       newErrors.min_order_volume = 'Minimum order volume is required';
     } else if (isNaN(formData.min_order_volume) || parseFloat(formData.min_order_volume) <= 0) {
       newErrors.min_order_volume = 'Minimum order volume must be a positive number';
     }
-    
-    if (!formData.effective_date) {
-      newErrors.effective_date = 'Effective date is required';
-    }
-    
-    if (formData.effective_date && formData.expiration_date && 
-        new Date(formData.effective_date) > new Date(formData.expiration_date)) {
+    if (!formData.effective_date) newErrors.effective_date = 'Effective date is required';
+    if (formData.effective_date && formData.expiration_date && new Date(formData.effective_date) > new Date(formData.expiration_date)) {
       newErrors.expiration_date = 'Expiration date must be after effective date';
     }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!validateForm()) {
+      toast.error('Please correct the form errors.');
       return;
     }
-    
-    setIsSubmitting(true);
-    
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      console.log('Form submitted:', formData);
-      
-      // Redirect after successful submission
-      navigate('/wood-type-prices');
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setErrors((prev) => ({
-        ...prev,
-        form: 'Failed to submit form. Please try again.',
-      }));
-    } finally {
-      setIsSubmitting(false);
+
+    const payload = {
+      ...formData,
+      price_per_cubic_meter: parseFloat(formData.price_per_cubic_meter),
+      min_order_volume: parseFloat(formData.min_order_volume),
+      // Ensure dates are in YYYY-MM-DD or null if empty
+      effective_date: formData.effective_date || null,
+      expiration_date: formData.expiration_date || null,
+    };
+
+    if (isEditMode) {
+      updatePriceMutation.mutate({ id, priceData: payload });
+    } else {
+      createPriceMutation.mutate(payload);
     }
   };
-  
-  if (isEditMode && isLoading) {
-    return <div className="text-center p-6">Loading price data...</div>;
+
+  const isLoading = isLoadingWoodTypes || isLoadingPrice || createPriceMutation.isLoading || updatePriceMutation.isLoading;
+
+  if ((isEditMode && isLoadingPrice) || isLoadingWoodTypes) {
+    return <div className="text-center p-6">Loading data...</div>;
   }
   
   return (
@@ -176,146 +179,97 @@ const WoodTypePriceForm = () => {
           </div>
         )}
         
-        <form onSubmit={handleSubmit}>
+<form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-gray-700 font-medium mb-2" htmlFor="wood_type_id">
-                Wood Type *
-              </label>
-              <select
-                id="wood_type_id"
-                name="wood_type_id"
-                value={formData.wood_type_id}
-                onChange={handleChange}
-                className={`w-full p-2 border rounded-md ${errors.wood_type_id ? 'border-red-500' : 'border-gray-300'}`}
-                disabled={!!woodTypeIdFromQuery}
-              >
-                <option value="">Select Wood Type</option>
-                {woodTypes?.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.neme}
-                  </option>
-                ))}
-              </select>
-              {errors.wood_type_id && <p className="text-red-500 text-sm mt-1">{errors.wood_type_id}</p>}
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 font-medium mb-2" htmlFor="price_per_cubic_meter">
-                Price per Cubic Meter ($) *
-              </label>
-              <input
-                type="number"
-                id="price_per_cubic_meter"
-                name="price_per_cubic_meter"
-                value={formData.price_per_cubic_meter}
-                onChange={handleChange}
-                step="0.01"
-                min="0"
-                className={`w-full p-2 border rounded-md ${errors.price_per_cubic_meter ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="Enter price per cubic meter"
-              />
-              {errors.price_per_cubic_meter && <p className="text-red-500 text-sm mt-1">{errors.price_per_cubic_meter}</p>}
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 font-medium mb-2" htmlFor="min_order_volume">
-                Minimum Order Volume (m³) *
-              </label>
-              <input
-                type="number"
-                id="min_order_volume"
-                name="min_order_volume"
-                value={formData.min_order_volume}
-                onChange={handleChange}
-                step="0.01"
-                min="0"
-                className={`w-full p-2 border rounded-md ${errors.min_order_volume ? 'border-red-500' : 'border-gray-300'}`}
-                placeholder="Enter minimum order volume"
-              />
-              {errors.min_order_volume && <p className="text-red-500 text-sm mt-1">{errors.min_order_volume}</p>}
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 font-medium mb-2" htmlFor="effective_date">
-                Effective Date *
-              </label>
-              <input
-                type="date"
-                id="effective_date"
-                name="effective_date"
-                value={formData.effective_date}
-                onChange={handleChange}
-                className={`w-full p-2 border rounded-md ${errors.effective_date ? 'border-red-500' : 'border-gray-300'}`}
-              />
-              {errors.effective_date && <p className="text-red-500 text-sm mt-1">{errors.effective_date}</p>}
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 font-medium mb-2" htmlFor="expiration_date">
-                Expiration Date
-              </label>
-              <input
-                type="date"
-                id="expiration_date"
-                name="expiration_date"
-                value={formData.expiration_date}
-                onChange={handleChange}
-                className={`w-full p-2 border rounded-md ${errors.expiration_date ? 'border-red-500' : 'border-gray-300'}`}
-              />
-              {errors.expiration_date && <p className="text-red-500 text-sm mt-1">{errors.expiration_date}</p>}
-            </div>
-            
-            <div>
-              <div className="flex items-center mb-2">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  name="is_active"
-                  checked={formData.is_active}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                />
-                <label className="ml-2 block text-gray-700" htmlFor="is_active">
-                  Active
-                </label>
-              </div>
-              <p className="text-sm text-gray-500">
-                Only active prices will be used for calculations
-              </p>
-            </div>
-            
-            <div className="md:col-span-2">
-              <label className="block text-gray-700 font-medium mb-2" htmlFor="notes">
-                Notes
-              </label>
-              <textarea
-                id="notes"
-                name="notes"
-                value={formData.notes}
-                onChange={handleChange}
-                rows="3"
-                className="w-full p-2 border border-gray-300 rounded-md"
-                placeholder="Enter any additional notes"
-              ></textarea>
-            </div>
+            <FormField
+              label="Wood Type"
+              name="wood_type_id"
+              type="select"
+              value={formData.wood_type_id}
+              onChange={handleChange}
+              error={errors.wood_type_id}
+              required
+              disabled={!!woodTypeIdFromQuery || isLoadingWoodTypes}
+              options={[
+                { value: '', label: 'Select Wood Type' },
+                ...(woodTypesData?.map((type) => ({ value: type.id, label: type.name })) || []) // Corrected 'neme' to 'name'
+              ]}
+            />
+            <FormField
+              label="Price per Cubic Meter"
+              name="price_per_cubic_meter"
+              type="number"
+              value={formData.price_per_cubic_meter}
+              onChange={handleChange}
+              error={errors.price_per_cubic_meter}
+              placeholder="e.g., 250.50"
+              step="0.01"
+              required
+            />
+            <FormField
+              label="Minimum Order Volume (m³)"
+              name="min_order_volume"
+              type="number"
+              value={formData.min_order_volume}
+              onChange={handleChange}
+              error={errors.min_order_volume}
+              placeholder="e.g., 0.5"
+              step="0.01"
+              required
+            />
+            <FormField
+              label="Effective Date"
+              name="effective_date"
+              type="date"
+              value={formData.effective_date}
+              onChange={handleChange}
+              error={errors.effective_date}
+              required
+            />
+            <FormField
+              label="Expiration Date"
+              name="expiration_date"
+              type="date"
+              value={formData.expiration_date}
+              onChange={handleChange}
+              error={errors.expiration_date}
+            />
+            <CheckboxField
+              label="Price is Active"
+              name="is_active"
+              checked={formData.is_active}
+              onChange={handleChange}
+              className="md:col-span-2"
+            />
+            <FormField
+              label="Notes"
+              name="notes"
+              type="textarea"
+              value={formData.notes}
+              onChange={handleChange}
+              error={errors.notes}
+              placeholder="Optional notes about this price entry"
+              className="md:col-span-2"
+              rows={3}
+            />
           </div>
-          
-          <div className="mt-6 flex justify-end">
+
+          <div className="mt-8 flex justify-end">
             <button
               type="button"
               onClick={() => navigate('/wood-type-prices')}
-              className="mr-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              className="mr-4 px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+              disabled={isLoading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+              disabled={isLoading}
             >
               <FiSave className="mr-2" />
-              {isSubmitting ? 'Saving...' : 'Save Price'}
+              {isLoading ? 'Saving...' : (isEditMode ? 'Save Changes' : 'Create Price')}
             </button>
           </div>
         </form>

@@ -22,14 +22,13 @@ class BaseSettings(PydanticBaseSettings):
 class DBSettings(BaseSettings):
     """Configuration for PostgreSQL connection."""
 
-    host: str = "0.0.0.0"
+    host: str = "backend-pg"
     port: int = 5432
-    user: str = "postgres"
-    password: SecretStr = SecretStr("postgres")
-    database: str = "postgres"
+    user: str = "backend"
+    password: SecretStr = SecretStr("backend")
+    database: str = "backend"
     pool_size: int = 15
     echo: bool = False
-
     model_config = SettingsConfigDict(
         env_file=".env",
         env_prefix=f"{PREFIX}PG_",
@@ -117,6 +116,7 @@ class Settings(BaseSettings):
     db: DBSettings = DBSettings()
     redis: RedisSettings = RedisSettings()
     cors: CORSSettings = CORSSettings()
+    prosto_board_volume_seg_url: str = "http://172.27.65.14/:8001"
 
     model_config = SettingsConfigDict(
         env_file=DOTENV,

@@ -1,121 +1,83 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import Layout from '../components/layout/Layout';
 import ProductGrid from '../components/product/ProductGrid';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import PriceCalculator from '../components/calculator/PriceCalculator';
-import { useApi } from '../context/ApiContext';
-import { transformWoodTypeList } from '../models/woodType.model';
+import EmptyState from '../components/common/EmptyState';
+import ErrorMessage from '../components/common/ErrorMessage';
+import SkeletonLoader from '../components/common/SkeletonLoader';
+import apiService from '../apiService';
 
 const MainPage = () => {
-  const {
-    apiService,
-    loading: apiLoading,
-    errors: apiErrors,
-    fetchProducts,
-    fetchWoodTypes,
-    fetchWoodTypePrices
-  } = useApi();
-
-  const [featuredProducts, setFeaturedProducts] = useState([]);
-  const [woodTypes, setWoodTypes] = useState([]);
-  const [woodTypePrices, setWoodTypePrices] = useState({});
-  const [loading, setLoading] = useState({
-    products: true,
-    woodTypes: true,
-    prices: true
-  });
   const [error, setError] = useState(null);
 
-  // Load products
-  useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        const products = await fetchProducts(0, 4); // Get first 4 products
+  // Fetch featured products
+  const {
+    data: productsData,
+    isLoading: productsLoading,
+    error: productsError,
+    refetch: refetchProducts
+  } = useQuery({
+    queryKey: ['featuredProducts'],
+    queryFn: () => apiService.getProducts({ limit: 4, sortBy: 'created_at', sortDirection: 'desc' }),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 3,
+    retryDelay: 1000,
+    onError: (error) => {
+      console.error('Error loading products:', error);
+    }
+  });
 
-        // Enhance products with wood type names
-        const enhancedProducts = await Promise.all(products.map(async (product) => {
-          try {
-            const woodTypeResponse = await apiService.getWoodType(product.woodTypeId);
-            const woodType = woodTypeResponse.data;
-            return {
-              ...product,
-              woodType: woodType.neme || 'Неизвестный тип' // API has a typo in the field name
-            };
-          } catch (error) {
-            console.error(`Error fetching wood type for product ${product.id}:`, error);
-            return {
-              ...product,
-              woodType: 'Неизвестный тип'
-            };
-          }
-        }));
+  // Fetch wood types
+  const {
+    data: woodTypesData,
+    isLoading: woodTypesLoading,
+    error: woodTypesError,
+    refetch: refetchWoodTypes
+  } = useQuery({
+    queryKey: ['woodTypes'],
+    queryFn: () => apiService.getWoodTypes({ limit: 8 }),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    retry: 3,
+    retryDelay: 1000,
+    onError: (error) => {
+      console.error('Error loading wood types:', error);
+    }
+  });
 
-        setFeaturedProducts(enhancedProducts);
-      } catch (error) {
-        console.error('Error loading products:', error);
-        setError('Не удалось загрузить товары. Пожалуйста, попробуйте позже.');
-      } finally {
-        setLoading(prev => ({ ...prev, products: false }));
-      }
-    };
+  // Fetch dashboard stats
+  const { data: dashboardStats } = useQuery({
+    queryKey: ['dashboardStats'],
+    queryFn: () => apiService.getBuyerDashboardStats('buyer-test-001'),
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
+    onError: (error) => {
+      console.error('Error loading dashboard stats:', error);
+    }
+  });
 
-    loadProducts();
-  }, []);
+  const featuredProducts = productsData?.data || [];
+  const woodTypes = woodTypesData?.data || [];
+  const isLoading = productsLoading || woodTypesLoading;
 
-  // Load wood types and prices
-  useEffect(() => {
-    const loadWoodTypesAndPrices = async () => {
-      try {
-        // Load wood types
-        const types = await fetchWoodTypes();
-        setWoodTypes(types);
+  // Handle critical errors (both products and wood types failed)
+  const hasCriticalError = productsError && woodTypesError;
 
-        // Load wood type prices
-        const prices = await fetchWoodTypePrices();
-
-        // Create a map of wood type ID to price
-        const priceMap = {};
-        prices.forEach(price => {
-          priceMap[price.wood_type_id] = price.price_per_m3;
-        });
-
-        setWoodTypePrices(priceMap);
-
-        // Enhance wood types with prices
-        const enhancedWoodTypes = types.map(type => ({
-          ...type,
-          pricePerM3: priceMap[type.id] || 0
-        }));
-
-        setWoodTypes(enhancedWoodTypes);
-      } catch (error) {
-        console.error('Error loading wood types or prices:', error);
-        setError('Не удалось загрузить типы древесины. Пожалуйста, попробуйте позже.');
-      } finally {
-        setLoading(prev => ({
-          ...prev,
-          woodTypes: false,
-          prices: false
-        }));
-      }
-    };
-
-    loadWoodTypesAndPrices();
-  }, []);
-
-  // Check if all data is loaded
-  const isLoading = loading.products || loading.woodTypes || loading.prices;
-
-  // Display error message if there's an error
-  if (error) {
+  if (hasCriticalError) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-16 text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Ошибка загрузки данных</h2>
-          <p className="mb-6">{error}</p>
-          <Button onClick={() => window.location.reload()}>Попробовать снова</Button>
+        <div className="container mx-auto px-4 py-16">
+          <ErrorMessage
+            error={productsError}
+            onRetry={() => {
+              refetchProducts();
+              refetchWoodTypes();
+            }}
+            className="min-h-[400px]"
+          />
         </div>
       </Layout>
     );
@@ -154,7 +116,33 @@ const MainPage = () => {
               Смотреть все
             </Link>
           </div>
-          <ProductGrid products={featuredProducts} loading={loading.products} />
+
+          {productsError ? (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+              <div className="text-center">
+                <p className="text-yellow-800 mb-4">Не удалось загрузить товары</p>
+                <Button
+                  onClick={refetchProducts}
+                  variant="outline"
+                  size="sm"
+                >
+                  Попробовать снова
+                </Button>
+              </div>
+            </div>
+          ) : featuredProducts.length === 0 && !productsLoading ? (
+            <EmptyState
+              title="Товары пока не добавлены"
+              description="Скоро здесь появятся популярные товары"
+              action={
+                <Link to="/products">
+                  <Button>Перейти в каталог</Button>
+                </Link>
+              }
+            />
+          ) : (
+            <ProductGrid products={featuredProducts} loading={productsLoading} />
+          )}
         </div>
       </section>
 
@@ -164,26 +152,40 @@ const MainPage = () => {
           <h2 className="text-2xl md:text-3xl font-bold text-wood-text mb-8 text-center">
             Типы древесины
           </h2>
-          {loading.woodTypes ? (
+
+          {woodTypesError ? (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+              <div className="text-center">
+                <p className="text-yellow-800 mb-4">Не удалось загрузить типы древесины</p>
+                <Button
+                  onClick={refetchWoodTypes}
+                  variant="outline"
+                  size="sm"
+                >
+                  Попробовать снова
+                </Button>
+              </div>
+            </div>
+          ) : woodTypesLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[...Array(4)].map((_, index) => (
-                <Card key={index} className="text-center animate-pulse">
-                  <div className="h-40 bg-gray-300 mb-4 rounded"></div>
-                  <div className="h-6 bg-gray-300 rounded w-1/2 mx-auto mb-2"></div>
-                  <div className="h-4 bg-gray-300 rounded w-1/3 mx-auto mb-4"></div>
-                  <div className="h-10 bg-gray-300 rounded w-full"></div>
-                </Card>
+                <SkeletonLoader key={index} variant="card" />
               ))}
             </div>
+          ) : woodTypes.length === 0 ? (
+            <EmptyState
+              title="Типы древесины пока не добавлены"
+              description="Скоро здесь появится информация о различных типах древесины"
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {woodTypes.map((type) => (
+              {woodTypes.slice(0, 4).map((type) => (
                 <Card key={type.id} hover={true} className="text-center">
                   <div className="h-40 bg-wood-medium bg-opacity-20 flex items-center justify-center mb-4 rounded">
-                    <span className="text-2xl font-bold text-wood-dark">{type.name}</span>
+                    <span className="text-2xl font-bold text-wood-dark">{type.name || type.neme || 'Древесина'}</span>
                   </div>
-                  <h3 className="text-xl font-semibold text-wood-text mb-2">{type.name}</h3>
-                  <p className="text-gray-600 mb-4">от {type.pricePerM3.toLocaleString('ru-RU')} ₽/м³</p>
+                  <h3 className="text-xl font-semibold text-wood-text mb-2">{type.name || type.neme || 'Неизвестный тип'}</h3>
+                  <p className="text-gray-600 mb-4">Доступно в каталоге</p>
                   <Link to={`/wood-types/${type.id}`}>
                     <Button variant="outline" fullWidth>Подробнее</Button>
                   </Link>
@@ -200,7 +202,7 @@ const MainPage = () => {
           <h2 className="text-2xl md:text-3xl font-bold text-wood-text mb-8 text-center">
             Рассчитайте стоимость
           </h2>
-          <PriceCalculator woodTypes={woodTypes} loading={loading.woodTypes} />
+          <PriceCalculator woodTypes={woodTypes} loading={woodTypesLoading} />
         </div>
       </section>
 

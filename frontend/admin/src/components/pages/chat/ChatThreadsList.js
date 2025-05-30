@@ -1,204 +1,354 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from 'react-query';
-import { FiMessageCircle, FiSearch, FiFilter, FiEye, FiTrash2 } from 'react-icons/fi';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { motion } from 'framer-motion';
+import {
+  ChatBubbleLeftRightIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  EyeIcon,
+  TrashIcon,
+  ArrowDownTrayIcon,
+  ClockIcon,
+  UserIcon
+} from '@heroicons/react/24/outline';
+import { toast } from 'react-toastify';
 
-// This is a placeholder component. In a real implementation, you would:
-// 1. Fetch data from your API
-// 2. Implement proper error handling
-// 3. Add pagination, filtering, and sorting
-// 4. Add proper form validation
+import apiService from '../../../apiService';
+import Card from '../../ui/Card';
+import Button from '../../ui/Button';
+import Input from '../../ui/Input';
+import Table from '../../ui/Table';
+import Badge from '../../ui/Badge';
+import LoadingSpinner from '../../ui/LoadingSpinner';
+import { formatDate, formatDateTime, getRelativeTime, debounce, arrayToCSV, downloadFile } from '../../../utils/helpers';
 
 const ChatThreadsList = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  
-  // Mock data - replace with actual API call
-  const { data: chatThreads, isLoading, error } = useQuery('chatThreads', async () => {
-    // Simulate API call
-    return [
-      { 
-        id: '1', 
-        buyer_id: '101',
-        buyer_name: 'John Doe',
-        seller_id: '201',
-        seller_name: 'Wood Crafters Inc.',
-        last_message: 'Is this product still available?',
-        last_message_time: '2023-05-15T14:30:00Z',
-        unread_count: 2,
-        is_active: true,
-        created_at: '2023-05-15T10:15:00Z'
-      },
-      { 
-        id: '2', 
-        buyer_id: '102',
-        buyer_name: 'Jane Smith',
-        seller_id: '202',
-        seller_name: 'Forest Products LLC',
-        last_message: 'Thank you for your quick response!',
-        last_message_time: '2023-05-14T16:45:00Z',
-        unread_count: 0,
-        is_active: true,
-        created_at: '2023-05-14T09:30:00Z'
-      },
-      { 
-        id: '3', 
-        buyer_id: '103',
-        buyer_name: 'Bob Johnson',
-        seller_id: '201',
-        seller_name: 'Wood Crafters Inc.',
-        last_message: 'Can you provide more details about shipping?',
-        last_message_time: '2023-05-13T11:20:00Z',
-        unread_count: 0,
-        is_active: false,
-        created_at: '2023-05-12T14:00:00Z'
-      },
-    ];
-  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [sortBy, setSortBy] = useState('created_at');
+  const [sortDirection, setSortDirection] = useState('desc');
 
-  // Filter chat threads based on search term and status
-  const filteredChatThreads = chatThreads?.filter(thread => {
-    const matchesSearch = 
-      thread.buyer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      thread.seller_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      thread.last_message.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = 
-      statusFilter === 'all' || 
-      (statusFilter === 'active' && thread.is_active) || 
-      (statusFilter === 'inactive' && !thread.is_active) ||
-      (statusFilter === 'unread' && thread.unread_count > 0);
-    
-    return matchesSearch && matchesStatus;
-  });
+  const queryClient = useQueryClient();
 
-  // Format date for display
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else if (diffDays === 1) {
-      return 'Yesterday';
-    } else if (diffDays < 7) {
-      return date.toLocaleDateString([], { weekday: 'long' });
+  // Debounced search
+  const debouncedSearch = useMemo(
+    () => debounce((term) => {
+      setSearchTerm(term);
+      setCurrentPage(1); // Reset to first page when searching
+    }, 300),
+    []
+  );
+
+  // Fetch chat messages with real API call
+  const { data: chatResponse, isLoading, error, refetch } = useQuery(
+    ['chatMessages', { page: currentPage, limit: pageSize, search: searchTerm, sortBy, sortDirection }],
+    () => apiService.getChatMessages({
+      page: currentPage,
+      limit: pageSize,
+      search: searchTerm,
+      sortBy,
+      sortDirection,
+    }),
+    {
+      keepPreviousData: true,
+      staleTime: 30000, // 30 seconds
+    }
+  );
+
+  const chatMessages = chatResponse?.data || [];
+  const pagination = chatResponse?.pagination || {};
+
+  // Delete chat message mutation
+  const deleteChatMessageMutation = useMutation(
+    (messageId) => apiService.deleteChatMessage(messageId),
+    {
+      onSuccess: () => {
+        toast.success('Сообщение успешно удалено');
+        queryClient.invalidateQueries('chatMessages');
+      },
+      onError: (error) => {
+        toast.error(`Ошибка при удалении сообщения: ${error.message}`);
+      },
+    }
+  );
+
+  // Handle sorting
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
-      return date.toLocaleDateString();
+      setSortBy(field);
+      setSortDirection('asc');
+    }
+    setCurrentPage(1);
+  };
+
+  // Handle delete
+  const handleDelete = async (message) => {
+    if (window.confirm(`Вы уверены, что хотите удалить сообщение?`)) {
+      deleteChatMessageMutation.mutate(message.id);
     }
   };
 
-  if (isLoading) return <div className="text-center p-6">Loading chat threads...</div>;
-  if (error) return <div className="text-center p-6 text-red-500">Error loading chat threads: {error.message}</div>;
+  // Handle export
+  const handleExport = () => {
+    if (!chatMessages.length) {
+      toast.warning('Нет данных для экспорта');
+      return;
+    }
+
+    const exportData = chatMessages.map(message => ({
+      ID: message.id,
+      'Отправитель': message.sender_id,
+      'Получатель': message.receiver_id,
+      'Сообщение': message.message,
+      'Дата создания': formatDateTime(message.created_at),
+    }));
+
+    const csv = arrayToCSV(exportData);
+    downloadFile(csv, `chat-messages-${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
+    toast.success('Данные экспортированы');
+  };
+
+  // Handle search input
+  const handleSearchChange = (e) => {
+    debouncedSearch(e.target.value);
+  };
+
+  // Handle pagination
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const totalPages = Math.ceil(pagination.total / pageSize);
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <Card>
+          <Card.Body>
+            <div className="text-center py-8">
+              <div className="text-danger-500 text-4xl mb-4">⚠️</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Ошибка загрузки данных</h3>
+              <p className="text-gray-600 mb-4">{error.message}</p>
+              <Button onClick={() => refetch()} variant="primary">
+                Попробовать снова
+              </Button>
+            </div>
+          </Card.Body>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Chat Threads</h1>
-      </div>
-
-      {/* Search and Filter */}
-      <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-grow">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FiSearch className="text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search by buyer, seller, or message content..."
-              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="flex items-center">
-              <FiFilter className="mr-2 text-gray-500" />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">All Threads</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="unread">Unread</option>
-              </select>
-            </div>
-          </div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="p-6 space-y-6"
+    >
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Сообщения чата</h1>
+          <p className="text-gray-600 mt-1">
+            Управление сообщениями чата ({pagination.total || 0} всего)
+          </p>
+        </div>
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="secondary"
+            icon={<ArrowDownTrayIcon className="w-4 h-4" />}
+            onClick={handleExport}
+            disabled={!chatMessages.length}
+          >
+            Экспорт
+          </Button>
         </div>
       </div>
 
-      {/* Chat Threads List */}
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        {filteredChatThreads?.length > 0 ? (
-          <div className="divide-y divide-gray-200">
-            {filteredChatThreads.map((thread) => (
-              <div key={thread.id} className="p-4 hover:bg-gray-50">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-start space-x-4">
-                    <div className="bg-blue-100 text-blue-700 p-2 rounded-full">
-                      <FiMessageCircle size={24} />
+      {/* Filters and Search */}
+      <Card>
+        <Card.Body>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              placeholder="Поиск сообщений..."
+              icon={<MagnifyingGlassIcon className="w-4 h-4" />}
+              onChange={handleSearchChange}
+            />
+            <select
+              className="form-input"
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+            >
+              <option value={10}>10 на странице</option>
+              <option value={20}>20 на странице</option>
+              <option value={50}>50 на странице</option>
+              <option value={100}>100 на странице</option>
+            </select>
+          </div>
+        </Card.Body>
+      </Card>
+
+      {/* Table */}
+      <Card>
+        <Table
+          loading={isLoading}
+          empty={!chatMessages.length && !isLoading}
+          emptyMessage={searchTerm ? 'Сообщения не найдены по вашему запросу' : 'Сообщения не найдены'}
+        >
+          <Table.Header>
+            <Table.Row>
+              <Table.HeaderCell
+                sortable
+                onSort={() => handleSort('id')}
+                sortDirection={sortBy === 'id' ? sortDirection : null}
+              >
+                ID
+              </Table.HeaderCell>
+              <Table.HeaderCell>Отправитель</Table.HeaderCell>
+              <Table.HeaderCell>Получатель</Table.HeaderCell>
+              <Table.HeaderCell>Сообщение</Table.HeaderCell>
+              <Table.HeaderCell
+                sortable
+                onSort={() => handleSort('created_at')}
+                sortDirection={sortBy === 'created_at' ? sortDirection : null}
+              >
+                Дата создания
+              </Table.HeaderCell>
+              <Table.HeaderCell>Действия</Table.HeaderCell>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {chatMessages.map((message, index) => (
+              <Table.Row
+                key={message.id}
+                onClick={() => {/* Navigate to details */}}
+              >
+                <Table.Cell>
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-primary-100 rounded-lg">
+                      <ChatBubbleLeftRightIcon className="w-4 h-4 text-primary-600" />
                     </div>
                     <div>
-                      <div className="flex items-center">
-                        <h3 className="font-semibold">
-                          <Link to={`/buyers/${thread.buyer_id}`} className="hover:underline">
-                            {thread.buyer_name}
-                          </Link>
-                          <span className="text-gray-500 mx-1">→</span>
-                          <Link to={`/sellers/${thread.seller_id}`} className="hover:underline">
-                            {thread.seller_name}
-                          </Link>
-                        </h3>
-                        {thread.unread_count > 0 && (
-                          <span className="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                            {thread.unread_count}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-gray-600 text-sm mt-1 line-clamp-1">{thread.last_message}</p>
-                      <div className="flex items-center mt-1">
-                        <span className="text-xs text-gray-500">
-                          {formatDate(thread.last_message_time)}
-                        </span>
-                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                          thread.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {thread.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
+                      <p className="font-medium text-gray-900">
+                        {message.id.slice(0, 8)}...
+                      </p>
                     </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <Link 
-                      to={`/chat/threads/${thread.id}`}
-                      className="text-blue-500 hover:text-blue-700 p-1"
-                    >
-                      <FiEye size={18} />
-                    </Link>
-                    <button className="text-red-500 hover:text-red-700 p-1">
-                      <FiTrash2 size={18} />
-                    </button>
+                </Table.Cell>
+                <Table.Cell>
+                  <div className="flex items-center space-x-2">
+                    <UserIcon className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-900">
+                      {message.sender_id.slice(0, 8)}...
+                    </span>
                   </div>
-                </div>
-              </div>
+                </Table.Cell>
+                <Table.Cell>
+                  <div className="flex items-center space-x-2">
+                    <UserIcon className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-900">
+                      {message.receiver_id.slice(0, 8)}...
+                    </span>
+                  </div>
+                </Table.Cell>
+                <Table.Cell>
+                  <p className="text-sm text-gray-900 max-w-xs truncate">
+                    {message.message}
+                  </p>
+                </Table.Cell>
+                <Table.Cell>
+                  <div className="flex items-center space-x-2">
+                    <ClockIcon className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-900">
+                      {formatDateTime(message.created_at)}
+                    </span>
+                  </div>
+                </Table.Cell>
+                <Table.Cell>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={<EyeIcon className="w-4 h-4" />}
+                      as={Link}
+                      to={`/chat/${message.id}`}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={<TrashIcon className="w-4 h-4" />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(message);
+                      }}
+                      loading={deleteChatMessageMutation.isLoading}
+                      className="text-danger-600 hover:text-danger-700"
+                    />
+                  </div>
+                </Table.Cell>
+              </Table.Row>
             ))}
-          </div>
-        ) : (
-          <div className="p-6 text-center">
-            <FiMessageCircle className="mx-auto text-gray-400 mb-2" size={48} />
-            <p className="text-gray-500">
-              {searchTerm || statusFilter !== 'all' ? 
-                'No chat threads found matching your search criteria.' : 
-                'No chat threads found.'}
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
+          </Table.Body>
+        </Table>
+      </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Card>
+          <Card.Body>
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-700">
+                Показано {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, pagination.total)} из {pagination.total} результатов
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                >
+                  Предыдущая
+                </Button>
+
+                {/* Page numbers */}
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const page = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                    return (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? 'primary' : 'ghost'}
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                      >
+                        {page}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                >
+                  Следующая
+                </Button>
+              </div>
+            </div>
+          </Card.Body>
+        </Card>
+      )}
+    </motion.div>
   );
 };
 

@@ -116,7 +116,6 @@ docker-compose*.yaml
 .pre-commit-config.yaml
 .flake8
 .bandit
-pyproject.toml
 setup.cfg
 tox.ini
 

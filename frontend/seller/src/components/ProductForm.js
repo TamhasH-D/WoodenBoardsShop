@@ -5,8 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { FiSave, FiArrowLeft, FiUpload } from 'react-icons/fi';
-import { v4 as uuidv4 } from 'uuid';
-import { productService, woodTypeService } from '../services';
+import apiService from '../apiService';
 
 function ProductForm() {
   const { id } = useParams();
@@ -14,11 +13,11 @@ function ProductForm() {
   const queryClient = useQueryClient();
   const isEditMode = !!id;
   const sellerId = localStorage.getItem('sellerId') || 'demo-seller-id'; // Replace with actual auth logic
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
-  
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
+
+  const { register, handleSubmit, setValue, watch, formState: { errors }, reset } = useForm({
     defaultValues: {
       title: '',
       descrioption: '',
@@ -29,36 +28,39 @@ function ProductForm() {
       wood_type_id: '',
     }
   });
-  
+
   // Fetch wood types
   const { data: woodTypesData, isLoading: isLoadingWoodTypes } = useQuery({
     queryKey: ['woodTypes'],
-    queryFn: () => woodTypeService.getAllWoodTypes(),
+    queryFn: () => apiService.getWoodTypes({ limit: 100 }),
   });
-  
+
   // Fetch product data if in edit mode
-  const { data: productData, isLoading: isLoadingProduct } = useQuery({
+  const { data: productData, isLoading: isLoadingProduct, error: productError } = useQuery({
     queryKey: ['product', id],
-    queryFn: () => productService.getProductById(id),
+    queryFn: () => apiService.getProduct(id),
     enabled: isEditMode,
-    onSuccess: (data) => {
-      if (data && data.data) {
-        const product = data.data;
-        // Set form values
-        setValue('title', product.title);
-        setValue('descrioption', product.descrioption || '');
-        setValue('volume', product.volume);
-        setValue('price', product.price);
-        setValue('delivery_possible', product.delivery_possible);
-        setValue('pickup_location', product.pickup_location || '');
-        setValue('wood_type_id', product.wood_type_id);
-      }
-    }
   });
+
+  // Set form values when product data is loaded
+  useEffect(() => {
+    if (productData?.data && isEditMode) {
+      const product = productData.data;
+      reset({
+        title: product.title || '',
+        descrioption: product.descrioption || '',
+        volume: product.volume || '',
+        price: product.price || '',
+        delivery_possible: product.delivery_possible || false,
+        pickup_location: product.pickup_location || '',
+        wood_type_id: product.wood_type_id || '',
+      });
+    }
+  }, [productData, isEditMode, reset]);
   
   // Create product mutation
   const createProductMutation = useMutation({
-    mutationFn: (data) => productService.createProduct(data),
+    mutationFn: (data) => apiService.createProduct(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sellerProducts'] });
       toast.success('Товар успешно создан');
@@ -66,14 +68,14 @@ function ProductForm() {
     },
     onError: (error) => {
       console.error('Error creating product:', error);
-      toast.error('Ошибка при создании товара');
+      toast.error(`Ошибка при создании товара: ${error.message}`);
       setIsSubmitting(false);
     }
   });
-  
+
   // Update product mutation
   const updateProductMutation = useMutation({
-    mutationFn: ({ productId, data }) => productService.updateProduct(productId, data),
+    mutationFn: (data) => apiService.updateProduct(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sellerProducts'] });
       queryClient.invalidateQueries({ queryKey: ['product', id] });
@@ -82,14 +84,14 @@ function ProductForm() {
     },
     onError: (error) => {
       console.error('Error updating product:', error);
-      toast.error('Ошибка при обновлении товара');
+      toast.error(`Ошибка при обновлении товара: ${error.message}`);
       setIsSubmitting(false);
     }
   });
-  
+
   const onSubmit = (data) => {
     setIsSubmitting(true);
-    
+
     // Convert string values to appropriate types
     const formattedData = {
       ...data,
@@ -97,12 +99,10 @@ function ProductForm() {
       price: parseFloat(data.price),
       seller_id: sellerId,
     };
-    
+
     if (isEditMode) {
-      updateProductMutation.mutate({ productId: id, data: formattedData });
+      updateProductMutation.mutate(formattedData);
     } else {
-      // Generate a UUID for new products
-      formattedData.id = uuidv4();
       createProductMutation.mutate(formattedData);
     }
   };
@@ -122,7 +122,26 @@ function ProductForm() {
   };
   
   const isLoading = isLoadingWoodTypes || (isEditMode && isLoadingProduct);
-  
+
+  // Handle errors
+  if (productError && isEditMode) {
+    return (
+      <div className="p-6">
+        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="text-red-500 text-4xl mb-4">⚠️</div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Ошибка загрузки товара</h3>
+          <p className="text-gray-600 mb-4">{productError.message}</p>
+          <button
+            onClick={() => navigate('/products')}
+            className="bg-brand-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-80"
+          >
+            Вернуться к списку товаров
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -131,7 +150,7 @@ function ProductForm() {
     >
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
-          <button 
+          <button
             onClick={() => navigate('/products')}
             className="mr-4 p-2 rounded-full hover:bg-gray-200 transition-colors"
           >
@@ -142,7 +161,7 @@ function ProductForm() {
           </h1>
         </div>
       </div>
-      
+
       {isLoading ? (
         <div className="bg-white p-8 rounded-lg shadow-md text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto"></div>

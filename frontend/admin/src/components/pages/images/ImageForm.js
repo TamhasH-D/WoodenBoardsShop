@@ -1,78 +1,61 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useQuery } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query'; // MODIFIED
 import { FiArrowLeft, FiSave, FiUpload, FiImage } from 'react-icons/fi';
+import apiService from '../../../apiService';
+import toast from 'react-hot-toast'; // ADDED
 
-// This is a placeholder component. In a real implementation, you would:
-// 1. Fetch data from your API for editing
-// 2. Implement form submission to create/update
-// 3. Add proper form validation
-// 4. Add error handling
-// 5. Implement image upload functionality
+// MODIFIED: Comments are now less relevant as features are being implemented.
 
 const ImageForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient(); // ADDED
   const isEditMode = !!id;
   
-  // Get related item info from query params if available
   const queryParams = new URLSearchParams(location.search);
-  const relatedType = queryParams.get('type');
-  const relatedId = queryParams.get('id');
-  const relatedName = queryParams.get('name');
+  const relatedTypeFromQuery = queryParams.get('type'); // RENAMED for clarity
+  const relatedIdFromQuery = queryParams.get('id'); // RENAMED for clarity
+  const relatedNameFromQuery = queryParams.get('name'); // RENAMED for clarity
   
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     alt_text: '',
-    type: relatedType || '',
-    related_id: relatedId || '',
-    related_name: relatedName || '',
+    type: relatedTypeFromQuery || '',
+    related_id: relatedIdFromQuery || '',
+    // related_name is derived, not directly set by user initially unless from query
   });
   
   const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // const [isSubmitting, setIsSubmitting] = useState(false); // REMOVED: Handled by useMutation
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   
   // Fetch wood types for dropdown
-  const { data: woodTypes } = useQuery('woodTypes', async () => {
-    // Simulate API call
-    return [
-      { id: '1', neme: 'Pine' },
-      { id: '2', neme: 'Oak' },
-      { id: '3', neme: 'Birch' },
-      { id: '4', neme: 'Maple' },
-    ];
-  });
+  const { data: woodTypes, isLoading: isLoadingWoodTypes } = useQuery(
+    'woodTypes',
+    apiService.getWoodTypes,
+    {
+      onError: (error) => toast.error(error.message || 'Failed to fetch wood types.'),
+    }
+  );
   
-  // Fetch products for dropdown
-  const { data: products } = useQuery('products', async () => {
-    // Simulate API call
-    return [
-      { id: '1', title: 'Standard Pallet (1200x800)' },
-      { id: '2', title: 'Euro Pallet (1200x1000)' },
-      { id: '3', title: 'Heavy Duty Pallet (1200x800)' },
-    ];
-  });
+  // Fetch products for dropdown (assuming an endpoint like getProducts exists and is suitable for a dropdown)
+  // If not, this might need to be a searchable select or removed if too many products.
+  const { data: products, isLoading: isLoadingProducts } = useQuery(
+    'productsForImageForm', // Using a more specific key to avoid conflicts if 'products' is used elsewhere with different params
+    () => apiService.getProducts({ limit: 1000 }), // Fetching all, might need pagination/search if too many
+    {
+      onError: (error) => toast.error(error.message || 'Failed to fetch products.'),
+    }
+  );
   
   // For edit mode, fetch the image data
-  const { data: imageData, isLoading } = useQuery(
+  const { data: imageData, isLoading: isLoadingImage } = useQuery(
     ['image', id],
-    async () => {
-      // Simulate API call for edit mode
-      return {
-        id,
-        title: 'Pine Wood Texture',
-        description: 'High-quality texture image of pine wood grain, suitable for product displays and marketing materials.',
-        url: 'https://via.placeholder.com/800x600?text=Pine+Wood',
-        type: 'wood_type',
-        related_id: '1',
-        related_name: 'Pine',
-        alt_text: 'Close-up texture of pine wood grain showing natural patterns',
-      };
-    },
+    () => apiService.getImage(id),
     {
       enabled: isEditMode,
       onSuccess: (data) => {
@@ -83,13 +66,69 @@ const ImageForm = () => {
             alt_text: data.alt_text || '',
             type: data.type || '',
             related_id: data.related_id || '',
-            related_name: data.related_name || '',
+            // related_name will be set by useEffect based on type and related_id
           });
-          
           if (data.url) {
             setImagePreview(data.url);
           }
         }
+      },
+      onError: (error) => {
+        toast.error(error.message || `Failed to fetch image data (ID: ${id}).`);
+      }
+    }
+  );
+
+  // ADDED: Effect to update related_name when type or related_id changes, or when data loads
+  useEffect(() => {
+    if (formData.type && formData.related_id) {
+      let name = '';
+      if (formData.type === 'wood_type' && woodTypes) {
+        const selected = woodTypes.find(wt => wt.id.toString() === formData.related_id.toString());
+        name = selected ? selected.name : '';
+      } else if (formData.type === 'product' && products) {
+        const selected = products.find(p => p.id.toString() === formData.related_id.toString());
+        name = selected ? selected.title : '';
+      }
+      // This state is not directly part of formData sent to API, but useful for display or if API expects it
+      // If API expects related_name, it should be added to formData state and submission payload.
+      // For now, assuming API derives it or doesn't need it explicitly if type & related_id are sent.
+    } else if (relatedNameFromQuery && !formData.type && !formData.related_id) {
+      // If coming from query params and form fields are not yet set
+      // This part might be redundant if relatedTypeFromQuery and relatedIdFromQuery correctly initialize formData
+    }
+  }, [formData.type, formData.related_id, woodTypes, products, relatedNameFromQuery]);
+
+  // ADDED Mutations
+  const createImageMutation = useMutation(
+    (imagePayload) => apiService.createImage(imagePayload),
+    {
+      onSuccess: () => {
+        toast.success('Image created successfully!');
+        queryClient.invalidateQueries('images');
+        navigate('/images');
+      },
+      onError: (error) => {
+        const errorMsg = error.response?.data?.message || error.message || 'Failed to create image.';
+        toast.error(errorMsg);
+        setErrors(prev => ({ ...prev, form: errorMsg, ...(error.response?.data?.errors || {}) }));
+      },
+    }
+  );
+
+  const updateImageMutation = useMutation(
+    (imagePayload) => apiService.updateImage(id, imagePayload),
+    {
+      onSuccess: () => {
+        toast.success('Image updated successfully!');
+        queryClient.invalidateQueries('images');
+        queryClient.invalidateQueries(['image', id]);
+        navigate('/images');
+      },
+      onError: (error) => {
+        const errorMsg = error.response?.data?.message || error.message || 'Failed to update image.';
+        toast.error(errorMsg);
+        setErrors(prev => ({ ...prev, form: errorMsg, ...(error.response?.data?.errors || {}) }));
       },
     }
   );
@@ -101,38 +140,13 @@ const ImageForm = () => {
       [name]: value,
     }));
     
-    // Clear error when field is edited
     if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: '',
-      }));
+      setErrors((prev) => ({ ...prev, [name]: '' }));
     }
     
-    // Handle related item selection
+    // Reset related_id when type changes
     if (name === 'type') {
-      setFormData((prev) => ({
-        ...prev,
-        related_id: '',
-        related_name: '',
-      }));
-    } else if (name === 'related_id') {
-      let relatedName = '';
-      
-      if (value) {
-        if (formData.type === 'wood_type' && woodTypes) {
-          const selectedType = woodTypes.find(type => type.id === value);
-          relatedName = selectedType ? selectedType.neme : '';
-        } else if (formData.type === 'product' && products) {
-          const selectedProduct = products.find(product => product.id === value);
-          relatedName = selectedProduct ? selectedProduct.title : '';
-        }
-      }
-      
-      setFormData((prev) => ({
-        ...prev,
-        related_name: relatedName,
-      }));
+      setFormData((prev) => ({ ...prev, related_id: '' }));
     }
   };
   
@@ -140,69 +154,53 @@ const ImageForm = () => {
     const file = e.target.files[0];
     if (file) {
       setImageFile(file);
-      
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
+    } else {
+      setImageFile(null);
+      //setImagePreview(null); // Keep existing preview if in edit mode and user cancels new selection
     }
   };
   
   const validateForm = () => {
     const newErrors = {};
-    
-    if (!formData.title.trim()) {
-      newErrors.title = 'Title is required';
-    }
-    
-    if (!formData.type) {
-      newErrors.type = 'Type is required';
-    }
-    
-    if (!formData.related_id) {
-      newErrors.related_id = 'Related item is required';
-    }
-    
-    if (!isEditMode && !imageFile) {
-      newErrors.image = 'Image file is required';
-    }
-    
+    if (!formData.title.trim()) newErrors.title = 'Title is required';
+    if (!formData.type) newErrors.type = 'Type is required';
+    if (!formData.related_id) newErrors.related_id = 'Related item is required';
+    if (!isEditMode && !imageFile) newErrors.image = 'Image file is required for new images';
+    // Add more validation as needed, e.g., for alt_text if it becomes mandatory
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
   
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
+    if (!validateForm()) return;
+
+    const submissionPayload = new FormData();
+    submissionPayload.append('title', formData.title);
+    submissionPayload.append('description', formData.description);
+    submissionPayload.append('alt_text', formData.alt_text);
+    submissionPayload.append('type', formData.type);
+    submissionPayload.append('related_id', formData.related_id);
+
+    if (imageFile) {
+      submissionPayload.append('image_file', imageFile); // API expects 'image_file'
     }
-    
-    setIsSubmitting(true);
-    
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      console.log('Form submitted:', formData);
-      console.log('Image file:', imageFile);
-      
-      // Redirect after successful submission
-      navigate('/images');
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setErrors((prev) => ({
-        ...prev,
-        form: 'Failed to submit form. Please try again.',
-      }));
-    } finally {
-      setIsSubmitting(false);
+    // Note: If API expects related_name, ensure it's correctly derived and appended.
+
+    if (isEditMode) {
+      updateImageMutation.mutate(submissionPayload);
+    } else {
+      createImageMutation.mutate(submissionPayload);
     }
   };
   
-  if (isEditMode && isLoading) {
-    return <div className="text-center p-6">Loading image data...</div>;
+  if ((isEditMode && isLoadingImage) || isLoadingWoodTypes || isLoadingProducts) {
+    return <div className="text-center p-6">Loading data...</div>;
   }
   
   return (
@@ -270,11 +268,12 @@ const ImageForm = () => {
                 value={formData.type}
                 onChange={handleChange}
                 className={`w-full p-2 border rounded-md ${errors.type ? 'border-red-500' : 'border-gray-300'}`}
-                disabled={!!relatedType}
+                disabled={!!relatedTypeFromQuery || isLoadingWoodTypes || isLoadingProducts}
               >
                 <option value="">Select Type</option>
                 <option value="wood_type">Wood Type</option>
                 <option value="product">Product</option>
+                {/* Add other types if API supports them, e.g., 'wooden_board' */}
               </select>
               {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
             </div>
@@ -289,12 +288,12 @@ const ImageForm = () => {
                 value={formData.related_id}
                 onChange={handleChange}
                 className={`w-full p-2 border rounded-md ${errors.related_id ? 'border-red-500' : 'border-gray-300'}`}
-                disabled={!formData.type || !!relatedId}
+                disabled={!formData.type || !!relatedIdFromQuery || (formData.type === 'wood_type' && isLoadingWoodTypes) || (formData.type === 'product' && isLoadingProducts)}
               >
-                <option value="">Select {formData.type === 'wood_type' ? 'Wood Type' : 'Product'}</option>
+                <option value="">Select {formData.type ? (formData.type === 'wood_type' ? 'Wood Type' : 'Product') : 'Item'}</option>
                 {formData.type === 'wood_type' && woodTypes?.map((type) => (
                   <option key={type.id} value={type.id}>
-                    {type.neme}
+                    {type.name} {/* Corrected neme to name */}
                   </option>
                 ))}
                 {formData.type === 'product' && products?.map((product) => (
@@ -302,6 +301,7 @@ const ImageForm = () => {
                     {product.title}
                   </option>
                 ))}
+                {/* Add options for other types if applicable */}
               </select>
               {errors.related_id && <p className="text-red-500 text-sm mt-1">{errors.related_id}</p>}
             </div>
@@ -334,7 +334,7 @@ const ImageForm = () => {
                           {imagePreview ? (
                             <img 
                               src={imagePreview} 
-                              alt="Preview" 
+                              alt={formData.alt_text || "Preview"} // Use alt_text for preview too
                               className="max-h-full max-w-full object-contain"
                             />
                           ) : (
@@ -349,15 +349,16 @@ const ImageForm = () => {
                           accept="image/*"
                           onChange={handleImageUpload}
                           className="hidden"
+                          id="imageUploadInput" // Added ID for easier targeting
                         />
                       </label>
                       <button
                         type="button"
-                        onClick={() => document.querySelector('input[type="file"]').click()}
+                        onClick={() => document.getElementById('imageUploadInput')?.click()} // Target by ID
                         className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 flex items-center"
                       >
                         <FiUpload className="mr-2" />
-                        {isEditMode ? 'Change Image' : 'Upload Image'}
+                        {imageFile || (isEditMode && imagePreview) ? 'Change Image' : 'Upload Image'} {/* Improved button text */}
                       </button>
                     </div>
                   </div>
@@ -390,11 +391,11 @@ const ImageForm = () => {
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={createImageMutation.isLoading || updateImageMutation.isLoading}
               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center"
             >
               <FiSave className="mr-2" />
-              {isSubmitting ? 'Saving...' : 'Save Image'}
+              {createImageMutation.isLoading || updateImageMutation.isLoading ? 'Saving...' : 'Save Image'}
             </button>
           </div>
         </form>

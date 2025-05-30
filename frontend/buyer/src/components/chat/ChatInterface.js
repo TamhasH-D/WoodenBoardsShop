@@ -1,109 +1,66 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { useApi } from '../../context/ApiContext';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
+import apiService from '../../apiService';
 
-const ChatInterface = ({ sellerId, productId = null }) => {
-  const { currentUser, isAuthenticated } = useAuth();
-  const { apiService } = useApi();
-  
-  const [chatThread, setChatThread] = useState(null);
-  const [messages, setMessages] = useState([]);
+const ChatInterface = ({ sellerId, buyerId, conversation, productId = null }) => {
   const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sending, setSending] = useState(false);
-  
+  const queryClient = useQueryClient();
+
   const messagesEndRef = useRef(null);
+
+  // Mock authentication - replace with real auth
+  const isAuthenticated = () => true;
   
   // Scroll to bottom of messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-  
-  // Load or create chat thread
-  useEffect(() => {
-    const loadOrCreateChatThread = async () => {
-      if (!isAuthenticated() || !sellerId) return;
-      
-      try {
-        setLoading(true);
-        
-        // Try to find existing chat thread
-        const threadsResponse = await apiService.getChatThreads();
-        const existingThread = threadsResponse.data.find(
-          thread => thread.seller_id === sellerId && thread.buyer_id === currentUser.id
-        );
-        
-        if (existingThread) {
-          setChatThread(existingThread);
-          
-          // Load messages for this thread
-          const messagesResponse = await apiService.getChatMessages(existingThread.id);
-          setMessages(messagesResponse.data);
-        } else {
-          // Create new chat thread
-          const newThreadData = {
-            seller_id: sellerId,
-            buyer_id: currentUser.id
-          };
-          
-          const newThreadResponse = await apiService.createChatThread(newThreadData);
-          setChatThread(newThreadResponse.data);
-        }
-      } catch (error) {
-        console.error('Error loading chat thread:', error);
-        setError('Не удалось загрузить чат. Пожалуйста, попробуйте позже.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadOrCreateChatThread();
-  }, [apiService, sellerId, currentUser, isAuthenticated]);
-  
+
+  // Get messages from conversation
+  const messages = conversation?.messages || [];
+
   // Scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-  
+
+  // Send message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: (messageData) => apiService.createChatMessage(messageData),
+    onSuccess: () => {
+      // Invalidate and refetch chat messages
+      queryClient.invalidateQueries(['buyerSentMessages']);
+      queryClient.invalidateQueries(['buyerReceivedMessages']);
+      setNewMessage('');
+    },
+    onError: (error) => {
+      console.error('Error sending message:', error);
+      setError('Не удалось отправить сообщение. Пожалуйста, попробуйте позже.');
+    }
+  });
+
   // Send message
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    
-    if (!newMessage.trim() || !chatThread) return;
-    
-    try {
-      setSending(true);
-      
-      // Create message data
-      const messageData = {
-        thread_id: chatThread.id,
-        sender_id: currentUser.id,
-        content: newMessage.trim(),
-        is_read: false
-      };
-      
-      // Add product reference if provided
-      if (productId) {
-        messageData.product_id = productId;
-      }
-      
-      // Send message to API
-      const response = await apiService.createChatMessage(messageData);
-      
-      // Add new message to list
-      setMessages(prevMessages => [...prevMessages, response.data]);
-      
-      // Clear input
-      setNewMessage('');
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setError('Не удалось отправить сообщение. Пожалуйста, попробуйте позже.');
-    } finally {
-      setSending(false);
+
+    if (!newMessage.trim() || !sellerId || !buyerId) return;
+
+    // Create message data
+    const messageData = {
+      sender_id: buyerId,
+      receiver_id: sellerId,
+      message: newMessage.trim(),
+    };
+
+    // Add product reference if provided
+    if (productId) {
+      messageData.product_id = productId;
     }
+
+    sendMessageMutation.mutate(messageData);
   };
   
   // Format timestamp
@@ -129,28 +86,8 @@ const ChatInterface = ({ sellerId, productId = null }) => {
     );
   }
   
-  // Loading state
-  if (loading) {
-    return (
-      <Card>
-        <div className="flex flex-col h-96">
-          <div className="border-b border-gray-200 px-4 py-3">
-            <div className="h-6 bg-gray-300 rounded w-1/3 animate-pulse"></div>
-          </div>
-          <div className="flex-grow p-4 overflow-y-auto">
-            <div className="flex flex-col space-y-4">
-              <div className="h-12 bg-gray-300 rounded w-2/3 animate-pulse"></div>
-              <div className="h-12 bg-gray-300 rounded w-1/2 self-end animate-pulse"></div>
-              <div className="h-12 bg-gray-300 rounded w-3/4 animate-pulse"></div>
-            </div>
-          </div>
-          <div className="border-t border-gray-200 p-4">
-            <div className="h-10 bg-gray-300 rounded animate-pulse"></div>
-          </div>
-        </div>
-      </Card>
-    );
-  }
+  // Loading state for sending message
+  const isSending = sendMessageMutation.isPending;
   
   // Error state
   if (error) {
@@ -175,9 +112,11 @@ const ChatInterface = ({ sellerId, productId = null }) => {
       <div className="flex flex-col h-96">
         {/* Chat Header */}
         <div className="border-b border-gray-200 px-4 py-3">
-          <h3 className="text-lg font-semibold text-wood-text">Чат с продавцом</h3>
+          <h3 className="text-lg font-semibold text-wood-text">
+            Чат с продавцом {sellerId?.slice(0, 8)}...
+          </h3>
         </div>
-        
+
         {/* Messages */}
         <div className="flex-grow p-4 overflow-y-auto">
           {messages.length === 0 ? (
@@ -186,21 +125,23 @@ const ChatInterface = ({ sellerId, productId = null }) => {
             </div>
           ) : (
             <div className="flex flex-col space-y-4">
-              {messages.map((message) => (
-                <div 
-                  key={message.id} 
+              {messages
+                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+                .map((message) => (
+                <div
+                  key={message.id}
                   className={`flex flex-col max-w-3/4 ${
-                    message.sender_id === currentUser.id ? 'self-end items-end' : 'self-start items-start'
+                    message.sender_id === buyerId ? 'self-end items-end' : 'self-start items-start'
                   }`}
                 >
-                  <div 
+                  <div
                     className={`rounded-lg px-4 py-2 ${
-                      message.sender_id === currentUser.id 
-                        ? 'bg-wood-accent text-white' 
+                      message.sender_id === buyerId
+                        ? 'bg-wood-accent text-white'
                         : 'bg-gray-100 text-gray-800'
                     }`}
                   >
-                    {message.content}
+                    {message.message}
                   </div>
                   <span className="text-xs text-gray-500 mt-1">
                     {formatTimestamp(message.created_at)}
@@ -221,14 +162,14 @@ const ChatInterface = ({ sellerId, productId = null }) => {
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Введите сообщение..."
               className="flex-grow rounded-lg border-gray-300 focus:border-wood-accent focus:ring focus:ring-wood-accent focus:ring-opacity-50"
-              disabled={sending}
+              disabled={isSending}
             />
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               variant="primary"
-              disabled={sending || !newMessage.trim()}
+              disabled={isSending || !newMessage.trim()}
             >
-              {sending ? (
+              {isSending ? (
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
                   <span>Отправка...</span>

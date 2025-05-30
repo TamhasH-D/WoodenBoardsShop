@@ -14,10 +14,13 @@ services:
       redis:
         condition: service_healthy
     environment:
-      - BACKEND_CORS_ALLOW_ORIGINS=${BACKEND_CORS_ALLOW_ORIGINS:-"*"}
-      - BACKEND_CORS_ALLOW_CREDENTIALS=${BACKEND_CORS_ALLOW_CREDENTIALS:-True}
-      - BACKEND_CORS_ALLOW_METHODS=${BACKEND_CORS_ALLOW_METHODS:-"*"}
-      - BACKEND_CORS_ALLOW_HEADERS=${BACKEND_CORS_ALLOW_HEADERS:-"*"}
+      BACKEND_CORS_ALLOW_ORIGINS: ${BACKEND_CORS_ALLOW_ORIGINS:-"*"}
+      BACKEND_CORS_ALLOW_CREDENTIALS: ${BACKEND_CORS_ALLOW_CREDENTIALS:-True}
+      BACKEND_CORS_ALLOW_METHODS: ${BACKEND_CORS_ALLOW_METHODS:-"*"}
+      BACKEND_CORS_ALLOW_HEADERS: ${BACKEND_CORS_ALLOW_HEADERS:-"*"}
+      POSTGRES_PASSWORD: ${BACKEND_PG_PASSWORD:-backend}
+      POSTGRES_USER: ${BACKEND_PG_USER:-backend}
+      POSTGRES_DB: ${BACKEND_PG_DATABASE:-backend}
     volumes:
       - ./migrations:/app/migrations
     networks:
@@ -26,7 +29,7 @@ services:
       watch:
         - action: sync
           path: ./backend
-          target: /app/back end
+          target: /app/backend
         - action: sync
           path: ./tests
           target: /app/tests
@@ -34,7 +37,6 @@ services:
           path: pyproject.toml
         - action: rebuild
           path: uv.lock
-
 
   postgres:
     image: postgres:17.4-bookworm
@@ -45,7 +47,7 @@ services:
       POSTGRES_USER: ${BACKEND_PG_USER:-backend}
       POSTGRES_DB: ${BACKEND_PG_DATABASE:-backend}
     volumes:
-    - backend-pg-data:/var/lib/postgresql/data
+      - backend-pg-data:/var/lib/postgresql/data
     restart: always
     networks:
       - backend-network
@@ -73,8 +75,6 @@ services:
       retries: 40
     volumes:
       - backend-redis-data:/bitnami/redis/data
-
-
 
 volumes:
   backend-pg-data:

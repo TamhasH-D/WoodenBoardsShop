@@ -14,8 +14,34 @@ from backend.dtos.wooden_board_dtos import (
     WoodenBoardInputDTO,
     WoodenBoardUpdateDTO,
 )
+from fastapi import UploadFile, File
+import aiohttp
 
 router = APIRouter(prefix="/wooden-boards")
+
+@router.post("/calculate-volume", status_code=200)
+async def calculate_wooden_board_volume(
+    image: UploadFile = File(...),
+    board_height: float = 0.0,
+    board_length: float = 0.0,
+):
+    async with aiohttp.ClientSession() as session:
+        form_data = aiohttp.FormData()
+        form_data.add_field(
+            "image",
+            await image.read(),
+            filename=image.filename,
+            content_type=image.content_type,
+        )
+        form_data.add_field("board_height", str(board_height))
+        form_data.add_field("board_length", str(board_length))
+
+        from backend.settings import settings
+        volume_service_url = settings.prosto_board_volume_seg_url
+
+        async with session.post(volume_service_url, data=form_data) as response:
+            response.raise_for_status()  # Raise an exception for HTTP errors
+            return await response.json()
 
 
 @router.post("/", status_code=201)

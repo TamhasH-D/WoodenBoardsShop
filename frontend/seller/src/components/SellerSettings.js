@@ -1,75 +1,52 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
-import { FiSave, FiUser, FiShoppingBag, FiBell } from 'react-icons/fi';
-import { sellerService } from '../services';
+import { FiSave } from 'react-icons/fi';
+import { useAuth } from '../context/AuthContext';
 
 function SellerSettings() {
-  const queryClient = useQueryClient();
-  const sellerId = localStorage.getItem('sellerId') || 'demo-seller-id'; // Replace with actual auth logic
+  const { currentUser, updateProfile } = useAuth();
 
-  // Profile Information
-  const [profileName, setProfileName] = useState('Иван Иванов');
-  const [profileEmail, setProfileEmail] = useState('ivan.seller@example.com');
-  const [profilePhone, setProfilePhone] = useState('+7 (900) 123-45-67');
+  // Profile Information - initialized from currentUser
+  const [profileName, setProfileName] = useState(currentUser?.name || '');
+  const [profileEmail, setProfileEmail] = useState(currentUser?.email || '');
+  const [profilePhone, setProfilePhone] = useState(currentUser?.phone || '');
 
-  // Store Information
-  const [storeName, setStoreName] = useState('Магазин Ивана');
-  const [storeDescription, setStoreDescription] = useState('Лучшие товары ручной работы от Ивана.');
-  const [storeAddress, setStoreAddress] = useState('г. Москва, ул. Примерная, д. 1');
+  // Store Information - initialized from currentUser
+  const [storeName, setStoreName] = useState(currentUser?.businessInfo?.companyName || '');
+  const [storeDescription, setStoreDescription] = useState(currentUser?.businessInfo?.description || '');
+  const [storeAddress, setStoreAddress] = useState(currentUser?.address || '');
 
-  // Notification Preferences
-  const [notifications, setNotifications] = useState({
+  // Notification Preferences - initialized from currentUser
+  const [notifications, setNotifications] = useState(currentUser?.settings?.notifications || {
     newOrders: true,
     productReviews: true,
     lowStockAlerts: true,
     promotionalEmails: false,
   });
 
-  // Fetch seller data
-  const { data: sellerData, isLoading } = useQuery({
-    queryKey: ['seller', sellerId],
-    queryFn: () => sellerService.getSellerById(sellerId),
-    enabled: !!sellerId,
-    onSuccess: (data) => {
-      if (data && data.data) {
-        // In a real app, you would populate the form with the seller data from the API
-        console.log('Seller data loaded:', data);
-      }
-    }
-  });
-
-  // Update seller mutation
-  const updateSellerMutation = useMutation({
-    mutationFn: (data) => sellerService.updateSeller(sellerId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['seller', sellerId] });
-      toast.success('Настройки успешно обновлены');
-    },
-    onError: (error) => {
-      console.error('Error updating seller:', error);
-      toast.error('Ошибка при обновлении настроек');
-    }
-  });
-
   const handleSaveChanges = (e) => {
     e.preventDefault();
 
-    // Prepare data for API
-    const sellerData = {
-      // In a real app, you would map your form data to the API expected format
-      profile_name: profileName,
-      profile_email: profileEmail,
-      profile_phone: profilePhone,
-      store_name: storeName,
-      store_description: storeDescription,
-      store_address: storeAddress,
-      notification_preferences: notifications
+    // Update the profile in AuthContext
+    const updatedProfile = {
+      name: profileName,
+      email: profileEmail,
+      phone: profilePhone,
+      address: storeAddress,
+      businessInfo: {
+        ...currentUser?.businessInfo,
+        companyName: storeName,
+        description: storeDescription,
+      },
+      settings: {
+        ...currentUser?.settings,
+        notifications: notifications,
+      }
     };
 
-    // Call the API
-    updateSellerMutation.mutate(sellerData);
+    updateProfile(updatedProfile);
+    toast.success('Настройки успешно обновлены');
   };
 
   return (
@@ -199,11 +176,10 @@ function SellerSettings() {
             type="submit"
             whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0,0,0,0.1)" }}
             whileTap={{ scale: 0.95 }}
-            disabled={updateSellerMutation.isPending}
             className="bg-brand-primary hover:bg-opacity-90 text-white font-semibold py-3 px-8 rounded-lg shadow-md transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-opacity-50 flex items-center"
           >
             <FiSave className="mr-2" />
-            {updateSellerMutation.isPending ? 'Сохранение...' : 'Сохранить изменения'}
+            Сохранить изменения
           </motion.button>
         </div>
       </form>

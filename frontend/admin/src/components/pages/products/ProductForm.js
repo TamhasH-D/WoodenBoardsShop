@@ -1,28 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useQuery } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { toast } from 'react-toastify';
 import { FiArrowLeft, FiSave, FiUpload } from 'react-icons/fi';
-
-// This is a placeholder component. In a real implementation, you would:
-// 1. Fetch data from your API for editing
-// 2. Implement form submission to create/update
-// 3. Add proper form validation
-// 4. Add error handling
-// 5. Implement image upload functionality
+import apiService from '../../../apiService';
+import FormField from '../../common/FormField';
+import config from '../../../config';
 
 const ProductForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const isEditMode = !!id;
-  
-  // Get seller ID from query params if available (for creating a product for a specific seller)
+
   const queryParams = new URLSearchParams(location.search);
-  const sellerIdFromQuery = queryParams.get('seller');
-  
+  const sellerIdFromQuery = queryParams.get('seller_id');
+
   const [formData, setFormData] = useState({
     title: '',
-    descrioption: '',
+    description: '',
     price: '',
     volume: '',
     wood_type_id: '',
@@ -30,94 +27,128 @@ const ProductForm = () => {
     delivery_possible: false,
     pickup_location: '',
   });
-  
-  const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  
-  // Fetch wood types for dropdown
-  const { data: woodTypes } = useQuery('woodTypes', async () => {
-    // Simulate API call
-    return [
-      { id: '1', neme: 'Pine' },
-      { id: '2', neme: 'Oak' },
-      { id: '3', neme: 'Birch' },
-      { id: '4', neme: 'Maple' },
-    ];
-  });
-  
-  // Fetch sellers for dropdown
-  const { data: sellers } = useQuery('sellers', async () => {
-    // Simulate API call
-    return [
-      { id: '1', name: 'Wood Crafters Inc.' },
-      { id: '2', name: 'Forest Products LLC' },
-      { id: '3', name: 'Timber Solutions' },
-    ];
-  });
-  
-  // For edit mode, fetch the product data
-  const { data: productData, isLoading } = useQuery(
+  const [errors, setErrors] = useState({});
+
+  // Fetch product data if in edit mode
+  const { data: productData, isLoading: isLoadingProduct } = useQuery(
     ['product', id],
-    async () => {
-      // Simulate API call for edit mode
-      return {
-        id,
-        title: 'Standard Pallet (1200x800)',
-        descrioption: 'High-quality standard wooden pallet suitable for various industrial applications. Made from durable pine wood.',
-        price: 15.00,
-        volume: 0.5,
-        wood_type_id: '1',
-        seller_id: '1',
-        delivery_possible: true,
-        pickup_location: '456 Forest Ave, Woodland, USA',
-        images: [
-          'https://via.placeholder.com/400x300?text=Pallet+Image+1'
-        ]
-      };
-    },
+    () => apiService.getProduct(id),
     {
       enabled: isEditMode,
       onSuccess: (data) => {
-        if (data) {
+        if (data && data.data) {
+          const product = data.data;
           setFormData({
-            title: data.title || '',
-            descrioption: data.descrioption || '',
-            price: data.price || '',
-            volume: data.volume || '',
-            wood_type_id: data.wood_type_id || '',
-            seller_id: data.seller_id || '',
-            delivery_possible: data.delivery_possible || false,
-            pickup_location: data.pickup_location || '',
+            title: product.title || '',
+            description: product.description || '',
+            price: product.price || '',
+            volume: product.volume || '',
+            wood_type_id: product.wood_type?.id || '',
+            seller_id: product.seller?.id || '',
+            delivery_possible: product.delivery_possible || false,
+            pickup_location: product.pickup_location || '',
           });
-          
-          if (data.images && data.images.length > 0) {
-            setImagePreview(data.images[0]);
+          if (product.images && product.images.length > 0) {
+            setImagePreview(`${config.api.baseURL.replace('/api/v1', '')}${product.images[0].url}`);
           }
         }
       },
+      onError: (error) => {
+        toast.error(`Error fetching product: ${error.message}`);
+        navigate('/products');
+      },
     }
   );
-  
+
+  // Fetch wood types for dropdown
+  const { data: woodTypesData, isLoading: isLoadingWoodTypes } = useQuery('woodTypesAll', 
+    () => apiService.getWoodTypes({ per_page: -1 }) // Fetch all
+  );
+  const woodTypes = woodTypesData?.data?.items || [];
+
+  // Fetch sellers for dropdown
+  const { data: sellersData, isLoading: isLoadingSellers } = useQuery('sellersAll', 
+    () => apiService.getSellers({ per_page: -1 }) // Fetch all
+  );
+  const sellers = sellersData?.data?.items || [];
+
+  const createProductMutation = useMutation(
+    (productData) => apiService.createProduct(productData),
+    {
+      onSuccess: async (data) => {
+        toast.success('Product created successfully!');
+        if (selectedImageFile && data && data.data && data.data.id) {
+          await uploadImageMutation.mutateAsync({ productId: data.data.id, imageFile: selectedImageFile });
+        }
+        queryClient.invalidateQueries('products');
+        navigate('/products');
+      },
+      onError: (error) => {
+        toast.error(`Error creating product: ${error.message}`);
+        setErrors(error.response?.data?.errors || {});
+      },
+    }
+  );
+
+  const updateProductMutation = useMutation(
+    ({ id, productData }) => apiService.updateProduct(id, productData),
+    {
+      onSuccess: async (data) => {
+        toast.success('Product updated successfully!');
+        if (selectedImageFile && data && data.data && data.data.id) {
+          // Optionally delete old image first if API supports it, then upload new one
+          // For simplicity, just uploading new one. Consider image management strategy.
+          await uploadImageMutation.mutateAsync({ productId: data.data.id, imageFile: selectedImageFile });
+        }
+        queryClient.invalidateQueries('products');
+        queryClient.invalidateQueries(['product', id]);
+        navigate('/products');
+      },
+      onError: (error) => {
+        toast.error(`Error updating product: ${error.message}`);
+        setErrors(error.response?.data?.errors || {});
+      },
+    }
+  );
+
+  const uploadImageMutation = useMutation(
+    ({ productId, imageFile }) => {
+      const imageFormData = new FormData();
+      imageFormData.append('image', imageFile);
+      imageFormData.append('title', imageFile.name);
+      imageFormData.append('type', 'product');
+      imageFormData.append('related_id', productId);
+      return apiService.createImage(imageFormData);
+    },
+    {
+      onSuccess: () => {
+        toast.success('Image uploaded successfully!');
+        queryClient.invalidateQueries(['product', id]); // Re-fetch product to show new image
+      },
+      onError: (error) => {
+        toast.error(`Error uploading image: ${error.message}`);
+      },
+    }
+  );
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
-    
-    // Clear error when field is edited
     if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: '',
-      }));
+      setErrors((prev) => ({ ...prev, [name]: null }));
     }
   };
-  
-  const handleImageUpload = (e) => {
+
+  const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setSelectedImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -125,67 +156,48 @@ const ProductForm = () => {
       reader.readAsDataURL(file);
     }
   };
-  
+
   const validateForm = () => {
     const newErrors = {};
-    
-    if (!formData.title.trim()) {
-      newErrors.title = 'Title is required';
-    }
-    
-    if (!formData.price) {
-      newErrors.price = 'Price is required';
-    } else if (isNaN(formData.price) || parseFloat(formData.price) <= 0) {
+    if (!formData.title.trim()) newErrors.title = 'Title is required';
+    if (!formData.description.trim()) newErrors.description = 'Description is required';
+    if (!formData.price || isNaN(formData.price) || parseFloat(formData.price) <= 0) {
       newErrors.price = 'Price must be a positive number';
     }
-    
-    if (!formData.volume) {
-      newErrors.volume = 'Volume is required';
-    } else if (isNaN(formData.volume) || parseFloat(formData.volume) <= 0) {
+    if (!formData.volume || isNaN(formData.volume) || parseFloat(formData.volume) <= 0) {
       newErrors.volume = 'Volume must be a positive number';
     }
-    
-    if (!formData.wood_type_id) {
-      newErrors.wood_type_id = 'Wood type is required';
-    }
-    
-    if (!formData.seller_id) {
-      newErrors.seller_id = 'Seller is required';
-    }
-    
+    if (!formData.wood_type_id) newErrors.wood_type_id = 'Wood type is required';
+    if (!formData.seller_id) newErrors.seller_id = 'Seller is required';
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!validateForm()) {
+      toast.error('Please correct the form errors.');
       return;
     }
-    
-    setIsSubmitting(true);
-    
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      console.log('Form submitted:', formData);
-      
-      // Redirect after successful submission
-      navigate('/products');
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setErrors((prev) => ({
-        ...prev,
-        form: 'Failed to submit form. Please try again.',
-      }));
-    } finally {
-      setIsSubmitting(false);
+
+    const productPayload = {
+      ...formData,
+      price: parseFloat(formData.price),
+      volume: parseFloat(formData.volume),
+    };
+
+    if (isEditMode) {
+      updateProductMutation.mutate({ id, productData: productPayload });
+    } else {
+      createProductMutation.mutate(productPayload);
     }
   };
-  
-  if (isEditMode && isLoading) {
+
+  const isLoading = isLoadingProduct || isLoadingWoodTypes || isLoadingSellers || 
+                    createProductMutation.isLoading || updateProductMutation.isLoading || uploadImageMutation.isLoading;
+
+  if (isEditMode && isLoadingProduct) {
     return <div className="text-center p-6">Loading product data...</div>;
   }
   
@@ -276,7 +288,7 @@ const ProductForm = () => {
                 <option value="">Select Wood Type</option>
                 {woodTypes?.map((type) => (
                   <option key={type.id} value={type.id}>
-                    {type.neme}
+                    {type.name}
                   </option>
                 ))}
               </select>
@@ -306,13 +318,13 @@ const ProductForm = () => {
             </div>
             
             <div className="md:col-span-2">
-              <label className="block text-gray-700 font-medium mb-2" htmlFor="descrioption">
+              <label className="block text-gray-700 font-medium mb-2" htmlFor="description">
                 Description
               </label>
               <textarea
-                id="descrioption"
-                name="descrioption"
-                value={formData.descrioption}
+                id="description"
+                name="description"
+                value={formData.description}
                 onChange={handleChange}
                 rows="4"
                 className="w-full p-2 border border-gray-300 rounded-md"
@@ -362,7 +374,7 @@ const ProductForm = () => {
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={handleImageUpload}
+                    onChange={handleImageChange}
                     className="hidden"
                   />
                   {imagePreview ? (
@@ -393,11 +405,11 @@ const ProductForm = () => {
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isLoading}
               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center"
             >
               <FiSave className="mr-2" />
-              {isSubmitting ? 'Saving...' : 'Save Product'}
+              {isLoading ? 'Saving...' : 'Save Product'}
             </button>
           </div>
         </form>

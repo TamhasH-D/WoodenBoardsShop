@@ -1,22 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useQuery } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query'; // MODIFIED
 import { FiArrowLeft, FiSave, FiUpload } from 'react-icons/fi';
+import apiService from '../../../apiService';
+import toast from 'react-hot-toast'; // ADDED
 
-// This is a placeholder component. In a real implementation, you would:
-// 1. Fetch data from your API for editing
-// 2. Implement form submission to create/update
-// 3. Add proper form validation
-// 4. Add error handling
-// 5. Implement image upload functionality
+// MODIFIED: Comments below are now less relevant as we are implementing these features.
+// 1. Fetch data from your API for editing - Implemented
+// 2. Implement form submission to create/update - Implemented
+// 3. Add proper form validation - Existing, retained
+// 4. Add error handling - Enhanced with API errors
+// 5. Implement image upload functionality - Basic implementation added
 
 const WoodenBoardForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient(); // ADDED
   const isEditMode = !!id;
   
-  // Get wood type ID from query params if available
   const queryParams = new URLSearchParams(location.search);
   const woodTypeIdFromQuery = queryParams.get('woodType');
   
@@ -32,40 +34,25 @@ const WoodenBoardForm = () => {
   });
   
   const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // const [isSubmitting, setIsSubmitting] = useState(false); // REMOVED: Handled by useMutation's isLoading state
   const [imagePreview, setImagePreview] = useState(null);
+  const [imageFile, setImageFile] = useState(null); // ADDED: For storing the actual image file object
   
   // Fetch wood types for dropdown
-  const { data: woodTypes } = useQuery('woodTypes', async () => {
-    // Simulate API call
-    return [
-      { id: '1', neme: 'Pine' },
-      { id: '2', neme: 'Oak' },
-      { id: '3', neme: 'Birch' },
-      { id: '4', neme: 'Maple' },
-    ];
-  });
+  const { data: woodTypes, isLoading: isLoadingWoodTypes } = useQuery( // MODIFIED
+    'woodTypes', 
+    apiService.getWoodTypes, // MODIFIED to use apiService
+    {
+      onError: (error) => { // ADDED error handling
+        toast.error(error.message || 'Failed to fetch wood types.');
+      }
+    }
+  );
   
   // For edit mode, fetch the board data
-  const { data: boardData, isLoading } = useQuery(
+  const { data: boardData, isLoading: isLoadingBoard } = useQuery( // MODIFIED isLoading variable name for clarity
     ['woodenBoard', id],
-    async () => {
-      // Simulate API call for edit mode
-      return {
-        id,
-        title: 'Pine Board 20x100x1000mm',
-        description: 'High-quality pine board suitable for various woodworking projects. Smooth finish, ready to use.',
-        wood_type_id: '1',
-        length: 1000,
-        width: 100,
-        thickness: 20,
-        price: 5.50,
-        in_stock: 150,
-        images: [
-          'https://via.placeholder.com/400x300?text=Board+Image+1'
-        ]
-      };
-    },
+    () => apiService.getWoodenBoard(id), // MODIFIED to use apiService
     {
       enabled: isEditMode,
       onSuccess: (data) => {
@@ -73,7 +60,7 @@ const WoodenBoardForm = () => {
           setFormData({
             title: data.title || '',
             description: data.description || '',
-            wood_type_id: data.wood_type_id || '',
+            wood_type_id: data.wood_type?.id || data.wood_type_id || '', // MODIFIED: Handle nested wood_type object or direct ID
             length: data.length || '',
             width: data.width || '',
             thickness: data.thickness || '',
@@ -81,10 +68,53 @@ const WoodenBoardForm = () => {
             in_stock: data.in_stock || '',
           });
           
-          if (data.images && data.images.length > 0) {
-            setImagePreview(data.images[0]);
+          // MODIFIED: Assuming API returns images array with URLs or a single image_url field
+          if (data.images && data.images.length > 0 && data.images[0].url) {
+            setImagePreview(data.images[0].url);
+          } else if (data.image_url) { // Fallback for a single image_url
+             setImagePreview(data.image_url);
           }
         }
+      },
+      onError: (error) => { // ADDED error handling
+        toast.error(error.message || `Failed to fetch wooden board data (ID: ${id}).`);
+        // Optionally navigate away if board data fails to load in edit mode
+        // navigate('/wooden-boards'); 
+      }
+    }
+  );
+
+  // ADDED Mutations for create and update operations
+  const createBoardMutation = useMutation(
+    (boardPayload) => apiService.createWoodenBoard(boardPayload),
+    {
+      onSuccess: () => {
+        toast.success('Wooden board created successfully!');
+        queryClient.invalidateQueries('woodenBoards'); // Invalidate list to refetch
+        navigate('/wooden-boards');
+      },
+      onError: (error) => {
+        const errorMsg = error.response?.data?.message || error.message || 'Failed to create wooden board.';
+        toast.error(errorMsg);
+        // Set form-level and field-specific errors if provided by API
+        setErrors(prevErrors => ({ ...prevErrors, form: errorMsg, ...(error.response?.data?.errors || {}) }));
+      },
+    }
+  );
+
+  const updateBoardMutation = useMutation(
+    (boardPayload) => apiService.updateWoodenBoard(id, boardPayload),
+    {
+      onSuccess: () => {
+        toast.success('Wooden board updated successfully!');
+        queryClient.invalidateQueries('woodenBoards'); // Invalidate list
+        queryClient.invalidateQueries(['woodenBoard', id]); // Invalidate specific board data
+        navigate('/wooden-boards');
+      },
+      onError: (error) => {
+        const errorMsg = error.response?.data?.message || error.message || 'Failed to update wooden board.';
+        toast.error(errorMsg);
+        setErrors(prevErrors => ({ ...prevErrors, form: errorMsg, ...(error.response?.data?.errors || {}) }));
       },
     }
   );
@@ -96,7 +126,6 @@ const WoodenBoardForm = () => {
       [name]: value,
     }));
     
-    // Clear error when field is edited
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
@@ -105,14 +134,18 @@ const WoodenBoardForm = () => {
     }
   };
   
-  const handleImageUpload = (e) => {
+  const handleImageUpload = (e) => { // MODIFIED to store File object
     const file = e.target.files[0];
     if (file) {
+      setImageFile(file); // Store the actual File object
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result);
+        setImagePreview(reader.result); // Set preview (data URL)
       };
       reader.readAsDataURL(file);
+    } else {
+      setImageFile(null); // Clear file if selection is cancelled
+      setImagePreview(null);
     }
   };
   
@@ -129,19 +162,19 @@ const WoodenBoardForm = () => {
     
     if (!formData.length) {
       newErrors.length = 'Length is required';
-    } else if (isNaN(formData.length) || parseInt(formData.length) <= 0) {
+    } else if (isNaN(formData.length) || parseFloat(formData.length) <= 0) {
       newErrors.length = 'Length must be a positive number';
     }
     
     if (!formData.width) {
       newErrors.width = 'Width is required';
-    } else if (isNaN(formData.width) || parseInt(formData.width) <= 0) {
+    } else if (isNaN(formData.width) || parseFloat(formData.width) <= 0) {
       newErrors.width = 'Width must be a positive number';
     }
     
     if (!formData.thickness) {
       newErrors.thickness = 'Thickness is required';
-    } else if (isNaN(formData.thickness) || parseInt(formData.thickness) <= 0) {
+    } else if (isNaN(formData.thickness) || parseFloat(formData.thickness) <= 0) {
       newErrors.thickness = 'Thickness must be a positive number';
     }
     
@@ -161,36 +194,51 @@ const WoodenBoardForm = () => {
     return Object.keys(newErrors).length === 0;
   };
   
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => { // MODIFIED to use mutations and handle image file
     e.preventDefault();
     
     if (!validateForm()) {
       return;
     }
     
-    setIsSubmitting(true);
-    
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      console.log('Form submitted:', formData);
-      
-      // Redirect after successful submission
-      navigate('/wooden-boards');
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setErrors((prev) => ({
-        ...prev,
-        form: 'Failed to submit form. Please try again.',
-      }));
-    } finally {
-      setIsSubmitting(false);
+    let submissionPayload = { ...formData };
+
+    // Ensure numeric types are correctly formatted before submission
+    submissionPayload.length = parseFloat(submissionPayload.length);
+    submissionPayload.width = parseFloat(submissionPayload.width);
+    submissionPayload.thickness = parseFloat(submissionPayload.thickness);
+    submissionPayload.price = parseFloat(submissionPayload.price);
+    submissionPayload.in_stock = parseInt(submissionPayload.in_stock, 10);
+
+    // If an image file is selected, prepare FormData for submission
+    if (imageFile) {
+      const dataForApi = new FormData();
+      // Append all form data fields to FormData
+      Object.keys(submissionPayload).forEach(key => {
+        dataForApi.append(key, submissionPayload[key]);
+      });
+      dataForApi.append('image', imageFile); // 'image' is a common field name for the file
+      submissionPayload = dataForApi;
+    } else if (isEditMode && !imagePreview && boardData?.image_url) {
+      // If in edit mode, image was present, and now cleared (imagePreview is null)
+      // API might require explicit nullification or sending an empty string for the image field.
+      // This depends on API design. For example:
+      // if (submissionPayload instanceof FormData) submissionPayload.append('image', '');
+      // else submissionPayload.image = null; 
+    }
+    // If not FormData (no new image), submissionPayload remains a plain object.
+    // API service methods (createWoodenBoard, updateWoodenBoard) should be designed
+    // to handle both plain objects and FormData.
+
+    if (isEditMode) {
+      updateBoardMutation.mutate(submissionPayload);
+    } else {
+      createBoardMutation.mutate(submissionPayload);
     }
   };
   
-  if (isEditMode && isLoading) {
-    return <div className="text-center p-6">Loading board data...</div>;
+  if ((isEditMode && isLoadingBoard) || isLoadingWoodTypes) { // MODIFIED: Check both loading states
+    return <div className="text-center p-6">Loading data...</div>;
   }
   
   return (
@@ -240,12 +288,13 @@ const WoodenBoardForm = () => {
                 value={formData.wood_type_id}
                 onChange={handleChange}
                 className={`w-full p-2 border rounded-md ${errors.wood_type_id ? 'border-red-500' : 'border-gray-300'}`}
-                disabled={!!woodTypeIdFromQuery}
+                disabled={!!woodTypeIdFromQuery || isLoadingWoodTypes}
               >
                 <option value="">Select Wood Type</option>
-                {woodTypes?.map((type) => (
+                {/* MODIFIED: Assuming woodTypes is an array from apiService.getWoodTypes, corrected 'neme' to 'name' */}
+                {woodTypes?.map((type) => ( 
                   <option key={type.id} value={type.id}>
-                    {type.neme}
+                    {type.name} 
                   </option>
                 ))}
               </select>
@@ -398,11 +447,11 @@ const WoodenBoardForm = () => {
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={createBoardMutation.isLoading || updateBoardMutation.isLoading} // MODIFIED to use mutation isLoading state
               className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center"
             >
               <FiSave className="mr-2" />
-              {isSubmitting ? 'Saving...' : 'Save Board'}
+              {createBoardMutation.isLoading || updateBoardMutation.isLoading ? 'Saving...' : 'Save Board'} {/* MODIFIED to use mutation isLoading state */}
             </button>
           </div>
         </form>

@@ -13,105 +13,49 @@ export const useAuth = () => {
   return context;
 };
 
-// Auth Provider component
+// Auth Provider component - Auto-login as test buyer
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // No loading needed
   const [error, setError] = useState(null);
-  
-  // Check if user is already logged in (from localStorage)
+
+  // Auto-login as test buyer on mount
   useEffect(() => {
-    const checkLoggedIn = async () => {
-      try {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          const user = JSON.parse(storedUser);
-          // Check if token is still valid (would normally validate with backend)
-          setCurrentUser(user);
-        }
-      } catch (error) {
-        console.error('Error checking authentication:', error);
-        localStorage.removeItem('user');
-      } finally {
-        setLoading(false);
+    // Create a default test buyer user
+    const testBuyer = {
+      id: 'buyer-test-001',
+      email: 'test.buyer@example.com',
+      name: 'Тестовый Покупатель',
+      token: 'buyer-test-token',
+      role: 'buyer',
+      phone: '+7 (900) 123-45-67',
+      address: 'г. Москва, ул. Тестовая, д. 1',
+      preferences: {
+        woodTypes: ['дуб', 'сосна', 'береза'],
+        priceRange: { min: 1000, max: 50000 }
       }
     };
-    
-    checkLoggedIn();
+
+    setCurrentUser(testBuyer);
+    setLoading(false);
   }, []);
   
-  // Login function
+  // Login function - always returns current test user
   const login = async (email, password) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // This would normally be an API call to authenticate
-      // For now, we'll simulate a successful login
-      if (email && password) {
-        // Mock user data
-        const user = {
-          id: '123456',
-          email,
-          name: email.split('@')[0],
-          token: 'mock-jwt-token',
-          role: 'buyer'
-        };
-        
-        // Store user in localStorage
-        localStorage.setItem('user', JSON.stringify(user));
-        setCurrentUser(user);
-        return user;
-      } else {
-        throw new Error('Email and password are required');
-      }
-    } catch (error) {
-      setError(error.message || 'Failed to login');
-      throw error;
-    } finally {
-      setLoading(false);
-    }
+    // Test buyer is always logged in
+    return currentUser;
   };
-  
-  // Register function
+
+  // Register function - always returns current test user
   const register = async (name, email, password) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // This would normally be an API call to register
-      // For now, we'll simulate a successful registration
-      if (name && email && password) {
-        // Mock user data
-        const user = {
-          id: '123456',
-          email,
-          name,
-          token: 'mock-jwt-token',
-          role: 'buyer'
-        };
-        
-        // Store user in localStorage
-        localStorage.setItem('user', JSON.stringify(user));
-        setCurrentUser(user);
-        return user;
-      } else {
-        throw new Error('Name, email, and password are required');
-      }
-    } catch (error) {
-      setError(error.message || 'Failed to register');
-      throw error;
-    } finally {
-      setLoading(false);
-    }
+    // Test buyer is always logged in
+    return currentUser;
   };
-  
-  // Logout function
+
+  // Logout function - no logout for test mode
   const logout = () => {
-    localStorage.removeItem('user');
-    setCurrentUser(null);
-    navigate('/');
+    console.log('Logout not available in test buyer mode');
   };
   
   // Check if user is authenticated
