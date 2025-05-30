@@ -180,6 +180,6 @@ print_status "Run 'docker-compose down' in backend/backend to stop them."
 
 echo ""
 print_status "🌐 Available endpoints:"
-echo "  - API Documentation: http://localhost:8000/docs"
-echo "  - API Health: http://localhost:8000/docs"
+echo "  - API Documentation: http://localhost:${BACKEND_PORT:-8000}/docs"
+echo "  - API Health: http://localhost:${BACKEND_PORT:-8000}/docs"
 echo ""

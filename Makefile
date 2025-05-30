@@ -17,11 +17,11 @@ help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -v "^help:" | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "🌐 Service URLs (when running):"
-	@echo "  Backend API:      http://localhost:8000"
-	@echo "  API Docs:         http://localhost:8000/docs"
-	@echo "  Admin Frontend:   http://localhost:8080"
-	@echo "  Seller Frontend:  http://localhost:8081"
-	@echo "  Buyer Frontend:   http://localhost:8082"
+	@echo "  Backend API:      http://localhost:$${BACKEND_PORT:-8000}"
+	@echo "  API Docs:         http://localhost:$${BACKEND_PORT:-8000}/docs"
+	@echo "  Admin Frontend:   http://localhost:$${FRONTEND_ADMIN_PORT:-8080}"
+	@echo "  Seller Frontend:  http://localhost:$${FRONTEND_SELLER_PORT:-8081}"
+	@echo "  Buyer Frontend:   http://localhost:$${FRONTEND_BUYER_PORT:-8082}"
 
 # ============================================================================
 # 🚀 MAIN COMMANDS
@@ -101,7 +101,8 @@ health: ## Check health of all services
 	$(COMPOSE) ps
 	@echo ""
 	@echo "=== API Health Check ==="
-	@curl -f http://localhost:8000/docs > /dev/null 2>&1 && echo "✅ Backend API: OK" || echo "❌ Backend API: FAILED"
+	@echo "Checking Backend API on port $${BACKEND_PORT:-8000}..."
+	@curl -f http://localhost:$${BACKEND_PORT:-8000}/docs > /dev/null 2>&1 && echo "✅ Backend API: OK" || echo "❌ Backend API: FAILED"
 
 # ============================================================================
 # 🧹 CLEANUP COMMANDS
@@ -123,7 +124,7 @@ clean-all: down clean ## Stop services and clean all Docker resources
 .PHONY: dev
 dev: backend-up ## Quick start for development (backend only)
 	@echo "🎯 Development environment ready!"
-	@echo "📍 Backend API: http://localhost:8000/docs"
+	@echo "📍 Backend API: http://localhost:$${BACKEND_PORT:-8000}/docs"
 
 .PHONY: setup
 setup: build up ## Setup and start all services

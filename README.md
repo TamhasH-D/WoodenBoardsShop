@@ -54,13 +54,24 @@ make test
 
 ## 🌐 Доступные сервисы
 
-После запуска доступны следующие сервисы:
+После запуска доступны следующие сервисы (порты настраиваются через переменные окружения):
 
-- **Backend API**: http://localhost:8000
-- **API Документация**: http://localhost:8000/docs
-- **Admin Frontend**: http://localhost:8080
-- **Seller Frontend**: http://localhost:8081
-- **Buyer Frontend**: http://localhost:8082
+- **Backend API**: http://localhost:${BACKEND_PORT:-8000}
+- **API Документация**: http://localhost:${BACKEND_PORT:-8000}/docs
+- **Admin Frontend**: http://localhost:${FRONTEND_ADMIN_PORT:-8080}
+- **Seller Frontend**: http://localhost:${FRONTEND_SELLER_PORT:-8081}
+- **Buyer Frontend**: http://localhost:${FRONTEND_BUYER_PORT:-8082}
+
+### 🔧 Настройка портов
+
+Создайте файл `.env` для настройки портов:
+```bash
+# Порты сервисов
+BACKEND_PORT=8000
+FRONTEND_ADMIN_PORT=8080
+FRONTEND_SELLER_PORT=8081
+FRONTEND_BUYER_PORT=8082
+```
 
 ## 🛠️ Доступные команды
 

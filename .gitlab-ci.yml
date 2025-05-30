@@ -107,10 +107,17 @@ test_backend:
     - echo "✅ Backend сервисы запустились успешно!"
     
   after_script:
-    - echo "🧹 Очистка..."
+    - echo "🧹 Test cleanup..."
     - cd backend/backend || true
     - docker-compose down || true
-    - docker system prune -f || true
+    - echo "🧹 Cleaning up temporary build artifacts only..."
+    - |
+      # Clean only temporary containers and build cache, preserve base images
+      docker container prune -f || true
+      docker builder prune -f || true
+      # Remove only untagged images (build artifacts), keep tagged base images
+      docker image prune -f || true
+      echo "✅ Cleaned temporary artifacts, preserved base images"
     
   only:
     - main
@@ -180,6 +187,14 @@ deploy_staging:
   after_script:
     - echo "🧹 Staging cleanup (keeping services running)..."
     # Note: We don't stop services in staging, they should keep running
+    - echo "🧹 Cleaning up temporary build artifacts only..."
+    - |
+      # Clean only temporary containers and build cache, preserve base images
+      docker container prune -f
+      docker builder prune -f
+      # Remove only untagged images (build artifacts), keep tagged base images
+      docker image prune -f
+      echo "✅ Cleaned temporary artifacts, preserved base images"
 
   environment:
     name: staging
@@ -254,6 +269,14 @@ deploy_production:
   after_script:
     - echo "🧹 Production deployment cleanup..."
     # Note: We don't stop production services
+    - echo "🧹 Cleaning up temporary build artifacts only..."
+    - |
+      # Clean only temporary containers and build cache, preserve base images
+      docker container prune -f
+      docker builder prune -f
+      # Remove only untagged images (build artifacts), keep tagged base images
+      docker image prune -f
+      echo "✅ Cleaned temporary artifacts, preserved base images"
 
   environment:
     name: production
