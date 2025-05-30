@@ -380,46 +380,43 @@ test:backend-quality:
     - pip install uv
     - echo "📦 Installing dependencies..."
     - uv sync --dev
-  script:
-    - echo "🔍 Running comprehensive backend code quality checks..."
+  script: |
+    echo "🔍 Running comprehensive backend code quality checks..."
 
-    - echo "📊 Project structure analysis..."
-    - find . -name "*.py" | head -20
-    - echo "📊 Total Python files: $(find . -name '*.py' | wc -l)"
+    echo "📊 Project structure analysis..."
+    find . -name "*.py" | head -20
+    echo "📊 Total Python files: $(find . -name '*.py' | wc -l)"
 
-    - echo "🧹 Running code formatting check with Ruff..."
-    - |
-      if uv run ruff check . --output-format=gitlab > ruff-report.json; then
-        echo "✅ Ruff linting passed"
-      else
-        echo "⚠️ Ruff found issues (non-blocking)"
-        cat ruff-report.json || true
-      fi
+    echo "🧹 Running code formatting check with Ruff..."
+    if uv run ruff check . --output-format=gitlab > ruff-report.json; then
+      echo "✅ Ruff linting passed"
+    else
+      echo "⚠️ Ruff found issues (non-blocking)"
+      cat ruff-report.json || true
+    fi
 
-    - echo "🔍 Running type checking with MyPy..."
-    - |
-      if uv run mypy . --junit-xml=mypy-report.xml; then
-        echo "✅ MyPy type checking passed"
-      else
-        echo "⚠️ MyPy found type issues (non-blocking)"
-      fi
+    echo "🔍 Running type checking with MyPy..."
+    if uv run mypy . --junit-xml=mypy-report.xml; then
+      echo "✅ MyPy type checking passed"
+    else
+      echo "⚠️ MyPy found type issues (non-blocking)"
+    fi
 
-    - echo "🧪 Running unit tests with pytest..."
-    - |
-      if [ -d "tests" ]; then
-        echo "📁 Found tests directory, running tests..."
-        uv run pytest tests/ \
-          --junitxml=pytest-report.xml \
-          --cov=. \
-          --cov-report=xml \
-          --cov-report=term \
-          --verbose || echo "⚠️ Some tests failed (non-blocking)"
-      else
-        echo "📁 No tests directory found, skipping unit tests"
-        echo "⚠️ Consider adding unit tests for better code quality"
-      fi
+    echo "🧪 Running unit tests with pytest..."
+    if [ -d "tests" ]; then
+      echo "📁 Found tests directory, running tests..."
+      uv run pytest tests/ \
+        --junitxml=pytest-report.xml \
+        --cov=. \
+        --cov-report=xml \
+        --cov-report=term \
+        --verbose || echo "⚠️ Some tests failed (non-blocking)"
+    else
+      echo "📁 No tests directory found, skipping unit tests"
+      echo "⚠️ Consider adding unit tests for better code quality"
+    fi
 
-    - echo "📊 Code quality summary completed"
+    echo "📊 Code quality summary completed"
 
   artifacts:
     when: always
