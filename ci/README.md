@@ -9,6 +9,8 @@ ci/
 ├── config/                    # Configuration files
 │   ├── .env.ci               # CI environment variables
 │   └── docker-compose.ci.yml # CI Docker Compose overrides
+├── scripts/                   # Automation scripts
+│   └── test-pipeline-locally.sh # Local pipeline testing
 └── README.md                 # This file
 ```
 
@@ -26,6 +28,25 @@ CI-specific Docker Compose overrides:
 - Health checks for all services
 - Optimized resource usage
 - CI-specific environment variables
+
+## 🛠️ Scripts
+
+### `test-pipeline-locally.sh`
+Comprehensive local CI/CD testing script that simulates the GitLab pipeline:
+1. Builds all Docker containers
+2. Starts services with automatic migrations
+3. Runs health checks and API tests
+4. Provides detailed logging and error reporting
+5. Cleans up resources after testing
+
+Usage:
+```bash
+# Run via Makefile (recommended)
+make test
+
+# Or run directly
+./ci/scripts/test-pipeline-locally.sh
+```
 
 ## 🚀 Usage
 
@@ -76,4 +97,4 @@ The GitLab CI/CD pipeline automatically uses these configurations:
 
 - `/.gitlab-ci.yml` - GitLab CI/CD pipeline configuration
 - `/Makefile` - Build automation commands
-- `/scripts/test-pipeline-locally.sh` - Local pipeline testing
+- `/ci/scripts/test-pipeline-locally.sh` - Local pipeline testing

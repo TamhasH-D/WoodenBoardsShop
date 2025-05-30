@@ -22,6 +22,9 @@ help: ## Show available commands
 	@echo "  Admin Frontend:   http://localhost:$${FRONTEND_ADMIN_PORT:-8080}"
 	@echo "  Seller Frontend:  http://localhost:$${FRONTEND_SELLER_PORT:-8081}"
 	@echo "  Buyer Frontend:   http://localhost:$${FRONTEND_BUYER_PORT:-8082}"
+	@echo ""
+	@echo "💡 Tip: Set environment variables to customize ports:"
+	@echo "  export BACKEND_PORT=9000 && make dev"
 
 # ============================================================================
 # 🚀 MAIN COMMANDS
@@ -92,7 +95,7 @@ backend-migrate: ## Run database migrations
 .PHONY: test
 test: ## Run local pipeline test
 	@echo "🧪 Running local pipeline test..."
-	./scripts/test-pipeline-locally.sh
+	./ci/scripts/test-pipeline-locally.sh
 
 .PHONY: health
 health: ## Check health of all services

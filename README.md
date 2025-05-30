@@ -14,7 +14,7 @@ diplom/
 │   ├── buyer/                  # Интерфейс покупателей
 │   └── seller/                 # Интерфейс продавцов
 ├── ci/config/                   # CI/CD конфигурация
-├── scripts/                     # Скрипты автоматизации
+├── ci/scripts/                  # Скрипты автоматизации
 ├── .gitlab-ci.yml              # GitLab CI/CD pipeline
 ├── docker-compose.yaml         # Основной compose файл
 └── Makefile                    # Команды автоматизации
@@ -130,6 +130,7 @@ make test
 
 - [CI/CD Pipeline Guide](CI_CD_PIPELINE_GUIDE.md) - Подробное руководство по CI/CD
 - [CI Configuration](ci/README.md) - Конфигурация CI/CD
+- [Docker Optimization](DOCKER_OPTIMIZATION.md) - Оптимизация Docker образов
 
 ---
 
