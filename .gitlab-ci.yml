@@ -357,7 +357,6 @@ test:integration:
     paths:
       - test-results.xml
     expire_in: 1 week
-
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == "main"
@@ -433,7 +432,6 @@ test:backend-quality:
       - backend/backend/coverage.xml
       - backend/backend/ruff-report.json
     expire_in: 1 week
-
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == "main"
@@ -442,6 +440,7 @@ test:backend-quality:
 
 test:frontend-quality:
   stage: test
+  coverage: '/^Statements.+?(\d+\.\d+)%$/'
   image: node:18-alpine
   variables:
     NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.cache/npm"
@@ -539,7 +538,7 @@ test:frontend-quality:
         - frontend/admin/junit.xml
         - frontend/buyer/junit.xml
         - frontend/seller/junit.xml
-      coverage: frontend/*/coverage/lcov.info
+
     paths:
       - frontend/admin/build/
       - frontend/buyer/build/
@@ -549,7 +548,6 @@ test:frontend-quality:
       - frontend/seller/coverage/
       - frontend/*/junit.xml
     expire_in: 1 week
-
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == "main"
@@ -610,7 +608,6 @@ security:docker-scan:
     paths:
       - "*-security-report.json"
     expire_in: 1 week
-
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == "main"
@@ -657,7 +654,6 @@ security:dependency-scan:
       - "*-safety-report.json"
       - "*-audit-report.json"
     expire_in: 1 week
-
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == "main"
@@ -714,7 +710,6 @@ test:performance:
     paths:
       - performance-results.txt
     expire_in: 1 week
-
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
     - if: $CI_COMMIT_BRANCH == "dev"
