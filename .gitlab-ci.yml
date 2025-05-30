@@ -424,8 +424,8 @@ test:backend-quality:
       junit:
         - backend/backend/pytest-report.xml
         - backend/backend/mypy-report.xml
-      coverage: backend/backend/coverage.xml
       codequality: backend/backend/ruff-report.json
+    coverage: backend/backend/coverage.xml
     paths:
       - backend/backend/pytest-report.xml
       - backend/backend/mypy-report.xml
