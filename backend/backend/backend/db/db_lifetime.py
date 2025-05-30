@@ -15,8 +15,13 @@ def run_migrations() -> None:
         logger.info("🔄 Running database migrations...")
 
         # Get the directory where alembic.ini is located
-        backend_dir = Path(__file__).parent.parent
-        alembic_ini_path = backend_dir / "alembic.ini"
+        # In Docker container, alembic.ini is in /app/
+        alembic_ini_path = Path("/app/alembic.ini")
+
+        # Fallback to relative path for local development
+        if not alembic_ini_path.exists():
+            backend_dir = Path(__file__).parent.parent
+            alembic_ini_path = backend_dir / "alembic.ini"
 
         if not alembic_ini_path.exists():
             logger.error(f"❌ Alembic configuration not found at {alembic_ini_path}")
