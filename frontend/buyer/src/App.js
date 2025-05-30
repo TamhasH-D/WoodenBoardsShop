@@ -1,78 +1,68 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import Home from './components/Home';
+import Products from './components/Products';
+import Sellers from './components/Sellers';
+import BoardAnalyzer from './components/BoardAnalyzer';
+import Profile from './components/Profile';
+import HealthCheck from './components/HealthCheck';
 
-// Context
-import { AuthProvider } from './context/AuthContext';
-import { CartProvider } from './context/CartContext';
-
-// Pages
-import MainPage from './pages/MainPage';
-import ProductsPage from './pages/ProductsPage';
-import ProductDetailPage from './pages/ProductDetailPage';
-import WoodTypesPage from './pages/WoodTypesPage';
-import CalculatorPage from './pages/CalculatorPage';
-import ProfilePage from './pages/ProfilePage';
-import CartPage from './pages/CartPage';
-import ChatPage from './pages/ChatPage';
-import NotFoundPage from './pages/NotFoundPage';
-
-// Create a client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    },
-  },
-});
+function Navigation() {
+  const location = useLocation();
+  
+  const isActive = (path) => location.pathname === path;
+  
+  return (
+    <nav className="nav">
+      <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
+        Home
+      </Link>
+      <Link to="/products" className={`nav-link ${isActive('/products') ? 'active' : ''}`}>
+        Browse Products
+      </Link>
+      <Link to="/sellers" className={`nav-link ${isActive('/sellers') ? 'active' : ''}`}>
+        Find Sellers
+      </Link>
+      <Link to="/analyzer" className={`nav-link ${isActive('/analyzer') ? 'active' : ''}`}>
+        Board Analyzer
+      </Link>
+      <Link to="/profile" className={`nav-link ${isActive('/profile') ? 'active' : ''}`}>
+        My Profile
+      </Link>
+      <Link to="/health" className={`nav-link ${isActive('/health') ? 'active' : ''}`}>
+        System Status
+      </Link>
+    </nav>
+  );
+}
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <AuthProvider>
-          <CartProvider>
+    <Router>
+      <div className="App">
+        <header className="header">
+          <div className="container">
+            <h1>Wood Products Marketplace</h1>
+            <p>Find quality wood products from trusted sellers</p>
+          </div>
+        </header>
+        
+        <div className="container">
+          <Navigation />
+          
+          <main>
             <Routes>
-            {/* All routes are now accessible without login */}
-            <Route path="/" element={<MainPage />} />
-            <Route path="/products" element={<ProductsPage />} />
-            <Route path="/product/:id" element={<ProductDetailPage />} />
-            <Route path="/wood-types" element={<WoodTypesPage />} />
-            <Route path="/calculator" element={<CalculatorPage />} />
-            <Route path="/cart" element={<CartPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/chat" element={<ChatPage />} />
-            <Route path="/chat/:sellerId" element={<ChatPage />} />
-
-            {/* Fallback route for 404 */}
-            <Route path="*" element={<NotFoundPage />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/sellers" element={<Sellers />} />
+              <Route path="/analyzer" element={<BoardAnalyzer />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/health" element={<HealthCheck />} />
             </Routes>
-          </CartProvider>
-        </AuthProvider>
-      </Router>
-
-      {/* Toast notifications */}
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
-
-      {/* React Query Devtools */}
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+          </main>
+        </div>
+      </div>
+    </Router>
   );
 }
 

@@ -1,70 +1,231 @@
-# Admin Panel Frontend
+# Admin Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Administrative dashboard for the Diplom project wood products marketplace.
 
-## Available Scripts
+## 🎯 Purpose
 
-In the project directory, you can run:
+The Admin Frontend provides comprehensive administrative capabilities for managing the entire marketplace ecosystem, including users, products, sellers, buyers, and system monitoring.
 
-### `npm start`
+## 🚀 Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **Dashboard Overview**: System health monitoring and key metrics
+- **User Management**: Manage buyers and sellers
+- **Product Management**: Oversee all marketplace products
+- **Chat Monitoring**: Monitor customer-seller communications
+- **System Health**: Backend connectivity and service status monitoring
+- **Real-time Updates**: Live data from the backend API
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 🛠️ Technology Stack
 
-### `npm test`
+- **React 18**: Modern React with hooks and functional components
+- **React Router 6**: Client-side routing
+- **Axios**: HTTP client for API communication
+- **CSS3**: Custom styling with responsive design
+- **Docker**: Containerized deployment
+- **Nginx**: Production web server
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 📋 Prerequisites
 
-### `npm run build`
+- Node.js 18+ and npm
+- Docker (for containerized deployment)
+- Access to the backend API (port 8000)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 🏃‍♂️ Quick Start
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Development
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+# Install dependencies
+make install
 
-### `npm run eject`
+# Start development server
+make start
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+# Open http://localhost:3000
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Production
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```bash
+# Build production bundle
+make build
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+# Run with Docker
+make docker-build
+make docker-run
 
-## Learn More
+# Access at http://localhost:8080
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 📁 Project Structure
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```
+src/
+├── components/          # React components
+│   ├── Dashboard.js     # Main dashboard
+│   ├── Buyers.js        # Buyer management
+│   ├── Sellers.js       # Seller management
+│   ├── Products.js      # Product management
+│   ├── ChatThreads.js   # Chat monitoring
+│   └── HealthCheck.js   # System health
+├── services/
+│   └── api.js          # API service layer
+├── hooks/
+│   └── useApi.js       # Custom React hooks
+├── App.js              # Main application component
+├── index.js            # Application entry point
+└── index.css           # Global styles
+```
 
-### Code Splitting
+## 🔧 Available Commands
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+```bash
+# Development
+make install          # Install dependencies
+make start           # Start development server
+make build           # Build production bundle
 
-### Analyzing the Bundle Size
+# Testing
+make test            # Run tests
+make test-coverage   # Run tests with coverage
+make lint            # Run linting
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+# Docker
+make docker-build    # Build Docker image
+make docker-run      # Run Docker container
+make docker-stop     # Stop Docker container
 
-### Making a Progressive Web App
+# Maintenance
+make clean           # Clean build artifacts
+make audit           # Security audit
+make info            # Show project info
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## 🌐 API Integration
 
-### Advanced Configuration
+The admin frontend communicates with the backend API at:
+- Development: `http://localhost:8000`
+- Production: Configured via `REACT_APP_API_URL`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### API Endpoints Used
 
-### Deployment
+- `GET /api/v1/health` - System health check
+- `GET /api/v1/buyers` - List buyers
+- `GET /api/v1/sellers` - List sellers
+- `GET /api/v1/products` - List products
+- `GET /api/v1/chat-threads` - List chat threads
+- `DELETE /api/v1/buyers/{id}` - Delete buyer
+- `DELETE /api/v1/sellers/{id}` - Delete seller
+- `DELETE /api/v1/products/{id}` - Delete product
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## 🔒 Security Features
 
-### `npm run build` fails to minify
+- Input validation and sanitization
+- CORS protection
+- XSS protection headers
+- Content Security Policy
+- Secure Docker configuration
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## 🎨 UI/UX Features
+
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Clean Interface**: Minimalist design focused on functionality
+- **Loading States**: Visual feedback for all operations
+- **Error Handling**: Comprehensive error messages and recovery
+- **Navigation**: Intuitive menu and routing
+- **Real-time Updates**: Live data refresh capabilities
+
+## 🔧 Configuration
+
+### Environment Variables
+
+```bash
+REACT_APP_API_URL=http://localhost:8000  # Backend API URL
+NODE_ENV=development                      # Environment mode
+```
+
+### Docker Configuration
+
+- **Port**: 8080 (production)
+- **Base Image**: nginx:alpine
+- **Build**: Multi-stage build for optimization
+
+## 🚀 Deployment
+
+### Development Deployment
+
+```bash
+make setup           # Complete setup
+make start           # Start development server
+```
+
+### Production Deployment
+
+```bash
+make build           # Build production bundle
+make docker-build    # Build Docker image
+make docker-run      # Deploy container
+```
+
+### CI/CD Integration
+
+```bash
+make ci-install      # CI dependency installation
+make ci-build        # CI build process
+make ci-test         # CI testing
+make ci-lint         # CI linting
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **Backend Connection Failed**
+   - Ensure backend API is running on port 8000
+   - Check CORS configuration
+   - Verify network connectivity
+
+2. **Build Failures**
+   - Clear node_modules: `make clean`
+   - Reinstall dependencies: `make install`
+   - Check Node.js version compatibility
+
+3. **Docker Issues**
+   - Ensure Docker is running
+   - Check port availability (8080)
+   - Review Docker logs: `docker logs admin-frontend`
+
+### Health Checks
+
+```bash
+make health-check      # Check development server
+make health-check-prod # Check production server
+```
+
+## 📊 Performance
+
+- **Bundle Size**: Optimized for minimal size
+- **Loading Time**: Fast initial load with code splitting
+- **Memory Usage**: Efficient React component lifecycle
+- **Network**: Optimized API calls with caching
+
+## 🤝 Contributing
+
+1. Follow React best practices
+2. Use functional components with hooks
+3. Implement proper error handling
+4. Add loading states for async operations
+5. Write clean, readable code
+6. Test all functionality
+
+## 📝 License
+
+Part of the Diplom project - Wood Products Marketplace.
+
+## 🆘 Support
+
+For issues and questions:
+1. Check the troubleshooting section
+2. Review backend API documentation
+3. Check Docker and network configuration
+4. Verify environment variables
