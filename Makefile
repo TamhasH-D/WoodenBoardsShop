@@ -13,7 +13,7 @@ PROD_ENV := NODE_ENV=production COMPOSE_FILE_EXT=.yaml FRONTEND_PORT=80 CONTAINE
 USE_COMPOSE := docker compose --env-file $(ENV_FILE)
 USE_COMPOSE_DEV := $(DEV_ENV) docker compose --env-file $(ENV_FILE)
 USE_COMPOSE_PROD := $(PROD_ENV) docker compose --env-file $(ENV_FILE)
-USE_COMPOSE_CI := docker compose --env-file $(ENV_FILE) -f docker-compose.ci.yml
+USE_COMPOSE_CI := docker compose --env-file ci/config/.env.ci -f ci/config/docker-compose.ci.yml
 
 ######### End of Global environment variables #########
 
@@ -112,7 +112,7 @@ ps: # List all running containers
 .PHONY: test-ci
 test-ci: # Run local CI/CD test
 	@echo "Running local CI/CD test..."
-	./scripts/test-ci-cd.sh
+	./ci/scripts/test-ci-cd.sh
 
 .PHONY: health-check
 health-check: # Check health of all services
