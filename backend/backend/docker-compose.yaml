@@ -25,18 +25,6 @@ services:
       - ./migrations:/app/migrations
     networks:
       - backend-network
-    develop:
-      watch:
-        - action: sync
-          path: ./backend
-          target: /app/backend
-        - action: sync
-          path: ./tests
-          target: /app/tests
-        - action: rebuild
-          path: pyproject.toml
-        - action: rebuild
-          path: uv.lock
 
   postgres:
     image: postgres:17.4-bookworm

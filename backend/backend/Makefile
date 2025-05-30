@@ -12,6 +12,10 @@ run: # Run the application.
 up: # Start the project with Docker Compose.
 	docker compose --env-file .env up --build  -d
 
+.PHONY: up-dev
+up-dev: # Start the project in development mode with file watching.
+	docker compose --env-file .env -f docker-compose.yaml -f docker-compose.dev.yaml up --build
+
 .PHONY: down
 down: # Stop the project with Docker Compose.
 	docker compose --env-file .env down
