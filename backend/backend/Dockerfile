@@ -20,9 +20,9 @@ RUN uv add aiohttp python-multipart
 
 FROM python:3.12-slim-bookworm
 
-# Install PostgreSQL client for pg_isready command
+# Install bash for command chaining
 RUN apt-get update && apt-get install -y \
-    postgresql-client \
+    bash \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/app/.venv/bin:$PATH"
@@ -32,10 +32,4 @@ COPY --from=builder --chown=app:app /app /app
 
 WORKDIR /app
 
-# Copy and set up entrypoint script
-COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
-
-# Use entrypoint script
-ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["python3.12", "-m", "backend"]

@@ -13,6 +13,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    command: >
+      bash -c "
+        echo '🔄 Running database migrations...' &&
+        python -m alembic upgrade head &&
+        echo '✅ Migrations completed successfully' &&
+        echo '🚀 Starting FastAPI application...' &&
+        python -m backend
+      "
     environment:
       BACKEND_CORS_ALLOW_ORIGINS: ${BACKEND_CORS_ALLOW_ORIGINS:-"*"}
       BACKEND_CORS_ALLOW_CREDENTIALS: ${BACKEND_CORS_ALLOW_CREDENTIALS:-True}
