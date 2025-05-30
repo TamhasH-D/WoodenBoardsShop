@@ -1,0 +1,52 @@
+# Migration-only Docker image
+# This image is used to run database migrations as an init container
+
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
+
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
+
+WORKDIR /app
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-install-project --no-dev
+
+ADD . /app
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
+
+FROM python:3.12-slim-bookworm
+
+# Install PostgreSQL client for database connectivity checks
+RUN apt-get update && apt-get install -y \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app"
+
+COPY --from=builder /app /app
+
+WORKDIR /app
+
+# Create migration script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "🔄 Running database migrations..."\n\
+\n\
+# Wait for database to be ready\n\
+echo "⏳ Waiting for database..."\n\
+until pg_isready -h ${BACKEND_PG_HOST:-postgres} -p ${BACKEND_PG_PORT:-5432} -U ${BACKEND_PG_USER:-backend}; do\n\
+  echo "Database not ready, waiting..."\n\
+  sleep 2\n\
+done\n\
+\n\
+echo "✅ Database is ready, running migrations..."\n\
+python -m alembic upgrade head\n\
+echo "✅ Migrations completed successfully"\n\
+' > /app/migrate.sh && chmod +x /app/migrate.sh
+
+# Default command runs migrations
+CMD ["/app/migrate.sh"]

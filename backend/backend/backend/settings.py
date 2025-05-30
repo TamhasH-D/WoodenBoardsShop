@@ -112,7 +112,6 @@ class Settings(BaseSettings):
     workers: int = 1
     log_level: str = "info"
     reload: bool = False
-    auto_migrate: bool = True  # Automatically run migrations on startup
 
     db: DBSettings = DBSettings()
     redis: RedisSettings = RedisSettings()

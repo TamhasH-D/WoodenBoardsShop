@@ -5,24 +5,27 @@ This document explains how database migrations work in the backend service and h
 ## 🔄 Automatic Migrations
 
 ### Overview
-The backend service automatically runs database migrations on startup when:
-- `BACKEND_AUTO_MIGRATE=true` (default)
-- Environment is not "test" (`BACKEND_ENV != "test"`)
-
-### Configuration
-```bash
-# Enable automatic migrations (default)
-BACKEND_AUTO_MIGRATE=true
-
-# Disable automatic migrations
-BACKEND_AUTO_MIGRATE=false
-```
+The backend service uses **init containers** and **entrypoint scripts** to automatically run database migrations before the application starts. This ensures the database schema is always up-to-date without requiring manual intervention.
 
 ### How It Works
-1. **Application Startup**: When the FastAPI app starts, it calls `setup_db()`
-2. **Migration Check**: If auto-migrate is enabled and not in test mode, runs `alembic upgrade head`
-3. **Database Setup**: Creates database engine and session factory
-4. **Ready to Serve**: Application starts serving requests
+1. **Init Container**: A separate `migrate` container runs first and applies all pending migrations
+2. **Database Ready**: Once migrations complete successfully, the init container exits
+3. **API Startup**: The main API container starts only after migrations are complete
+4. **Ready to Serve**: Application starts serving requests with up-to-date schema
+
+### Migration Methods
+We provide two reliable approaches:
+
+#### Method 1: Init Container (Recommended for Production)
+- Separate container dedicated to running migrations
+- Runs before the main API container starts
+- Automatic dependency management via Docker Compose
+- Clean separation of concerns
+
+#### Method 2: Entrypoint Script (Alternative)
+- Migrations run in the same container as the API
+- Entrypoint script handles database readiness and migration execution
+- Simpler setup but less separation of concerns
 
 ## 🛠️ Manual Migration Commands
 
