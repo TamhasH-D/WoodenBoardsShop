@@ -1,0 +1,99 @@
+# Docker Compose override for CI/CD environment
+# This file provides CI-specific configurations
+
+name: diplom-ci
+
+services:
+  # Backend API service overrides
+  backend-api:
+    environment:
+      - BACKEND_DEBUG=false
+      - BACKEND_LOG_LEVEL=warning
+      - BACKEND_RELOAD=false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # PostgreSQL overrides for CI
+  postgres:
+    environment:
+      - POSTGRES_DB=backend_test
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${BACKEND_PG_USER:-backend} -d ${BACKEND_PG_DATABASE:-backend}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis overrides for CI
+  redis:
+    tmpfs:
+      - /data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Admin frontend overrides
+  admin-frontend:
+    environment:
+      - NODE_ENV=production
+      - REACT_APP_API_URL=http://backend-api:8000/
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Seller frontend overrides
+  seller-frontend:
+    environment:
+      - NODE_ENV=production
+      - REACT_APP_API_URL=http://backend-api:8000/
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Buyer frontend overrides
+  buyer-frontend:
+    environment:
+      - NODE_ENV=production
+      - REACT_APP_API_URL=http://backend-api:8000/
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Prosto Board services overrides
+  detect:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${DETECT_PORT}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  backend:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${BACKEND_PORT}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  default:
+    name: diplom-ci-network
