@@ -26,14 +26,14 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "${BACKEND_PORT}:${BACKEND_PORT}"
+      - "${PROSTO_BOARD_PORT}:${PROSTO_BOARD_PORT}"
     networks:
       - app_network
     depends_on:
       detect:
         condition: service_healthy
     environment:
-      - PORT=${BACKEND_PORT}
+      - PORT=${PROSTO_BOARD_PORT}
       - YOLO_SERVICE_SEGMENT_URL=http://detect:${DETECT_PORT}/detect_seg/
       - CONFIDENCE_THRESHOLD=${CONFIDENCE_THRESHOLD}
       - CORS_URL=${CORS_URL}
