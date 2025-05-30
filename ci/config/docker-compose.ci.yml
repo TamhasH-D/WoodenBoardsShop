@@ -91,5 +91,6 @@ services:
       start_period: 60s
 
 networks:
-  default:
+  diplom_default:
     name: diplom-ci-network
+    driver: bridge

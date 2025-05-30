@@ -25,7 +25,3 @@ include:
     env_file: .env
     project_directory: ./backend/prosto_board_volume-main
 
-networks:
-  diplom_default:
-    driver: bridge
-
