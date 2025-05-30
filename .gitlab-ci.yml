@@ -778,43 +778,41 @@ deploy:production:
     - build:all-services
   variables:
     DEPLOY_ENV: "production"
-  script:
-    - echo "🚀 Deploying to production environment..."
-    - echo "🌿 Branch: ${CI_COMMIT_REF_NAME}"
-    - echo "📋 Commit: ${CI_COMMIT_SHORT_SHA}"
+  script: |
+    echo "🚀 Deploying to production environment..."
+    echo "🌿 Branch: ${CI_COMMIT_REF_NAME}"
+    echo "📋 Commit: ${CI_COMMIT_SHORT_SHA}"
 
-    - echo "🔧 Preparing production deployment configuration..."
-    - |
-      # Create production-specific environment file
-      cp ${CI_ENV_FILE} .env.production
+    echo "🔧 Preparing production deployment configuration..."
+    # Create production-specific environment file
+    cp ${CI_ENV_FILE} .env.production
 
-      # Update URLs for production environment
-      sed -i 's|http://api:8000/|https://api.yourdomain.com/|g' .env.production
+    # Update URLs for production environment
+    sed -i 's|http://api:8000/|https://api.yourdomain.com/|g' .env.production
 
-    - echo "📦 Tagging images for production deployment..."
-    - |
-      # Tag images with production tags
-      services=("api" "admin-frontend" "seller-frontend" "buyer-frontend" "detect" "backend")
+    echo "📦 Tagging images for production deployment..."
+    # Tag images with production tags
+    services=("api" "admin-frontend" "seller-frontend" "buyer-frontend" "detect" "backend")
 
-      for service in "${services[@]}"; do
-        image_id=$(docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} images -q $service 2>/dev/null || echo "")
-        if [ -n "$image_id" ]; then
-          docker tag "$image_id" "${CI_REGISTRY_IMAGE}/${service}:${CI_COMMIT_SHORT_SHA}"
-          docker tag "$image_id" "${CI_REGISTRY_IMAGE}/${service}:latest"
-          echo "✅ Tagged $service for production"
-        fi
-      done
+    for service in "${services[@]}"; do
+      image_id=$(docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} images -q $service 2>/dev/null || echo "")
+      if [ -n "$image_id" ]; then
+        docker tag "$image_id" "${CI_REGISTRY_IMAGE}/${service}:${CI_COMMIT_SHORT_SHA}"
+        docker tag "$image_id" "${CI_REGISTRY_IMAGE}/${service}:latest"
+        echo "✅ Tagged $service for production"
+      fi
+    done
 
-    - echo "🚀 Production deployment commands would go here:"
-    - echo "  - Push images to registry: docker push \${CI_REGISTRY_IMAGE}/\${service}:latest"
-    - echo "  - SSH to production server: ssh deploy@yourdomain.com"
-    - echo "  - Backup current deployment: docker compose down && docker system prune -f"
-    - echo "  - Deploy new version: docker compose pull && docker compose up -d"
-    - echo "  - Run database migrations: docker compose exec api python manage.py migrate"
-    - echo "  - Verify deployment: curl https://yourdomain.com/health"
-    - echo "  - Run smoke tests: ./scripts/smoke-tests.sh"
+    echo "🚀 Production deployment commands would go here:"
+    echo "  - Push images to registry: docker push \${CI_REGISTRY_IMAGE}/\${service}:latest"
+    echo "  - SSH to production server: ssh deploy@yourdomain.com"
+    echo "  - Backup current deployment: docker compose down && docker system prune -f"
+    echo "  - Deploy new version: docker compose pull && docker compose up -d"
+    echo "  - Run database migrations: docker compose exec api python manage.py migrate"
+    echo "  - Verify deployment: curl https://yourdomain.com/health"
+    echo "  - Run smoke tests: ./scripts/smoke-tests.sh"
 
-    - echo "✅ Production deployment preparation completed"
+    echo "✅ Production deployment preparation completed"
 
   environment:
     name: production
