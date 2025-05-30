@@ -366,6 +366,7 @@ test:integration:
 
 test:backend-quality:
   stage: test
+  coverage: '/^TOTAL.+?(\d+\.\d+)%$/'
   image: python:3.12-slim
   variables:
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
@@ -425,7 +426,7 @@ test:backend-quality:
         - backend/backend/pytest-report.xml
         - backend/backend/mypy-report.xml
       codequality: backend/backend/ruff-report.json
-    coverage: backend/backend/coverage.xml
+
     paths:
       - backend/backend/pytest-report.xml
       - backend/backend/mypy-report.xml
