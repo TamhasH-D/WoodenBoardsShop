@@ -21,7 +21,7 @@ services:
       start_interval: 1s
     restart: unless-stopped
 
-  backend:
+  yolo_backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
