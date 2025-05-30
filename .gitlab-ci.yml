@@ -40,14 +40,14 @@ variables:
   PROSTO_BACKEND_PORT: 8001
 
 # Global before_script - setup environment
-before_script:
-  - echo "🚀 Starting CI/CD Pipeline for commit ${CI_COMMIT_SHORT_SHA}"
-  - echo "📋 Pipeline ID: ${CI_PIPELINE_ID}"
-  - echo "🌿 Branch: ${CI_COMMIT_REF_NAME}"
-  - docker --version
-  - docker compose version
-  - cp ${CI_ENV_FILE} .env
-  - echo "✅ Environment setup completed"
+before_script: |
+  echo "🚀 Starting CI/CD Pipeline for commit ${CI_COMMIT_SHORT_SHA}"
+  echo "📋 Pipeline ID: ${CI_PIPELINE_ID}"
+  echo "🌿 Branch: ${CI_COMMIT_REF_NAME}"
+  docker --version
+  docker compose version
+  cp ${CI_ENV_FILE} .env
+  echo "✅ Environment setup completed"
 
 # Global after_script - comprehensive cleanup
 after_script:
