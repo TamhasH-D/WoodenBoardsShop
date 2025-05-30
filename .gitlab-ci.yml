@@ -22,7 +22,7 @@ before_script:
 
 # Global after_script for cleanup
 after_script:
-  - docker compose -f ${CI_COMPOSE_FILE} down --remove-orphans || true
+  - docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} down --remove-orphans || true
   - docker system prune -f || true
 
 # Validate stage
@@ -49,7 +49,7 @@ validate:
       fi
     - echo "✅ Project structure validation passed"
     - echo "🔧 Validating Docker Compose configuration..."
-    - docker compose -f ${CI_COMPOSE_FILE} config --quiet
+    - docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} config --quiet
     - echo "✅ Docker Compose configuration is valid"
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -64,7 +64,7 @@ build:
     - docker:24.0.5-dind
   script:
     - echo "🏗️ Building all services..."
-    - docker compose -f ${CI_COMPOSE_FILE} build --parallel
+    - docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} build --parallel
     - echo "✅ All services built successfully"
   artifacts:
     reports:
@@ -84,13 +84,13 @@ test:integration:
   script:
     - echo "🧪 Starting integration tests..."
     - echo "📦 Starting all services..."
-    - docker compose -f ${CI_COMPOSE_FILE} up -d
-    
+    - docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} up -d
+
     - echo "⏳ Waiting for services to be ready..."
     - sleep 90
-    
+
     - echo "🔍 Checking service status..."
-    - docker compose -f ${CI_COMPOSE_FILE} ps
+    - docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} ps
     
     - echo "🩺 Running health checks..."
     - |
@@ -98,7 +98,7 @@ test:integration:
       echo "Testing Backend API..."
       timeout 300 bash -c 'until curl -f http://localhost:8000/docs; do sleep 5; done' || {
         echo "❌ Backend API failed to start"
-        docker compose -f ${CI_COMPOSE_FILE} logs backend-api
+        docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} logs api
         exit 1
       }
       echo "✅ Backend API is healthy"
@@ -108,19 +108,19 @@ test:integration:
       echo "Testing Admin Frontend..."
       timeout 180 bash -c 'until curl -f http://localhost:8080; do sleep 5; done' || {
         echo "⚠️ Admin frontend not accessible"
-        docker compose -f ${CI_COMPOSE_FILE} logs admin-frontend
+        docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} logs admin-frontend
       }
-      
+
       echo "Testing Seller Frontend..."
       timeout 180 bash -c 'until curl -f http://localhost:8081; do sleep 5; done' || {
         echo "⚠️ Seller frontend not accessible"
-        docker compose -f ${CI_COMPOSE_FILE} logs seller-frontend
+        docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} logs seller-frontend
       }
-      
+
       echo "Testing Buyer Frontend..."
       timeout 180 bash -c 'until curl -f http://localhost:8082; do sleep 5; done' || {
         echo "⚠️ Buyer frontend not accessible"
-        docker compose -f ${CI_COMPOSE_FILE} logs buyer-frontend
+        docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} logs buyer-frontend
       }
     
     - |
@@ -265,10 +265,10 @@ test:performance:
     - docker:24.0.5-dind
   script:
     - echo "⚡ Running performance tests..."
-    - docker compose -f ${CI_COMPOSE_FILE} up -d
+    - docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} up -d
     - sleep 60
     - echo "Testing API performance..."
-    - docker run --rm --network container:$(docker compose -f ${CI_COMPOSE_FILE} ps -q backend-api) alpine/curl -w "@/dev/stdin" -o /dev/null -s "http://localhost:8000/docs" <<< "time_total: %{time_total}\n"
+    - docker run --rm --network container:$(docker compose -f docker-compose.yaml -f ${CI_COMPOSE_FILE} ps -q api) alpine/curl -w "@/dev/stdin" -o /dev/null -s "http://localhost:8000/docs" <<< "time_total: %{time_total}\n"
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   allow_failure: true
