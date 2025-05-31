@@ -12,7 +12,6 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import ToolsPage from './pages/ToolsPage';
 import SystemPage from './pages/SystemPage';
 import NotificationContainer from './components/ui/NotificationContainer';
-import './App.css';
 
 /**
  * Main application component with modern architecture
