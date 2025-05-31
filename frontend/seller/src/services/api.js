@@ -92,14 +92,55 @@ export const apiService = {
     return response.data;
   },
 
-  // Wood types
-  async getWoodTypes() {
-    const response = await api.get('/api/v1/wood-types');
+  // Wood types management
+  async getWoodTypes(page = 0, size = 20) {
+    const response = await api.get(`/api/v1/wood-types?offset=${page * size}&limit=${size}`);
     return response.data;
   },
 
-  async getWoodTypePrices() {
-    const response = await api.get('/api/v1/wood-type-prices');
+  async getWoodType(woodTypeId) {
+    const response = await api.get(`/api/v1/wood-types/${woodTypeId}`);
+    return response.data;
+  },
+
+  async createWoodType(woodTypeData) {
+    const response = await api.post('/api/v1/wood-types', woodTypeData);
+    return response.data;
+  },
+
+  async updateWoodType(woodTypeId, woodTypeData) {
+    const response = await api.patch(`/api/v1/wood-types/${woodTypeId}`, woodTypeData);
+    return response.data;
+  },
+
+  async deleteWoodType(woodTypeId) {
+    const response = await api.delete(`/api/v1/wood-types/${woodTypeId}`);
+    return response.data;
+  },
+
+  // Wood type prices management
+  async getWoodTypePrices(page = 0, size = 20) {
+    const response = await api.get(`/api/v1/wood-type-prices?offset=${page * size}&limit=${size}`);
+    return response.data;
+  },
+
+  async getWoodTypePrice(priceId) {
+    const response = await api.get(`/api/v1/wood-type-prices/${priceId}`);
+    return response.data;
+  },
+
+  async createWoodTypePrice(priceData) {
+    const response = await api.post('/api/v1/wood-type-prices', priceData);
+    return response.data;
+  },
+
+  async updateWoodTypePrice(priceId, priceData) {
+    const response = await api.patch(`/api/v1/wood-type-prices/${priceId}`, priceData);
+    return response.data;
+  },
+
+  async deleteWoodTypePrice(priceId) {
+    const response = await api.delete(`/api/v1/wood-type-prices/${priceId}`);
     return response.data;
   },
 

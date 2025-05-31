@@ -139,8 +139,14 @@ export const apiService = {
   },
 
   // Wood Types
-  async getWoodTypes(page = 0, size = 10) {
+  async getWoodTypes(page = 0, size = 20) {
     const response = await api.get(`/api/v1/wood-types?offset=${page * size}&limit=${size}`);
+    return response.data;
+  },
+
+  // Wood Type Prices
+  async getWoodTypePrices(page = 0, size = 20) {
+    const response = await api.get(`/api/v1/wood-type-prices?offset=${page * size}&limit=${size}`);
     return response.data;
   },
 

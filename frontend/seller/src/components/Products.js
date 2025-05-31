@@ -16,8 +16,14 @@ function Products() {
   });
 
   const { data, loading, error, refetch } = useApi(() => apiService.getSellerProducts(MOCK_SELLER_ID, page, 10), [page]);
-  const { data: woodTypes } = useApi(() => apiService.getWoodTypes());
+  const { data: woodTypes } = useApi(() => apiService.getWoodTypes(0, 100)); // Get more wood types for dropdown
   const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
+
+  // Helper function to get wood type name by ID
+  const getWoodTypeName = (woodTypeId) => {
+    const woodType = woodTypes?.data?.find(type => type.id === woodTypeId);
+    return woodType ? woodType.neme : `Wood Type ${woodTypeId?.substring(0, 8)}...`;
+  };
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
@@ -117,7 +123,7 @@ function Products() {
                 <option value="">Select wood type...</option>
                 {woodTypes?.data?.map((type) => (
                   <option key={type.id} value={type.id}>
-                    {type.name || `Wood Type ${type.id.substring(0, 8)}`}
+                    {type.neme}
                   </option>
                 ))}
               </select>
@@ -155,7 +161,7 @@ function Products() {
                     <td>{product.id.substring(0, 8)}...</td>
                     <td>{product.volume}</td>
                     <td>${product.price}</td>
-                    <td>{product.wood_type_id?.substring(0, 8)}...</td>
+                    <td>{getWoodTypeName(product.wood_type_id)}</td>
                     <td>{new Date(product.created_at).toLocaleDateString()}</td>
                     <td>
                       <button
