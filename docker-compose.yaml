@@ -3,26 +3,21 @@ name: diplom
 include:
   # Backend services
   - path: ./backend/backend/docker-compose.yaml
-    env_file: .env
 
   # Frontend services - Admin
-  - path: ${COMPOSE_FILE_PATH:-./frontend/admin/docker-compose}${COMPOSE_FILE_EXT:-.yaml}
-    env_file: .env
+  - path: ./frontend/admin/docker-compose.yaml
     project_directory: ./frontend/admin
 
   # Frontend services - Seller
-  - path: ${COMPOSE_FILE_PATH:-./frontend/seller/docker-compose}${COMPOSE_FILE_EXT:-.yaml}
-    env_file: .env
+  - path: ./frontend/seller/docker-compose.yaml
     project_directory: ./frontend/seller
 
   # Frontend services - Buyer
-  - path: ${COMPOSE_FILE_PATH:-./frontend/buyer/docker-compose}${COMPOSE_FILE_EXT:-.yaml}
-    env_file: .env
+  - path: ./frontend/buyer/docker-compose.yaml
     project_directory: ./frontend/buyer
 
   # Prosto Board Volume Main
   - path: ./backend/prosto_board_volume-main/docker-compose.yaml
-    env_file: .env
     project_directory: ./backend/prosto_board_volume-main
 
 networks:
