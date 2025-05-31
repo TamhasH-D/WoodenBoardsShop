@@ -186,12 +186,40 @@ function EntityManager({ entityType }) {
   const [sortDirection, setSortDirection] = useState('desc');
   const [showBulkActions, setShowBulkActions] = useState(false);
 
+  // Generate UUID for new entries
+  const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : ((r & 0x3) | 0x8);
+      return v.toString(16);
+    });
+  };
+
+  // Initialize form data
+  const getInitialFormData = () => {
+    const config = ENTITY_CONFIGS[entityType];
+    if (!config) return {};
+    const formData = {};
+    config.fields.forEach(field => {
+      if (field.key === 'id') {
+        formData[field.key] = generateUUID();
+      } else if (field.type === 'boolean') {
+        formData[field.key] = false;
+      } else {
+        formData[field.key] = '';
+      }
+    });
+    return formData;
+  };
+
+  const [formData, setFormData] = useState(() => getInitialFormData());
+
   const config = ENTITY_CONFIGS[entityType];
 
-  // API hooks - always call them, even if config is null
+  // API hooks - always call them
   const { data, loading, error, refetch } = useApi(
-    config ? () => config.api.getAll(page, 20) : () => Promise.resolve(null),
-    [page, config]
+    () => config ? config.api.getAll(page, 20) : Promise.resolve(null),
+    [page, entityType]
   );
   const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
 
@@ -209,35 +237,6 @@ function EntityManager({ entityType }) {
     images: images?.data || [],
     threads: threads?.data || []
   };
-
-
-
-  // Generate UUID for new entries
-  const generateUUID = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : ((r & 0x3) | 0x8);
-      return v.toString(16);
-    });
-  };
-
-  // Initialize form data
-  const getInitialFormData = () => {
-    if (!config) return {};
-    const formData = {};
-    config.fields.forEach(field => {
-      if (field.key === 'id') {
-        formData[field.key] = generateUUID();
-      } else if (field.type === 'boolean') {
-        formData[field.key] = false;
-      } else {
-        formData[field.key] = '';
-      }
-    });
-    return formData;
-  };
-
-  const [formData, setFormData] = useState(getInitialFormData());
 
   // Reset form when entity type changes
   useEffect(() => {
