@@ -5,6 +5,8 @@ import Buyers from './components/Buyers';
 import Sellers from './components/Sellers';
 import Products from './components/Products';
 import ChatThreads from './components/ChatThreads';
+import EntityManager from './components/EntityManager';
+import DataExport from './components/DataExport';
 import HealthCheck from './components/HealthCheck';
 
 function Navigation() {
@@ -29,8 +31,27 @@ function Navigation() {
       <Link to="/chats" className={`nav-link ${isActive('/chats') ? 'active' : ''}`}>
         Chat Threads
       </Link>
+
+      {/* Database Management Dropdown */}
+      <div className="nav-dropdown">
+        <span className="nav-link dropdown-toggle">
+          🗄️ Database
+        </span>
+        <div className="dropdown-content">
+          <Link to="/manage/woodTypes" className="dropdown-link">🌳 Wood Types</Link>
+          <Link to="/manage/prices" className="dropdown-link">💰 Prices</Link>
+          <Link to="/manage/boards" className="dropdown-link">🪵 Boards</Link>
+          <Link to="/manage/images" className="dropdown-link">🖼️ Images</Link>
+          <Link to="/manage/threads" className="dropdown-link">💬 Threads</Link>
+          <Link to="/manage/messages" className="dropdown-link">💭 Messages</Link>
+        </div>
+      </div>
+
+      <Link to="/export" className={`nav-link ${isActive('/export') ? 'active' : ''}`}>
+        📊 Export
+      </Link>
       <Link to="/health" className={`nav-link ${isActive('/health') ? 'active' : ''}`}>
-        Health Check
+        🔧 Health
       </Link>
     </nav>
   );
@@ -57,6 +78,16 @@ function App() {
               <Route path="/sellers" element={<Sellers />} />
               <Route path="/products" element={<Products />} />
               <Route path="/chats" element={<ChatThreads />} />
+
+              {/* Entity Management Routes */}
+              <Route path="/manage/woodTypes" element={<EntityManager entityType="woodTypes" />} />
+              <Route path="/manage/prices" element={<EntityManager entityType="prices" />} />
+              <Route path="/manage/boards" element={<EntityManager entityType="boards" />} />
+              <Route path="/manage/images" element={<EntityManager entityType="images" />} />
+              <Route path="/manage/threads" element={<EntityManager entityType="threads" />} />
+              <Route path="/manage/messages" element={<EntityManager entityType="messages" />} />
+
+              <Route path="/export" element={<DataExport />} />
               <Route path="/health" element={<HealthCheck />} />
             </Routes>
           </main>
