@@ -76,14 +76,14 @@ export const apiService = {
     return response.data;
   },
 
-  // Wood types
-  async getWoodTypes() {
-    const response = await api.get('/api/v1/wood-types');
+  // Wood types and prices (for buyers to view)
+  async getWoodTypes(page = 0, size = 20) {
+    const response = await api.get(`/api/v1/wood-types?offset=${page * size}&limit=${size}`);
     return response.data;
   },
 
-  async getWoodTypePrices() {
-    const response = await api.get('/api/v1/wood-type-prices');
+  async getWoodTypePrices(page = 0, size = 20) {
+    const response = await api.get(`/api/v1/wood-type-prices?offset=${page * size}&limit=${size}`);
     return response.data;
   },
 
@@ -135,16 +135,7 @@ export const apiService = {
     return response.data;
   },
 
-  // Wood types and prices (for buyers to view)
-  async getWoodTypes(page = 0, size = 20) {
-    const response = await api.get(`/api/v1/wood-types?offset=${page * size}&limit=${size}`);
-    return response.data;
-  },
 
-  async getWoodTypePrices(page = 0, size = 20) {
-    const response = await api.get(`/api/v1/wood-type-prices?offset=${page * size}&limit=${size}`);
-    return response.data;
-  },
 
   // Wooden board analysis (Prosto Board integration)
   async analyzeWoodenBoard(imageData) {
