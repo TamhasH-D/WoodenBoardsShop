@@ -1,0 +1,242 @@
+/* Header Component Styles */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  min-height: 4rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header__left,
+.header__right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Mobile toggle (hidden on desktop) */
+.header__mobile-toggle {
+  display: none;
+}
+
+/* Sidebar toggle */
+.header__sidebar-toggle {
+  flex-shrink: 0;
+}
+
+/* Page title */
+.header__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  line-height: 1.25;
+}
+
+/* Backend status */
+.header__status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.15s ease-in-out;
+}
+
+.header__status--online {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.header__status--offline {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.header__status-indicator {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.header__status-text {
+  white-space: nowrap;
+}
+
+/* User info */
+.header__user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.15s ease-in-out;
+  cursor: pointer;
+}
+
+.header__user:hover {
+  background-color: #f3f4f6;
+}
+
+.header__user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background-color: #e5e7eb;
+  border-radius: 50%;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.header__user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.header__user-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111827;
+  line-height: 1.25;
+}
+
+.header__user-role {
+  font-size: 0.75rem;
+  color: #6b7280;
+  line-height: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .header__mobile-toggle {
+    display: flex;
+  }
+  
+  .header__sidebar-toggle {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .header__left,
+  .header__right {
+    gap: 0.75rem;
+  }
+  
+  .header__title {
+    font-size: 1.25rem;
+  }
+  
+  .header__status-text {
+    display: none;
+  }
+  
+  .header__user-info {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .header__left,
+  .header__right {
+    gap: 0.5rem;
+  }
+  
+  .header__title {
+    font-size: 1.125rem;
+  }
+  
+  .header__status {
+    padding: 0.25rem 0.5rem;
+  }
+}
+
+/* Dark theme support */
+[data-theme="dark"] .header {
+  background-color: #1f2937;
+  border-bottom-color: #374151;
+}
+
+[data-theme="dark"] .header__title {
+  color: #f9fafb;
+}
+
+[data-theme="dark"] .header__user:hover {
+  background-color: #374151;
+}
+
+[data-theme="dark"] .header__user-avatar {
+  background-color: #4b5563;
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .header__user-name {
+  color: #f9fafb;
+}
+
+[data-theme="dark"] .header__user-role {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .header__status--online {
+  background-color: #064e3b;
+  color: #a7f3d0;
+  border-color: #065f46;
+}
+
+[data-theme="dark"] .header__status--offline {
+  background-color: #7f1d1d;
+  color: #fca5a5;
+  border-color: #991b1b;
+}
+
+/* Focus management */
+.header__user:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Animation for status changes */
+.header__status {
+  transition: all 0.3s ease-in-out;
+}
+
+.header__status-indicator {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Print styles */
+@media print {
+  .header {
+    display: none;
+  }
+}

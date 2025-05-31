@@ -1,0 +1,92 @@
+/* Layout Component Styles */
+.layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+.layout__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: 16rem;
+  transition: margin-left 0.3s ease-in-out;
+  min-width: 0;
+}
+
+.layout--sidebar-collapsed .layout__main {
+  margin-left: 4rem;
+}
+
+.layout__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.layout__page {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+  background-color: #f9fafb;
+}
+
+/* Mobile overlay */
+.layout__overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  display: none;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .layout__main {
+    margin-left: 0;
+  }
+  
+  .layout--sidebar-collapsed .layout__main {
+    margin-left: 0;
+  }
+  
+  .layout--mobile-menu-open .layout__overlay {
+    display: block;
+  }
+}
+
+@media (max-width: 768px) {
+  .layout__page {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .layout__page {
+    padding: 0.75rem;
+  }
+}
+
+/* Dark theme support */
+[data-theme="dark"] .layout {
+  background-color: #111827;
+}
+
+[data-theme="dark"] .layout__page {
+  background-color: #111827;
+}
+
+/* Print styles */
+@media print {
+  .layout__main {
+    margin-left: 0;
+  }
+  
+  .layout__page {
+    padding: 0;
+  }
+}

@@ -1,0 +1,219 @@
+/* Empty State Component Styles */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: #6b7280;
+}
+
+/* Size variants */
+.empty-state--small {
+  padding: 2rem 1rem;
+}
+
+.empty-state--large {
+  padding: 4rem 2rem;
+}
+
+/* Icon */
+.empty-state__icon {
+  margin-bottom: 1.5rem;
+  opacity: 0.8;
+}
+
+.empty-state__emoji {
+  font-size: 4rem;
+  line-height: 1;
+  display: block;
+}
+
+.empty-state--small .empty-state__emoji {
+  font-size: 3rem;
+}
+
+.empty-state--large .empty-state__emoji {
+  font-size: 5rem;
+}
+
+/* Custom icon (SVG or component) */
+.empty-state__icon svg {
+  width: 4rem;
+  height: 4rem;
+  color: #d1d5db;
+}
+
+.empty-state--small .empty-state__icon svg {
+  width: 3rem;
+  height: 3rem;
+}
+
+.empty-state--large .empty-state__icon svg {
+  width: 5rem;
+  height: 5rem;
+}
+
+/* Content */
+.empty-state__content {
+  max-width: 28rem;
+}
+
+.empty-state__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.5;
+}
+
+.empty-state--small .empty-state__title {
+  font-size: 1.125rem;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state--large .empty-state__title {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state__description {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #6b7280;
+  margin: 0 0 1.5rem 0;
+}
+
+.empty-state--small .empty-state__description {
+  font-size: 0.8125rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state--large .empty-state__description {
+  font-size: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* Action */
+.empty-state__action {
+  margin-top: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .empty-state {
+    padding: 2rem 1rem;
+  }
+  
+  .empty-state--large {
+    padding: 3rem 1.5rem;
+  }
+  
+  .empty-state__emoji {
+    font-size: 3rem;
+  }
+  
+  .empty-state--large .empty-state__emoji {
+    font-size: 4rem;
+  }
+  
+  .empty-state__title {
+    font-size: 1.125rem;
+  }
+  
+  .empty-state--large .empty-state__title {
+    font-size: 1.25rem;
+  }
+  
+  .empty-state__description {
+    font-size: 0.8125rem;
+  }
+}
+
+/* Dark theme support */
+[data-theme="dark"] .empty-state {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .empty-state__title {
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .empty-state__description {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .empty-state__icon svg {
+  color: #4b5563;
+}
+
+/* Animation for entrance */
+.empty-state {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .empty-state {
+    animation: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .empty-state__title {
+    color: #000000;
+  }
+  
+  .empty-state__description {
+    color: #333333;
+  }
+  
+  .empty-state__icon svg {
+    color: #666666;
+  }
+}
+
+/* Focus management for interactive elements */
+.empty-state__action button:focus,
+.empty-state__action a:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Variants for different contexts */
+.empty-state--error .empty-state__title {
+  color: #dc2626;
+}
+
+.empty-state--error .empty-state__icon {
+  color: #dc2626;
+}
+
+.empty-state--success .empty-state__title {
+  color: #059669;
+}
+
+.empty-state--success .empty-state__icon {
+  color: #059669;
+}
+
+.empty-state--warning .empty-state__title {
+  color: #d97706;
+}
+
+.empty-state--warning .empty-state__icon {
+  color: #d97706;
+}
