@@ -1,21 +1,44 @@
 import axios from 'axios';
+import { API_CONFIG, ERROR_MESSAGES, LOADING_STATES } from '../utils/constants';
 
 // Get API URL from environment variables or use default
-const API_BASE_URL = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+const API_BASE_URL = (process.env.REACT_APP_API_URL || API_CONFIG.baseURL).replace(/\/+$/, '');
 
-// Create axios instance with default configuration
+// Create axios instance with enhanced configuration
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: API_CONFIG.timeout,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor for logging
+// Request cache for GET requests
+const requestCache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Request interceptor with enhanced logging and caching
 api.interceptors.request.use(
   (config) => {
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    // Add timestamp for debugging
+    config.metadata = { startTime: new Date() };
+
+    // Add request ID for tracking
+    config.requestId = Math.random().toString(36).substr(2, 9);
+
+    console.log(`[${config.requestId}] API Request: ${config.method?.toUpperCase()} ${config.url}`);
+
+    // Check cache for GET requests
+    if (config.method === 'get' && config.cache !== false) {
+      const cacheKey = `${config.url}?${JSON.stringify(config.params)}`;
+      const cached = requestCache.get(cacheKey);
+
+      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        console.log(`[${config.requestId}] Using cached response`);
+        config.cached = cached.data;
+      }
+    }
+
     return config;
   },
   (error) => {
@@ -24,29 +47,88 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for error handling
+// Response interceptor with enhanced error handling and caching
 api.interceptors.response.use(
   (response) => {
-    console.log(`API Response: ${response.status} ${response.config.url}`);
+    const { config } = response;
+    const duration = new Date() - config.metadata.startTime;
+
+    console.log(`[${config.requestId}] API Response: ${response.status} ${config.url} (${duration}ms)`);
+
+    // Cache GET responses
+    if (config.method === 'get' && config.cache !== false) {
+      const cacheKey = `${config.url}?${JSON.stringify(config.params)}`;
+      requestCache.set(cacheKey, {
+        data: response.data,
+        timestamp: Date.now()
+      });
+    }
+
     return response;
   },
   (error) => {
-    console.error('API Response Error:', error.response?.status, error.response?.data);
-    
-    // Handle common error cases
-    if (error.response?.status === 404) {
-      console.warn('Resource not found');
-    } else if (error.response?.status >= 500) {
-      console.error('Server error occurred');
-    } else if (error.code === 'ECONNABORTED') {
-      console.error('Request timeout');
+    const { config } = error;
+    const duration = config?.metadata ? new Date() - config.metadata.startTime : 0;
+
+    console.error(`[${config?.requestId}] API Error: ${error.response?.status || 'Network'} ${config?.url} (${duration}ms)`, error.response?.data);
+
+    // Enhanced error handling with user-friendly messages
+    let userMessage = ERROR_MESSAGES.UNKNOWN_ERROR;
+
+    if (error.code === 'ECONNABORTED') {
+      userMessage = ERROR_MESSAGES.TIMEOUT;
     } else if (error.code === 'ERR_NETWORK') {
-      console.error('Network error - backend may be unavailable');
+      userMessage = ERROR_MESSAGES.NETWORK_ERROR;
+    } else if (error.response) {
+      switch (error.response.status) {
+        case 400:
+          userMessage = ERROR_MESSAGES.VALIDATION_ERROR;
+          break;
+        case 401:
+          userMessage = ERROR_MESSAGES.UNAUTHORIZED;
+          break;
+        case 404:
+          userMessage = ERROR_MESSAGES.NOT_FOUND;
+          break;
+        case 500:
+        case 502:
+        case 503:
+        case 504:
+          userMessage = ERROR_MESSAGES.SERVER_ERROR;
+          break;
+        default:
+          userMessage = error.response.data?.message || ERROR_MESSAGES.UNKNOWN_ERROR;
+      }
     }
-    
+
+    // Attach user-friendly message to error
+    error.userMessage = userMessage;
+    error.statusCode = error.response?.status;
+
     return Promise.reject(error);
   }
 );
+
+// Retry mechanism for failed requests
+const retryRequest = async (config, retryCount = 0) => {
+  try {
+    return await api(config);
+  } catch (error) {
+    if (retryCount < API_CONFIG.retryAttempts &&
+        (error.code === 'ERR_NETWORK' || error.response?.status >= 500)) {
+      console.log(`Retrying request (${retryCount + 1}/${API_CONFIG.retryAttempts}): ${config.url}`);
+      await new Promise(resolve => setTimeout(resolve, API_CONFIG.retryDelay * (retryCount + 1)));
+      return retryRequest(config, retryCount + 1);
+    }
+    throw error;
+  }
+};
+
+// Clear cache utility
+export const clearApiCache = () => {
+  requestCache.clear();
+  console.log('API cache cleared');
+};
 
 // API service functions
 export const apiService = {

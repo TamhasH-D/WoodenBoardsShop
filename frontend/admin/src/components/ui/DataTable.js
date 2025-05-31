@@ -1,13 +1,12 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { SORT_DIRECTIONS, PAGINATION } from '../../utils/constants';
-import { formatDate, formatNumber, formatCurrency, truncateText } from '../../utils/helpers';
+import { formatDate, formatNumber, formatCurrency, truncateText, cn } from '../../utils/helpers';
 import Button from './Button';
 import Input from './Input';
 import Checkbox from './Checkbox';
 import LoadingSpinner from './LoadingSpinner';
 import EmptyState from './EmptyState';
-import './DataTable.css';
 
 /**
  * Advanced data table component with sorting, filtering, pagination, and bulk actions
@@ -158,19 +157,18 @@ const DataTable = ({
   const allSelected = data.length > 0 && selectedItems.length === data.length;
   const someSelected = selectedItems.length > 0 && selectedItems.length < data.length;
 
-  const tableClasses = [
-    'data-table',
-    compact && 'data-table--compact',
-    striped && 'data-table--striped',
-    bordered && 'data-table--bordered',
-    hoverable && 'data-table--hoverable',
-    stickyHeader && 'data-table--sticky-header',
+  const tableClasses = cn(
+    'w-full bg-white dark:bg-slate-800 rounded-xl shadow-soft overflow-hidden border border-slate-200 dark:border-slate-700',
+    {
+      'text-sm': compact,
+      'border-separate border-spacing-0': bordered,
+    },
     className
-  ].filter(Boolean).join(' ');
+  );
 
   if (loading) {
     return (
-      <div className="data-table-container">
+      <div className="flex items-center justify-center p-8">
         <LoadingSpinner size="large" message="Loading data..." />
       </div>
     );
@@ -178,11 +176,12 @@ const DataTable = ({
 
   if (error) {
     return (
-      <div className="data-table-container">
+      <div className="p-8">
         <EmptyState
           icon="❌"
           title="Error Loading Data"
           description={error}
+          variant="error"
           action={
             <Button onClick={() => window.location.reload()}>
               Retry
@@ -195,7 +194,7 @@ const DataTable = ({
 
   if (data.length === 0) {
     return (
-      <div className="data-table-container">
+      <div className="p-8">
         <EmptyState
           icon="📊"
           title="No Data"

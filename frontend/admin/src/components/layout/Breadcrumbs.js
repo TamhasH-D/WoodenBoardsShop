@@ -1,11 +1,10 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useApp } from '../../contexts/AppContext';
-import { camelToTitle } from '../../utils/helpers';
-import './Breadcrumbs.css';
+import { camelToTitle, cn } from '../../utils/helpers';
 
 /**
- * Breadcrumbs navigation component
+ * Premium breadcrumbs with smooth animations and hover effects
  */
 const Breadcrumbs = () => {
   const location = useLocation();
@@ -66,25 +65,35 @@ const Breadcrumbs = () => {
   }
 
   return (
-    <nav className="breadcrumbs" aria-label="Breadcrumb navigation">
-      <ol className="breadcrumbs__list">
+    <nav
+      className="px-6 py-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border-b border-slate-200/50 dark:border-slate-700/50"
+      aria-label="Breadcrumb navigation"
+    >
+      <ol className="flex items-center space-x-2 text-sm">
         {crumbs.map((crumb, index) => (
-          <li key={crumb.path} className="breadcrumbs__item">
+          <li key={crumb.path} className="flex items-center">
             {crumb.isLast || index === crumbs.length - 1 ? (
-              <span className="breadcrumbs__current" aria-current="page">
+              <span className="font-medium text-slate-900 dark:text-slate-100 px-2 py-1 rounded-md bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300">
                 {crumb.label}
               </span>
             ) : (
               <>
-                <Link 
-                  to={crumb.path} 
-                  className="breadcrumbs__link"
+                <Link
+                  to={crumb.path}
+                  className={cn(
+                    'px-2 py-1 rounded-md transition-all duration-200',
+                    'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100',
+                    'hover:bg-slate-100 dark:hover:bg-slate-800',
+                    'focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2'
+                  )}
                   title={`Go to ${crumb.label}`}
                 >
                   {crumb.label}
                 </Link>
-                <span className="breadcrumbs__separator" aria-hidden="true">
-                  /
+                <span className="mx-2 text-slate-400 dark:text-slate-600" aria-hidden="true">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
                 </span>
               </>
             )}
