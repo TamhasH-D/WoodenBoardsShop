@@ -3,11 +3,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
     container_name: seller-frontend
     ports:
       - "${FRONTEND_SELLER_PORT:-8081}:80"
-    environment:
-      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
     networks:
       - diplom_default
     healthcheck:
