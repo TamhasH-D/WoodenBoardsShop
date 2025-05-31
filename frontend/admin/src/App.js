@@ -8,6 +8,7 @@ import ChatThreads from './components/ChatThreads';
 import EntityManager from './components/EntityManager';
 import DataExport from './components/DataExport';
 import HealthCheck from './components/HealthCheck';
+import ApiTester from './components/ApiTester';
 
 function Navigation() {
   const location = useLocation();
@@ -53,6 +54,9 @@ function Navigation() {
       <Link to="/health" className={`nav-link ${isActive('/health') ? 'active' : ''}`}>
         🔧 Health
       </Link>
+      <Link to="/api-test" className={`nav-link ${isActive('/api-test') ? 'active' : ''}`}>
+        🧪 API Test
+      </Link>
     </nav>
   );
 }
@@ -89,6 +93,7 @@ function App() {
 
               <Route path="/export" element={<DataExport />} />
               <Route path="/health" element={<HealthCheck />} />
+              <Route path="/api-test" element={<ApiTester />} />
             </Routes>
           </main>
         </div>

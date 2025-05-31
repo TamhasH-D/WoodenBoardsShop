@@ -109,7 +109,7 @@ export const apiService = {
   },
 
   async updateWoodType(woodTypeId, woodTypeData) {
-    const response = await api.patch(`/api/v1/wood-types/${woodTypeId}`, woodTypeData);
+    const response = await api.put(`/api/v1/wood-types/${woodTypeId}`, woodTypeData);
     return response.data;
   },
 
@@ -135,7 +135,7 @@ export const apiService = {
   },
 
   async updateWoodTypePrice(priceId, priceData) {
-    const response = await api.patch(`/api/v1/wood-type-prices/${priceId}`, priceData);
+    const response = await api.put(`/api/v1/wood-type-prices/${priceId}`, priceData);
     return response.data;
   },
 

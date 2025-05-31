@@ -78,7 +78,8 @@ const ENTITY_CONFIGS = {
       getOne: (id) => apiService.getWoodType(id),
       create: (data) => apiService.createWoodType(data),
       update: (id, data) => apiService.updateWoodType(id, data),
-      delete: (id) => apiService.deleteWoodType(id)
+      delete: (id) => apiService.deleteWoodType(id),
+      bulkDelete: (ids) => apiService.bulkDeleteWoodTypes(ids)
     }
   },
   prices: {
@@ -96,7 +97,8 @@ const ENTITY_CONFIGS = {
       getOne: (id) => apiService.getWoodTypePrice(id),
       create: (data) => apiService.createWoodTypePrice(data),
       update: (id, data) => apiService.updateWoodTypePrice(id, data),
-      delete: (id) => apiService.deleteWoodTypePrice(id)
+      delete: (id) => apiService.deleteWoodTypePrice(id),
+      bulkDelete: (ids) => apiService.bulkDeleteWoodTypePrices(ids)
     }
   },
   boards: {
@@ -115,7 +117,8 @@ const ENTITY_CONFIGS = {
       getOne: (id) => apiService.getWoodenBoard(id),
       create: (data) => apiService.createWoodenBoard(data),
       update: (id, data) => apiService.updateWoodenBoard(id, data),
-      delete: (id) => apiService.deleteWoodenBoard(id)
+      delete: (id) => apiService.deleteWoodenBoard(id),
+      bulkDelete: (ids) => apiService.bulkDeleteWoodenBoards(ids)
     }
   },
   images: {
@@ -132,7 +135,8 @@ const ENTITY_CONFIGS = {
       getOne: (id) => apiService.getImage(id),
       create: (data) => apiService.createImage(data),
       update: (id, data) => apiService.updateImage(id, data),
-      delete: (id) => apiService.deleteImage(id)
+      delete: (id) => apiService.deleteImage(id),
+      bulkDelete: (ids) => apiService.bulkDeleteImages(ids)
     }
   },
   threads: {
@@ -152,7 +156,8 @@ const ENTITY_CONFIGS = {
       getOne: (id) => apiService.getChatThread(id),
       create: (data) => apiService.createChatThread(data),
       update: (id, data) => apiService.updateChatThread(id, data),
-      delete: (id) => apiService.deleteChatThread(id)
+      delete: (id) => apiService.deleteChatThread(id),
+      bulkDelete: (ids) => apiService.bulkDeleteChatThreads(ids)
     }
   },
   messages: {
@@ -171,7 +176,8 @@ const ENTITY_CONFIGS = {
       getOne: (id) => apiService.getChatMessage(id),
       create: (data) => apiService.createChatMessage(data),
       update: (id, data) => apiService.updateChatMessage(id, data),
-      delete: (id) => apiService.deleteChatMessage(id)
+      delete: (id) => apiService.deleteChatMessage(id),
+      bulkDelete: (ids) => apiService.bulkDeleteChatMessages(ids)
     }
   }
 };
@@ -627,68 +633,7 @@ function EntityManager({ entityType }) {
     }
   }
 
-  function renderTableCell(item, field) {
-    const value = item[field.key];
 
-    switch (field.type) {
-      case 'uuid':
-        return value ? `${value.substring(0, 8)}...` : '';
-
-      case 'boolean':
-        return value ? '✅ Yes' : '❌ No';
-
-      case 'datetime':
-        return value ? new Date(value).toLocaleString() : '';
-
-      case 'number':
-        return typeof value === 'number' ? value.toFixed(field.step === 0.01 ? 2 : 0) : value;
-
-      case 'select':
-        if (field.options && referenceData[field.options]) {
-          const option = referenceData[field.options].find(opt => opt[field.optionValue] === value);
-          return option ? option[field.optionLabel] : `${value?.substring(0, 8)}...`;
-        }
-        return value ? `${value.substring(0, 8)}...` : '';
-
-      case 'url':
-        return value ? (
-          <a href={value} target="_blank" rel="noopener noreferrer" style={{ color: '#3182ce' }}>
-            {value.length > 30 ? `${value.substring(0, 30)}...` : value}
-          </a>
-        ) : '';
-
-      default:
-        if (typeof value === 'string' && value.length > 50) {
-          return `${value.substring(0, 50)}...`;
-        }
-        return value;
-    }
-  }
-
-  function getSortedAndFilteredData() {
-    let filteredData = data.data || [];
-
-    // Apply search filter
-    if (searchTerm) {
-      filteredData = filteredData.filter(item =>
-        Object.values(item).some(value =>
-          String(value).toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      );
-    }
-
-    // Apply sorting
-    filteredData.sort((a, b) => {
-      const aValue = a[sortField];
-      const bValue = b[sortField];
-
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-
-    return filteredData;
-  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -732,6 +677,79 @@ function EntityManager({ entityType }) {
       refetch();
     } catch (err) {
       console.error('Failed to bulk delete:', err);
+    }
+  }
+
+  function getSortedAndFilteredData() {
+    if (!data?.data) return [];
+
+    let filteredData = data.data;
+
+    // Apply search filter
+    if (searchTerm) {
+      filteredData = filteredData.filter(item => {
+        return config.fields.some(field => {
+          const value = item[field.key];
+          if (value && typeof value === 'string') {
+            return value.toLowerCase().includes(searchTerm.toLowerCase());
+          }
+          return false;
+        });
+      });
+    }
+
+    // Apply sorting
+    filteredData.sort((a, b) => {
+      const aValue = a[sortField];
+      const bValue = b[sortField];
+
+      if (aValue === bValue) return 0;
+
+      let comparison = 0;
+      if (aValue > bValue) {
+        comparison = 1;
+      } else if (aValue < bValue) {
+        comparison = -1;
+      }
+
+      return sortDirection === 'desc' ? comparison * -1 : comparison;
+    });
+
+    return filteredData;
+  }
+
+  function renderTableCell(item, field) {
+    const value = item[field.key];
+
+    if (value === null || value === undefined) {
+      return <span style={{ color: '#999' }}>—</span>;
+    }
+
+    switch (field.type) {
+      case 'boolean':
+        return value ? '✅' : '❌';
+      case 'datetime':
+        return new Date(value).toLocaleString();
+      case 'number':
+        return typeof value === 'number' ? value.toLocaleString() : value;
+      case 'url':
+        return (
+          <a href={value} target="_blank" rel="noopener noreferrer" style={{ color: '#3182ce' }}>
+            {value.length > 30 ? `${value.substring(0, 30)}...` : value}
+          </a>
+        );
+      case 'select':
+        // Try to find the display value from reference data
+        if (field.options && referenceData[field.options]) {
+          const option = referenceData[field.options].find(opt => opt[field.optionValue] === value);
+          return option ? option[field.optionLabel] : value;
+        }
+        return value;
+      default:
+        if (typeof value === 'string' && value.length > 50) {
+          return `${value.substring(0, 50)}...`;
+        }
+        return value;
     }
   }
 }

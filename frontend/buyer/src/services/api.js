@@ -137,6 +137,32 @@ export const apiService = {
 
 
 
+  // Individual entity getters for consistency
+  async getBuyer(id) {
+    const response = await api.get(`/api/v1/buyers/${id}`);
+    return response.data;
+  },
+
+  async getSeller(id) {
+    const response = await api.get(`/api/v1/sellers/${id}`);
+    return response.data;
+  },
+
+  async getProduct(id) {
+    const response = await api.get(`/api/v1/products/${id}`);
+    return response.data;
+  },
+
+  async getWoodType(id) {
+    const response = await api.get(`/api/v1/wood-types/${id}`);
+    return response.data;
+  },
+
+  async getWoodTypePrice(id) {
+    const response = await api.get(`/api/v1/wood-type-prices/${id}`);
+    return response.data;
+  },
+
   // Wooden board analysis (Prosto Board integration)
   async analyzeWoodenBoard(imageData) {
     try {
@@ -151,6 +177,16 @@ export const apiService = {
     } catch (error) {
       console.error('Failed to analyze wooden board:', error);
       throw new Error('Board analysis failed');
+    }
+  },
+
+  // Health check for buyer service
+  async healthCheck() {
+    try {
+      const response = await api.get('/api/v1/health');
+      return response.data;
+    } catch (error) {
+      throw new Error('Backend health check failed');
     }
   },
 };

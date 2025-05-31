@@ -349,10 +349,10 @@ function Dashboard() {
           </button>
           <button
             className="btn btn-secondary"
-            onClick={() => window.location.href = '/health'}
+            onClick={() => window.location.href = '/api-test'}
             style={{ padding: '1rem', textAlign: 'center' }}
           >
-            🔧 System Health
+            🧪 API Tester
           </button>
         </div>
       </div>
