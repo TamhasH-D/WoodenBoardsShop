@@ -1,32 +1,74 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 // Custom hook for API calls with loading and error states
 export const useApi = (apiFunction, dependencies = []) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const abortControllerRef = useRef(null);
+  const timeoutRef = useRef(null);
 
   const fetchData = useCallback(async () => {
+    // Cancel any pending request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Clear any pending timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
       setError(null);
+
+      // Add a small delay to debounce rapid requests
+      await new Promise(resolve => {
+        timeoutRef.current = setTimeout(resolve, 100);
+      });
+
       const result = await apiFunction();
-      setData(result);
+
+      // Only update state if request wasn't aborted
+      if (!abortControllerRef.current.signal.aborted) {
+        setData(result);
+      }
     } catch (err) {
-      setError(err.message || 'An error occurred');
-      console.error('API Error:', err);
+      // Only update error state if request wasn't aborted
+      if (!abortControllerRef.current.signal.aborted) {
+        setError(err.message || 'An error occurred');
+        console.error('API Error:', err);
+      }
     } finally {
-      setLoading(false);
+      // Only update loading state if request wasn't aborted
+      if (!abortControllerRef.current.signal.aborted) {
+        setLoading(false);
+      }
     }
-  }, [apiFunction]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, dependencies); // Only depend on the actual dependencies, not apiFunction to prevent infinite loops
 
   useEffect(() => {
     fetchData();
-  }, dependencies);
 
-  const refetch = () => {
+    // Cleanup function to abort requests on unmount
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [fetchData]);
+
+  const refetch = useCallback(() => {
     fetchData();
-  };
+  }, [fetchData]);
 
   return { data, loading, error, refetch };
 };

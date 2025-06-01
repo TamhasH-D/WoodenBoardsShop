@@ -6,41 +6,55 @@ function HealthCheck() {
   const { data, loading, error, refetch } = useApi(() => apiService.healthCheck());
 
   return (
-    <div className="card">
-      <h2>System Health Check</h2>
-      
-      <div style={{ marginBottom: '1rem' }}>
-        <button onClick={refetch} className="btn btn-primary" disabled={loading}>
-          {loading ? 'Checking...' : 'Check System Health'}
-        </button>
+    <div>
+      <div className="page-header">
+        <h1 className="page-title">System Health Check</h1>
+        <p className="page-description">Monitor system status and backend connectivity</p>
       </div>
 
-      {loading && <div className="loading">Checking system health...</div>}
-      
-      {error && (
-        <div className="error">
-          <strong>System Connection Failed:</strong> {error}
-          <br />
-          <small>The backend API is not responding. Please check if the backend service is running.</small>
+      <div className="card mb-6">
+        <div className="card-header">
+          <h2 className="card-title">Health Status</h2>
         </div>
-      )}
-      
-      {data !== null && !error && (
-        <div className="success">
-          <strong>System is healthy!</strong> All services are responding correctly.
-          <br />
-          <small>Backend response: {JSON.stringify(data)}</small>
-        </div>
-      )}
 
-      <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#f7fafc', borderRadius: '0.375rem' }}>
-        <h3>Connection Details</h3>
-        <p><strong>API URL:</strong> {process.env.REACT_APP_API_URL || 'http://localhost:8000'}</p>
-        <p><strong>Environment:</strong> {process.env.NODE_ENV}</p>
-        <p><strong>Proxy:</strong> {process.env.REACT_APP_API_URL ? 'Disabled' : 'Enabled (via package.json)'}</p>
-        
-        <div style={{ marginTop: '1rem' }}>
-          <h4>Troubleshooting</h4>
+        <div className="mb-4">
+          <button onClick={refetch} className="btn btn-primary" disabled={loading}>
+            {loading ? 'Checking...' : 'Check System Health'}
+          </button>
+        </div>
+
+        {loading && <div className="loading">Checking system health...</div>}
+
+        {error && (
+          <div className="error">
+            <strong>System Connection Failed:</strong> {error}
+            <br />
+            <small>The backend API is not responding. Please check if the backend service is running.</small>
+          </div>
+        )}
+
+        {data !== null && !error && (
+          <div className="success">
+            <strong>System is healthy!</strong> All services are responding correctly.
+            <br />
+            <small>Backend response: {JSON.stringify(data)}</small>
+          </div>
+        )}
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <h2 className="card-title">Connection Details</h2>
+        </div>
+
+        <div className="mb-4">
+          <p><strong>API URL:</strong> {process.env.REACT_APP_API_URL || 'http://localhost:8000'}</p>
+          <p><strong>Environment:</strong> {process.env.NODE_ENV}</p>
+          <p><strong>Proxy:</strong> {process.env.REACT_APP_API_URL ? 'Disabled' : 'Enabled (via package.json)'}</p>
+        </div>
+
+        <div>
+          <h3>Troubleshooting</h3>
           <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
             <li>Ensure the backend API is running on port 8000</li>
             <li>Check that CORS is properly configured in the backend</li>

@@ -5,81 +5,110 @@ import { apiService } from '../services/api';
 // Mock seller ID - in real app this would come from authentication
 const MOCK_SELLER_ID = '123e4567-e89b-12d3-a456-426614174000';
 
-function Dashboard() {
+const Dashboard = React.memo(() => {
   const { data: healthData, loading: healthLoading, error: healthError } = useApi(() => apiService.healthCheck());
-  const { data: statsData, loading: statsLoading } = useApi(() => apiService.getSellerStats(MOCK_SELLER_ID));
+  const { data: products, loading: productsLoading, error: productsError } = useApi(() =>
+    apiService.getSellerProducts(MOCK_SELLER_ID, 0, 5)
+  );
 
   return (
     <div>
-      <div className="card">
-        <h2>Business Overview</h2>
-        
-        <div className="grid grid-2">
-          <div>
-            <h3>System Status</h3>
-            {healthLoading && <p>Checking...</p>}
-            {healthError && <p style={{ color: '#e53e3e' }}>❌ Backend Offline</p>}
-            {healthData && <p style={{ color: '#38a169' }}>✅ System Online</p>}
-          </div>
-          
-          <div>
-            <h3>Quick Actions</h3>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              <a href="/products" className="btn btn-primary">Add Product</a>
-              <a href="/chats" className="btn btn-secondary">View Messages</a>
-            </div>
-          </div>
-        </div>
+      <div className="page-header">
+        <h1 className="page-title">Dashboard</h1>
+        <p className="page-description">Overview of your business performance and system status</p>
       </div>
 
-      <div className="grid grid-2">
-        <div className="stats-card">
-          <div className="stats-number">
-            {statsLoading ? '...' : statsData?.totalProducts || 0}
-          </div>
-          <div className="stats-label">Total Products</div>
+      {/* System Status */}
+      <div className="card mb-6">
+        <div className="card-header">
+          <h2 className="card-title">System Status</h2>
         </div>
-
-        <div className="stats-card">
-          <div className="stats-number">
-            {statsLoading ? '...' : statsData?.totalChats || 0}
+        {healthLoading && <div className="loading">Checking system status...</div>}
+        {healthError && (
+          <div className="error">
+            <strong>System Error:</strong> Unable to connect to backend services
           </div>
-          <div className="stats-label">Active Chats</div>
-        </div>
-
-        <div className="stats-card">
-          <div className="stats-number">
-            {statsLoading ? '...' : (statsData?.totalVolume || 0).toFixed(1)}
-          </div>
-          <div className="stats-label">Total Volume (m³)</div>
-        </div>
-
-        <div className="stats-card">
-          <div className="stats-number">
-            ${statsLoading ? '...' : (statsData?.totalValue || 0).toFixed(0)}
-          </div>
-          <div className="stats-label">Total Value</div>
-        </div>
-      </div>
-
-      <div className="card">
-        <h3>Getting Started</h3>
-        <p>Welcome to your seller dashboard! Here you can:</p>
-        <ul style={{ marginLeft: '2rem', marginTop: '1rem' }}>
-          <li>Manage your wood product inventory</li>
-          <li>Communicate with potential buyers</li>
-          <li>Track your sales and business metrics</li>
-          <li>Update your seller profile information</li>
-        </ul>
-        
-        {statsData?.totalProducts === 0 && (
-          <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#e6fffa', borderRadius: '0.375rem' }}>
-            <strong>Get started:</strong> Add your first product to begin selling!
+        )}
+        {healthData && (
+          <div className="success">
+            <strong>System Online:</strong> All services are operational
           </div>
         )}
       </div>
+
+      {/* Quick Actions */}
+      <div className="card mb-6">
+        <div className="card-header">
+          <h2 className="card-title">Quick Actions</h2>
+        </div>
+        <div className="flex gap-4">
+          <a href="/products" className="btn btn-primary">Add Product</a>
+          <a href="/chats" className="btn btn-secondary">View Messages</a>
+          <a href="/wood-types" className="btn btn-secondary">Manage Wood Types</a>
+        </div>
+      </div>
+
+      {/* Recent Products */}
+      <div className="card mb-6">
+        <div className="card-header">
+          <h2 className="card-title">Recent Products</h2>
+        </div>
+        {productsLoading && <div className="loading">Loading products...</div>}
+        {productsError && (
+          <div className="error">
+            <strong>Error:</strong> {productsError}
+          </div>
+        )}
+        {products?.data && products.data.length > 0 ? (
+          <div>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Product Name</th>
+                  <th>Wood Type</th>
+                  <th>Dimensions</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.data.slice(0, 5).map((product) => (
+                  <tr key={product.id}>
+                    <td>{product.name}</td>
+                    <td>{product.wood_type}</td>
+                    <td>{product.length}×{product.width}×{product.height} cm</td>
+                    <td>
+                      <span className="status status-success">Active</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="mt-4">
+              <a href="/products" className="btn btn-secondary">View All Products</a>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center">
+            <p>No products found. <a href="/products" className="btn btn-primary">Add your first product</a></p>
+          </div>
+        )}
+      </div>
+
+      {/* Getting Started */}
+      <div className="card">
+        <div className="card-header">
+          <h2 className="card-title">Getting Started</h2>
+        </div>
+        <p className="mb-4">Welcome to your seller dashboard! Use the navigation above to:</p>
+        <ul>
+          <li>Manage your wood product inventory</li>
+          <li>Communicate with potential buyers</li>
+          <li>Set wood types and pricing</li>
+          <li>Update your seller profile</li>
+        </ul>
+      </div>
     </div>
   );
-}
+});
 
 export default Dashboard;

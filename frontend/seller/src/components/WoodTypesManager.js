@@ -131,52 +131,58 @@ function WoodTypesManager() {
   };
 
   return (
-    <div className="card">
-      <div style={{ marginBottom: '1rem' }}>
-        <h2>Wood Types & Prices Management</h2>
-        <p style={{ color: '#666', marginBottom: '1rem' }}>
+    <div>
+      <div className="page-header">
+        <h1 className="page-title">Wood Types & Prices</h1>
+        <p className="page-description">
           Manage wood types and their prices. All changes will be visible to buyers immediately.
         </p>
-        
-        {/* Tab Navigation */}
-        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-          <button
-            onClick={() => setActiveTab('types')}
-            className={`btn ${activeTab === 'types' ? 'btn-primary' : 'btn-secondary'}`}
-          >
-            Wood Types
-          </button>
-          <button
-            onClick={() => setActiveTab('prices')}
-            className={`btn ${activeTab === 'prices' ? 'btn-primary' : 'btn-secondary'}`}
-          >
-            Prices
-          </button>
-        </div>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex gap-4 mb-6">
+        <button
+          onClick={() => setActiveTab('types')}
+          className={`btn ${activeTab === 'types' ? 'btn-primary' : 'btn-secondary'}`}
+        >
+          Wood Types
+        </button>
+        <button
+          onClick={() => setActiveTab('prices')}
+          className={`btn ${activeTab === 'prices' ? 'btn-primary' : 'btn-secondary'}`}
+        >
+          Prices
+        </button>
       </div>
 
       {/* Error and Success Messages */}
       {mutationError && (
-        <div className="error" style={{ marginBottom: '1rem' }}>
-          Operation failed: {mutationError}
+        <div className="error mb-4">
+          <strong>Operation failed:</strong> {mutationError}
         </div>
       )}
 
       {success && (
-        <div className="success" style={{ marginBottom: '1rem' }}>
-          Operation completed successfully!
+        <div className="success mb-4">
+          <strong>Success:</strong> Operation completed successfully!
         </div>
       )}
 
       {/* Wood Types Tab */}
       {activeTab === 'types' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3>Wood Types</h3>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <button 
-                onClick={() => setShowAddTypeForm(!showAddTypeForm)} 
-                className="btn btn-success"
+        <div className="card mb-6">
+          <div className="card-header">
+            <h2 className="card-title">Wood Types</h2>
+          </div>
+
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <p>Total wood types: {woodTypes?.pagination?.total || woodTypes?.data?.length || 0}</p>
+            </div>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowAddTypeForm(!showAddTypeForm)}
+                className={`btn ${showAddTypeForm ? 'btn-secondary' : 'btn-primary'}`}
               >
                 {showAddTypeForm ? 'Cancel' : 'Add Wood Type'}
               </button>
@@ -194,8 +200,10 @@ function WoodTypesManager() {
 
           {/* Add Type Form */}
           {showAddTypeForm && (
-            <div className="card" style={{ backgroundColor: '#f7fafc', marginBottom: '1rem' }}>
-              <h4>Add New Wood Type</h4>
+            <div className="card mb-4">
+              <div className="card-header">
+                <h3 className="card-title">Add New Wood Type</h3>
+              </div>
               <form onSubmit={handleAddType}>
                 <div className="form-group">
                   <label className="form-label">Name *</label>
@@ -228,13 +236,7 @@ function WoodTypesManager() {
           {/* Types List */}
           {typesLoading && <div className="loading">Loading wood types...</div>}
 
-          {woodTypes && (
-            <>
-              <div style={{ marginBottom: '1rem' }}>
-                <p>Total wood types: {woodTypes.pagination?.total || woodTypes.data?.length || 0}</p>
-              </div>
-
-              {woodTypes.data && woodTypes.data.length > 0 ? (
+          {woodTypes && woodTypes.data && woodTypes.data.length > 0 ? (
                 <table className="table">
                   <thead>
                     <tr>
@@ -326,45 +328,56 @@ function WoodTypesManager() {
                     ))}
                   </tbody>
                 </table>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '2rem' }}>
-                  <p>No wood types found.</p>
-                  <p>Add your first wood type to get started!</p>
-                </div>
-              )}
+          ) : (
+            <div className="text-center">
+              <p>No wood types found.</p>
+              <button
+                onClick={() => setShowAddTypeForm(true)}
+                className="btn btn-primary mt-4"
+              >
+                Add Your First Wood Type
+              </button>
+            </div>
+          )}
 
-              {/* Pagination for Types */}
-              <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <button
-                  onClick={() => setTypePage(Math.max(0, typePage - 1))}
-                  disabled={typePage === 0 || typesLoading}
-                  className="btn btn-secondary"
-                >
-                  Previous
-                </button>
-                <span>Page {typePage + 1}</span>
-                <button
-                  onClick={() => setTypePage(typePage + 1)}
-                  disabled={!woodTypes?.data || woodTypes.data.length < 10 || typesLoading}
-                  className="btn btn-secondary"
-                >
-                  Next
-                </button>
-              </div>
-            </>
+          {/* Pagination for Types */}
+          {woodTypes && woodTypes.data && woodTypes.data.length > 0 && (
+            <div className="flex justify-between items-center mt-6">
+              <button
+                onClick={() => setTypePage(Math.max(0, typePage - 1))}
+                disabled={typePage === 0 || typesLoading}
+                className="btn btn-secondary"
+              >
+                Previous
+              </button>
+              <span>Page {typePage + 1}</span>
+              <button
+                onClick={() => setTypePage(typePage + 1)}
+                disabled={!woodTypes?.data || woodTypes.data.length < 10 || typesLoading}
+                className="btn btn-secondary"
+              >
+                Next
+              </button>
+            </div>
           )}
         </div>
       )}
 
       {/* Prices Tab */}
       {activeTab === 'prices' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3>Wood Type Prices</h3>
-            <div style={{ display: 'flex', gap: '1rem' }}>
+        <div className="card mb-6">
+          <div className="card-header">
+            <h2 className="card-title">Wood Type Prices</h2>
+          </div>
+
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <p>Total prices: {woodTypePrices?.pagination?.total || woodTypePrices?.data?.length || 0}</p>
+            </div>
+            <div className="flex gap-4">
               <button
                 onClick={() => setShowAddPriceForm(!showAddPriceForm)}
-                className="btn btn-success"
+                className={`btn ${showAddPriceForm ? 'btn-secondary' : 'btn-primary'}`}
               >
                 {showAddPriceForm ? 'Cancel' : 'Add Price'}
               </button>
@@ -382,8 +395,10 @@ function WoodTypesManager() {
 
           {/* Add Price Form */}
           {showAddPriceForm && (
-            <div className="card" style={{ backgroundColor: '#f7fafc', marginBottom: '1rem' }}>
-              <h4>Add New Price</h4>
+            <div className="card mb-4">
+              <div className="card-header">
+                <h3 className="card-title">Add New Price</h3>
+              </div>
               <form onSubmit={handleAddPrice}>
                 <div className="grid grid-2">
                   <div className="form-group">
@@ -426,13 +441,7 @@ function WoodTypesManager() {
           {/* Prices List */}
           {pricesLoading && <div className="loading">Loading prices...</div>}
 
-          {woodTypePrices && (
-            <>
-              <div style={{ marginBottom: '1rem' }}>
-                <p>Total prices: {woodTypePrices.pagination?.total || woodTypePrices.data?.length || 0}</p>
-              </div>
-
-              {woodTypePrices.data && woodTypePrices.data.length > 0 ? (
+          {woodTypePrices && woodTypePrices.data && woodTypePrices.data.length > 0 ? (
                 <table className="table">
                   <thead>
                     <tr>
@@ -503,12 +512,7 @@ function WoodTypesManager() {
                                   onClick={() => handleDeletePrice(price.id)}
                                   className="btn btn-secondary"
                                   disabled={mutating}
-                                  style={{
-                                    fontSize: '0.8em',
-                                    padding: '0.25rem 0.5rem',
-                                    backgroundColor: '#fed7d7',
-                                    color: '#c53030'
-                                  }}
+                                  style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
                                 >
                                   Delete
                                 </button>
@@ -520,32 +524,37 @@ function WoodTypesManager() {
                     ))}
                   </tbody>
                 </table>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '2rem' }}>
-                  <p>No prices found.</p>
-                  <p>Add your first price to get started!</p>
-                </div>
-              )}
+          ) : (
+            <div className="text-center">
+              <p>No prices found.</p>
+              <button
+                onClick={() => setShowAddPriceForm(true)}
+                className="btn btn-primary mt-4"
+              >
+                Add Your First Price
+              </button>
+            </div>
+          )}
 
-              {/* Pagination for Prices */}
-              <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <button
-                  onClick={() => setPricePage(Math.max(0, pricePage - 1))}
-                  disabled={pricePage === 0 || pricesLoading}
-                  className="btn btn-secondary"
-                >
-                  Previous
-                </button>
-                <span>Page {pricePage + 1}</span>
-                <button
-                  onClick={() => setPricePage(pricePage + 1)}
-                  disabled={!woodTypePrices?.data || woodTypePrices.data.length < 10 || pricesLoading}
-                  className="btn btn-secondary"
-                >
-                  Next
-                </button>
-              </div>
-            </>
+          {/* Pagination for Prices */}
+          {woodTypePrices && woodTypePrices.data && woodTypePrices.data.length > 0 && (
+            <div className="flex justify-between items-center mt-6">
+              <button
+                onClick={() => setPricePage(Math.max(0, pricePage - 1))}
+                disabled={pricePage === 0 || pricesLoading}
+                className="btn btn-secondary"
+              >
+                Previous
+              </button>
+              <span>Page {pricePage + 1}</span>
+              <button
+                onClick={() => setPricePage(pricePage + 1)}
+                disabled={!woodTypePrices?.data || woodTypePrices.data.length < 10 || pricesLoading}
+                className="btn btn-secondary"
+              >
+                Next
+              </button>
+            </div>
           )}
         </div>
       )}
