@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useApi } from '../hooks/useApi';
+import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 
 // Mock seller ID - in real app this would come from authentication
@@ -8,63 +8,97 @@ const MOCK_SELLER_ID = '123e4567-e89b-12d3-a456-426614174000';
 function Chats() {
   const [page, setPage] = useState(0);
   const [selectedThread, setSelectedThread] = useState(null);
+  const [newMessage, setNewMessage] = useState('');
 
   const { data, loading, error, refetch } = useApi(() => apiService.getSellerChats(MOCK_SELLER_ID, page, 10), [page]);
-  const { data: messages, loading: messagesLoading } = useApi(
+  const { data: messages, loading: messagesLoading, refetch: refetchMessages } = useApi(
     () => selectedThread ? apiService.getChatMessages(selectedThread.id) : Promise.resolve(null),
-    [selectedThread]
+    [selectedThread?.id] // Only depend on the ID, not the entire object
   );
+  const { mutate, loading: sending } = useApiMutation();
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !selectedThread) return;
+
+    try {
+      const messageId = crypto.randomUUID();
+      await mutate(() => apiService.sendMessage({
+        id: messageId,
+        message: newMessage.trim(),
+        is_read_by_buyer: false,
+        is_read_by_seller: true,
+        thread_id: selectedThread.id,
+        buyer_id: selectedThread.buyer_id,
+        seller_id: MOCK_SELLER_ID
+      }));
+      setNewMessage('');
+      refetchMessages();
+    } catch (err) {
+      console.error('Failed to send message:', err);
+    }
+  };
 
   return (
     <div>
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2>Customer Chats</h2>
-          <button onClick={refetch} className="btn btn-secondary" disabled={loading}>
-            {loading ? 'Loading...' : 'Refresh'}
-          </button>
+      <div className="page-header">
+        <h1 className="page-title">Customer Chats</h1>
+        <p className="page-description">Communicate with customers about your products</p>
+      </div>
+
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <p>Total chat threads: {data?.total || data?.data?.length || 0}</p>
         </div>
+        <button onClick={refetch} className="btn btn-secondary" disabled={loading}>
+          {loading ? 'Loading...' : 'Refresh'}
+        </button>
+      </div>
 
-        {error && (
-          <div className="error">
-            Failed to load chats: {error}
+      {error && (
+        <div className="error mb-4">
+          <strong>Chats Loading Issue:</strong> {error}
+          <br />
+          <small>This may occur if there are no chat threads yet or if the seller account needs to be initialized.</small>
+          <div style={{ marginTop: '1rem' }}>
+            <button onClick={refetch} className="btn btn-secondary">
+              Retry Loading Chats
+            </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {loading && <div className="loading">Loading chats...</div>}
+      {loading && <div className="loading">Loading chats...</div>}
 
-        {data && (
-          <>
-            <div style={{ marginBottom: '1rem' }}>
-              <p>Total chat threads: {data.total || data.data?.length || 0}</p>
-            </div>
+      {data && (
+        <>
+          {data.data && data.data.length > 0 ? (
+            <div className="card mb-6">
+              <div className="card-header">
+                <h2 className="card-title">Chat Threads</h2>
+              </div>
 
-            {data.data && data.data.length > 0 ? (
-              <div className="grid grid-2">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }}>
                 <div>
-                  <h3>Chat Threads</h3>
                   <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
                     {data.data.map((thread) => (
                       <div
                         key={thread.id}
                         onClick={() => setSelectedThread(thread)}
+                        className={`card mb-4 ${selectedThread?.id === thread.id ? 'status-success' : ''}`}
                         style={{
-                          padding: '1rem',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '0.375rem',
-                          marginBottom: '0.5rem',
                           cursor: 'pointer',
-                          backgroundColor: selectedThread?.id === thread.id ? '#e6fffa' : 'white'
+                          backgroundColor: selectedThread?.id === thread.id ? '#dcfce7' : 'white'
                         }}
                       >
                         <div style={{ fontWeight: 'bold' }}>
                           Thread {thread.id.substring(0, 8)}...
                         </div>
-                        <div style={{ fontSize: '0.875rem', color: '#718096' }}>
+                        <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
                           Buyer: {thread.buyer_id?.substring(0, 8)}...
                         </div>
-                        <div style={{ fontSize: '0.875rem', color: '#718096' }}>
-                          Updated: {new Date(thread.updated_at).toLocaleDateString()}
+                        <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                          Created: {new Date(thread.created_at).toLocaleDateString()}
                         </div>
                       </div>
                     ))}
@@ -75,56 +109,78 @@ function Chats() {
                   <h3>Messages</h3>
                   {selectedThread ? (
                     <div>
-                      <div style={{ 
-                        padding: '1rem', 
-                        backgroundColor: '#f7fafc', 
-                        borderRadius: '0.375rem',
-                        marginBottom: '1rem'
-                      }}>
+                      <div className="card mb-4">
                         <strong>Chat with Buyer {selectedThread.buyer_id?.substring(0, 8)}...</strong>
                       </div>
                       
                       {messagesLoading && <div className="loading">Loading messages...</div>}
                       
                       {messages?.data && messages.data.length > 0 ? (
-                        <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                          {messages.data.map((message) => (
+                        <div style={{ maxHeight: '250px', overflowY: 'auto', marginBottom: '1rem' }}>
+                          {messages.data.reverse().map((message) => (
                             <div
                               key={message.id}
+                              className="card mb-4"
                               style={{
-                                padding: '0.75rem',
-                                marginBottom: '0.5rem',
-                                borderRadius: '0.375rem',
-                                backgroundColor: message.buyer_id ? '#e6fffa' : '#f0f4ff'
+                                backgroundColor: message.seller_id === MOCK_SELLER_ID ? '#dbeafe' : '#dcfce7'
                               }}
                             >
                               <div style={{ fontSize: '0.875rem', fontWeight: 'bold' }}>
-                                {message.buyer_id ? 'Buyer' : 'You'}
+                                {message.seller_id === MOCK_SELLER_ID ? 'You' : 'Buyer'}
                               </div>
                               <div>{message.message}</div>
-                              <div style={{ fontSize: '0.75rem', color: '#718096', marginTop: '0.25rem' }}>
+                              <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
                                 {new Date(message.created_at).toLocaleString()}
                               </div>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <p>No messages in this thread yet.</p>
+                        <div className="text-center mb-4">
+                          <p>No messages yet. Start the conversation!</p>
+                        </div>
                       )}
+
+                      {/* Message Input */}
+                      <form onSubmit={handleSendMessage}>
+                        <div className="flex gap-4">
+                          <input
+                            type="text"
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            placeholder="Type your response..."
+                            className="form-input"
+                            style={{ flex: 1 }}
+                            disabled={sending}
+                          />
+                          <button
+                            type="submit"
+                            className="btn btn-primary"
+                            disabled={sending || !newMessage.trim()}
+                          >
+                            {sending ? 'Sending...' : 'Send'}
+                          </button>
+                        </div>
+                      </form>
                     </div>
                   ) : (
-                    <p>Select a chat thread to view messages</p>
+                    <div className="text-center">
+                      <p>Select a chat thread to view messages</p>
+                    </div>
                   )}
                 </div>
               </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '2rem' }}>
-                <p>No chat threads found.</p>
-                <p>Customers will be able to contact you about your products.</p>
-              </div>
-            )}
+            </div>
+          ) : (
+            <div className="text-center">
+              <p>No chat threads found.</p>
+              <p>Customers will be able to contact you about your products.</p>
+            </div>
+          )}
 
-            <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          {/* Pagination */}
+          {data && data.data && data.data.length > 0 && (
+            <div className="flex justify-between items-center mt-6">
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0 || loading}
@@ -141,9 +197,9 @@ function Chats() {
                 Next
               </button>
             </div>
-          </>
-        )}
-      </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

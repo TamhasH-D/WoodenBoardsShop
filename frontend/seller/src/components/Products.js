@@ -9,8 +9,12 @@ function Products() {
   const [page, setPage] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newProduct, setNewProduct] = useState({
+    title: '',
+    description: '',
     volume: '',
     price: '',
+    delivery_possible: false,
+    pickup_location: '',
     wood_type_id: '',
     seller_id: MOCK_SELLER_ID
   });
@@ -28,12 +32,30 @@ function Products() {
   const handleAddProduct = async (e) => {
     e.preventDefault();
     try {
-      await mutate(apiService.createProduct, {
-        ...newProduct,
+      // Generate UUID for the product
+      const productId = crypto.randomUUID();
+
+      await mutate(() => apiService.createProduct({
+        id: productId,
+        title: newProduct.title,
+        description: newProduct.description || null,
         volume: parseFloat(newProduct.volume),
-        price: parseFloat(newProduct.price)
+        price: parseFloat(newProduct.price),
+        delivery_possible: newProduct.delivery_possible,
+        pickup_location: newProduct.pickup_location || null,
+        seller_id: MOCK_SELLER_ID,
+        wood_type_id: newProduct.wood_type_id
+      }));
+      setNewProduct({
+        title: '',
+        description: '',
+        volume: '',
+        price: '',
+        delivery_possible: false,
+        pickup_location: '',
+        wood_type_id: '',
+        seller_id: MOCK_SELLER_ID
       });
-      setNewProduct({ volume: '', price: '', wood_type_id: '', seller_id: MOCK_SELLER_ID });
       setShowAddForm(false);
       refetch();
     } catch (err) {
@@ -44,7 +66,7 @@ function Products() {
   const handleDeleteProduct = async (productId) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
-        await mutate(apiService.deleteProduct, productId);
+        await mutate(() => apiService.deleteProduct(productId));
         refetch();
       } catch (err) {
         console.error('Failed to delete product:', err);
@@ -53,44 +75,90 @@ function Products() {
   };
 
   return (
-    <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h2>My Products</h2>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <button onClick={() => setShowAddForm(!showAddForm)} className="btn btn-success">
+    <div>
+      <div className="page-header">
+        <h1 className="page-title">Products</h1>
+        <p className="page-description">Manage your wood product inventory</p>
+      </div>
+
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <p>Total products: {data?.total || data?.data?.length || 0}</p>
+        </div>
+        <div className="flex gap-4">
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className={`btn ${showAddForm ? 'btn-secondary' : 'btn-primary'}`}
+          >
             {showAddForm ? 'Cancel' : 'Add Product'}
           </button>
-          <button onClick={refetch} className="btn btn-secondary" disabled={loading}>
+          <button
+            onClick={refetch}
+            className="btn btn-secondary"
+            disabled={loading}
+          >
             {loading ? 'Loading...' : 'Refresh'}
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="error">
-          Failed to load products: {error}
+        <div className="error mb-4">
+          <strong>Products Loading Issue:</strong> {error}
+          <br />
+          <small>This may occur if the seller doesn't exist in the database yet. Try refreshing or creating a product to initialize your seller account.</small>
+          <div style={{ marginTop: '1rem' }}>
+            <button onClick={refetch} className="btn btn-secondary">
+              Retry Loading Products
+            </button>
+          </div>
         </div>
       )}
 
       {mutationError && (
-        <div className="error">
-          Operation failed: {mutationError}
+        <div className="error mb-4">
+          <strong>Operation failed:</strong> {mutationError}
         </div>
       )}
 
       {success && (
-        <div className="success">
-          Operation completed successfully!
+        <div className="success mb-4">
+          <strong>Success:</strong> Operation completed successfully!
         </div>
       )}
 
       {showAddForm && (
-        <div className="card" style={{ backgroundColor: '#f7fafc', marginBottom: '1rem' }}>
-          <h3>Add New Product</h3>
+        <div className="card mb-6">
+          <div className="card-header">
+            <h2 className="card-title">Add New Product</h2>
+          </div>
           <form onSubmit={handleAddProduct}>
+            <div className="form-group">
+              <label className="form-label">Product Title *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={newProduct.title}
+                onChange={(e) => setNewProduct({...newProduct, title: e.target.value})}
+                placeholder="Enter product title"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Description</label>
+              <textarea
+                className="form-input"
+                value={newProduct.description}
+                onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+                placeholder="Enter product description (optional)"
+                rows="3"
+              />
+            </div>
+
             <div className="grid grid-2">
               <div className="form-group">
-                <label className="form-label">Volume (m³)</label>
+                <label className="form-label">Volume (m³) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -101,7 +169,7 @@ function Products() {
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Price ($)</label>
+                <label className="form-label">Price ($) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -112,8 +180,9 @@ function Products() {
                 />
               </div>
             </div>
+
             <div className="form-group">
-              <label className="form-label">Wood Type</label>
+              <label className="form-label">Wood Type *</label>
               <select
                 className="form-input"
                 value={newProduct.wood_type_id}
@@ -123,11 +192,34 @@ function Products() {
                 <option value="">Select wood type...</option>
                 {woodTypes?.data?.map((type) => (
                   <option key={type.id} value={type.id}>
-                    {type.neme}
+                    {type.name}
                   </option>
                 ))}
               </select>
             </div>
+
+            <div className="form-group">
+              <label className="form-label">Pickup Location</label>
+              <input
+                type="text"
+                className="form-input"
+                value={newProduct.pickup_location}
+                onChange={(e) => setNewProduct({...newProduct, pickup_location: e.target.value})}
+                placeholder="Enter pickup location (optional)"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  checked={newProduct.delivery_possible}
+                  onChange={(e) => setNewProduct({...newProduct, delivery_possible: e.target.checked})}
+                />
+                Delivery Available
+              </label>
+            </div>
+
             <button type="submit" className="btn btn-primary" disabled={mutating}>
               {mutating ? 'Adding...' : 'Add Product'}
             </button>
@@ -135,22 +227,21 @@ function Products() {
         </div>
       )}
 
-      {loading && <div className="loading">Loading products...</div>}
+      {loading && (
+        <div className="loading">Loading products...</div>
+      )}
 
       {data && (
         <>
-          <div style={{ marginBottom: '1rem' }}>
-            <p>Total products: {data.total || data.data?.length || 0}</p>
-          </div>
-
           {data.data && data.data.length > 0 ? (
             <table className="table">
               <thead>
                 <tr>
-                  <th>ID</th>
+                  <th>Title</th>
                   <th>Volume (m³)</th>
                   <th>Price ($)</th>
                   <th>Wood Type</th>
+                  <th>Delivery</th>
                   <th>Created</th>
                   <th>Actions</th>
                 </tr>
@@ -158,17 +249,32 @@ function Products() {
               <tbody>
                 {data.data.map((product) => (
                   <tr key={product.id}>
-                    <td>{product.id.substring(0, 8)}...</td>
+                    <td>
+                      <div>
+                        <strong>{product.title}</strong>
+                        {product.description && (
+                          <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.25rem' }}>
+                            {product.description.length > 50
+                              ? `${product.description.substring(0, 50)}...`
+                              : product.description}
+                          </div>
+                        )}
+                      </div>
+                    </td>
                     <td>{product.volume}</td>
                     <td>${product.price}</td>
                     <td>{getWoodTypeName(product.wood_type_id)}</td>
+                    <td>
+                      <span className={`status ${product.delivery_possible ? 'status-success' : 'status-warning'}`}>
+                        {product.delivery_possible ? 'Available' : 'Pickup Only'}
+                      </span>
+                    </td>
                     <td>{new Date(product.created_at).toLocaleDateString()}</td>
                     <td>
                       <button
                         onClick={() => handleDeleteProduct(product.id)}
                         className="btn btn-secondary"
                         disabled={mutating}
-                        style={{ backgroundColor: '#fed7d7', color: '#c53030' }}
                       >
                         {mutating ? 'Deleting...' : 'Delete'}
                       </button>
@@ -178,13 +284,19 @@ function Products() {
               </tbody>
             </table>
           ) : (
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <div className="text-center">
               <p>No products found.</p>
-              <p>Add your first product to get started!</p>
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="btn btn-primary mt-4"
+              >
+                Add Your First Product
+              </button>
             </div>
           )}
 
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          {/* Pagination */}
+          <div className="flex justify-between items-center mt-6">
             <button
               onClick={() => setPage(Math.max(0, page - 1))}
               disabled={page === 0 || loading}

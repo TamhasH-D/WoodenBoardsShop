@@ -18,7 +18,7 @@ function Profile() {
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     try {
-      await mutate(apiService.updateSellerProfile, MOCK_SELLER_ID, profileData);
+      await mutate(() => apiService.updateSellerProfile(MOCK_SELLER_ID, profileData));
       setIsEditing(false);
       refetch();
     } catch (err) {
@@ -36,10 +36,17 @@ function Profile() {
   }, [data]);
 
   return (
-    <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h2>Seller Profile</h2>
-        <div style={{ display: 'flex', gap: '1rem' }}>
+    <div>
+      <div className="page-header">
+        <h1 className="page-title">Seller Profile</h1>
+        <p className="page-description">Manage your seller account information and availability status</p>
+      </div>
+
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <p>Profile ID: {MOCK_SELLER_ID.substring(0, 8)}...</p>
+        </div>
+        <div className="flex gap-4">
           {!isEditing && (
             <button onClick={() => setIsEditing(true)} className="btn btn-primary">
               Edit Profile
@@ -52,29 +59,40 @@ function Profile() {
       </div>
 
       {error && (
-        <div className="error">
-          Failed to load profile: {error}
+        <div className="error mb-4">
+          <strong>Profile Loading Issue:</strong> {error}
+          <br />
+          <small>Using development mode with mock data. In production, this would require proper authentication.</small>
+          <div style={{ marginTop: '1rem' }}>
+            <button onClick={refetch} className="btn btn-secondary">
+              Retry Loading Profile
+            </button>
+          </div>
         </div>
       )}
 
       {mutationError && (
-        <div className="error">
-          Failed to update profile: {mutationError}
+        <div className="error mb-4">
+          <strong>Failed to update profile:</strong> {mutationError}
         </div>
       )}
 
       {success && (
-        <div className="success">
-          Profile updated successfully!
+        <div className="success mb-4">
+          <strong>Success:</strong> Profile updated successfully!
         </div>
       )}
 
       {loading && <div className="loading">Loading profile...</div>}
 
       {data && (
-        <div>
+        <div className="card">
           {isEditing ? (
-            <form onSubmit={handleSaveProfile}>
+            <div>
+              <div className="card-header">
+                <h2 className="card-title">Edit Profile</h2>
+              </div>
+              <form onSubmit={handleSaveProfile}>
               <div className="form-group">
                 <label className="form-label">Seller ID</label>
                 <input
@@ -109,25 +127,30 @@ function Profile() {
                 </label>
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <button type="submit" className="btn btn-success" disabled={mutating}>
-                  {mutating ? 'Saving...' : 'Save Changes'}
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => setIsEditing(false)} 
-                  className="btn btn-secondary"
-                  disabled={mutating}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+                <div className="flex gap-4">
+                  <button type="submit" className="btn btn-primary" disabled={mutating}>
+                    {mutating ? 'Saving...' : 'Save Changes'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="btn btn-secondary"
+                    disabled={mutating}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
           ) : (
             <div>
-              <div className="grid grid-2">
+              <div className="card-header">
+                <h2 className="card-title">Profile Information</h2>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }}>
                 <div>
-                  <h3>Profile Information</h3>
+                  <h3>Basic Information</h3>
                   <div style={{ marginBottom: '1rem' }}>
                     <strong>Seller ID:</strong>
                     <br />
@@ -151,11 +174,8 @@ function Profile() {
                   <div style={{ marginBottom: '1rem' }}>
                     <strong>Status:</strong>
                     <br />
-                    <span style={{ 
-                      color: data.data?.is_online ? '#38a169' : '#e53e3e',
-                      fontWeight: 'bold'
-                    }}>
-                      {data.data?.is_online ? '🟢 Online' : '🔴 Offline'}
+                    <span className={`status ${data.data?.is_online ? 'status-success' : 'status-error'}`}>
+                      {data.data?.is_online ? 'Online' : 'Offline'}
                     </span>
                   </div>
                 </div>
@@ -176,7 +196,7 @@ function Profile() {
                 </div>
               </div>
 
-              <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#e6fffa', borderRadius: '0.375rem' }}>
+              <div className="card mt-6" style={{ backgroundColor: '#dcfce7' }}>
                 <h4>Profile Tips</h4>
                 <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
                   <li>Keep your status online to receive customer inquiries</li>
