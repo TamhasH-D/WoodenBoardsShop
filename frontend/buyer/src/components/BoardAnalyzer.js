@@ -4,6 +4,8 @@ import { apiService } from '../services/api';
 
 function BoardAnalyzer() {
   const [selectedFile, setSelectedFile] = useState(null);
+  const [boardHeight, setBoardHeight] = useState('');
+  const [boardLength, setBoardLength] = useState('');
   const [analysisResult, setAnalysisResult] = useState(null);
   const { mutate, loading, error, success } = useApiMutation();
 
@@ -19,11 +21,12 @@ function BoardAnalyzer() {
     if (!selectedFile) return;
 
     try {
-      // Create FormData for file upload (mock implementation)
-      const formData = new FormData();
-      formData.append('image', selectedFile);
-      
-      const result = await mutate(apiService.analyzeWoodenBoard, formData);
+      const result = await mutate(
+        apiService.analyzeWoodenBoard,
+        selectedFile,
+        parseFloat(boardHeight) || 0.0,
+        parseFloat(boardLength) || 0.0
+      );
       setAnalysisResult(result);
     } catch (err) {
       console.error('Analysis failed:', err);
@@ -32,6 +35,8 @@ function BoardAnalyzer() {
 
   const clearAnalysis = () => {
     setSelectedFile(null);
+    setBoardHeight('');
+    setBoardLength('');
     setAnalysisResult(null);
   };
 
@@ -42,7 +47,7 @@ function BoardAnalyzer() {
         <p>Upload an image of a wooden board to get volume estimation and quality analysis.</p>
         
         <div className="form-group">
-          <label className="form-label">Select Board Image</label>
+          <label className="form-label">Select Board Image *</label>
           <input
             type="file"
             accept="image/*"
@@ -54,6 +59,31 @@ function BoardAnalyzer() {
               Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
             </div>
           )}
+        </div>
+
+        <div className="grid grid-2">
+          <div className="form-group">
+            <label className="form-label">Board Height (cm)</label>
+            <input
+              type="number"
+              step="0.1"
+              value={boardHeight}
+              onChange={(e) => setBoardHeight(e.target.value)}
+              placeholder="Optional - helps improve accuracy"
+              className="form-input"
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Board Length (cm)</label>
+            <input
+              type="number"
+              step="0.1"
+              value={boardLength}
+              onChange={(e) => setBoardLength(e.target.value)}
+              placeholder="Optional - helps improve accuracy"
+              className="form-input"
+            />
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>

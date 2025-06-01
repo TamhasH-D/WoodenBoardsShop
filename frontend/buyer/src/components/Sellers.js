@@ -1,10 +1,32 @@
 import React, { useState } from 'react';
-import { useApi } from '../hooks/useApi';
+import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
+
+// Mock buyer ID - in real app this would come from authentication
+const MOCK_BUYER_ID = '123e4567-e89b-12d3-a456-426614174001';
 
 function Sellers() {
   const [page, setPage] = useState(0);
   const { data, loading, error, refetch } = useApi(() => apiService.getSellers(page, 10), [page]);
+  const { mutate, loading: contacting } = useApiMutation();
+
+  const handleContactSeller = async (sellerId) => {
+    try {
+      // Create a new chat thread
+      const threadId = crypto.randomUUID();
+      await mutate(apiService.createChatThread, {
+        id: threadId,
+        buyer_id: MOCK_BUYER_ID,
+        seller_id: sellerId
+      });
+
+      // Redirect to chats page
+      window.location.href = '/chats';
+    } catch (err) {
+      console.error('Failed to contact seller:', err);
+      alert('Failed to contact seller. Please try again.');
+    }
+  };
 
   return (
     <div className="card">
@@ -44,8 +66,12 @@ function Sellers() {
                         {seller.is_online ? '🟢 Online' : '🔴 Offline'}
                       </div>
                     </div>
-                    <button className="btn btn-primary">
-                      Contact
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => handleContactSeller(seller.id)}
+                      disabled={contacting}
+                    >
+                      {contacting ? 'Contacting...' : 'Contact'}
                     </button>
                   </div>
 

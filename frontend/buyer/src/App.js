@@ -4,6 +4,7 @@ import Home from './components/Home';
 import Products from './components/Products';
 import Sellers from './components/Sellers';
 import BoardAnalyzer from './components/BoardAnalyzer';
+import Chats from './components/Chats';
 import Profile from './components/Profile';
 import HealthCheck from './components/HealthCheck';
 
@@ -25,6 +26,9 @@ function Navigation() {
       </Link>
       <Link to="/analyzer" className={`nav-link ${isActive('/analyzer') ? 'active' : ''}`}>
         Board Analyzer
+      </Link>
+      <Link to="/chats" className={`nav-link ${isActive('/chats') ? 'active' : ''}`}>
+        My Chats
       </Link>
       <Link to="/profile" className={`nav-link ${isActive('/profile') ? 'active' : ''}`}>
         My Profile
@@ -56,6 +60,7 @@ function App() {
               <Route path="/products" element={<Products />} />
               <Route path="/sellers" element={<Sellers />} />
               <Route path="/analyzer" element={<BoardAnalyzer />} />
+              <Route path="/chats" element={<Chats />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/health" element={<HealthCheck />} />
             </Routes>

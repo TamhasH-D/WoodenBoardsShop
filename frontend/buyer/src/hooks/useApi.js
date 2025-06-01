@@ -22,7 +22,7 @@ export const useApi = (apiFunction, dependencies = []) => {
 
   useEffect(() => {
     fetchData();
-  }, dependencies);
+  }, [fetchData, ...dependencies]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refetch = () => {
     fetchData();
