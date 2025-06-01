@@ -32,18 +32,16 @@ function Home() {
   return (
     <div>
       {/* Hero Section */}
-      <div className="hero">
+      <div className="header">
         <div className="container">
-          <h1 className="animate-fade-in-up">Welcome to Wood Products Marketplace</h1>
-          <p className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            Discover quality wood products from verified sellers
-          </p>
-          <div className="animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.4s' }}>
-            <a href="/products" className="btn btn-primary" style={{ marginRight: '1rem' }}>
-              🌲 Browse Products
+          <h1>Welcome to Wood Products Marketplace</h1>
+          <p>Discover quality wood products from verified sellers</p>
+          <div className="flex gap-4 mt-6">
+            <a href="/products" className="btn btn-primary">
+              Browse Products
             </a>
             <a href="/analyzer" className="btn btn-secondary">
-              🔍 Analyze Wood Board
+              Analyze Wood Board
             </a>
           </div>
         </div>
@@ -51,48 +49,32 @@ function Home() {
 
       <div className="container">
         {/* System Status */}
-        <div className="card animate-fade-in-scale" style={{ animationDelay: '0.6s' }}>
-          <h2>📊 System Status</h2>
-          <div className="grid grid-3">
-            <div style={{
-              padding: '1.5rem',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
-              border: '1px solid #bbf7d0',
-              textAlign: 'center'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: '#166534' }}>🔗 Backend Connection</h3>
-              {healthLoading && <p className="skeleton" style={{ height: '20px', width: '80px', margin: '0 auto' }}></p>}
-              {healthError && <p style={{ color: '#dc2626', fontWeight: '600' }}>❌ Offline</p>}
-              {healthData && <p style={{ color: '#16a34a', fontWeight: '600' }}>✅ Online</p>}
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">System Status</h2>
+          </div>
+          <div className="grid grid-auto-sm">
+            <div className="card text-center">
+              <h3 style={{ marginBottom: '1rem' }}>Backend Connection</h3>
+              {healthLoading && <p className="loading">Loading...</p>}
+              {healthError && <p className="status status-error">Offline</p>}
+              {healthData && <p className="status status-success">Online</p>}
             </div>
 
-            <div style={{
-              padding: '1.5rem',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-              border: '1px solid #93c5fd',
-              textAlign: 'center'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: '#1d4ed8' }}>📦 Available Products</h3>
-              <p style={{ fontSize: '2rem', fontWeight: '800', color: '#1e40af' }}>
+            <div className="card text-center">
+              <h3 style={{ marginBottom: '1rem' }}>Available Products</h3>
+              <p style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--color-primary)' }}>
                 {productsLoading ? (
-                  <span className="skeleton" style={{ height: '32px', width: '60px', display: 'inline-block' }}></span>
+                  <span className="loading">...</span>
                 ) : (
                   productsData?.total || productsData?.data?.length || 0
                 )}
               </p>
             </div>
 
-            <div style={{
-              padding: '1.5rem',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #fefce8 0%, #fef3c7 100%)',
-              border: '1px solid #fcd34d',
-              textAlign: 'center'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: '#92400e' }}>🌳 Wood Types</h3>
-              <p style={{ fontSize: '2rem', fontWeight: '800', color: '#b45309' }}>
+            <div className="card text-center">
+              <h3 style={{ marginBottom: '1rem' }}>Wood Types</h3>
+              <p style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--color-primary)' }}>
                 {woodTypesData?.total || woodTypesData?.data?.length || 0}
               </p>
             </div>
@@ -100,146 +82,79 @@ function Home() {
         </div>
 
         {/* Featured Products */}
-        <div className="card animate-fade-in-scale" style={{ animationDelay: '0.8s' }}>
-          <h2>⭐ Featured Products</h2>
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">Featured Products</h2>
+          </div>
+
           {productsLoading && (
-            <div className="loading">
-              <div className="grid grid-3">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="skeleton" style={{ height: '200px', borderRadius: '12px' }}></div>
-                ))}
-              </div>
-            </div>
+            <div className="loading">Loading products...</div>
           )}
-          
+
           {productsData?.data && productsData.data.length > 0 ? (
-            <div className="grid grid-3">
+            <div className="grid grid-auto">
               {productsData.data.slice(0, 6).map((product) => (
                 <div key={product.id} className="product-card">
-                  <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', fontWeight: 'bold' }}>
+                  <h4 className="product-title">
                     {product.title || 'Untitled Product'}
                   </h4>
                   {product.descrioption && (
-                    <p style={{
-                      margin: '0 0 0.75rem 0',
-                      fontSize: '0.8rem',
-                      color: '#4a5568',
-                      lineHeight: '1.3',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden'
-                    }}>
+                    <p className="product-description">
                       {product.descrioption}
                     </p>
                   )}
                   <div className="product-price">${product.price}</div>
-                  <div className="product-volume">{product.volume} m³</div>
-                  <div style={{
-                    marginTop: '0.5rem',
-                    padding: '0.25rem 0.5rem',
-                    borderRadius: '0.25rem',
-                    fontSize: '0.7rem',
-                    backgroundColor: product.delivery_possible ? '#c6f6d5' : '#fed7d7',
-                    color: product.delivery_possible ? '#2f855a' : '#c53030',
-                    display: 'inline-block'
-                  }}>
-                    {product.delivery_possible ? '🚚 Delivery' : '📍 Pickup'}
+                  <div style={{ color: 'var(--color-text-light)', marginBottom: 'var(--space-2)' }}>
+                    {product.volume} m³
                   </div>
-                  <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#718096' }}>
-                    Wood Type: {product.wood_type_id?.substring(0, 8)}...
+                  <div className={`status ${product.delivery_possible ? 'status-success' : 'status-error'} mb-4`}>
+                    {product.delivery_possible ? 'Delivery Available' : 'Pickup Only'}
                   </div>
-                  <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#718096' }}>
-                    Seller: {product.seller_id?.substring(0, 8)}...
+                  <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-light)', marginBottom: 'var(--space-3)' }}>
+                    <div>Wood Type: {product.wood_type_id?.substring(0, 8)}...</div>
+                    <div>Seller: {product.seller_id?.substring(0, 8)}...</div>
                   </div>
-                  <div style={{ marginTop: '1rem' }}>
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => handleContactSeller(product.seller_id)}
-                      disabled={contacting}
-                    >
-                      {contacting ? 'Contacting...' : 'Contact Seller'}
-                    </button>
-                  </div>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => handleContactSeller(product.seller_id)}
+                    disabled={contacting}
+                  >
+                    {contacting ? 'Contacting...' : 'Contact Seller'}
+                  </button>
                 </div>
               ))}
             </div>
           ) : (
-            <p>No products available at the moment.</p>
+            <div className="empty-state">No products available at the moment.</div>
           )}
-          
-          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+
+          <div className="text-center mt-6">
             <a href="/products" className="btn btn-primary">View All Products</a>
           </div>
         </div>
 
         {/* Features */}
-        <div className="grid grid-3">
-          <div className="card animate-fade-in-up" style={{ animationDelay: '1.0s' }}>
-            <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-              <div style={{
-                fontSize: '3rem',
-                marginBottom: '1rem',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                borderRadius: '50%',
-                width: '80px',
-                height: '80px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto'
-              }}>
-                🌲
-              </div>
-              <h3 style={{ color: '#1f2937', fontWeight: '700' }}>Quality Wood Products</h3>
-            </div>
-            <p style={{ textAlign: 'center', color: '#6b7280', lineHeight: '1.6' }}>
+        <div className="grid grid-auto-sm">
+          <div className="card text-center">
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🌲</div>
+            <h3 style={{ marginBottom: '1rem' }}>Quality Wood Products</h3>
+            <p style={{ color: 'var(--color-text-light)' }}>
               Browse through a wide selection of quality wood products from verified sellers.
             </p>
           </div>
 
-          <div className="card animate-fade-in-up" style={{ animationDelay: '1.2s' }}>
-            <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-              <div style={{
-                fontSize: '3rem',
-                marginBottom: '1rem',
-                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                borderRadius: '50%',
-                width: '80px',
-                height: '80px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto'
-              }}>
-                🔍
-              </div>
-              <h3 style={{ color: '#1f2937', fontWeight: '700' }}>AI Board Analysis</h3>
-            </div>
-            <p style={{ textAlign: 'center', color: '#6b7280', lineHeight: '1.6' }}>
+          <div className="card text-center">
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
+            <h3 style={{ marginBottom: '1rem' }}>AI Board Analysis</h3>
+            <p style={{ color: 'var(--color-text-light)' }}>
               Use our AI-powered board analyzer to estimate wood volume and quality.
             </p>
           </div>
 
-          <div className="card animate-fade-in-up" style={{ animationDelay: '1.4s' }}>
-            <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-              <div style={{
-                fontSize: '3rem',
-                marginBottom: '1rem',
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                borderRadius: '50%',
-                width: '80px',
-                height: '80px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto'
-              }}>
-                💬
-              </div>
-              <h3 style={{ color: '#1f2937', fontWeight: '700' }}>Direct Communication</h3>
-            </div>
-            <p style={{ textAlign: 'center', color: '#6b7280', lineHeight: '1.6' }}>
+          <div className="card text-center">
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>💬</div>
+            <h3 style={{ marginBottom: '1rem' }}>Direct Communication</h3>
+            <p style={{ color: 'var(--color-text-light)' }}>
               Chat directly with sellers to negotiate prices and discuss requirements.
             </p>
           </div>
@@ -247,21 +162,23 @@ function Home() {
 
         {/* Getting Started */}
         <div className="card">
-          <h2>Getting Started</h2>
-          <div className="grid grid-2">
+          <div className="card-header">
+            <h2 className="card-title">Getting Started</h2>
+          </div>
+          <div className="grid grid-auto">
             <div>
-              <h3>For Buyers</h3>
-              <ol style={{ marginLeft: '1.5rem', marginTop: '1rem' }}>
+              <h3 style={{ marginBottom: '1rem' }}>For Buyers</h3>
+              <ol style={{ marginLeft: '1.5rem' }}>
                 <li>Browse available wood products</li>
                 <li>Use the board analyzer for volume estimation</li>
                 <li>Contact sellers directly through chat</li>
                 <li>Negotiate prices and arrange delivery</li>
               </ol>
             </div>
-            
+
             <div>
-              <h3>Features Available</h3>
-              <ul style={{ marginLeft: '1.5rem', marginTop: '1rem' }}>
+              <h3 style={{ marginBottom: '1rem' }}>Features Available</h3>
+              <ul style={{ marginLeft: '1.5rem' }}>
                 <li>Product search and filtering</li>
                 <li>Seller profiles and ratings</li>
                 <li>AI-powered board analysis</li>

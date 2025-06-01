@@ -233,6 +233,30 @@ body {
   background-color: var(--color-bg-light);
 }
 
+/* Status indicators */
+.status {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  border-radius: var(--border-radius);
+}
+
+.status-success {
+  background-color: #dcfce7;
+  color: var(--color-success);
+}
+
+.status-warning {
+  background-color: #fef3c7;
+  color: var(--color-warning);
+}
+
+.status-error {
+  background-color: #fee2e2;
+  color: var(--color-error);
+}
+
 /* Product Cards */
 .product-card {
   background: var(--color-bg);
@@ -273,10 +297,33 @@ body {
 .mb-4 { margin-bottom: var(--space-4); }
 .mb-6 { margin-bottom: var(--space-6); }
 .mt-4 { margin-top: var(--space-4); }
+.mt-6 { margin-top: var(--space-6); }
 .flex { display: flex; }
+.flex-1 { flex: 1; }
 .justify-between { justify-content: space-between; }
 .items-center { align-items: center; }
 .gap-4 { gap: var(--space-4); }
+
+/* Grid layouts */
+.grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.grid-auto {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.grid-auto-sm {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+/* Empty states */
+.empty-state {
+  text-align: center;
+  padding: var(--space-12);
+  color: var(--color-text-light);
+}
 
 /* Loading and error states */
 .loading {

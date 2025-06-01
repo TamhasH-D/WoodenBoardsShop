@@ -41,49 +41,27 @@ function Chats() {
 
   return (
     <div>
-      <div className="card animate-fade-in-scale">
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 'var(--space-xl)',
-          padding: 'var(--space-lg)',
-          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
-          borderRadius: 'var(--radius-xl)',
-          border: '1px solid rgba(16, 185, 129, 0.2)'
-        }}>
-          <div>
-            <h2 style={{ margin: 0, marginBottom: 'var(--space-sm)' }}>💬 My Conversations</h2>
-            <p style={{ margin: 0, color: '#6b7280', fontSize: 'var(--font-size-sm)' }}>
-              Chat with sellers about their products
-            </p>
-          </div>
+      <div className="page-header">
+        <h1 className="page-title">My Conversations</h1>
+        <p className="page-description">Chat with sellers about their products</p>
+      </div>
+
+      <div className="card">
+        <div className="card-header flex justify-between items-center">
+          <h2 className="card-title">Conversations</h2>
           <button
             onClick={refetch}
-            className="btn btn-secondary animate-float"
+            className="btn btn-secondary"
             disabled={loading}
           >
-            {loading ? '⏳ Loading...' : '🔄 Refresh'}
+            {loading ? 'Loading...' : 'Refresh'}
           </button>
         </div>
 
         {error && (
-          <div className="error animate-fade-in-scale" style={{
-            padding: 'var(--space-lg)',
-            background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
-            border: '1px solid #fca5a5',
-            borderRadius: 'var(--radius-xl)',
-            color: '#991b1b',
-            marginBottom: 'var(--space-lg)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--space-md)'
-          }}>
-            <span style={{ fontSize: '1.5rem' }}>❌</span>
-            <div>
-              <strong>Failed to load conversations</strong>
-              <p style={{ margin: 0, marginTop: 'var(--space-xs)', opacity: 0.8 }}>{error}</p>
-            </div>
+          <div className="error mb-4">
+            <strong>Failed to load conversations</strong>
+            <p>{error}</p>
           </div>
         )}
 

@@ -70,8 +70,7 @@ function Products() {
             placeholder="Search products by name, type, or description..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="form-input"
-            style={{ flex: 1 }}
+            className="form-input flex-1"
           />
           <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? 'Searching...' : 'Search'}
@@ -114,7 +113,7 @@ function Products() {
             </div>
 
             {data.data && data.data.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
+              <div className="grid grid-auto">
                 {data.data.map((product) => (
                   <div key={product.id} className="product-card">
                     <h4 className="product-title">
@@ -137,16 +136,7 @@ function Products() {
                     </div>
 
                     <div className="mb-4">
-                      <div style={{
-                        display: 'inline-block',
-                        padding: 'var(--space-1) var(--space-2)',
-                        borderRadius: 'var(--border-radius)',
-                        fontSize: 'var(--font-size-xs)',
-                        fontWeight: '500',
-                        backgroundColor: product.delivery_possible ? '#dcfce7' : '#fee2e2',
-                        color: product.delivery_possible ? 'var(--color-success)' : 'var(--color-error)',
-                        marginBottom: 'var(--space-2)'
-                      }}>
+                      <div className={`status ${product.delivery_possible ? 'status-success' : 'status-error'} mb-4`}>
                         {product.delivery_possible ? 'Delivery Available' : 'Pickup Only'}
                       </div>
                       {product.pickup_location && (
@@ -215,9 +205,9 @@ function Products() {
           <div className="card-header">
             <h3 className="card-title">Available Wood Types</h3>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
+          <div className="grid grid-auto-sm">
             {woodTypes.data.slice(0, 6).map((type) => (
-              <div key={type.id} className="card" style={{ margin: 0, textAlign: 'center' }}>
+              <div key={type.id} className="card text-center">
                 <div style={{ fontWeight: '600' }}>
                   {type.name || `Type ${type.id.substring(0, 8)}`}
                 </div>
