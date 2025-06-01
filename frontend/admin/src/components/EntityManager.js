@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 
@@ -10,7 +10,7 @@ const ENTITY_CONFIGS = {
     fields: [
       { key: 'id', label: 'ID', type: 'uuid', readonly: true },
       { key: 'keycloak_uuid', label: 'Keycloak UUID', type: 'uuid', required: true },
-      { key: 'is_online', label: 'Online Status', type: 'boolean' },
+      { key: 'is_online', label: 'Online Status', type: 'checkbox' },
       { key: 'created_at', label: 'Created', type: 'datetime', readonly: true },
       { key: 'updated_at', label: 'Updated', type: 'datetime', readonly: true }
     ],
@@ -29,7 +29,7 @@ const ENTITY_CONFIGS = {
     fields: [
       { key: 'id', label: 'ID', type: 'uuid', readonly: true },
       { key: 'keycloak_uuid', label: 'Keycloak UUID', type: 'uuid', required: true },
-      { key: 'is_online', label: 'Online Status', type: 'boolean' },
+      { key: 'is_online', label: 'Online Status', type: 'checkbox' },
       { key: 'created_at', label: 'Created', type: 'datetime', readonly: true },
       { key: 'updated_at', label: 'Updated', type: 'datetime', readonly: true }
     ],
@@ -47,9 +47,13 @@ const ENTITY_CONFIGS = {
     icon: '📦',
     fields: [
       { key: 'id', label: 'ID', type: 'uuid', readonly: true },
+      { key: 'title', label: 'Title', type: 'text', required: true },
       { key: 'volume', label: 'Volume (m³)', type: 'number', required: true, step: 0.01 },
       { key: 'price', label: 'Price ($)', type: 'number', required: true, step: 0.01 },
-      { key: 'wood_type_id', label: 'Wood Type', type: 'select', required: true, 
+      { key: 'descrioption', label: 'Description', type: 'textarea' },
+      { key: 'delivery_possible', label: 'Delivery Available', type: 'checkbox' },
+      { key: 'pickup_location', label: 'Pickup Location', type: 'text' },
+      { key: 'wood_type_id', label: 'Wood Type', type: 'select', required: true,
         options: 'woodTypes', optionValue: 'id', optionLabel: 'neme' },
       { key: 'seller_id', label: 'Seller', type: 'select', required: true,
         options: 'sellers', optionValue: 'id', optionLabel: 'id' },
@@ -110,7 +114,7 @@ const ENTITY_CONFIGS = {
       { key: 'width', label: 'Width (cm)', type: 'number', required: true, step: 0.1 },
       { key: 'lenght', label: 'Length (cm)', type: 'number', required: true, step: 0.1 },
       { key: 'image_id', label: 'Image', type: 'select', required: true,
-        options: 'images', optionValue: 'id', optionLabel: 'id' }
+        options: 'images', optionValue: 'id', optionLabel: 'image_path' }
     ],
     api: {
       getAll: (page, size) => apiService.getWoodenBoards(page, size),
@@ -126,9 +130,9 @@ const ENTITY_CONFIGS = {
     icon: '🖼️',
     fields: [
       { key: 'id', label: 'ID', type: 'uuid', readonly: true },
-      { key: 'url', label: 'URL', type: 'url', required: true },
-      { key: 'alt_text', label: 'Alt Text', type: 'text' },
-      { key: 'created_at', label: 'Created', type: 'datetime', readonly: true }
+      { key: 'image_path', label: 'Image Path', type: 'text', required: true },
+      { key: 'product_id', label: 'Product', type: 'select', required: true,
+        options: 'products', optionValue: 'id', optionLabel: 'title' }
     ],
     api: {
       getAll: (page, size) => apiService.getImages(page, size),
@@ -148,8 +152,7 @@ const ENTITY_CONFIGS = {
         options: 'buyers', optionValue: 'id', optionLabel: 'id' },
       { key: 'seller_id', label: 'Seller', type: 'select', required: true,
         options: 'sellers', optionValue: 'id', optionLabel: 'id' },
-      { key: 'created_at', label: 'Created', type: 'datetime', readonly: true },
-      { key: 'updated_at', label: 'Updated', type: 'datetime', readonly: true }
+      { key: 'created_at', label: 'Created', type: 'datetime', readonly: true }
     ],
     api: {
       getAll: (page, size) => apiService.getChatThreads(page, size),
@@ -165,10 +168,15 @@ const ENTITY_CONFIGS = {
     icon: '💭',
     fields: [
       { key: 'id', label: 'ID', type: 'uuid', readonly: true },
-      { key: 'content', label: 'Message', type: 'textarea', required: true },
+      { key: 'message', label: 'Message', type: 'textarea', required: true },
+      { key: 'is_read_by_buyer', label: 'Read by Buyer', type: 'checkbox' },
+      { key: 'is_read_by_seller', label: 'Read by Seller', type: 'checkbox' },
       { key: 'thread_id', label: 'Thread', type: 'select', required: true,
         options: 'threads', optionValue: 'id', optionLabel: 'id' },
-      { key: 'sender_id', label: 'Sender', type: 'uuid', required: true },
+      { key: 'buyer_id', label: 'Buyer', type: 'select', required: true,
+        options: 'buyers', optionValue: 'id', optionLabel: 'id' },
+      { key: 'seller_id', label: 'Seller', type: 'select', required: true,
+        options: 'sellers', optionValue: 'id', optionLabel: 'id' },
       { key: 'created_at', label: 'Created', type: 'datetime', readonly: true }
     ],
     api: {
@@ -202,7 +210,7 @@ function EntityManager({ entityType }) {
   };
 
   // Initialize form data
-  const getInitialFormData = () => {
+  const getInitialFormData = useCallback(() => {
     const config = ENTITY_CONFIGS[entityType];
     if (!config) return {};
     const formData = {};
@@ -216,7 +224,7 @@ function EntityManager({ entityType }) {
       }
     });
     return formData;
-  };
+  }, [entityType]);
 
   const [formData, setFormData] = useState(() => getInitialFormData());
 
@@ -233,6 +241,7 @@ function EntityManager({ entityType }) {
   const { data: woodTypes } = useApi(() => apiService.getWoodTypes(0, 1000), []);
   const { data: sellers } = useApi(() => apiService.getSellers(0, 1000), []);
   const { data: buyers } = useApi(() => apiService.getBuyers(0, 1000), []);
+  const { data: products } = useApi(() => apiService.getProducts(0, 1000), []);
   const { data: images } = useApi(() => apiService.getImages(0, 1000), []);
   const { data: threads } = useApi(() => apiService.getChatThreads(0, 1000), []);
 
@@ -240,6 +249,7 @@ function EntityManager({ entityType }) {
     woodTypes: woodTypes?.data || [],
     sellers: sellers?.data || [],
     buyers: buyers?.data || [],
+    products: products?.data || [],
     images: images?.data || [],
     threads: threads?.data || []
   };
@@ -251,7 +261,7 @@ function EntityManager({ entityType }) {
     setShowCreateForm(false);
     setSelectedItems([]);
     setPage(0);
-  }, [entityType]);
+  }, [entityType, getInitialFormData]);
 
   // Early return after all hooks
   if (!config) {
