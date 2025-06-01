@@ -44,7 +44,7 @@ down: ## Stop all services
 
 .PHONY: build
 build: ## Build all services
-	$(COMPOSE) build
+	$(COMPOSE) build --no-cache
 
 .PHONY: rebuild
 rebuild: down build up ## Rebuild and restart all services
