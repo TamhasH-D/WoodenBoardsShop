@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_CONFIG, ERROR_MESSAGES, LOADING_STATES } from '../utils/constants';
+import { API_CONFIG, ERROR_MESSAGES } from '../utils/constants';
 
 // Get API URL from environment variables or use default
 const API_BASE_URL = (process.env.REACT_APP_API_URL || API_CONFIG.baseURL).replace(/\/+$/, '');
@@ -26,6 +26,7 @@ api.interceptors.request.use(
     // Add request ID for tracking
     config.requestId = Math.random().toString(36).substr(2, 9);
 
+    // eslint-disable-next-line no-console
     console.log(`[${config.requestId}] API Request: ${config.method?.toUpperCase()} ${config.url}`);
 
     // Check cache for GET requests
@@ -34,6 +35,7 @@ api.interceptors.request.use(
       const cached = requestCache.get(cacheKey);
 
       if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        // eslint-disable-next-line no-console
         console.log(`[${config.requestId}] Using cached response`);
         config.cached = cached.data;
       }
@@ -53,6 +55,7 @@ api.interceptors.response.use(
     const { config } = response;
     const duration = new Date() - config.metadata.startTime;
 
+    // eslint-disable-next-line no-console
     console.log(`[${config.requestId}] API Response: ${response.status} ${config.url} (${duration}ms)`);
 
     // Cache GET responses
@@ -109,24 +112,12 @@ api.interceptors.response.use(
   }
 );
 
-// Retry mechanism for failed requests
-const retryRequest = async (config, retryCount = 0) => {
-  try {
-    return await api(config);
-  } catch (error) {
-    if (retryCount < API_CONFIG.retryAttempts &&
-        (error.code === 'ERR_NETWORK' || error.response?.status >= 500)) {
-      console.log(`Retrying request (${retryCount + 1}/${API_CONFIG.retryAttempts}): ${config.url}`);
-      await new Promise(resolve => setTimeout(resolve, API_CONFIG.retryDelay * (retryCount + 1)));
-      return retryRequest(config, retryCount + 1);
-    }
-    throw error;
-  }
-};
+
 
 // Clear cache utility
 export const clearApiCache = () => {
   requestCache.clear();
+  // eslint-disable-next-line no-console
   console.log('API cache cleared');
 };
 
@@ -145,7 +136,13 @@ export const apiService = {
   // Buyers
   async getBuyers(page = 0, size = 10) {
     const response = await api.get(`/api/v1/buyers?offset=${page * size}&limit=${size}`);
-    return response.data;
+    // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
+    return {
+      data: response.data.data || response.data,
+      total: response.data.pagination?.total || 0,
+      offset: page * size,
+      limit: size
+    };
   },
 
   async createBuyer(buyerData) {
@@ -159,7 +156,7 @@ export const apiService = {
   },
 
   async updateBuyer(id, buyerData) {
-    const response = await api.put(`/api/v1/buyers/${id}`, buyerData);
+    const response = await api.patch(`/api/v1/buyers/${id}`, buyerData);
     return response.data;
   },
 
@@ -171,7 +168,13 @@ export const apiService = {
   // Sellers
   async getSellers(page = 0, size = 10) {
     const response = await api.get(`/api/v1/sellers?offset=${page * size}&limit=${size}`);
-    return response.data;
+    // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
+    return {
+      data: response.data.data || response.data,
+      total: response.data.pagination?.total || 0,
+      offset: page * size,
+      limit: size
+    };
   },
 
   async createSeller(sellerData) {
@@ -185,7 +188,7 @@ export const apiService = {
   },
 
   async updateSeller(id, sellerData) {
-    const response = await api.put(`/api/v1/sellers/${id}`, sellerData);
+    const response = await api.patch(`/api/v1/sellers/${id}`, sellerData);
     return response.data;
   },
 
@@ -197,7 +200,13 @@ export const apiService = {
   // Products
   async getProducts(page = 0, size = 10) {
     const response = await api.get(`/api/v1/products?offset=${page * size}&limit=${size}`);
-    return response.data;
+    // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
+    return {
+      data: response.data.data || response.data,
+      total: response.data.pagination?.total || 0,
+      offset: page * size,
+      limit: size
+    };
   },
 
   async createProduct(productData) {
@@ -211,7 +220,7 @@ export const apiService = {
   },
 
   async updateProduct(id, productData) {
-    const response = await api.put(`/api/v1/products/${id}`, productData);
+    const response = await api.patch(`/api/v1/products/${id}`, productData);
     return response.data;
   },
 
@@ -223,7 +232,13 @@ export const apiService = {
   // Wood Types
   async getWoodTypes(page = 0, size = 20) {
     const response = await api.get(`/api/v1/wood-types?offset=${page * size}&limit=${size}`);
-    return response.data;
+    // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
+    return {
+      data: response.data.data || response.data,
+      total: response.data.pagination?.total || 0,
+      offset: page * size,
+      limit: size
+    };
   },
 
   async getWoodType(id) {
@@ -237,7 +252,7 @@ export const apiService = {
   },
 
   async updateWoodType(id, woodTypeData) {
-    const response = await api.put(`/api/v1/wood-types/${id}`, woodTypeData);
+    const response = await api.patch(`/api/v1/wood-types/${id}`, woodTypeData);
     return response.data;
   },
 
@@ -249,7 +264,13 @@ export const apiService = {
   // Wood Type Prices
   async getWoodTypePrices(page = 0, size = 20) {
     const response = await api.get(`/api/v1/wood-type-prices?offset=${page * size}&limit=${size}`);
-    return response.data;
+    // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
+    return {
+      data: response.data.data || response.data,
+      total: response.data.pagination?.total || 0,
+      offset: page * size,
+      limit: size
+    };
   },
 
   async getWoodTypePrice(id) {
@@ -263,7 +284,7 @@ export const apiService = {
   },
 
   async updateWoodTypePrice(id, priceData) {
-    const response = await api.put(`/api/v1/wood-type-prices/${id}`, priceData);
+    const response = await api.patch(`/api/v1/wood-type-prices/${id}`, priceData);
     return response.data;
   },
 
@@ -275,7 +296,13 @@ export const apiService = {
   // Wooden Boards
   async getWoodenBoards(page = 0, size = 20) {
     const response = await api.get(`/api/v1/wooden-boards?offset=${page * size}&limit=${size}`);
-    return response.data;
+    // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
+    return {
+      data: response.data.data || response.data,
+      total: response.data.pagination?.total || 0,
+      offset: page * size,
+      limit: size
+    };
   },
 
   async getWoodenBoard(id) {
@@ -289,7 +316,7 @@ export const apiService = {
   },
 
   async updateWoodenBoard(id, boardData) {
-    const response = await api.put(`/api/v1/wooden-boards/${id}`, boardData);
+    const response = await api.patch(`/api/v1/wooden-boards/${id}`, boardData);
     return response.data;
   },
 
@@ -301,7 +328,13 @@ export const apiService = {
   // Images
   async getImages(page = 0, size = 20) {
     const response = await api.get(`/api/v1/images?offset=${page * size}&limit=${size}`);
-    return response.data;
+    // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
+    return {
+      data: response.data.data || response.data,
+      total: response.data.pagination?.total || 0,
+      offset: page * size,
+      limit: size
+    };
   },
 
   async getImage(id) {
@@ -315,7 +348,7 @@ export const apiService = {
   },
 
   async updateImage(id, imageData) {
-    const response = await api.put(`/api/v1/images/${id}`, imageData);
+    const response = await api.patch(`/api/v1/images/${id}`, imageData);
     return response.data;
   },
 
@@ -327,7 +360,13 @@ export const apiService = {
   // Chat Threads
   async getChatThreads(page = 0, size = 10) {
     const response = await api.get(`/api/v1/chat-threads?offset=${page * size}&limit=${size}`);
-    return response.data;
+    // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
+    return {
+      data: response.data.data || response.data,
+      total: response.data.pagination?.total || 0,
+      offset: page * size,
+      limit: size
+    };
   },
 
   async getChatThread(id) {
@@ -341,7 +380,7 @@ export const apiService = {
   },
 
   async updateChatThread(id, threadData) {
-    const response = await api.put(`/api/v1/chat-threads/${id}`, threadData);
+    const response = await api.patch(`/api/v1/chat-threads/${id}`, threadData);
     return response.data;
   },
 
@@ -353,7 +392,13 @@ export const apiService = {
   // Chat Messages
   async getChatMessages(page = 0, size = 10) {
     const response = await api.get(`/api/v1/chat-messages?offset=${page * size}&limit=${size}`);
-    return response.data;
+    // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
+    return {
+      data: response.data.data || response.data,
+      total: response.data.pagination?.total || 0,
+      offset: page * size,
+      limit: size
+    };
   },
 
   async getChatMessage(id) {
@@ -367,7 +412,7 @@ export const apiService = {
   },
 
   async updateChatMessage(id, messageData) {
-    const response = await api.put(`/api/v1/chat-messages/${id}`, messageData);
+    const response = await api.patch(`/api/v1/chat-messages/${id}`, messageData);
     return response.data;
   },
 

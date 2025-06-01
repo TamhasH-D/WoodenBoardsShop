@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { apiService } from '../services/api';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import Button from '../components/ui/Button';
-import { cn } from '../utils/helpers';
 
 /**
  * Modern dashboard page with analytics and quick actions
@@ -15,12 +14,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    setPageTitle('Dashboard');
-    loadDashboardData();
-  }, [setPageTitle]);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -54,7 +48,12 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setBackendStatus, showError]);
+
+  useEffect(() => {
+    setPageTitle('Dashboard');
+    loadDashboardData();
+  }, [setPageTitle, loadDashboardData]);
 
   const handleRefresh = () => {
     showSuccess('Refreshing dashboard data...');

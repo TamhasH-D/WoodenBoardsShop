@@ -205,7 +205,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     const { theme } = state.userPreferences;
     document.documentElement.setAttribute('data-theme', theme);
-  }, [state.userPreferences.theme]);
+  }, [state.userPreferences]);
 
   // Context value
   const value = {

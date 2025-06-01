@@ -318,27 +318,31 @@ export function useForm(options = {}) {
 export function useApiForm(endpoint, options = {}) {
   const {
     method = 'POST',
-    successMessage = 'Form submitted successfully',
-    errorMessage = 'Form submission failed',
     onSuccess,
     onError,
-    invalidateQueries = [],
     ...formOptions
   } = options;
 
-  const mutation = useApiMutation(endpoint, {
-    method,
-    successMessage,
-    errorMessage,
-    invalidateQueries,
-    onSuccess,
-    onError,
-  });
+  const { mutate, loading, error, success } = useApiMutation();
+  const { apiClient } = require('../utils/api/client');
 
   const form = useForm({
     ...formOptions,
     onSubmit: async (data) => {
-      return await mutation.mutateAsync(data);
+      const apiFunction = async () => {
+        if (method === 'POST') {
+          return await apiClient.post(endpoint, data);
+        } else if (method === 'PUT') {
+          return await apiClient.put(endpoint, data);
+        } else if (method === 'PATCH') {
+          return await apiClient.patch(endpoint, data);
+        }
+        throw new Error(`Unsupported method: ${method}`);
+      };
+
+      const result = await mutate(apiFunction);
+      onSuccess?.(result);
+      return result;
     },
     onError: (error) => {
       // Handle validation errors from API
@@ -351,7 +355,7 @@ export function useApiForm(endpoint, options = {}) {
 
   return {
     ...form,
-    mutation,
-    isSubmitting: form.isSubmitting || mutation.isPending,
+    mutation: { loading, error, success },
+    isSubmitting: form.isSubmitting || loading,
   };
 }

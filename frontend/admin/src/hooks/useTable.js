@@ -74,7 +74,7 @@ export function useTable(endpoint, options = {}) {
     params: apiParams,
   });
 
-  const { data, pagination, isLoading, error, refetch } = query;
+  const { data, pagination, loading, error, refetch } = query;
 
   // Selection handlers
   const handleSelectRow = useCallback((rowId) => {
@@ -256,7 +256,7 @@ export function useTable(endpoint, options = {}) {
   return {
     // Data
     data,
-    isLoading,
+    loading,
     error,
     refetch,
 

@@ -49,6 +49,14 @@ const notificationReducer = (state, action) => {
 export const NotificationProvider = ({ children }) => {
   const [state, dispatch] = useReducer(notificationReducer, initialState);
 
+  // Remove notification
+  const removeNotification = useCallback((id) => {
+    dispatch({
+      type: NOTIFICATION_ACTIONS.REMOVE_NOTIFICATION,
+      payload: id
+    });
+  }, []);
+
   // Add notification
   const addNotification = useCallback((notification) => {
     const id = generateUUID();
@@ -77,15 +85,7 @@ export const NotificationProvider = ({ children }) => {
     }
 
     return id;
-  }, []);
-
-  // Remove notification
-  const removeNotification = useCallback((id) => {
-    dispatch({
-      type: NOTIFICATION_ACTIONS.REMOVE_NOTIFICATION,
-      payload: id
-    });
-  }, []);
+  }, [removeNotification]);
 
   // Clear all notifications
   const clearAllNotifications = useCallback(() => {
