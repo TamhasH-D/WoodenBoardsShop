@@ -116,10 +116,10 @@ The seller frontend communicates with the backend API at:
 
 - `GET /api/v1/health` - System health check
 - `GET /api/v1/sellers/{id}` - Get seller profile
-- `PUT /api/v1/sellers/{id}` - Update seller profile
+- `PATCH /api/v1/sellers/{id}` - Update seller profile
 - `GET /api/v1/products` - List seller products
 - `POST /api/v1/products` - Create new product
-- `PUT /api/v1/products/{id}` - Update product
+- `PATCH /api/v1/products/{id}` - Update product
 - `DELETE /api/v1/products/{id}` - Delete product
 - `GET /api/v1/wood-types` - List wood types
 - `GET /api/v1/chat-threads` - List customer chats

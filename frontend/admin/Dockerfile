@@ -7,11 +7,12 @@ WORKDIR /app
 ARG REACT_APP_API_URL=http://localhost:8000
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
 
-# Copy package files
+# Copy package files and PostCSS config
 COPY package*.json ./
+COPY postcss.config.js ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install all dependencies (including devDependencies needed for build)
+RUN npm ci
 
 # Copy source code
 COPY . .

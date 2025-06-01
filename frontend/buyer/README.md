@@ -125,7 +125,7 @@ The buyer frontend communicates with the backend API at:
 - `GET /api/v1/sellers/{id}` - Get seller details
 - `GET /api/v1/wood-types` - List wood types
 - `GET /api/v1/buyers/{id}` - Get buyer profile
-- `PUT /api/v1/buyers/{id}` - Update buyer profile
+- `PATCH /api/v1/buyers/{id}` - Update buyer profile
 - `POST /api/v1/buyers` - Create buyer account
 - `GET /api/v1/chat-threads` - List buyer chats
 - `POST /api/v1/chat-threads` - Create chat thread
