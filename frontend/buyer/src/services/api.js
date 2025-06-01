@@ -48,6 +48,10 @@ api.interceptors.response.use(
   }
 );
 
+// Simple cache for client-side filtering performance
+const cache = new Map();
+const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
+
 // API service functions for buyers
 export const apiService = {
   // Health check
@@ -63,7 +67,13 @@ export const apiService = {
   // Products browsing
   async getProducts(page = 0, size = 12) {
     const response = await api.get(`/api/v1/products?offset=${page * size}&limit=${size}`);
-    return response.data;
+    // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
+    return {
+      data: response.data.data || response.data,
+      total: response.data.pagination?.total || 0,
+      offset: page * size,
+      limit: size
+    };
   },
 
   async getProduct(productId) {
@@ -72,41 +82,166 @@ export const apiService = {
   },
 
   async searchProducts(query, page = 0, size = 12) {
-    const response = await api.get(`/api/v1/products?search=${encodeURIComponent(query)}&offset=${page * size}&limit=${size}`);
-    return response.data;
+    // Backend doesn't support search, so we'll get all products and filter client-side
+    const cacheKey = 'all_products';
+    const now = Date.now();
+
+    // Check cache first
+    let allProducts;
+    if (cache.has(cacheKey) && (now - cache.get(cacheKey).timestamp) < CACHE_DURATION) {
+      allProducts = cache.get(cacheKey).data;
+    } else {
+      const response = await this.getProducts(0, 1000); // Get more products for search
+      allProducts = response.data;
+      cache.set(cacheKey, { data: allProducts, timestamp: now });
+    }
+
+    const filteredData = allProducts.filter(product =>
+      product.title?.toLowerCase().includes(query.toLowerCase()) ||
+      product.descrioption?.toLowerCase().includes(query.toLowerCase())
+    );
+
+    // Implement client-side pagination
+    const startIndex = page * size;
+    const endIndex = startIndex + size;
+    const paginatedData = filteredData.slice(startIndex, endIndex);
+
+    return {
+      data: paginatedData,
+      total: filteredData.length,
+      offset: startIndex,
+      limit: size
+    };
   },
 
   // Wood types and prices (for buyers to view)
   async getWoodTypes(page = 0, size = 20) {
     const response = await api.get(`/api/v1/wood-types?offset=${page * size}&limit=${size}`);
-    return response.data;
+    // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
+    return {
+      data: response.data.data || response.data,
+      total: response.data.pagination?.total || 0,
+      offset: page * size,
+      limit: size
+    };
   },
 
   async getWoodTypePrices(page = 0, size = 20) {
     const response = await api.get(`/api/v1/wood-type-prices?offset=${page * size}&limit=${size}`);
-    return response.data;
+    // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
+    return {
+      data: response.data.data || response.data,
+      total: response.data.pagination?.total || 0,
+      offset: page * size,
+      limit: size
+    };
   },
 
-  // Buyer profile management
+  // Buyer profile management with automatic creation
   async getBuyerProfile(buyerId) {
-    const response = await api.get(`/api/v1/buyers/${buyerId}`);
-    return response.data;
+    try {
+      const response = await api.get(`/api/v1/buyers/${buyerId}`);
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 404 || error.response?.status === 422 || error.response?.status === 500) {
+        // Buyer doesn't exist, try to create it
+        console.warn(`Buyer ${buyerId} not found (${error.response?.status}), attempting to create...`);
+        try {
+          const newBuyer = await this.createBuyer({
+            id: buyerId,
+            keycloak_uuid: 'mock-keycloak-uuid-' + buyerId.substring(0, 8),
+            is_online: true
+          });
+          console.log('Buyer created successfully:', newBuyer);
+          return newBuyer;
+        } catch (createError) {
+          console.warn('Failed to create buyer, using mock data:', createError);
+          // Return mock data as fallback
+          return {
+            id: buyerId,
+            keycloak_uuid: 'mock-keycloak-uuid-' + buyerId.substring(0, 8),
+            is_online: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+        }
+      }
+      throw error;
+    }
   },
 
   async updateBuyerProfile(buyerId, buyerData) {
-    const response = await api.put(`/api/v1/buyers/${buyerId}`, buyerData);
-    return response.data;
+    try {
+      // Ensure buyer exists before updating
+      await this.ensureBuyerExists(buyerId);
+      const response = await api.patch(`/api/v1/buyers/${buyerId}`, buyerData);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to update buyer profile:', error);
+      throw error;
+    }
   },
 
   async createBuyer(buyerData) {
-    const response = await api.post('/api/v1/buyers', buyerData);
-    return response.data;
+    try {
+      const response = await api.post('/api/v1/buyers', buyerData);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to create buyer:', error);
+      throw error;
+    }
+  },
+
+  // Helper method to ensure buyer exists before making buyer-specific API calls
+  async ensureBuyerExists(buyerId) {
+    try {
+      await api.get(`/api/v1/buyers/${buyerId}`);
+    } catch (error) {
+      if (error.response?.status === 404 || error.response?.status === 422) {
+        console.log(`Buyer ${buyerId} doesn't exist, creating...`);
+        await this.createBuyer({
+          id: buyerId,
+          keycloak_uuid: 'mock-keycloak-uuid-' + buyerId.substring(0, 8),
+          is_online: true
+        });
+      }
+    }
   },
 
   // Chat functionality
   async getBuyerChats(buyerId, page = 0, size = 10) {
-    const response = await api.get(`/api/v1/chat-threads?buyer_id=${buyerId}&offset=${page * size}&limit=${size}`);
-    return response.data;
+    try {
+      // First ensure the buyer exists
+      await this.ensureBuyerExists(buyerId);
+
+      // Backend doesn't support buyer_id filtering, so we'll get all threads and filter client-side
+      const response = await api.get(`/api/v1/chat-threads?offset=0&limit=1000`);
+      const allThreads = response.data.data || response.data;
+
+      // Filter threads by buyer_id client-side
+      const buyerThreads = allThreads.filter(thread => thread.buyer_id === buyerId);
+
+      // Implement client-side pagination
+      const startIndex = page * size;
+      const endIndex = startIndex + size;
+      const paginatedData = buyerThreads.slice(startIndex, endIndex);
+
+      return {
+        data: paginatedData,
+        total: buyerThreads.length,
+        offset: startIndex,
+        limit: size
+      };
+    } catch (error) {
+      console.error('Failed to get buyer chats:', error);
+      // Return empty result on error
+      return {
+        data: [],
+        total: 0,
+        offset: page * size,
+        limit: size
+      };
+    }
   },
 
   async createChatThread(threadData) {
@@ -115,13 +250,42 @@ export const apiService = {
   },
 
   async getChatMessages(threadId, page = 0, size = 20) {
-    const response = await api.get(`/api/v1/chat-messages?thread_id=${threadId}&offset=${page * size}&limit=${size}`);
-    return response.data;
+    // Backend doesn't support thread_id filtering, so we'll get all messages and filter client-side
+    const response = await api.get(`/api/v1/chat-messages?offset=0&limit=1000`);
+    const allMessages = response.data.data || response.data;
+
+    // Filter messages by thread_id client-side
+    const threadMessages = allMessages.filter(message => message.thread_id === threadId);
+
+    // Sort by created_at (newest first)
+    threadMessages.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    // Implement client-side pagination
+    const startIndex = page * size;
+    const endIndex = startIndex + size;
+    const paginatedData = threadMessages.slice(startIndex, endIndex);
+
+    return {
+      data: paginatedData,
+      total: threadMessages.length,
+      offset: startIndex,
+      limit: size
+    };
   },
 
   async sendMessage(messageData) {
-    const response = await api.post('/api/v1/chat-messages', messageData);
-    return response.data;
+    try {
+      // Ensure buyer exists before creating message
+      if (messageData.buyer_id) {
+        await this.ensureBuyerExists(messageData.buyer_id);
+      }
+
+      const response = await api.post('/api/v1/chat-messages', messageData);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      throw error;
+    }
   },
 
   // Seller information
@@ -132,24 +296,18 @@ export const apiService = {
 
   async getSellers(page = 0, size = 10) {
     const response = await api.get(`/api/v1/sellers?offset=${page * size}&limit=${size}`);
-    return response.data;
+    // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
+    return {
+      data: response.data.data || response.data,
+      total: response.data.pagination?.total || 0,
+      offset: page * size,
+      limit: size
+    };
   },
-
-
 
   // Individual entity getters for consistency
   async getBuyer(id) {
     const response = await api.get(`/api/v1/buyers/${id}`);
-    return response.data;
-  },
-
-  async getSeller(id) {
-    const response = await api.get(`/api/v1/sellers/${id}`);
-    return response.data;
-  },
-
-  async getProduct(id) {
-    const response = await api.get(`/api/v1/products/${id}`);
     return response.data;
   },
 
@@ -164,29 +322,23 @@ export const apiService = {
   },
 
   // Wooden board analysis (Prosto Board integration)
-  async analyzeWoodenBoard(imageData) {
+  async analyzeWoodenBoard(imageFile, boardHeight = 0.0, boardLength = 0.0) {
     try {
-      // This would integrate with the Prosto Board detection service
-      // For now, we'll return a mock response
-      return {
-        success: true,
-        volume: Math.random() * 10 + 1, // Mock volume calculation
-        confidence: 0.85,
-        message: 'Board analysis completed'
-      };
+      const formData = new FormData();
+      formData.append('image', imageFile);
+      formData.append('board_height', boardHeight.toString());
+      formData.append('board_length', boardLength.toString());
+
+      const response = await api.post('/api/v1/wooden-boards/calculate-volume', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      return response.data;
     } catch (error) {
       console.error('Failed to analyze wooden board:', error);
       throw new Error('Board analysis failed');
-    }
-  },
-
-  // Health check for buyer service
-  async healthCheck() {
-    try {
-      const response = await api.get('/api/v1/health');
-      return response.data;
-    } catch (error) {
-      throw new Error('Backend health check failed');
     }
   },
 };

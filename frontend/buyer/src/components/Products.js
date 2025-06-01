@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { useApi } from '../hooks/useApi';
+import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
+
+// Mock buyer ID - in real app this would come from authentication
+const MOCK_BUYER_ID = '123e4567-e89b-12d3-a456-426614174001';
 
 function Products() {
   const [page, setPage] = useState(0);
@@ -15,6 +18,7 @@ function Products() {
   );
 
   const { data: woodTypes } = useApi(() => apiService.getWoodTypes());
+  const { mutate, loading: contacting } = useApiMutation();
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -30,19 +34,44 @@ function Products() {
     refetch();
   };
 
+  const handleContactSeller = async (sellerId) => {
+    try {
+      // Create a new chat thread
+      const threadId = crypto.randomUUID();
+      await mutate(() => apiService.createChatThread({
+        id: threadId,
+        buyer_id: MOCK_BUYER_ID,
+        seller_id: sellerId
+      }));
+
+      // Redirect to chats page
+      window.location.href = '/chats';
+    } catch (err) {
+      console.error('Failed to contact seller:', err);
+      alert('Failed to contact seller. Please try again.');
+    }
+  };
+
   return (
     <div>
+      <div className="page-header">
+        <h1 className="page-title">Browse Wood Products</h1>
+        <p className="page-description">Find quality wood products from trusted sellers</p>
+      </div>
+
       <div className="card">
-        <h2>Browse Wood Products</h2>
-        
-        {/* Search Bar */}
-        <form onSubmit={handleSearch} className="search-bar">
+        <div className="card-header">
+          <h2 className="card-title">Search Products</h2>
+        </div>
+
+        <form onSubmit={handleSearch} className="flex gap-4 mb-4">
           <input
             type="text"
-            placeholder="Search products..."
+            placeholder="Search products by name, type, or description..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="form-input search-input"
+            className="form-input"
+            style={{ flex: 1 }}
           />
           <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? 'Searching...' : 'Search'}
@@ -58,7 +87,7 @@ function Products() {
         </form>
 
         {isSearching && (
-          <div style={{ marginBottom: '1rem', padding: '0.5rem', backgroundColor: '#e6fffa', borderRadius: '0.375rem' }}>
+          <div className="success mb-4">
             Searching for: <strong>"{searchQuery}"</strong>
           </div>
         )}
@@ -70,7 +99,11 @@ function Products() {
         </div>
       )}
 
-      {loading && <div className="loading">Loading products...</div>}
+      {loading && (
+        <div className="loading">
+          Loading products...
+        </div>
+      )}
 
       {data && (
         <>
@@ -81,32 +114,62 @@ function Products() {
             </div>
 
             {data.data && data.data.length > 0 ? (
-              <div className="grid grid-3">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-4)' }}>
                 {data.data.map((product) => (
                   <div key={product.id} className="product-card">
-                    <div style={{ marginBottom: '1rem' }}>
+                    <h4 className="product-title">
+                      {product.title || 'Untitled Product'}
+                    </h4>
+
+                    {product.descrioption && (
+                      <p className="product-description">
+                        {product.descrioption}
+                      </p>
+                    )}
+
+                    <div className="flex justify-between items-center mb-4">
                       <div className="product-price">${product.price}</div>
-                      <div className="product-volume">{product.volume} m³</div>
-                      <div style={{ fontSize: '0.875rem', color: '#718096', marginTop: '0.25rem' }}>
-                        Price per m³: ${(product.price / product.volume).toFixed(2)}
-                      </div>
+                      <div style={{ color: 'var(--color-text-light)' }}>{product.volume} m³</div>
                     </div>
 
-                    <div style={{ marginBottom: '1rem' }}>
-                      <div style={{ fontSize: '0.875rem', color: '#4a5568', marginBottom: '0.25rem' }}>
-                        <strong>Wood Type:</strong> {product.wood_type_id?.substring(0, 8)}...
-                      </div>
-                      <div style={{ fontSize: '0.875rem', color: '#4a5568', marginBottom: '0.25rem' }}>
-                        <strong>Seller:</strong> {product.seller_id?.substring(0, 8)}...
-                      </div>
-                      <div style={{ fontSize: '0.875rem', color: '#4a5568' }}>
-                        <strong>Listed:</strong> {new Date(product.created_at).toLocaleDateString()}
-                      </div>
+                    <div className="text-center mb-4" style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-sm)' }}>
+                      ${(product.price / product.volume).toFixed(2)} per m³
                     </div>
 
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button className="btn btn-primary" style={{ flex: 1 }}>
-                        Contact Seller
+                    <div className="mb-4">
+                      <div style={{
+                        display: 'inline-block',
+                        padding: 'var(--space-1) var(--space-2)',
+                        borderRadius: 'var(--border-radius)',
+                        fontSize: 'var(--font-size-xs)',
+                        fontWeight: '500',
+                        backgroundColor: product.delivery_possible ? '#dcfce7' : '#fee2e2',
+                        color: product.delivery_possible ? 'var(--color-success)' : 'var(--color-error)',
+                        marginBottom: 'var(--space-2)'
+                      }}>
+                        {product.delivery_possible ? 'Delivery Available' : 'Pickup Only'}
+                      </div>
+                      {product.pickup_location && (
+                        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-light)' }}>
+                          Location: {product.pickup_location}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mb-4" style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-light)' }}>
+                      <div>Wood Type: {product.wood_type_id?.substring(0, 8)}...</div>
+                      <div>Seller: {product.seller_id?.substring(0, 8)}...</div>
+                      <div>Listed: {new Date(product.created_at).toLocaleDateString()}</div>
+                    </div>
+
+                    <div className="flex gap-4">
+                      <button
+                        className="btn btn-primary"
+                        style={{ flex: 1 }}
+                        onClick={() => handleContactSeller(product.seller_id)}
+                        disabled={contacting}
+                      >
+                        {contacting ? 'Contacting...' : 'Contact Seller'}
                       </button>
                       <button className="btn btn-secondary">
                         Details
@@ -126,8 +189,7 @@ function Products() {
               </div>
             )}
 
-            {/* Pagination */}
-            <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="flex justify-between items-center mt-6">
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0 || loading}
@@ -148,32 +210,26 @@ function Products() {
         </>
       )}
 
-      {/* Wood Types Info */}
       {woodTypes?.data && (
         <div className="card">
-          <h3>Available Wood Types</h3>
-          <div className="grid grid-3">
+          <div className="card-header">
+            <h3 className="card-title">Available Wood Types</h3>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
             {woodTypes.data.slice(0, 6).map((type) => (
-              <div key={type.id} style={{ 
-                padding: '1rem', 
-                border: '1px solid #e2e8f0', 
-                borderRadius: '0.375rem',
-                textAlign: 'center'
-              }}>
-                <div style={{ fontWeight: 'bold' }}>
+              <div key={type.id} className="card" style={{ margin: 0, textAlign: 'center' }}>
+                <div style={{ fontWeight: '600' }}>
                   {type.name || `Type ${type.id.substring(0, 8)}`}
                 </div>
-                <div style={{ fontSize: '0.875rem', color: '#718096' }}>
+                <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-light)' }}>
                   ID: {type.id.substring(0, 8)}...
                 </div>
               </div>
             ))}
           </div>
           {woodTypes.data.length > 6 && (
-            <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-              <span style={{ color: '#718096' }}>
-                And {woodTypes.data.length - 6} more wood types available
-              </span>
+            <div className="text-center mt-4" style={{ color: 'var(--color-text-light)' }}>
+              And {woodTypes.data.length - 6} more wood types available
             </div>
           )}
         </div>

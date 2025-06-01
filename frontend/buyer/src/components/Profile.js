@@ -18,7 +18,7 @@ function Profile() {
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     try {
-      await mutate(apiService.updateBuyerProfile, MOCK_BUYER_ID, profileData);
+      await mutate(() => apiService.updateBuyerProfile(MOCK_BUYER_ID, profileData));
       setIsEditing(false);
       refetch();
     } catch (err) {
