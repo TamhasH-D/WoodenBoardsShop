@@ -285,11 +285,7 @@ export const SELLER_TEXTS = {
   PROCESSING: 'Обработка...',
   UPLOADING: 'Загрузка...',
   DOWNLOADING: 'Скачивание...',
-  SYNCHRONIZING: 'Синхронизация...',
-
-  // Additional UI Elements
-  DELIVERY_AVAILABLE: 'Доставка доступна',
-  PICKUP_ONLY: 'Только самовывоз'
+  SYNCHRONIZING: 'Синхронизация...'
 };
 
 // Date formatting for Russian locale

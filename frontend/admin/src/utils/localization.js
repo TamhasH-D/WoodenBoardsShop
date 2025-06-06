@@ -112,10 +112,12 @@ export const ADMIN_TEXTS = {
   // Pagination
   PAGE: 'Страница',
   OF: 'из',
-  ITEMS_PER_PAGE: 'Элементов на странице',
+  ITEMS_PER_PAGE: 'на странице',
   SHOWING: 'Показано',
   TO: 'до',
   RESULTS: 'результатов',
+  PREVIOUS_PAGE: 'Предыдущая',
+  NEXT_PAGE: 'Следующая',
 
   // Search and Filter
   SEARCH_PLACEHOLDER: 'Введите для поиска...',
