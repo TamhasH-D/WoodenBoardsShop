@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -17,7 +17,7 @@ class WoodTypePrice(Base):
     __tablename__ = "wood_type_price"
 
     id: Mapped[UUID] = mapped_column(
-        sa.UUID(as_uuid=True), primary_key=True, unique=True, index=True
+        sa.UUID(as_uuid=True), primary_key=True, unique=True, index=True, default=uuid4
     )
     price_per_m3: Mapped[float] = mapped_column(sa.Float, index=True)
     created_at: Mapped[datetime] = mapped_column(

@@ -25,7 +25,6 @@ class ProductDTO(BaseOrmModel):
 class ProductInputDTO(BaseModel):
     """Product input DTO."""
 
-    id: UUID
     volume: float
     price: float
     title: str

@@ -12,6 +12,7 @@ class SellerDTO(BaseOrmModel):
     id: UUID
     keycloak_uuid: UUID
     is_online: bool
+    last_activity: datetime
     created_at: datetime
     updated_at: datetime
 
@@ -19,7 +20,6 @@ class SellerDTO(BaseOrmModel):
 class SellerInputDTO(BaseModel):
     """Seller input DTO."""
 
-    id: UUID
     keycloak_uuid: UUID
     is_online: bool = False
 
@@ -28,3 +28,4 @@ class SellerUpdateDTO(BaseModel):
     """Seller update DTO."""
 
     is_online: bool | None = None
+    last_activity: datetime | None = None

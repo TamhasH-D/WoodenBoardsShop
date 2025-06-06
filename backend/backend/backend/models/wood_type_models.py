@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -17,7 +17,7 @@ class WoodType(Base):
     __tablename__ = "wood_type"
 
     id: Mapped[UUID] = mapped_column(
-        sa.UUID(as_uuid=True), primary_key=True, unique=True, index=True
+        sa.UUID(as_uuid=True), primary_key=True, unique=True, index=True, default=uuid4
     )
     neme: Mapped[str] = mapped_column(sa.String, unique=True, index=True)
     description: Mapped[str | None] = mapped_column(sa.String)

@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -16,7 +16,7 @@ class ChatMessage(Base):
     __tablename__ = "chat_message"
 
     id: Mapped[UUID] = mapped_column(
-        sa.UUID(as_uuid=True), primary_key=True, unique=True, index=True
+        sa.UUID(as_uuid=True), primary_key=True, unique=True, index=True, default=uuid4
     )
     message: Mapped[str] = mapped_column(sa.String)
     is_read_by_buyer: Mapped[bool] = mapped_column(sa.Boolean, default=False)

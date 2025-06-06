@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from loguru import logger
 
 from backend.db import db_lifetime
-from backend.middleware import add_middleware
+from backend.middleware_setup import add_middleware
 from backend.routes import base_router
 from backend.services.redis import redis_lifetime
 from backend.settings import settings

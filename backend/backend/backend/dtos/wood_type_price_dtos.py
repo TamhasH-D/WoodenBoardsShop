@@ -18,7 +18,6 @@ class WoodTypePriceDTO(BaseOrmModel):
 class WoodTypePriceInputDTO(BaseModel):
     """WoodTypePrice input DTO."""
 
-    id: UUID
     price_per_m3: float
     wood_type_id: UUID
 
