@@ -31,25 +31,15 @@ async def create_product(
     return DataResponse(data=ProductDTO.model_validate(created_obj))
 
 
-@router.patch("/{product_id}")
+@router.patch("/{product_id}", status_code=200)
 async def update_product(
     product_id: UUID,
-    update_dto: ProductUpdateDTO,
+    input_dto: ProductUpdateDTO,
     daos: GetDAOs,
-) -> EmptyResponse:
-    """Update Product."""
-    await daos.product.update(product_id, update_dto)
-    return EmptyResponse()
-
-
-@router.delete("/{product_id}")
-async def delete_product(
-    product_id: UUID,
-    daos: GetDAOs,
-) -> EmptyResponse:
-    """Delete a Product by id."""
-    await daos.product.delete(id=product_id)
-    return EmptyResponse()
+) -> DataResponse[ProductDTO]:
+    """Update a Product."""
+    updated_obj = await daos.product.update(product_id, input_dto)
+    return DataResponse(data=ProductDTO.model_validate(updated_obj))
 
 
 @router.get("/")
@@ -74,26 +64,15 @@ async def get_product(
     return DataResponse(data=ProductDTO.model_validate(product))
 
 
-@router.patch("/{product_id}")
-async def update_product(
-    product_id: UUID,
-    input_dto: ProductUpdateDTO,
-    daos: GetDAOs,
-) -> DataResponse[ProductDTO]:
-    """Update a Product."""
-    updated_obj = await daos.product.update(product_id, input_dto)
-    return DataResponse(data=ProductDTO.model_validate(updated_obj))
-
-
 @router.delete("/{product_id}", status_code=204)
 async def delete_product(
     product_id: UUID,
     daos: GetDAOs,
     session: GetDBSession,
-) -> EmptyResponse:
+) -> None:
     """Delete a Product with cleanup of associated files."""
     await product_service.delete_product_with_cleanup(session, daos, product_id)
-    return EmptyResponse()
+    # HTTP 204 No Content must have empty body - no return statement needed
 
 
 # New endpoints for comprehensive product management

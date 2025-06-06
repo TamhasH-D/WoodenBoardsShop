@@ -12,11 +12,11 @@ async def test_delete_image(
     client: AsyncClient,
     daos: AllDAOs,
 ) -> None:
-    """Test delete Image: 200."""
+    """Test delete Image: 204."""
     image = await factories.ImageFactory.create()
 
     response = await client.delete(URI.format(image_id=image.id))
-    assert response.status_code == 200
+    assert response.status_code == 204
 
     db_image = await daos.image.filter_first(id=image.id)
     assert db_image is None

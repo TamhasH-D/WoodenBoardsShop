@@ -24,7 +24,7 @@ async def create_image(
     return DataResponse(data=ImageDTO.model_validate(created_obj))
 
 
-@router.patch("/{image_id}")
+@router.patch("/{image_id}", status_code=200)
 async def update_image(
     image_id: UUID,
     update_dto: ImageUpdateDTO,
@@ -35,14 +35,14 @@ async def update_image(
     return EmptyResponse()
 
 
-@router.delete("/{image_id}")
+@router.delete("/{image_id}", status_code=204)
 async def delete_image(
     image_id: UUID,
     daos: GetDAOs,
-) -> EmptyResponse:
+) -> None:
     """Delete a Image by id."""
     await daos.image.delete(id=image_id)
-    return EmptyResponse()
+    # HTTP 204 No Content must have empty body - no return statement needed
 
 
 @router.get("/")

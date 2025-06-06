@@ -12,11 +12,11 @@ async def test_delete_buyer(
     client: AsyncClient,
     daos: AllDAOs,
 ) -> None:
-    """Test delete Buyer: 200."""
+    """Test delete Buyer: 204."""
     buyer = await factories.BuyerFactory.create()
 
     response = await client.delete(URI.format(buyer_id=buyer.id))
-    assert response.status_code == 200
+    assert response.status_code == 204
 
     db_buyer = await daos.buyer.filter_first(id=buyer.id)
     assert db_buyer is None

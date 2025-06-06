@@ -12,11 +12,11 @@ async def test_delete_product(
     client: AsyncClient,
     daos: AllDAOs,
 ) -> None:
-    """Test delete Product: 200."""
+    """Test delete Product: 204."""
     product = await factories.ProductFactory.create()
 
     response = await client.delete(URI.format(product_id=product.id))
-    assert response.status_code == 200
+    assert response.status_code == 204
 
     db_product = await daos.product.filter_first(id=product.id)
     assert db_product is None

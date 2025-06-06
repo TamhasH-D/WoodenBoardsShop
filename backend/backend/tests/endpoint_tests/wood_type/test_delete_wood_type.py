@@ -12,11 +12,11 @@ async def test_delete_wood_type(
     client: AsyncClient,
     daos: AllDAOs,
 ) -> None:
-    """Test delete WoodType: 200."""
+    """Test delete WoodType: 204."""
     wood_type = await factories.WoodTypeFactory.create()
 
     response = await client.delete(URI.format(wood_type_id=wood_type.id))
-    assert response.status_code == 200
+    assert response.status_code == 204
 
     db_wood_type = await daos.wood_type.filter_first(id=wood_type.id)
     assert db_wood_type is None

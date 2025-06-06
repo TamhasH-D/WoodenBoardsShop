@@ -24,7 +24,7 @@ async def create_wood_type(
     return DataResponse(data=WoodTypeDTO.model_validate(created_obj))
 
 
-@router.patch("/{wood_type_id}")
+@router.patch("/{wood_type_id}", status_code=200)
 async def update_wood_type(
     wood_type_id: UUID,
     update_dto: WoodTypeUpdateDTO,
@@ -35,14 +35,14 @@ async def update_wood_type(
     return EmptyResponse()
 
 
-@router.delete("/{wood_type_id}")
+@router.delete("/{wood_type_id}", status_code=204)
 async def delete_wood_type(
     wood_type_id: UUID,
     daos: GetDAOs,
-) -> EmptyResponse:
+) -> None:
     """Delete a WoodType by id."""
     await daos.wood_type.delete(id=wood_type_id)
-    return EmptyResponse()
+    # HTTP 204 No Content must have empty body - no return statement needed
 
 
 @router.get("/")
