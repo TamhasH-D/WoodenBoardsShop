@@ -38,7 +38,7 @@ const DataTable = ({
   exportable = false,
   onExport,
   className = '',
-  emptyMessage = 'No data available',
+  emptyMessage = ADMIN_TEXTS.NO_DATA_AVAILABLE,
   rowKey = 'id',
   onRowClick,
   compact = false,
@@ -164,7 +164,7 @@ const DataTable = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <LoadingSpinner size="large" message="Loading data..." />
+        <LoadingSpinner size="large" message={ADMIN_TEXTS.LOADING} />
       </div>
     );
   }
@@ -244,7 +244,7 @@ const DataTable = ({
               onClick={onExport}
               icon="📥"
             >
-              Export
+              {ADMIN_TEXTS.EXPORT}
             </Button>
           )}
         </div>
@@ -293,7 +293,7 @@ const DataTable = ({
                     <div className="data-table__filter">
                       <Input
                         size="small"
-                        placeholder={`Filter ${column.title || column.key}...`}
+                        placeholder={`${ADMIN_TEXTS.FILTER_BY} ${column.title || column.key}...`}
                         value={columnFilters[column.key] || ''}
                         onChange={(e) => handleColumnFilter(column.key, e.target.value)}
                         onClick={(e) => e.stopPropagation()}
@@ -343,7 +343,7 @@ const DataTable = ({
       {totalCount > pageSize && (
         <div className="data-table__footer">
           <div className="data-table__pagination-info">
-            Showing {startIndex} to {endIndex} of {totalCount} entries
+            {ADMIN_TEXTS.SHOWING} {startIndex} {ADMIN_TEXTS.TO} {endIndex} {ADMIN_TEXTS.OF} {totalCount} {ADMIN_TEXTS.RESULTS}
           </div>
           
           <div className="data-table__pagination">
@@ -353,11 +353,11 @@ const DataTable = ({
               disabled={currentPage === 0}
               onClick={() => onPageChange?.(currentPage - 1)}
             >
-              Previous
+              {ADMIN_TEXTS.PREVIOUS}
             </Button>
             
             <span className="data-table__page-info">
-              Page {currentPage + 1} of {totalPages}
+              {ADMIN_TEXTS.PAGE} {currentPage + 1} {ADMIN_TEXTS.OF} {totalPages}
             </span>
             
             <Button
@@ -366,7 +366,7 @@ const DataTable = ({
               disabled={currentPage >= totalPages - 1}
               onClick={() => onPageChange?.(currentPage + 1)}
             >
-              Next
+              {ADMIN_TEXTS.NEXT}
             </Button>
           </div>
           
@@ -378,7 +378,7 @@ const DataTable = ({
             >
               {PAGINATION.pageSizeOptions.map(size => (
                 <option key={size} value={size}>
-                  {size} per page
+                  {size} {ADMIN_TEXTS.ITEMS_PER_PAGE}
                 </option>
               ))}
             </select>

@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useApi } from '../hooks/useApi';
 import { apiService } from '../services/api';
 
 const HealthMonitoring = React.memo(() => {
+  // Create stable function reference to prevent infinite loops
+  const fetchHealthCheck = useCallback(() => apiService.healthCheck(), []);
+
   const { data: health, loading, error, refetch } = useApi(
-    () => apiService.healthCheck(),
+    fetchHealthCheck,
     []
   );
 

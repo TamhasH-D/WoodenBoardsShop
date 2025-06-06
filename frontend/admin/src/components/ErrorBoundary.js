@@ -1,5 +1,4 @@
 import React from 'react';
-import { ADMIN_TEXTS } from '../utils/localization';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {

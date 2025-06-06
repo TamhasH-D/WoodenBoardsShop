@@ -1,25 +1,26 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useApi } from '../hooks/useApi';
 import { apiService } from '../services/api';
-import { useProgressiveData } from '../hooks/usePaginatedData';
 import { ADMIN_TEXTS } from '../utils/localization';
 
 const Dashboard = React.memo(() => {
-  const { data: stats, loading: statsLoading, error: statsError, refetch: refetchStats, progress } = useProgressiveData(
-    async (_offset, _limit) => {
-      // Use progressive loading for system stats
-      const result = await apiService.getSystemStats();
-      return {
-        data: [result], // Wrap single result in array for progressive loader
-        total: 1,
-        pagination: { total: 1 }
-      };
-    },
+  // Create stable function references to prevent infinite loops
+  const fetchSystemStats = useCallback(async () => {
+    // Fetch system stats directly
+    const result = await apiService.getSystemStats();
+    return result;
+  }, []);
+
+  const fetchHealthCheck = useCallback(() => apiService.healthCheck(), []);
+
+  // Use regular API hook instead of progressive data to prevent excessive requests
+  const { data: stats, loading: statsLoading, error: statsError, refetch: refetchStats } = useApi(
+    fetchSystemStats,
     []
   );
 
   const { data: health, loading: healthLoading, error: healthError } = useApi(
-    () => apiService.healthCheck(),
+    fetchHealthCheck,
     []
   );
 
@@ -51,30 +52,14 @@ const Dashboard = React.memo(() => {
         )}
       </div>
 
-      {/* Loading Progress */}
-      {statsLoading && progress && progress.total > 0 && (
+      {/* Loading Indicator */}
+      {statsLoading && (
         <div className="card mb-6">
           <div className="card-header">
-            <h3 className="card-title">{ADMIN_TEXTS.LOADING} полного набора данных...</h3>
+            <h3 className="card-title">{ADMIN_TEXTS.LOADING} статистики системы...</h3>
           </div>
           <div style={{ padding: '1rem' }}>
-            <div style={{
-              width: '100%',
-              backgroundColor: 'var(--color-bg-light)',
-              borderRadius: '0.5rem',
-              overflow: 'hidden',
-              marginBottom: '0.5rem'
-            }}>
-              <div style={{
-                width: `${(progress.loaded / progress.total) * 100}%`,
-                height: '0.5rem',
-                backgroundColor: 'var(--color-primary)',
-                transition: 'width 0.3s ease'
-              }} />
-            </div>
-            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-light)', margin: 0 }}>
-              {ADMIN_TEXTS.LOADING} {progress.loaded} из {progress.total} страниц данных для точной статистики...
-            </p>
+            <div className="loading">{ADMIN_TEXTS.LOADING} данных...</div>
           </div>
         </div>
       )}
@@ -90,10 +75,10 @@ const Dashboard = React.memo(() => {
           ) : (
             <div>
               <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                {((stats?.[0]?.buyers?.total || 0) + (stats?.[0]?.sellers?.total || 0))}
+                {((stats?.buyers?.total || 0) + (stats?.sellers?.total || 0))}
               </p>
               <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
-                {stats?.[0]?.buyers?.total || 0} {ADMIN_TEXTS.BUYERS.toLowerCase()}, {stats?.[0]?.sellers?.total || 0} {ADMIN_TEXTS.SELLERS.toLowerCase()}
+                {stats?.buyers?.total || 0} {ADMIN_TEXTS.BUYERS.toLowerCase()}, {stats?.sellers?.total || 0} {ADMIN_TEXTS.SELLERS.toLowerCase()}
               </p>
             </div>
           )}
@@ -108,10 +93,10 @@ const Dashboard = React.memo(() => {
           ) : (
             <div>
               <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                {stats?.[0]?.products?.total || 0}
+                {stats?.products?.total || 0}
               </p>
               <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
-                Общий объем: {stats?.[0]?.products?.totalVolume?.toFixed(2) || 0} м³
+                Общий объем: {stats?.products?.totalVolume?.toFixed(2) || 0} м³
               </p>
             </div>
           )}
@@ -126,10 +111,10 @@ const Dashboard = React.memo(() => {
           ) : (
             <div>
               <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                {stats?.[0]?.woodTypes?.total || 0}
+                {stats?.woodTypes?.total || 0}
               </p>
               <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
-                {stats?.[0]?.prices?.total || 0} ценовых записей
+                {stats?.prices?.total || 0} ценовых записей
               </p>
             </div>
           )}
@@ -144,10 +129,10 @@ const Dashboard = React.memo(() => {
           ) : (
             <div>
               <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                {stats?.[0]?.communication?.threads || 0}
+                {stats?.communication?.threads || 0}
               </p>
               <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
-                {stats?.[0]?.communication?.messages || 0} всего сообщений
+                {stats?.communication?.messages || 0} всего сообщений
               </p>
             </div>
           )}
@@ -191,13 +176,13 @@ const Dashboard = React.memo(() => {
             <h3>Активность пользователей</h3>
             <ul style={{ listStyle: 'none', padding: 0 }}>
               <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                <strong>{ADMIN_TEXTS.BUYERS} онлайн:</strong> {stats?.[0]?.buyers?.online || 0}
+                <strong>{ADMIN_TEXTS.BUYERS} онлайн:</strong> {stats?.buyers?.online || 0}
               </li>
               <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                <strong>{ADMIN_TEXTS.SELLERS} онлайн:</strong> {stats?.[0]?.sellers?.online || 0}
+                <strong>{ADMIN_TEXTS.SELLERS} онлайн:</strong> {stats?.sellers?.online || 0}
               </li>
               <li style={{ padding: '0.5rem 0' }}>
-                <strong>Всего активных пользователей:</strong> {(stats?.[0]?.buyers?.online || 0) + (stats?.[0]?.sellers?.online || 0)}
+                <strong>Всего активных пользователей:</strong> {(stats?.buyers?.online || 0) + (stats?.sellers?.online || 0)}
               </li>
             </ul>
           </div>
@@ -206,13 +191,13 @@ const Dashboard = React.memo(() => {
             <h3>Метрики платформы</h3>
             <ul style={{ listStyle: 'none', padding: 0 }}>
               <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                <strong>Средняя цена:</strong> {stats?.[0]?.prices?.avgPrice?.toFixed(2) || 0} ₽/м³
+                <strong>Средняя цена:</strong> {stats?.prices?.avgPrice?.toFixed(2) || 0} ₽/м³
               </li>
               <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                <strong>Общая стоимость:</strong> {stats?.[0]?.products?.totalValue?.toFixed(2) || 0} ₽
+                <strong>Общая стоимость:</strong> {stats?.products?.totalValue?.toFixed(2) || 0} ₽
               </li>
               <li style={{ padding: '0.5rem 0' }}>
-                <strong>{ADMIN_TEXTS.WOODEN_BOARDS}:</strong> {stats?.[0]?.boards?.total || 0}
+                <strong>{ADMIN_TEXTS.WOODEN_BOARDS}:</strong> {stats?.boards?.total || 0}
               </li>
             </ul>
           </div>
