@@ -3,17 +3,14 @@ File management service for handling image uploads and storage.
 Provides secure file upload, validation, and storage management.
 """
 
-import os
 import uuid
-import shutil
 from pathlib import Path
-from typing import Optional, Tuple, List
 import mimetypes
 from PIL import Image as PILImage
 import aiofiles
 from fastapi import UploadFile, HTTPException
 
-from backend.core.config import settings
+from backend.settings import settings
 
 
 class FileService:
