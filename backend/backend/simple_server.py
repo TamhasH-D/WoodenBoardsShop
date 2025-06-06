@@ -6,6 +6,7 @@
 
 import json
 import uuid
+import re
 from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
@@ -14,6 +15,13 @@ import logging
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# UUID валидация
+UUID_PATTERN = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.IGNORECASE)
+
+def is_valid_uuid(uuid_string):
+    """Проверка валидности UUID"""
+    return UUID_PATTERN.match(uuid_string) is not None
 
 # Мок данные
 MOCK_DATA = {
@@ -112,8 +120,8 @@ class SimpleAPIHandler(BaseHTTPRequestHandler):
                 self.send_json_response(response)
                 return
         
-        # 404 для неизвестных путей
-        self.send_error(404, "Not Found")
+        # 404 для неизвестных путей с JSON ответом
+        self.send_error_response(404, f"Endpoint {self.path} not found")
     
     def do_POST(self):
         """Обработка POST запросов"""
@@ -146,8 +154,8 @@ class SimpleAPIHandler(BaseHTTPRequestHandler):
                 self.send_json_response(response, status=201)
                 return
         
-        # 404 для неизвестных путей
-        self.send_error(404, "Not Found")
+        # 404 для неизвестных путей с JSON ответом
+        self.send_error_response(404, f"Endpoint {self.path} not found")
     
     def do_PATCH(self):
         """Обработка PATCH запросов"""
@@ -165,9 +173,30 @@ class SimpleAPIHandler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         self.end_headers()
-        
+
         response_json = json.dumps(data, ensure_ascii=False, indent=2)
         self.wfile.write(response_json.encode('utf-8'))
+
+    def send_error_response(self, status_code, message):
+        """Отправка JSON ошибки с русской локализацией"""
+        # Русские сообщения об ошибках
+        russian_messages = {
+            400: "Неверный запрос. Проверьте данные.",
+            404: "Ресурс не найден.",
+            409: "Конфликт данных. Возможно, запись уже существует.",
+            422: "Ошибка валидации данных.",
+            500: "Внутренняя ошибка сервера."
+        }
+
+        localized_message = russian_messages.get(status_code, message)
+
+        error_response = {
+            "detail": localized_message,
+            "status_code": status_code,
+            "message": message  # Оригинальное сообщение для отладки
+        }
+
+        self.send_json_response(error_response, status_code)
     
     def do_OPTIONS(self):
         """Обработка OPTIONS запросов для CORS"""
@@ -200,4 +229,4 @@ def run_server(port=8000):
         httpd.shutdown()
 
 if __name__ == "__main__":
-    run_server()
+    run_server(8001)

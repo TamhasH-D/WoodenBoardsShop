@@ -21,5 +21,5 @@ def _add_activity_tracking_middleware(app: FastAPI) -> None:
 def add_middleware(app: FastAPI) -> None:
     """Add all middlewares."""
     _add_cors_middleware(app)
-    # Temporarily disable activity tracking middleware to fix startup issues
-    # _add_activity_tracking_middleware(app)
+    # Activity tracking middleware enabled with proper error handling
+    _add_activity_tracking_middleware(app)
