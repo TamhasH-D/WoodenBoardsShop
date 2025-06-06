@@ -1,12 +1,25 @@
 import axios from 'axios';
+import { fetchAllPages } from '../utils/paginationUtils';
 
 // Get API URL from environment variables or use default
 const API_BASE_URL = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+
+// Get Wooden Boards microservice URL from environment variables or use default
+const WOODEN_BOARDS_API_URL = (process.env.REACT_APP_WOODEN_BOARDS_API_URL || 'http://localhost:8001').replace(/\/+$/, '');
 
 // Create axios instance with default configuration
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Create separate axios instance for wooden-boards microservice
+const woodenBoardsApi = axios.create({
+  baseURL: WOODEN_BOARDS_API_URL,
+  timeout: 60000, // Longer timeout for image processing
   headers: {
     'Content-Type': 'application/json',
   },
@@ -44,6 +57,42 @@ api.interceptors.response.use(
       console.error('Network error - backend may be unavailable');
     }
     
+    return Promise.reject(error);
+  }
+);
+
+// Request interceptor for wooden-boards API
+woodenBoardsApi.interceptors.request.use(
+  (config) => {
+    console.log(`Wooden Boards API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    return config;
+  },
+  (error) => {
+    console.error('Wooden Boards API Request Error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for wooden-boards API
+woodenBoardsApi.interceptors.response.use(
+  (response) => {
+    console.log(`Wooden Boards API Response: ${response.status} ${response.config.url}`);
+    return response;
+  },
+  (error) => {
+    console.error('Wooden Boards API Response Error:', error.response?.status, error.response?.data);
+
+    // Handle common error cases for wooden-boards API
+    if (error.response?.status === 404) {
+      console.warn('Wooden boards endpoint not found');
+    } else if (error.response?.status >= 500) {
+      console.error('Wooden boards service error occurred');
+    } else if (error.code === 'ECONNABORTED') {
+      console.error('Wooden boards request timeout');
+    } else if (error.code === 'ERR_NETWORK') {
+      console.error('Network error - wooden boards service may be unavailable');
+    }
+
     return Promise.reject(error);
   }
 );
@@ -127,7 +176,7 @@ export const apiService = {
       if (cache.has(cacheKey) && (now - cache.get(cacheKey).timestamp) < CACHE_DURATION) {
         allProducts = cache.get(cacheKey).data;
       } else {
-        const response = await api.get(`/api/v1/products?offset=0&limit=1000`);
+        const response = await api.get(`/api/v1/products?offset=0&limit=20`);
         allProducts = response.data.data || response.data;
         cache.set(cacheKey, { data: allProducts, timestamp: now });
       }
@@ -181,7 +230,19 @@ export const apiService = {
         await this.ensureSellerExists(productData.seller_id);
       }
 
-      const response = await api.post('/api/v1/products', productData);
+      // Handle backend typo: 'description' -> 'descrioption'
+      const payload = {
+        volume: parseFloat(productData.volume),
+        price: parseFloat(productData.price),
+        title: productData.title,
+        descrioption: productData.description || productData.descrioption || null, // Handle backend typo
+        delivery_possible: productData.delivery_possible || false,
+        pickup_location: productData.pickup_location || null,
+        seller_id: productData.seller_id,
+        wood_type_id: productData.wood_type_id
+      };
+
+      const response = await api.post('/api/v1/products', payload);
 
       // Clear products cache to force refresh
       cache.delete('all_products');
@@ -193,26 +254,155 @@ export const apiService = {
     }
   },
 
+  // Create product with image analysis in atomic transaction
+  async createProductWithImage(productData, imageFile, boardHeight, boardLength) {
+    try {
+      // Ensure seller exists before creating product
+      if (productData.seller_id) {
+        await this.ensureSellerExists(productData.seller_id);
+      }
+
+      const formData = new FormData();
+
+      // Add image file
+      formData.append('image', imageFile);
+
+      // Add product data
+      formData.append('title', productData.title);
+      formData.append('description', productData.description || '');
+      formData.append('price', parseFloat(productData.price));
+      formData.append('delivery_possible', productData.delivery_possible || false);
+      formData.append('pickup_location', productData.pickup_location || '');
+      formData.append('seller_id', productData.seller_id);
+      formData.append('wood_type_id', productData.wood_type_id);
+
+      // Add board dimensions
+      formData.append('board_height', boardHeight);
+      formData.append('board_length', boardLength);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Creating product with image analysis...');
+        console.log(`Product: ${productData.title}`);
+        console.log(`Image: ${imageFile.name}, size: ${imageFile.size} bytes`);
+        console.log(`Board dimensions: ${boardHeight}m x ${boardLength}m`);
+      }
+
+      const response = await api.post('/api/v1/products/with-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 120000, // 2 minutes timeout for complete workflow
+      });
+
+      // Clear products cache to force refresh
+      cache.delete('all_products');
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Product created successfully with image analysis:', response.data);
+      }
+      return response.data;
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to create product with image:', error);
+      }
+
+      // Provide detailed error information
+      let errorMessage = 'Failed to create product with image analysis';
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      throw new Error(errorMessage);
+    }
+  },
+
   async updateProduct(productId, productData) {
-    const response = await api.patch(`/api/v1/products/${productId}`, productData);
-    return response.data;
+    try {
+      // Handle backend typo: 'description' -> 'descrioption'
+      const payload = {
+        ...productData,
+        descrioption: productData.description || productData.descrioption || null
+      };
+
+      // Remove the frontend 'description' field to avoid confusion
+      if (payload.description !== undefined) {
+        delete payload.description;
+      }
+
+      const response = await api.patch(`/api/v1/products/${productId}`, payload);
+
+      // Clear products cache to force refresh
+      cache.delete('all_products');
+
+      return response.data;
+    } catch (error) {
+      console.error('Failed to update product:', error);
+      throw error;
+    }
   },
 
   async deleteProduct(productId) {
-    const response = await api.delete(`/api/v1/products/${productId}`);
-    return response.data;
+    try {
+      const response = await api.delete(`/api/v1/products/${productId}`);
+
+      // Clear products cache to force refresh
+      cache.delete('all_products');
+
+      return response.data;
+    } catch (error) {
+      console.error('Failed to delete product:', error);
+      throw error;
+    }
   },
 
   // Wood types management
   async getWoodTypes(page = 0, size = 20) {
-    const response = await api.get(`/api/v1/wood-types?offset=${page * size}&limit=${size}`);
+    // Ensure size doesn't exceed backend limit of 20
+    const actualSize = Math.min(size, 20);
+    const response = await api.get(`/api/v1/wood-types?offset=${page * actualSize}&limit=${actualSize}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
       total: response.data.pagination?.total || 0,
-      offset: page * size,
-      limit: size
+      offset: page * actualSize,
+      limit: actualSize
     };
+  },
+
+  async getAllWoodTypes() {
+    // Fetch all wood types by making multiple requests if needed
+    try {
+      const firstPage = await this.getWoodTypes(0, 20);
+      const total = firstPage.total;
+      let allWoodTypes = [...firstPage.data];
+
+      // If there are more wood types, fetch them
+      if (total > 20) {
+        const remainingPages = Math.ceil((total - 20) / 20);
+        const promises = [];
+
+        for (let page = 1; page <= remainingPages; page++) {
+          promises.push(this.getWoodTypes(page, 20));
+        }
+
+        const additionalPages = await Promise.all(promises);
+        additionalPages.forEach(pageData => {
+          allWoodTypes = allWoodTypes.concat(pageData.data);
+        });
+      }
+
+      return {
+        data: allWoodTypes,
+        total: total,
+        offset: 0,
+        limit: allWoodTypes.length
+      };
+    } catch (error) {
+      console.error('Failed to fetch all wood types:', error);
+      throw error;
+    }
   },
 
   async getWoodType(woodTypeId) {
@@ -237,14 +427,50 @@ export const apiService = {
 
   // Wood type prices management
   async getWoodTypePrices(page = 0, size = 20) {
-    const response = await api.get(`/api/v1/wood-type-prices?offset=${page * size}&limit=${size}`);
+    // Ensure size doesn't exceed backend limit of 20
+    const actualSize = Math.min(size, 20);
+    const response = await api.get(`/api/v1/wood-type-prices?offset=${page * actualSize}&limit=${actualSize}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
       total: response.data.pagination?.total || 0,
-      offset: page * size,
-      limit: size
+      offset: page * actualSize,
+      limit: actualSize
     };
+  },
+
+  async getAllWoodTypePrices() {
+    // Fetch all wood type prices by making multiple requests if needed
+    try {
+      const firstPage = await this.getWoodTypePrices(0, 20);
+      const total = firstPage.total;
+      let allPrices = [...firstPage.data];
+
+      // If there are more prices, fetch them
+      if (total > 20) {
+        const remainingPages = Math.ceil((total - 20) / 20);
+        const promises = [];
+
+        for (let page = 1; page <= remainingPages; page++) {
+          promises.push(this.getWoodTypePrices(page, 20));
+        }
+
+        const additionalPages = await Promise.all(promises);
+        additionalPages.forEach(pageData => {
+          allPrices = allPrices.concat(pageData.data);
+        });
+      }
+
+      return {
+        data: allPrices,
+        total: total,
+        offset: 0,
+        limit: allPrices.length
+      };
+    } catch (error) {
+      console.error('Failed to fetch all wood type prices:', error);
+      throw error;
+    }
   },
 
   async getWoodTypePrice(priceId) {
@@ -274,7 +500,7 @@ export const apiService = {
       await this.ensureSellerExists(sellerId);
 
       // Backend doesn't support seller_id filtering, so we'll get all threads and filter client-side
-      const response = await api.get(`/api/v1/chat-threads?offset=0&limit=1000`);
+      const response = await api.get(`/api/v1/chat-threads?offset=0&limit=20`);
       const allThreads = response.data.data || response.data;
 
       // Filter threads by seller_id client-side
@@ -306,7 +532,7 @@ export const apiService = {
   async getChatMessages(threadId, page = 0, size = 20) {
     try {
       // Backend doesn't support thread_id filtering, so we'll get all messages and filter client-side
-      const response = await api.get(`/api/v1/chat-messages?offset=0&limit=1000`);
+      const response = await api.get(`/api/v1/chat-messages?offset=0&limit=20`);
       const allMessages = response.data.data || response.data;
 
       // Filter messages by thread_id client-side
@@ -358,15 +584,87 @@ export const apiService = {
     return response.data;
   },
 
-  // Analytics
+  // Image processing for volume calculation
+  async analyzeBoardImage(file, height, length) {
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      // Use the main backend endpoint which now uses the unified service architecture
+      const url = `/api/v1/wooden_boards_volume_seg/?height=${height}&length=${length}`;
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Sending image analysis request to main backend: ${API_BASE_URL}${url}`);
+        console.log(`Image file: ${file.name}, size: ${file.size} bytes`);
+        console.log(`Board dimensions: height=${height}m, length=${length}m`);
+      }
+
+      const response = await api.post(url, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 60000, // Increase timeout for image processing
+      });
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Image analysis successful:', response.data);
+      }
+      return response;
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Image processing failed:', error);
+      }
+
+      // Provide more detailed error information
+      let errorMessage = 'Failed to process image';
+      if (error.code === 'ERR_NETWORK') {
+        errorMessage = `Cannot connect to backend service at ${API_BASE_URL}. Please ensure the service is running.`;
+      } else if (error.response?.status === 404) {
+        errorMessage = `Image analysis endpoint not found. Check if the service is properly configured.`;
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      throw new Error(errorMessage);
+    }
+  },
+
+  // Get all seller products (handles pagination automatically)
+  async getAllSellerProducts(sellerId, options = {}) {
+    const fetchFunction = async (offset, limit) => {
+      return await this.getSellerProducts(sellerId, Math.floor(offset / limit), limit);
+    };
+
+    return await fetchAllPages(fetchFunction, {
+      cacheKey: `all_seller_products_${sellerId}`,
+      debug: process.env.NODE_ENV === 'development',
+      ...options
+    });
+  },
+
+  // Get all seller chats (handles pagination automatically)
+  async getAllSellerChats(sellerId, options = {}) {
+    const fetchFunction = async (offset, limit) => {
+      return await this.getSellerChats(sellerId, Math.floor(offset / limit), limit);
+    };
+
+    return await fetchAllPages(fetchFunction, {
+      cacheKey: `all_seller_chats_${sellerId}`,
+      debug: process.env.NODE_ENV === 'development',
+      ...options
+    });
+  },
+
+  // Analytics - now uses proper pagination
   async getSellerStats(sellerId) {
-    // This would be a custom endpoint for seller statistics
     try {
       const [products, chats] = await Promise.all([
-        this.getSellerProducts(sellerId, 0, 1000),
-        this.getSellerChats(sellerId, 0, 1000)
+        this.getAllSellerProducts(sellerId),
+        this.getAllSellerChats(sellerId)
       ]);
-      
+
       return {
         totalProducts: products.total || products.data?.length || 0,
         totalChats: chats.total || chats.data?.length || 0,

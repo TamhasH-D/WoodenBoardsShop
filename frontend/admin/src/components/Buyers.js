@@ -13,7 +13,9 @@ function Buyers() {
         await mutate(apiService.deleteBuyer, id);
         refetch(); // Refresh the list
       } catch (err) {
-        console.error('Failed to delete buyer:', err);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to delete buyer:', err);
+        }
       }
     }
   };

@@ -1,4 +1,5 @@
 import React from 'react';
+import { ADMIN_TEXTS } from '../utils/localization';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -12,9 +13,11 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log the error to console for debugging
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
-    
+    // Log the error to console for debugging (development only)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('ErrorBoundary caught an error:', error, errorInfo);
+    }
+
     this.setState({
       error: error,
       errorInfo: errorInfo
@@ -26,22 +29,22 @@ class ErrorBoundary extends React.Component {
       return (
         <div className="card">
           <div className="error">
-            <h2>Something went wrong</h2>
-            <p>An unexpected error occurred. Please refresh the page and try again.</p>
-            
+            <h2>Произошла ошибка</h2>
+            <p>Произошла неожиданная ошибка. Пожалуйста, обновите страницу и попробуйте снова.</p>
+
             <div style={{ marginTop: '1rem' }}>
-              <button 
-                onClick={() => window.location.reload()} 
+              <button
+                onClick={() => window.location.reload()}
                 className="btn btn-primary"
               >
-                Refresh Page
+                Обновить страницу
               </button>
-              <button 
-                onClick={() => this.setState({ hasError: false, error: null, errorInfo: null })} 
+              <button
+                onClick={() => this.setState({ hasError: false, error: null, errorInfo: null })}
                 className="btn btn-secondary"
                 style={{ marginLeft: '1rem' }}
               >
-                Try Again
+                Попробовать снова
               </button>
             </div>
             

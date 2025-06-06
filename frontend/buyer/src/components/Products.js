@@ -1,56 +1,84 @@
-import React, { useState } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
+import { BUYER_TEXTS } from '../utils/localization';
 
 // Mock buyer ID - in real app this would come from authentication
-const MOCK_BUYER_ID = '123e4567-e89b-12d3-a456-426614174001';
+const MOCK_BUYER_ID = '81f81c96-c56e-4b36-aec3-656f3576d09f';
 
 function Products() {
   const [page, setPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
-  const { data, loading, error, refetch } = useApi(
-    () => isSearching && searchQuery 
-      ? apiService.searchProducts(searchQuery, page, 12)
-      : apiService.getProducts(page, 12),
-    [page, isSearching, searchQuery]
-  );
+  // Debounce search query to prevent excessive API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300); // 300ms delay
 
-  const { data: woodTypes } = useApi(() => apiService.getWoodTypes());
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Reset page when search changes to prevent stale data
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedSearchQuery, isSearching]);
+
+  // Create a stable API function that doesn't change on every render
+  const productsApiFunction = useMemo(() => {
+    return () => {
+      if (isSearching && debouncedSearchQuery.trim()) {
+        return apiService.searchProducts(debouncedSearchQuery.trim(), page, 12);
+      }
+      return apiService.getProducts(page, 12);
+    };
+  }, [page, isSearching, debouncedSearchQuery]);
+
+  const { data, loading, error, refetch } = useApi(productsApiFunction, [page, isSearching, debouncedSearchQuery]);
+
+  // Separate API call for wood types (stable function, no dependencies)
+  const woodTypesApiFunction = useMemo(() => () => apiService.getWoodTypes(), []);
+  const { data: woodTypes } = useApi(woodTypesApiFunction, []);
+
   const { mutate, loading: contacting } = useApiMutation();
 
-  const handleSearch = (e) => {
+  const handleSearch = useCallback((e) => {
     e.preventDefault();
-    setIsSearching(true);
-    setPage(0);
-    refetch();
-  };
+    if (searchQuery.trim()) {
+      setIsSearching(true);
+      setPage(0);
+      // refetch will be triggered automatically by useApi dependencies
+    }
+  }, [searchQuery]);
 
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     setSearchQuery('');
     setIsSearching(false);
     setPage(0);
-    refetch();
-  };
+    // refetch will be triggered automatically by useApi dependencies
+  }, []);
 
-  const handleContactSeller = async (sellerId) => {
+  const handleContactSeller = useCallback(async (sellerId) => {
     try {
       // Create a new chat thread
       const threadId = crypto.randomUUID();
-      await mutate(() => apiService.createChatThread({
+      await mutate(apiService.createChatThread, {
         id: threadId,
         buyer_id: MOCK_BUYER_ID,
         seller_id: sellerId
-      }));
+      });
 
       // Redirect to chats page
       window.location.href = '/chats';
     } catch (err) {
-      console.error('Failed to contact seller:', err);
-      alert('Failed to contact seller. Please try again.');
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to contact seller:', err);
+      }
+      alert(BUYER_TEXTS.FAILED_CONTACT_SELLER || 'Не удалось связаться с продавцом. Попробуйте снова.');
     }
-  };
+  }, [mutate]);
 
   return (
     <div>
@@ -117,7 +145,7 @@ function Products() {
                 {data.data.map((product) => (
                   <div key={product.id} className="product-card">
                     <h4 className="product-title">
-                      {product.title || 'Untitled Product'}
+                      {product.title || BUYER_TEXTS.UNTITLED_PRODUCT}
                     </h4>
 
                     {product.descrioption && (
@@ -127,17 +155,17 @@ function Products() {
                     )}
 
                     <div className="flex justify-between items-center mb-4">
-                      <div className="product-price">${product.price}</div>
-                      <div style={{ color: 'var(--color-text-light)' }}>{product.volume} m³</div>
+                      <div className="product-price">{product.price} {BUYER_TEXTS.RUBLES}</div>
+                      <div style={{ color: 'var(--color-text-light)' }}>{product.volume} {BUYER_TEXTS.CUBIC_METERS}</div>
                     </div>
 
                     <div className="text-center mb-4" style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-sm)' }}>
-                      ${(product.price / product.volume).toFixed(2)} per m³
+                      {(product.price / product.volume).toFixed(2)} ₽ за м³
                     </div>
 
                     <div className="mb-4">
                       <div className={`status ${product.delivery_possible ? 'status-success' : 'status-error'} mb-4`}>
-                        {product.delivery_possible ? 'Delivery Available' : 'Pickup Only'}
+                        {product.delivery_possible ? BUYER_TEXTS.DELIVERY_AVAILABLE : BUYER_TEXTS.PICKUP_ONLY}
                       </div>
                       {product.pickup_location && (
                         <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-light)' }}>

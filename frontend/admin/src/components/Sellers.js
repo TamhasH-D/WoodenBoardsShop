@@ -13,7 +13,9 @@ function Sellers() {
         await mutate(apiService.deleteSeller, id);
         refetch(); // Refresh the list
       } catch (err) {
-        console.error('Failed to delete seller:', err);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to delete seller:', err);
+        }
       }
     }
   };
