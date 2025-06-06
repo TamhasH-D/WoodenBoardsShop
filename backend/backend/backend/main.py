@@ -36,3 +36,17 @@ def get_app() -> FastAPI:
     add_middleware(app)
     app.include_router(base_router)
     return app
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "backend.main:get_app",
+        host=settings.host,
+        port=settings.port,
+        log_level=settings.log_level,
+        reload=settings.reload,
+        lifespan="on",
+        factory=True,
+    )
