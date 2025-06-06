@@ -44,29 +44,33 @@ class ActivityTrackingMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.offline_threshold_minutes = offline_threshold_minutes
         self.background_task_running = False
-        self.start_background_task()
+        self.background_task = None
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Process request and update user activity if applicable."""
-        
+
         # Process the request first
         response = await call_next(request)
-        
+
         # Skip activity tracking for excluded paths
         if any(request.url.path.startswith(path) for path in EXCLUDED_PATHS):
             return response
-            
+
         # Skip if not a relevant API path
         if not any(request.url.path.startswith(path) for path in ACTIVITY_UPDATE_PATHS):
             return response
-            
+
+        # Start background task if not running and DB is available
+        if not self.background_task_running and hasattr(self.app.state, 'db_session_factory'):
+            self.start_background_task()
+
         # Extract user information from request
         user_info = await self.extract_user_info(request)
-        
+
         if user_info:
             # Update user activity in background to avoid blocking response
             asyncio.create_task(self.update_user_activity(user_info))
-            
+
         return response
 
     async def extract_user_info(self, request: Request) -> dict | None:
@@ -108,7 +112,11 @@ class ActivityTrackingMiddleware(BaseHTTPMiddleware):
     async def update_user_activity(self, user_info: dict):
         """Update user's last activity and online status."""
         try:
-            # Get session factory from app state
+            # Check if session factory is available
+            if not hasattr(self.app.state, 'db_session_factory'):
+                logger.warning("Database session factory not available, skipping activity update")
+                return
+
             session_factory = self.app.state.db_session_factory
             async with session_factory() as session:
                 now = datetime.now(UTC)
@@ -142,9 +150,9 @@ class ActivityTrackingMiddleware(BaseHTTPMiddleware):
 
     def start_background_task(self):
         """Start the background task to mark inactive users as offline."""
-        if not self.background_task_running:
+        if not self.background_task_running and hasattr(self.app.state, 'db_session_factory'):
             self.background_task_running = True
-            asyncio.create_task(self.offline_checker_task())
+            self.background_task = asyncio.create_task(self.offline_checker_task())
 
     async def offline_checker_task(self):
         """Background task to periodically mark inactive users as offline."""
@@ -160,7 +168,11 @@ class ActivityTrackingMiddleware(BaseHTTPMiddleware):
     async def mark_inactive_users_offline(self):
         """Mark users as offline if they haven't been active for the threshold period."""
         try:
-            # Get session factory from app state
+            # Check if session factory is available
+            if not hasattr(self.app.state, 'db_session_factory'):
+                logger.warning("Database session factory not available, skipping offline check")
+                return
+
             session_factory = self.app.state.db_session_factory
             async with session_factory() as session:
                 cutoff_time = datetime.now(UTC) - timedelta(minutes=self.offline_threshold_minutes)
@@ -206,3 +218,9 @@ class ActivityTrackingMiddleware(BaseHTTPMiddleware):
     async def shutdown(self):
         """Shutdown the background task."""
         self.background_task_running = False
+        if self.background_task and not self.background_task.done():
+            self.background_task.cancel()
+            try:
+                await self.background_task
+            except asyncio.CancelledError:
+                pass
