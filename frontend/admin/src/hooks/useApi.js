@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiClient } from '../utils/api/client';
 
 /**
@@ -8,53 +8,122 @@ export function useApi(apiFunction, dependencies = []) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const abortControllerRef = useRef(null);
+  const apiRef = useRef(apiFunction);
+
+  // Update the API function reference without triggering re-renders
+  apiRef.current = apiFunction;
+
+  const fetchData = useCallback(async () => {
+    // Cancel previous request if it exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await apiRef.current();
+
+      if (!abortControllerRef.current.signal.aborted) {
+        setData(result);
+      }
+    } catch (err) {
+      if (!abortControllerRef.current.signal.aborted) {
+        setError(err.message || 'An error occurred');
+        console.error('API Error:', err);
+      }
+    } finally {
+      if (!abortControllerRef.current.signal.aborted) {
+        setLoading(false);
+      }
+    }
+  }, dependencies);
 
   useEffect(() => {
-    let isMounted = true;
+    fetchData();
 
-    const fetchData = async () => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchData]);
+
+  const refetch = useCallback(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, loading, error, refetch };
+}
+
+/**
+ * Debounced API hook to prevent excessive requests
+ */
+export function useDebouncedApi(apiFunction, dependencies = [], delay = 300) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const abortControllerRef = useRef(null);
+  const timeoutRef = useRef(null);
+  const apiRef = useRef(apiFunction);
+
+  // Update the API function reference without triggering re-renders
+  apiRef.current = apiFunction;
+
+  const debouncedFetch = useCallback(async () => {
+    // Clear existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Cancel previous request if it exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    timeoutRef.current = setTimeout(async () => {
+      abortControllerRef.current = new AbortController();
+
       try {
         setLoading(true);
         setError(null);
-        const result = await apiFunction();
+        const result = await apiRef.current();
 
-        if (isMounted) {
+        if (!abortControllerRef.current.signal.aborted) {
           setData(result);
         }
       } catch (err) {
-        if (isMounted) {
+        if (!abortControllerRef.current.signal.aborted) {
           setError(err.message || 'An error occurred');
           console.error('API Error:', err);
         }
       } finally {
-        if (isMounted) {
+        if (!abortControllerRef.current.signal.aborted) {
           setLoading(false);
         }
       }
-    };
+    }, delay);
+  }, [...dependencies, delay]);
 
-    fetchData();
+  useEffect(() => {
+    debouncedFetch();
 
     return () => {
-      isMounted = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, dependencies);
+  }, [debouncedFetch]);
 
-  const refetch = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await apiFunction();
-      setData(result);
-    } catch (err) {
-      setError(err.message || 'An error occurred');
-      console.error('API Error:', err);
-    } finally {
-      setLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, dependencies); // Use dependencies instead of apiFunction to prevent infinite loops
+  const refetch = useCallback(() => {
+    debouncedFetch();
+  }, [debouncedFetch]);
 
   return { data, loading, error, refetch };
 }
@@ -108,16 +177,19 @@ export function usePaginatedApi(endpoint, options = {}) {
   const [page, setPage] = useState(initialPage);
   const [pageSize_, setPageSize] = useState(pageSize);
 
+  // Serialize params to prevent infinite loops from object recreation
+  const paramsString = JSON.stringify(params);
+
   const apiFunction = useCallback(async () => {
     const paginatedParams = {
-      ...params,
+      ...JSON.parse(paramsString),
       page,
       page_size: pageSize_,
     };
     return await apiClient.get(endpoint, paginatedParams);
-  }, [endpoint, params, page, pageSize_]);
+  }, [endpoint, paramsString, page, pageSize_]);
 
-  const { data, loading, error, refetch } = useApi(apiFunction, [endpoint, page, pageSize_, params]);
+  const { data, loading, error, refetch } = useApi(apiFunction, [endpoint, paramsString, page, pageSize_]);
 
   const results = data?.results || [];
   const totalCount = data?.count || 0;

@@ -105,13 +105,19 @@ export function useProgressiveData(fetchFunction, _dependencies = [], options = 
   const loaderRef = useRef(null);
   const abortControllerRef = useRef(null);
 
+  // Store fetchFunction and options in refs to prevent infinite loops
+  const fetchFunctionRef = useRef(fetchFunction);
+  const optionsRef = useRef(options);
+  fetchFunctionRef.current = fetchFunction;
+  optionsRef.current = options;
+
   const startLoading = useCallback(async () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
 
     abortControllerRef.current = new AbortController();
-    
+
     setLoading(true);
     setError(null);
     setData([]);
@@ -122,7 +128,7 @@ export function useProgressiveData(fetchFunction, _dependencies = [], options = 
       loaderRef.current.stop();
     }
 
-    loaderRef.current = new ProgressiveDataLoader(fetchFunction, {
+    loaderRef.current = new ProgressiveDataLoader(fetchFunctionRef.current, {
       onProgress: (loaded, total) => {
         setProgress({ loaded, total });
       },
@@ -147,7 +153,7 @@ export function useProgressiveData(fetchFunction, _dependencies = [], options = 
           setLoading(false);
         }
       },
-      ...options
+      ...optionsRef.current
     });
 
     try {
@@ -158,7 +164,7 @@ export function useProgressiveData(fetchFunction, _dependencies = [], options = 
         setLoading(false);
       }
     }
-  }, [fetchFunction, options]);
+  }, []);
 
   useEffect(() => {
     startLoading();
@@ -218,19 +224,23 @@ export function usePaginatedData(fetchFunction, _dependencies = [], options = {}
   
   const abortControllerRef = useRef(null);
 
+  // Store fetchFunction in a ref to prevent infinite loops
+  const fetchFunctionRef = useRef(fetchFunction);
+  fetchFunctionRef.current = fetchFunction;
+
   const fetchData = useCallback(async (pageNum = page) => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
 
     abortControllerRef.current = new AbortController();
-    
+
     setLoading(true);
     setError(null);
 
     try {
-      const result = await fetchFunction(pageNum, pageSize);
-      
+      const result = await fetchFunctionRef.current(pageNum, pageSize);
+
       if (!abortControllerRef.current.signal.aborted) {
         setData(result.data || []);
         setTotal(result.total || 0);
@@ -247,7 +257,7 @@ export function usePaginatedData(fetchFunction, _dependencies = [], options = {}
         setLoading(false);
       }
     }
-  }, [fetchFunction, page, pageSize]);
+  }, [page, pageSize]);
 
   useEffect(() => {
     fetchData();
