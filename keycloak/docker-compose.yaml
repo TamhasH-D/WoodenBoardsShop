@@ -1,6 +1,25 @@
-version: '3'
-
 services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - keycloak-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    ports:
+      - "1025:1025"   # SMTP порт для Keycloak
+      - "8025:8025"   # Веб-интерфейс MailHog для просмотра писем
+    networks:
+      - keycloak-network
+
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak
@@ -15,20 +34,9 @@ services:
       - "${KEYCLOAK_PORT}:8080"
     depends_on:
       - postgres
-    command: 
+      - mailhog
+    command:
       - start-dev
-    networks:
-      - keycloak-network
-
-  postgres:
-    image: postgres:latest
-    container_name: postgres
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     networks:
       - keycloak-network
 
