@@ -69,11 +69,11 @@ export function useCompleteDataset(fetchFunction, _dependencies = [], options = 
         abortControllerRef.current.abort();
       }
     };
-  }, []); // Remove fetchData dependency to prevent infinite loop
+  }, [fetchData]);
 
   const refetch = useCallback(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   return {
     data,
@@ -158,7 +158,7 @@ export function useProgressiveData(fetchFunction, _dependencies = [], options = 
         setLoading(false);
       }
     }
-  }, [fetchFunction]);
+  }, [fetchFunction, options]);
 
   useEffect(() => {
     startLoading();
@@ -171,11 +171,11 @@ export function useProgressiveData(fetchFunction, _dependencies = [], options = 
         loaderRef.current.stop();
       }
     };
-  }, []); // Remove startLoading dependency to prevent infinite loop
+  }, [startLoading]);
 
   const refetch = useCallback(() => {
     startLoading();
-  }, []);
+  }, [startLoading]);
 
   const loadMore = useCallback(() => {
     // For progressive loading, this would continue loading if paused
@@ -257,7 +257,7 @@ export function usePaginatedData(fetchFunction, _dependencies = [], options = {}
         abortControllerRef.current.abort();
       }
     };
-  }, [page]); // Only depend on page changes
+  }, [fetchData, page]);
 
   const goToPage = useCallback((newPage) => {
     setPage(newPage);

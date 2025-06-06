@@ -25,7 +25,7 @@ export function useTable(endpoint, options = {}) {
   const persistedState = persistState && tableId ? getTableState(tableId) : {};
 
   // State management
-  const [pageSize, setPageSize] = useState(persistedState.pageSize || initialPageSize);
+  const [pageSize] = useState(persistedState.pageSize || initialPageSize);
   const [sortBy, setSortBy] = useState(persistedState.sortBy || initialSortBy);
   const [sortOrder, setSortOrder] = useState(persistedState.sortOrder || initialSortOrder);
   const [filters, setFilters] = useState(persistedState.filters || initialFilters);
@@ -190,7 +190,9 @@ export function useTable(endpoint, options = {}) {
       clearSelection();
       refetch();
     } catch (error) {
-      console.error('Bulk action failed:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Bulk action failed:', error);
+      }
       throw error;
     }
   }, [enableBulkActions, selectedRows, clearSelection, refetch]);
@@ -228,7 +230,9 @@ export function useTable(endpoint, options = {}) {
         document.body.removeChild(a);
       }
     } catch (error) {
-      console.error('Export failed:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Export failed:', error);
+      }
       throw error;
     }
   }, [endpoint, apiParams, selectedRows]);

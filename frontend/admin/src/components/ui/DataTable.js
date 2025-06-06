@@ -41,11 +41,8 @@ const DataTable = ({
   emptyMessage = 'No data available',
   rowKey = 'id',
   onRowClick,
-  stickyHeader = false,
   compact = false,
-  striped = true,
-  bordered = false,
-  hoverable = true
+  bordered = false
 }) => {
   const [localSearchValue, setLocalSearchValue] = useState(searchValue);
   const [columnFilters, setColumnFilters] = useState(filters);
@@ -93,10 +90,7 @@ const DataTable = ({
     onSelectionChange?.(newSelection);
   }, [selectedItems, onSelectionChange]);
 
-  // Handle column visibility
-  const handleColumnVisibility = useCallback((columnKey, visible) => {
-    setVisibleColumns(prev => ({ ...prev, [columnKey]: visible }));
-  }, []);
+
 
   // Render cell content based on column type
   const renderCellContent = useCallback((item, column) => {

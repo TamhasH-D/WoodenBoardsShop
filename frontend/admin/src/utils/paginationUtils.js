@@ -85,6 +85,7 @@ export async function fetchAllPages(fetchFunction, options = {}) {
     const cached = paginationCache.get(cacheKey);
     if (cached) {
       if (debug && process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
         console.log(`[PaginationUtils] Cache hit for ${cacheKey}`);
       }
       return cached;
@@ -93,6 +94,7 @@ export async function fetchAllPages(fetchFunction, options = {}) {
 
   try {
     if (debug && process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
       console.log(`[PaginationUtils] Fetching all pages for ${cacheKey || 'uncached request'}`);
     }
 
@@ -102,6 +104,7 @@ export async function fetchAllPages(fetchFunction, options = {}) {
     let allData = [...(firstPage.data || [])];
 
     if (debug && process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
       console.log(`[PaginationUtils] First page: ${allData.length} items, total: ${total}`);
     }
 
@@ -111,6 +114,7 @@ export async function fetchAllPages(fetchFunction, options = {}) {
       const additionalPages = Math.ceil(remainingItems / PAGINATION_CONFIG.DEFAULT_LIMIT);
       
       if (debug && process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
         console.log(`[PaginationUtils] Need to fetch ${additionalPages} additional pages`);
       }
 
@@ -129,6 +133,7 @@ export async function fetchAllPages(fetchFunction, options = {}) {
           (completed, total) => {
             if (onProgress) onProgress(completed + 1, total + 1); // +1 for first page
             if (debug && process.env.NODE_ENV === 'development') {
+              // eslint-disable-next-line no-console
               console.log(`[PaginationUtils] Progress: ${completed + 1}/${total + 1} pages`);
             }
           }
@@ -152,6 +157,7 @@ export async function fetchAllPages(fetchFunction, options = {}) {
 
           if (onProgress) onProgress(page + 1, additionalPages + 1);
           if (debug && process.env.NODE_ENV === 'development') {
+            // eslint-disable-next-line no-console
             console.log(`[PaginationUtils] Fetched page ${page + 1}/${additionalPages + 1}`);
           }
         }
@@ -171,17 +177,21 @@ export async function fetchAllPages(fetchFunction, options = {}) {
     if (useCache && cacheKey) {
       paginationCache.set(cacheKey, result);
       if (debug && process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
         console.log(`[PaginationUtils] Cached complete dataset for ${cacheKey}`);
       }
     }
 
     if (debug && process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
       console.log(`[PaginationUtils] Completed: ${allData.length} total items`);
     }
     return result;
 
   } catch (error) {
-    console.error('[PaginationUtils] Error fetching all pages:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[PaginationUtils] Error fetching all pages:', error);
+    }
     throw error;
   }
 }
@@ -194,13 +204,16 @@ async function executeWithConcurrencyLimit(promiseFunctions, limit, onProgress) 
   const executing = [];
   let completed = 0;
 
-  for (const promiseFunction of promiseFunctions) {
-    const promise = promiseFunction().then(result => {
-      const currentCompleted = ++completed;
-      if (onProgress) onProgress(currentCompleted, promiseFunctions.length);
+  const createPromiseWithProgress = (promiseFunction) => {
+    return promiseFunction().then(result => {
+      completed++;
+      if (onProgress) onProgress(completed, promiseFunctions.length);
       return result;
     });
+  };
 
+  for (const promiseFunction of promiseFunctions) {
+    const promise = createPromiseWithProgress(promiseFunction);
     results.push(promise);
 
     if (promiseFunctions.length >= limit) {

@@ -38,7 +38,6 @@ const Input = forwardRef(({
   name,
   ...props
 }, ref) => {
-  const [focused, setFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
@@ -91,7 +90,7 @@ const Input = forwardRef(({
       'pr-14': icon && iconPosition === 'right' && size === 'large',
 
       // Action button spacing (clear/password toggle)
-      'pr-11': (clearable && hasValue) || isPassword,
+      'pr-10': (clearable && hasValue) || isPassword,
 
       // Error state
       'border-error-300 dark:border-error-600 focus:ring-error-500/20 focus:border-error-500 bg-error-50/50 dark:bg-error-900/10': hasError,
@@ -105,15 +104,7 @@ const Input = forwardRef(({
     className
   );
 
-  const handleFocus = (e) => {
-    setFocused(true);
-    onFocus?.(e);
-  };
 
-  const handleBlur = (e) => {
-    setFocused(false);
-    onBlur?.(e);
-  };
 
   const handleClear = () => {
     if (onChange) {
@@ -163,8 +154,8 @@ const Input = forwardRef(({
     value,
     defaultValue,
     onChange,
-    onFocus: handleFocus,
-    onBlur: handleBlur,
+    onFocus,
+    onBlur,
     disabled,
     required,
     placeholder,

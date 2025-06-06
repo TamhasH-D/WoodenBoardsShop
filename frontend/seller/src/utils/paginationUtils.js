@@ -178,13 +178,16 @@ async function executeWithConcurrencyLimit(promiseFunctions, limit, onProgress) 
   const executing = [];
   let completed = 0;
 
-  for (const promiseFunction of promiseFunctions) {
-    const promise = promiseFunction().then(result => {
-      const currentCompleted = ++completed;
-      if (onProgress) onProgress(currentCompleted, promiseFunctions.length);
+  const createPromiseWithProgress = (promiseFunction) => {
+    return promiseFunction().then((result) => {
+      completed++;
+      if (onProgress) onProgress(completed, promiseFunctions.length);
       return result;
     });
+  };
 
+  for (const promiseFunction of promiseFunctions) {
+    const promise = createPromiseWithProgress(promiseFunction);
     results.push(promise);
 
     if (promiseFunctions.length >= limit) {
