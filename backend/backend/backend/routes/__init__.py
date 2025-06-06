@@ -11,6 +11,9 @@ from backend.routes.seller_routes import router as seller_router
 from backend.routes.wood_type_price_routes import router as wood_type_price_router
 from backend.routes.wood_type_routes import router as wood_type_router
 from backend.routes.wooden_board_routes import router as wooden_board_router
+from backend.routes.keep_alive_routes import router as keep_alive_router
+# Re-enabled yolo_router with refactored unified service architecture
+from backend.routes.yolo_routes import router as yolo_router
 
 base_router = APIRouter(prefix="/api/v1")
 
@@ -25,3 +28,6 @@ base_router.include_router(wooden_board_router, tags=["wooden_board"])
 base_router.include_router(image_router, tags=["image"])
 base_router.include_router(chat_thread_router, tags=["chat_thread"])
 base_router.include_router(chat_message_router, tags=["chat_message"])
+base_router.include_router(keep_alive_router, tags=["keep_alive"])
+# Re-enabled yolo_router with refactored unified service architecture
+base_router.include_router(yolo_router, tags=["yolo"])
