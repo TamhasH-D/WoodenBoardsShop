@@ -40,7 +40,7 @@ help: ## Show available commands
 # ============================================================================
 
 .PHONY: up
-up: init-network ## Start all services
+up: ## Start all services
 	$(COMPOSE) up -d
 
 .PHONY: down
@@ -52,7 +52,7 @@ build: ## Build all services
 	$(COMPOSE) build --no-cache
 
 .PHONY: rebuild
-rebuild: down init-network build up ## Rebuild and restart all services
+rebuild: down  build up ## Rebuild and restart all services
 
 .PHONY: logs
 logs: ## Show logs from all services
@@ -85,10 +85,6 @@ backend-migrate: ## Run database migrations
 # ============================================================================
 # 🧹 CLEANUP & UTILITY
 # ============================================================================
-
-.PHONY: init-network
-init-network: ## Initialize Docker networks
-	@./scripts/init-network.sh
 
 .PHONY: clean
 clean: ## Clean Docker resources
