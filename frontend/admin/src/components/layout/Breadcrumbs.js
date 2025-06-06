@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useApp } from '../../contexts/AppContext';
 import { camelToTitle, cn } from '../../utils/helpers';
+import { ADMIN_TEXTS } from '../../utils/localization';
 
 /**
  * Premium breadcrumbs with smooth animations and hover effects
@@ -17,35 +18,35 @@ const Breadcrumbs = () => {
     }
 
     const pathSegments = location.pathname.split('/').filter(Boolean);
-    const crumbs = [{ label: 'Dashboard', path: '/' }];
+    const crumbs = [{ label: ADMIN_TEXTS.DASHBOARD, path: '/' }];
 
     let currentPath = '';
     pathSegments.forEach((segment, index) => {
       currentPath += `/${segment}`;
-      
+
       // Convert segment to readable label
       let label = segment;
-      if (segment === 'users') label = 'Users';
-      else if (segment === 'products') label = 'Products';
-      else if (segment === 'media') label = 'Media';
-      else if (segment === 'communication') label = 'Communication';
-      else if (segment === 'analytics') label = 'Analytics';
-      else if (segment === 'tools') label = 'Tools';
-      else if (segment === 'system') label = 'System';
-      else if (segment === 'buyers') label = 'Buyers';
-      else if (segment === 'sellers') label = 'Sellers';
-      else if (segment === 'wood-types') label = 'Wood Types';
-      else if (segment === 'prices') label = 'Pricing';
-      else if (segment === 'boards') label = 'Wooden Boards';
-      else if (segment === 'images') label = 'Images';
-      else if (segment === 'threads') label = 'Chat Threads';
-      else if (segment === 'messages') label = 'Messages';
-      else if (segment === 'export') label = 'Data Export';
-      else if (segment === 'import') label = 'Data Import';
-      else if (segment === 'api-test') label = 'API Tester';
-      else if (segment === 'health') label = 'Health Check';
-      else if (segment === 'logs') label = 'System Logs';
-      else if (segment === 'settings') label = 'Settings';
+      if (segment === 'users') label = ADMIN_TEXTS.USERS;
+      else if (segment === 'products') label = ADMIN_TEXTS.PRODUCTS;
+      else if (segment === 'media') label = ADMIN_TEXTS.MEDIA;
+      else if (segment === 'communication') label = ADMIN_TEXTS.COMMUNICATION;
+      else if (segment === 'analytics') label = ADMIN_TEXTS.ANALYTICS;
+      else if (segment === 'tools') label = ADMIN_TEXTS.TOOLS;
+      else if (segment === 'system') label = ADMIN_TEXTS.SYSTEM;
+      else if (segment === 'buyers') label = ADMIN_TEXTS.BUYERS;
+      else if (segment === 'sellers') label = ADMIN_TEXTS.SELLERS;
+      else if (segment === 'wood-types') label = ADMIN_TEXTS.WOOD_TYPES;
+      else if (segment === 'prices') label = ADMIN_TEXTS.PRICING;
+      else if (segment === 'boards') label = ADMIN_TEXTS.WOODEN_BOARDS;
+      else if (segment === 'images') label = ADMIN_TEXTS.IMAGES;
+      else if (segment === 'threads') label = ADMIN_TEXTS.CHAT_THREADS;
+      else if (segment === 'messages') label = ADMIN_TEXTS.MESSAGES;
+      else if (segment === 'export') label = ADMIN_TEXTS.DATA_EXPORT;
+      else if (segment === 'import') label = ADMIN_TEXTS.DATA_IMPORT;
+      else if (segment === 'api-test') label = ADMIN_TEXTS.API_TESTER;
+      else if (segment === 'health') label = ADMIN_TEXTS.HEALTH_CHECK;
+      else if (segment === 'logs') label = ADMIN_TEXTS.SYSTEM_LOGS;
+      else if (segment === 'settings') label = ADMIN_TEXTS.SETTINGS;
       else label = camelToTitle(segment);
 
       crumbs.push({

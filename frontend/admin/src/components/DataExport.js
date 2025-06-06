@@ -1,22 +1,23 @@
 import React, { useState } from 'react';
 import { useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
+import { ADMIN_TEXTS } from '../utils/localization';
 
 const EXPORT_ENTITIES = [
-  { key: 'buyers', label: 'Buyers', icon: '👥' },
-  { key: 'sellers', label: 'Sellers', icon: '🏪' },
-  { key: 'products', label: 'Products', icon: '📦' },
-  { key: 'woodTypes', label: 'Wood Types', icon: '🌳' },
-  { key: 'prices', label: 'Wood Type Prices', icon: '💰' },
-  { key: 'boards', label: 'Wooden Boards', icon: '🪵' },
-  { key: 'images', label: 'Images', icon: '🖼️' },
-  { key: 'threads', label: 'Chat Threads', icon: '💬' },
-  { key: 'messages', label: 'Chat Messages', icon: '💭' }
+  { key: 'buyers', label: ADMIN_TEXTS.BUYERS, icon: '👥' },
+  { key: 'sellers', label: ADMIN_TEXTS.SELLERS, icon: '🏪' },
+  { key: 'products', label: ADMIN_TEXTS.PRODUCTS, icon: '📦' },
+  { key: 'woodTypes', label: ADMIN_TEXTS.WOOD_TYPES, icon: '🌳' },
+  { key: 'prices', label: ADMIN_TEXTS.WOOD_TYPE_PRICES, icon: '💰' },
+  { key: 'boards', label: ADMIN_TEXTS.WOODEN_BOARDS, icon: '🪵' },
+  { key: 'images', label: ADMIN_TEXTS.IMAGES, icon: '🖼️' },
+  { key: 'threads', label: ADMIN_TEXTS.CHAT_THREADS, icon: '💬' },
+  { key: 'messages', label: ADMIN_TEXTS.CHAT_MESSAGES, icon: '💭' }
 ];
 
 const EXPORT_FORMATS = [
-  { key: 'json', label: 'JSON', description: 'JavaScript Object Notation - structured data' },
-  { key: 'csv', label: 'CSV', description: 'Comma Separated Values - spreadsheet compatible' }
+  { key: 'json', label: 'JSON', description: ADMIN_TEXTS.JSON_FORMAT_DESC },
+  { key: 'csv', label: 'CSV', description: ADMIN_TEXTS.CSV_FORMAT_DESC }
 ];
 
 function DataExport() {
@@ -57,7 +58,7 @@ function DataExport() {
 
   const handleExport = async () => {
     if (selectedEntities.length === 0) {
-      alert('Please select at least one entity to export.');
+      alert(ADMIN_TEXTS.PLEASE_SELECT_ENTITY);
       return;
     }
 
@@ -123,15 +124,14 @@ function DataExport() {
 
   return (
     <div className="card">
-      <h2>📊 Data Export</h2>
+      <h2>📊 {ADMIN_TEXTS.DATA_EXPORT}</h2>
       <p style={{ color: '#666', marginBottom: '2rem' }}>
-        Export system data for backup, analysis, or migration purposes. 
-        Select the entities and format you want to export.
+        {ADMIN_TEXTS.EXPORT_DESCRIPTION}
       </p>
 
       {/* Format Selection */}
       <div style={{ marginBottom: '2rem' }}>
-        <h3>Export Format</h3>
+        <h3>{ADMIN_TEXTS.EXPORT_FORMAT}</h3>
         <div className="grid grid-2">
           {EXPORT_FORMATS.map((format) => (
             <label 
@@ -167,12 +167,12 @@ function DataExport() {
       {/* Entity Selection */}
       <div style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3>Select Entities to Export</h3>
-          <button 
+          <h3>{ADMIN_TEXTS.SELECT_ENTITIES_TO_EXPORT}</h3>
+          <button
             onClick={handleSelectAll}
             className="btn btn-secondary"
           >
-            {selectedEntities.length === EXPORT_ENTITIES.length ? 'Deselect All' : 'Select All'}
+            {selectedEntities.length === EXPORT_ENTITIES.length ? ADMIN_TEXTS.DESELECT_ALL : ADMIN_TEXTS.SELECT_ALL}
           </button>
         </div>
 
@@ -216,7 +216,7 @@ function DataExport() {
                   )}
                   {completed && (
                     <div style={{ fontSize: '0.8em', color: '#10b981', marginTop: '0.25rem' }}>
-                      ✅ {completed.recordCount} records exported
+                      ✅ {completed.recordCount} {ADMIN_TEXTS.RECORDS_EXPORTED}
                     </div>
                   )}
                 </div>
@@ -237,31 +237,31 @@ function DataExport() {
         marginBottom: '2rem'
       }}>
         <div>
-          <strong>Selected:</strong> {selectedEntities.length} entities
+          <strong>{ADMIN_TEXTS.SELECTED}:</strong> {selectedEntities.length} {ADMIN_TEXTS.ENTITIES}
           <br />
-          <strong>Format:</strong> {EXPORT_FORMATS.find(f => f.key === selectedFormat)?.label}
+          <strong>{ADMIN_TEXTS.FORMAT}:</strong> {EXPORT_FORMATS.find(f => f.key === selectedFormat)?.label}
         </div>
-        <button 
+        <button
           onClick={handleExport}
           disabled={loading || selectedEntities.length === 0}
           className="btn btn-primary"
           style={{ padding: '0.75rem 2rem' }}
         >
-          {loading ? '⏳ Exporting...' : '📥 Export Data'}
+          {loading ? `⏳ ${ADMIN_TEXTS.EXPORTING}` : `📥 ${ADMIN_TEXTS.EXPORT_DATA}`}
         </button>
       </div>
 
       {/* Error Display */}
       {error && (
         <div className="error" style={{ marginBottom: '1rem' }}>
-          Export failed: {error}
+          {ADMIN_TEXTS.EXPORT_FAILED}: {error}
         </div>
       )}
 
       {/* Export Results */}
       {Object.keys(completedExports).length > 0 && (
         <div>
-          <h3>✅ Export Results</h3>
+          <h3>✅ {ADMIN_TEXTS.EXPORT_RESULTS}</h3>
           <div style={{ backgroundColor: '#f0fdf4', padding: '1rem', borderRadius: '0.5rem' }}>
             {Object.entries(completedExports).map(([entityKey, result]) => {
               const entity = EXPORT_ENTITIES.find(e => e.key === entityKey);
@@ -277,7 +277,7 @@ function DataExport() {
                     <span style={{ fontSize: '1.1em' }}>{entity?.icon}</span>
                     <strong style={{ marginLeft: '0.5rem' }}>{entity?.label}</strong>
                     <span style={{ marginLeft: '1rem', color: '#666' }}>
-                      {result.recordCount} records
+                      {result.recordCount} {ADMIN_TEXTS.RECORDS}
                     </span>
                   </div>
                   <div style={{ fontSize: '0.9em', color: '#666' }}>
@@ -288,22 +288,22 @@ function DataExport() {
             })}
           </div>
           <p style={{ fontSize: '0.9em', color: '#666', marginTop: '1rem' }}>
-            💡 Files have been downloaded to your default download folder.
+            💡 {ADMIN_TEXTS.FILES_DOWNLOADED}
           </p>
         </div>
       )}
 
       {/* Usage Instructions */}
       <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem' }}>
-        <h4>📋 Export Instructions</h4>
+        <h4>📋 {ADMIN_TEXTS.EXPORT_INSTRUCTIONS}</h4>
         <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
-          <li><strong>JSON Format:</strong> Best for data backup and system migration. Preserves data types and structure.</li>
-          <li><strong>CSV Format:</strong> Best for analysis in spreadsheet applications like Excel or Google Sheets.</li>
-          <li><strong>Bulk Export:</strong> Select multiple entities to export them all at once.</li>
-          <li><strong>File Naming:</strong> Files are automatically named with entity type and current date.</li>
+          <li><strong>JSON {ADMIN_TEXTS.FORMAT}:</strong> {ADMIN_TEXTS.JSON_FORMAT_INFO}</li>
+          <li><strong>CSV {ADMIN_TEXTS.FORMAT}:</strong> {ADMIN_TEXTS.CSV_FORMAT_INFO}</li>
+          <li><strong>Массовый экспорт:</strong> {ADMIN_TEXTS.BULK_EXPORT_INFO}</li>
+          <li><strong>Именование файлов:</strong> {ADMIN_TEXTS.FILE_NAMING_INFO}</li>
         </ul>
         <p style={{ fontSize: '0.9em', color: '#666', margin: '0.5rem 0 0 0' }}>
-          <strong>Note:</strong> Large datasets may take some time to export. Please be patient during the export process.
+          <strong>Примечание:</strong> {ADMIN_TEXTS.EXPORT_NOTE}
         </p>
       </div>
     </div>

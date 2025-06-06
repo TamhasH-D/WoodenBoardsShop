@@ -1,18 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
+import { ADMIN_TEXTS } from '../utils/localization';
 
 // Entity configurations
 const ENTITY_CONFIGS = {
   buyers: {
-    title: 'Buyers',
+    title: ADMIN_TEXTS.BUYERS,
     icon: '👥',
     fields: [
-      { key: 'id', label: 'ID', type: 'uuid', readonly: true },
-      { key: 'keycloak_uuid', label: 'Keycloak UUID', type: 'uuid', required: true },
-      { key: 'is_online', label: 'Online Status', type: 'checkbox' },
-      { key: 'created_at', label: 'Created', type: 'datetime', readonly: true },
-      { key: 'updated_at', label: 'Updated', type: 'datetime', readonly: true }
+      { key: 'id', label: ADMIN_TEXTS.ID, type: 'uuid', readonly: true },
+      { key: 'keycloak_uuid', label: ADMIN_TEXTS.KEYCLOAK_UUID, type: 'uuid', required: true },
+      { key: 'is_online', label: ADMIN_TEXTS.ONLINE_STATUS, type: 'checkbox' },
+      { key: 'created_at', label: ADMIN_TEXTS.CREATED_AT, type: 'datetime', readonly: true },
+      { key: 'updated_at', label: ADMIN_TEXTS.UPDATED_AT, type: 'datetime', readonly: true }
     ],
     api: {
       getAll: (page, size) => apiService.getBuyers(page, size),
@@ -24,14 +25,14 @@ const ENTITY_CONFIGS = {
     }
   },
   sellers: {
-    title: 'Sellers',
+    title: ADMIN_TEXTS.SELLERS,
     icon: '🏪',
     fields: [
-      { key: 'id', label: 'ID', type: 'uuid', readonly: true },
-      { key: 'keycloak_uuid', label: 'Keycloak UUID', type: 'uuid', required: true },
-      { key: 'is_online', label: 'Online Status', type: 'checkbox' },
-      { key: 'created_at', label: 'Created', type: 'datetime', readonly: true },
-      { key: 'updated_at', label: 'Updated', type: 'datetime', readonly: true }
+      { key: 'id', label: ADMIN_TEXTS.ID, type: 'uuid', readonly: true },
+      { key: 'keycloak_uuid', label: ADMIN_TEXTS.KEYCLOAK_UUID, type: 'uuid', required: true },
+      { key: 'is_online', label: ADMIN_TEXTS.ONLINE_STATUS, type: 'checkbox' },
+      { key: 'created_at', label: ADMIN_TEXTS.CREATED_AT, type: 'datetime', readonly: true },
+      { key: 'updated_at', label: ADMIN_TEXTS.UPDATED_AT, type: 'datetime', readonly: true }
     ],
     api: {
       getAll: (page, size) => apiService.getSellers(page, size),
@@ -43,22 +44,22 @@ const ENTITY_CONFIGS = {
     }
   },
   products: {
-    title: 'Products',
+    title: ADMIN_TEXTS.PRODUCTS,
     icon: '📦',
     fields: [
-      { key: 'id', label: 'ID', type: 'uuid', readonly: true },
-      { key: 'title', label: 'Title', type: 'text', required: true },
-      { key: 'volume', label: 'Volume (m³)', type: 'number', required: true, step: 0.01 },
-      { key: 'price', label: 'Price ($)', type: 'number', required: true, step: 0.01 },
-      { key: 'descrioption', label: 'Description', type: 'textarea' },
-      { key: 'delivery_possible', label: 'Delivery Available', type: 'checkbox' },
-      { key: 'pickup_location', label: 'Pickup Location', type: 'text' },
-      { key: 'wood_type_id', label: 'Wood Type', type: 'select', required: true,
+      { key: 'id', label: ADMIN_TEXTS.ID, type: 'uuid', readonly: true },
+      { key: 'title', label: ADMIN_TEXTS.TITLE, type: 'text', required: true },
+      { key: 'volume', label: `${ADMIN_TEXTS.VOLUME} (м³)`, type: 'number', required: true, step: 0.01 },
+      { key: 'price', label: `${ADMIN_TEXTS.PRICE} (₽)`, type: 'number', required: true, step: 0.01 },
+      { key: 'descrioption', label: ADMIN_TEXTS.DESCRIPTION, type: 'textarea' },
+      { key: 'delivery_possible', label: ADMIN_TEXTS.DELIVERY_POSSIBLE, type: 'checkbox' },
+      { key: 'pickup_location', label: ADMIN_TEXTS.PICKUP_LOCATION, type: 'text' },
+      { key: 'wood_type_id', label: ADMIN_TEXTS.WOOD_TYPE, type: 'select', required: true,
         options: 'woodTypes', optionValue: 'id', optionLabel: 'neme' },
-      { key: 'seller_id', label: 'Seller', type: 'select', required: true,
+      { key: 'seller_id', label: ADMIN_TEXTS.SELLER, type: 'select', required: true,
         options: 'sellers', optionValue: 'id', optionLabel: 'id' },
-      { key: 'created_at', label: 'Created', type: 'datetime', readonly: true },
-      { key: 'updated_at', label: 'Updated', type: 'datetime', readonly: true }
+      { key: 'created_at', label: ADMIN_TEXTS.CREATED_AT, type: 'datetime', readonly: true },
+      { key: 'updated_at', label: ADMIN_TEXTS.UPDATED_AT, type: 'datetime', readonly: true }
     ],
     api: {
       getAll: (page, size) => apiService.getProducts(page, size),

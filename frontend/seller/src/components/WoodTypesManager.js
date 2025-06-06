@@ -1,563 +1,628 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
+import { SELLER_TEXTS } from '../utils/localization';
 
 function WoodTypesManager() {
-  const [activeTab, setActiveTab] = useState('types');
-  const [typePage, setTypePage] = useState(0);
-  const [pricePage, setPricePage] = useState(0);
-  const [showAddTypeForm, setShowAddTypeForm] = useState(false);
-  const [showAddPriceForm, setShowAddPriceForm] = useState(false);
+  const [page, setPage] = useState(0);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [editingType, setEditingType] = useState(null);
-  const [editingPrice, setEditingPrice] = useState(null);
+  const [showPriceHistory, setShowPriceHistory] = useState({});
+  const [updatingPrice, setUpdatingPrice] = useState({});
 
   // New wood type form state
   const [newType, setNewType] = useState({
     neme: '',
-    description: ''
-  });
-
-  // New price form state
-  const [newPrice, setNewPrice] = useState({
-    price_per_m3: '',
-    wood_type_id: ''
+    description: '',
+    initial_price: ''
   });
 
   // API hooks
-  const { data: woodTypes, loading: typesLoading, error: typesError, refetch: refetchTypes } = 
-    useApi(() => apiService.getWoodTypes(typePage, 10), [typePage]);
-  
-  const { data: woodTypePrices, loading: pricesLoading, error: pricesError, refetch: refetchPrices } = 
-    useApi(() => apiService.getWoodTypePrices(pricePage, 10), [pricePage]);
+  const { data: woodTypes, loading: typesLoading, error: typesError, refetch: refetchTypes } =
+    useApi(() => apiService.getWoodTypes(page, 10), [page]);
+
+  const { data: allPrices, loading: pricesLoading, error: pricesError, refetch: refetchPrices } =
+    useApi(() => apiService.getAllWoodTypePrices(), []); // Get all prices for history
 
   const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
 
-  // Generate UUID for new entries
-  const generateUUID = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : ((r & 0x3) | 0x8);
-      return v.toString(16);
-    });
-  };
+  // Helper function to get current price for a wood type
+  const getCurrentPrice = useCallback((woodTypeId) => {
+    if (!allPrices?.data) return null;
 
-  // Wood type handlers
-  const handleAddType = async (e) => {
+    const typePrices = allPrices.data
+      .filter(price => price.wood_type_id === woodTypeId)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    return typePrices[0] || null;
+  }, [allPrices]);
+
+  // Helper function to get price history for a wood type
+  const getPriceHistory = useCallback((woodTypeId) => {
+    if (!allPrices?.data) return [];
+
+    return allPrices.data
+      .filter(price => price.wood_type_id === woodTypeId)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }, [allPrices]);
+
+  // Helper function to format datetime with both date and time
+  const formatDateTime = useCallback((dateString) => {
+    if (!dateString) return 'Неизвестно';
+
+    const date = new Date(dateString);
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) return 'Неверная дата';
+
+    // Format with both date and time in Russian locale
+    const dateOptions = {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    };
+
+    const timeOptions = {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    };
+
+    const formattedDate = date.toLocaleDateString('ru-RU', dateOptions);
+    const formattedTime = date.toLocaleTimeString('ru-RU', timeOptions);
+
+    return `${formattedDate} в ${formattedTime}`;
+  }, []);
+
+  // Form reset function
+  const resetForm = useCallback(() => {
+    setNewType({
+      neme: '',
+      description: '',
+      initial_price: ''
+    });
+    setEditingType(null);
+    setShowAddForm(false);
+  }, []);
+
+  // Enhanced wood type handlers with integrated pricing and transaction rollback
+  const handleAddType = useCallback(async (e) => {
     e.preventDefault();
+    console.log('🚀 Form submitted - handleAddType called');
+    console.log('📝 Form data:', newType);
+
+    // Validation
+    if (!newType.neme.trim()) {
+      alert('Wood type name is required');
+      return;
+    }
+
+    if (newType.initial_price && (isNaN(parseFloat(newType.initial_price)) || parseFloat(newType.initial_price) <= 0)) {
+      alert('Please enter a valid initial price');
+      return;
+    }
+
+    console.log('✅ Validation passed, proceeding with API calls');
+    let createdWoodType = null;
+
     try {
-      await mutate(apiService.createWoodType, {
-        id: generateUUID(),
-        ...newType
-      });
-      setNewType({ neme: '', description: '' });
-      setShowAddTypeForm(false);
+      // Step 1: Create wood type (ID is auto-generated by backend)
+      const woodTypeResponse = await mutate(() => apiService.createWoodType({
+        neme: newType.neme.trim(),
+        description: newType.description.trim() || null
+      }));
+
+      createdWoodType = woodTypeResponse.data;
+      console.log('Wood type created successfully:', createdWoodType);
+
+      // Step 2: Create initial price if provided
+      if (newType.initial_price && parseFloat(newType.initial_price) > 0) {
+        try {
+          await mutate(() => apiService.createWoodTypePrice({
+            wood_type_id: createdWoodType.id,
+            price_per_m3: parseFloat(newType.initial_price)
+          }));
+          console.log('Initial price created successfully');
+        } catch (priceError) {
+          console.error('Failed to create initial price, rolling back wood type:', priceError);
+
+          // Rollback: Delete the created wood type
+          try {
+            await mutate(() => apiService.deleteWoodType(createdWoodType.id));
+            console.log('Wood type rollback completed');
+          } catch (rollbackError) {
+            console.error('Failed to rollback wood type creation:', rollbackError);
+          }
+
+          throw new Error('Failed to create initial price. Wood type creation has been rolled back.');
+        }
+      }
+
+      // Success: Reset form and refresh data
+      resetForm();
       refetchTypes();
+      refetchPrices();
+
+      // Show success message
+      alert(`Wood type "${newType.neme}" created successfully!`);
+
     } catch (err) {
       console.error('Failed to add wood type:', err);
-    }
-  };
 
-  const handleUpdateType = async (e) => {
+      // Extract meaningful error message
+      let errorMessage = 'Failed to create wood type. Please try again.';
+      if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      alert(errorMessage);
+    }
+  }, [newType, mutate, refetchTypes, refetchPrices, resetForm]);
+
+  // Update wood type handler
+  const handleUpdateType = useCallback(async (e) => {
     e.preventDefault();
+    if (!editingType) return;
+
     try {
-      await mutate(apiService.updateWoodType, editingType.id, {
+      await mutate(() => apiService.updateWoodType(editingType.id, {
         neme: editingType.neme,
         description: editingType.description
-      });
+      }));
       setEditingType(null);
       refetchTypes();
     } catch (err) {
       console.error('Failed to update wood type:', err);
     }
-  };
+  }, [editingType, mutate, refetchTypes]);
 
-  const handleDeleteType = async (typeId) => {
+  // Delete wood type handler
+  const handleDeleteType = useCallback(async (typeId) => {
     if (window.confirm('Are you sure you want to delete this wood type? This will also delete all associated prices.')) {
       try {
-        await mutate(apiService.deleteWoodType, typeId);
+        await mutate(() => apiService.deleteWoodType(typeId));
         refetchTypes();
         refetchPrices(); // Refresh prices as they might be affected
       } catch (err) {
         console.error('Failed to delete wood type:', err);
       }
     }
-  };
+  }, [mutate, refetchTypes, refetchPrices]);
 
-  // Price handlers
-  const handleAddPrice = async (e) => {
-    e.preventDefault();
-    try {
-      await mutate(apiService.createWoodTypePrice, {
-        id: generateUUID(),
-        ...newPrice,
-        price_per_m3: parseFloat(newPrice.price_per_m3)
-      });
-      setNewPrice({ price_per_m3: '', wood_type_id: '' });
-      setShowAddPriceForm(false);
-      refetchPrices();
-    } catch (err) {
-      console.error('Failed to add price:', err);
+  // Price update handler - creates new price record preserving history
+  const handleUpdatePrice = useCallback(async (woodTypeId, newPrice) => {
+    if (!newPrice || isNaN(parseFloat(newPrice)) || parseFloat(newPrice) <= 0) {
+      alert('Please enter a valid price');
+      return;
     }
-  };
 
-  const handleUpdatePrice = async (e) => {
-    e.preventDefault();
     try {
-      await mutate(apiService.updateWoodTypePrice, editingPrice.id, {
-        price_per_m3: parseFloat(editingPrice.price_per_m3)
-      });
-      setEditingPrice(null);
+      // Create new price record (preserves history, ID is auto-generated by backend)
+      await mutate(() => apiService.createWoodTypePrice({
+        wood_type_id: woodTypeId,
+        price_per_m3: parseFloat(newPrice)
+      }));
+
+      setUpdatingPrice({});
       refetchPrices();
     } catch (err) {
       console.error('Failed to update price:', err);
+      alert('Failed to update price. Please try again.');
     }
-  };
+  }, [mutate, refetchPrices]);
 
-  const handleDeletePrice = async (priceId) => {
-    if (window.confirm('Are you sure you want to delete this price?')) {
-      try {
-        await mutate(apiService.deleteWoodTypePrice, priceId);
-        refetchPrices();
-      } catch (err) {
-        console.error('Failed to delete price:', err);
-      }
-    }
-  };
-
-  // Helper function to get wood type name by ID
-  const getWoodTypeName = (woodTypeId) => {
-    const woodType = woodTypes?.data?.find(type => type.id === woodTypeId);
-    return woodType ? woodType.neme : `Wood Type ${woodTypeId?.substring(0, 8)}...`;
-  };
+  // Toggle price history visibility
+  const togglePriceHistory = useCallback((woodTypeId) => {
+    setShowPriceHistory(prev => ({
+      ...prev,
+      [woodTypeId]: !prev[woodTypeId]
+    }));
+  }, []);
 
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Wood Types & Prices</h1>
+        <h1 className="page-title">{SELLER_TEXTS.WOOD_TYPE_MANAGEMENT}</h1>
         <p className="page-description">
-          Manage wood types and their prices. All changes will be visible to buyers immediately.
+          Управляйте типами древесины и их ценообразованием в едином интерфейсе. Обновления цен сохраняют полную историю для бизнес-аналитики.
         </p>
-      </div>
-
-      {/* Tab Navigation */}
-      <div className="flex gap-4 mb-6">
-        <button
-          onClick={() => setActiveTab('types')}
-          className={`btn ${activeTab === 'types' ? 'btn-primary' : 'btn-secondary'}`}
-        >
-          Wood Types
-        </button>
-        <button
-          onClick={() => setActiveTab('prices')}
-          className={`btn ${activeTab === 'prices' ? 'btn-primary' : 'btn-secondary'}`}
-        >
-          Prices
-        </button>
       </div>
 
       {/* Error and Success Messages */}
       {mutationError && (
         <div className="error mb-4">
-          <strong>Operation failed:</strong> {mutationError}
+          <strong>{SELLER_TEXTS.OPERATION_FAILED}:</strong> {mutationError}
         </div>
       )}
 
       {success && (
         <div className="success mb-4">
-          <strong>Success:</strong> Operation completed successfully!
+          <strong>{SELLER_TEXTS.SUCCESS}:</strong> {SELLER_TEXTS.OPERATION_SUCCESSFUL}!
         </div>
       )}
 
-      {/* Wood Types Tab */}
-      {activeTab === 'types' && (
-        <div className="card mb-6">
-          <div className="card-header">
-            <h2 className="card-title">Wood Types</h2>
+      {/* Main Management Interface */}
+      <div className="card mb-6">
+        <div className="card-header">
+          <h2 className="card-title">{SELLER_TEXTS.WOOD_TYPES} и {SELLER_TEXTS.PRICING}</h2>
+          <p style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-2)' }}>
+            Единый интерфейс управления типами древесины и их ценообразованием
+          </p>
+        </div>
+
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <p>Всего типов древесины: {woodTypes?.data?.length || 0}</p>
+            {pricesLoading && <p style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-sm)' }}>{SELLER_TEXTS.LOADING} данных о ценах...</p>}
           </div>
-
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <p>Total wood types: {woodTypes?.pagination?.total || woodTypes?.data?.length || 0}</p>
-            </div>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowAddTypeForm(!showAddTypeForm)}
-                className={`btn ${showAddTypeForm ? 'btn-secondary' : 'btn-primary'}`}
-              >
-                {showAddTypeForm ? 'Cancel' : 'Add Wood Type'}
-              </button>
-              <button onClick={refetchTypes} className="btn btn-secondary" disabled={typesLoading}>
-                {typesLoading ? 'Loading...' : 'Refresh'}
-              </button>
-            </div>
+          <div className="flex gap-4">
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className={`btn ${showAddForm ? 'btn-secondary' : 'btn-primary'}`}
+            >
+              {showAddForm ? SELLER_TEXTS.CANCEL : `${SELLER_TEXTS.ADD} ${SELLER_TEXTS.WOOD_TYPE}`}
+            </button>
+            <button
+              onClick={() => {
+                refetchTypes();
+                refetchPrices();
+              }}
+              className="btn btn-secondary"
+              disabled={typesLoading || pricesLoading}
+            >
+              {typesLoading || pricesLoading ? `${SELLER_TEXTS.LOADING}...` : SELLER_TEXTS.REFRESH}
+            </button>
           </div>
+        </div>
 
-          {typesError && (
-            <div className="error">
-              Failed to load wood types: {typesError}
+        {/* Error States */}
+        {typesError && (
+          <div className="error mb-4">
+            Failed to load wood types: {typesError}
+          </div>
+        )}
+
+        {pricesError && (
+          <div className="error mb-4">
+            Failed to load prices: {pricesError}
+          </div>
+        )}
+
+        {/* Add Wood Type Form */}
+        {showAddForm && (
+          <div className="card mb-4">
+            <div className="card-header">
+              <h3 className="card-title">Add New Wood Type</h3>
+              <p style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-2)' }}>
+                Create a new wood type with optional initial pricing
+              </p>
             </div>
-          )}
-
-          {/* Add Type Form */}
-          {showAddTypeForm && (
-            <div className="card mb-4">
-              <div className="card-header">
-                <h3 className="card-title">Add New Wood Type</h3>
+            <form onSubmit={handleAddType}>
+              <div className="form-group">
+                <label className="form-label">Wood Type Name *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={newType.neme}
+                  onChange={(e) => setNewType({...newType, neme: e.target.value})}
+                  placeholder="e.g., Oak, Pine, Birch, Maple"
+                  required
+                  maxLength={100}
+                />
               </div>
-              <form onSubmit={handleAddType}>
-                <div className="form-group">
-                  <label className="form-label">Name *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={newType.neme}
-                    onChange={(e) => setNewType({...newType, neme: e.target.value})}
-                    placeholder="e.g., Oak, Pine, Birch"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Description</label>
-                  <textarea
-                    className="form-input"
-                    value={newType.description}
-                    onChange={(e) => setNewType({...newType, description: e.target.value})}
-                    placeholder="Optional description of the wood type"
-                    rows="3"
-                  />
-                </div>
-                <button type="submit" className="btn btn-primary" disabled={mutating}>
-                  {mutating ? 'Adding...' : 'Add Wood Type'}
-                </button>
-              </form>
-            </div>
-          )}
 
-          {/* Types List */}
-          {typesLoading && <div className="loading">Loading wood types...</div>}
-
-          {woodTypes && woodTypes.data && woodTypes.data.length > 0 ? (
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Description</th>
-                      <th>ID</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {woodTypes.data.map((type) => (
-                      <tr key={type.id}>
-                        <td>
-                          {editingType?.id === type.id ? (
-                            <input
-                              type="text"
-                              value={editingType.neme}
-                              onChange={(e) => setEditingType({...editingType, neme: e.target.value})}
-                              className="form-input"
-                              style={{ margin: 0 }}
-                            />
-                          ) : (
-                            <strong>{type.neme}</strong>
-                          )}
-                        </td>
-                        <td>
-                          {editingType?.id === type.id ? (
-                            <textarea
-                              value={editingType.description || ''}
-                              onChange={(e) => setEditingType({...editingType, description: e.target.value})}
-                              className="form-input"
-                              style={{ margin: 0 }}
-                              rows="2"
-                            />
-                          ) : (
-                            type.description || <em style={{ color: '#999' }}>No description</em>
-                          )}
-                        </td>
-                        <td style={{ fontSize: '0.8em', color: '#666' }}>
-                          {type.id.substring(0, 8)}...
-                        </td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            {editingType?.id === type.id ? (
-                              <>
-                                <button
-                                  onClick={handleUpdateType}
-                                  className="btn btn-success"
-                                  disabled={mutating}
-                                  style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
-                                >
-                                  Save
-                                </button>
-                                <button
-                                  onClick={() => setEditingType(null)}
-                                  className="btn btn-secondary"
-                                  style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
-                                >
-                                  Cancel
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => setEditingType(type)}
-                                  className="btn btn-secondary"
-                                  style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteType(type.id)}
-                                  className="btn btn-secondary"
-                                  disabled={mutating}
-                                  style={{ 
-                                    fontSize: '0.8em', 
-                                    padding: '0.25rem 0.5rem',
-                                    backgroundColor: '#fed7d7', 
-                                    color: '#c53030' 
-                                  }}
-                                >
-                                  Delete
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-          ) : (
-            <div className="text-center">
-              <p>No wood types found.</p>
-              <button
-                onClick={() => setShowAddTypeForm(true)}
-                className="btn btn-primary mt-4"
-              >
-                Add Your First Wood Type
-              </button>
-            </div>
-          )}
-
-          {/* Pagination for Types */}
-          {woodTypes && woodTypes.data && woodTypes.data.length > 0 && (
-            <div className="flex justify-between items-center mt-6">
-              <button
-                onClick={() => setTypePage(Math.max(0, typePage - 1))}
-                disabled={typePage === 0 || typesLoading}
-                className="btn btn-secondary"
-              >
-                Previous
-              </button>
-              <span>Page {typePage + 1}</span>
-              <button
-                onClick={() => setTypePage(typePage + 1)}
-                disabled={!woodTypes?.data || woodTypes.data.length < 10 || typesLoading}
-                className="btn btn-secondary"
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Prices Tab */}
-      {activeTab === 'prices' && (
-        <div className="card mb-6">
-          <div className="card-header">
-            <h2 className="card-title">Wood Type Prices</h2>
-          </div>
-
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <p>Total prices: {woodTypePrices?.pagination?.total || woodTypePrices?.data?.length || 0}</p>
-            </div>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowAddPriceForm(!showAddPriceForm)}
-                className={`btn ${showAddPriceForm ? 'btn-secondary' : 'btn-primary'}`}
-              >
-                {showAddPriceForm ? 'Cancel' : 'Add Price'}
-              </button>
-              <button onClick={refetchPrices} className="btn btn-secondary" disabled={pricesLoading}>
-                {pricesLoading ? 'Loading...' : 'Refresh'}
-              </button>
-            </div>
-          </div>
-
-          {pricesError && (
-            <div className="error">
-              Failed to load prices: {pricesError}
-            </div>
-          )}
-
-          {/* Add Price Form */}
-          {showAddPriceForm && (
-            <div className="card mb-4">
-              <div className="card-header">
-                <h3 className="card-title">Add New Price</h3>
+              <div className="form-group">
+                <label className="form-label">Description</label>
+                <textarea
+                  className="form-input"
+                  value={newType.description}
+                  onChange={(e) => setNewType({...newType, description: e.target.value})}
+                  placeholder="Describe the wood type characteristics, quality, and typical uses..."
+                  rows="3"
+                  maxLength={500}
+                />
+                <small style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-xs)' }}>
+                  {newType.description.length}/500 characters
+                </small>
               </div>
-              <form onSubmit={handleAddPrice}>
-                <div className="grid grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Wood Type *</label>
-                    <select
-                      className="form-input"
-                      value={newPrice.wood_type_id}
-                      onChange={(e) => setNewPrice({...newPrice, wood_type_id: e.target.value})}
-                      required
-                    >
-                      <option value="">Select wood type...</option>
-                      {woodTypes?.data?.map((type) => (
-                        <option key={type.id} value={type.id}>
-                          {type.neme}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Price per m³ ($) *</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="form-input"
-                      value={newPrice.price_per_m3}
-                      onChange={(e) => setNewPrice({...newPrice, price_per_m3: e.target.value})}
-                      placeholder="e.g., 150.00"
-                      required
-                    />
-                  </div>
-                </div>
+
+              <div className="form-group">
+                <label className="form-label">Initial Price per m³ ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="form-input"
+                  value={newType.initial_price}
+                  onChange={(e) => setNewType({...newType, initial_price: e.target.value})}
+                  placeholder="e.g., 150.00 (optional)"
+                />
+                <small style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-xs)' }}>
+                  Optional: Set an initial price for this wood type. You can add or update prices later.
+                </small>
+              </div>
+
+              <div className="flex gap-4" style={{ marginTop: 'var(--space-6)' }}>
                 <button type="submit" className="btn btn-primary" disabled={mutating}>
-                  {mutating ? 'Adding...' : 'Add Price'}
+                  {mutating ? 'Creating...' : 'Create Wood Type'}
                 </button>
-              </form>
-            </div>
-          )}
+                <button type="button" className="btn btn-secondary" onClick={resetForm} disabled={mutating}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
-          {/* Prices List */}
-          {pricesLoading && <div className="loading">Loading prices...</div>}
+        {/* Loading State */}
+        {typesLoading && <div className="loading">Loading wood types...</div>}
 
-          {woodTypePrices && woodTypePrices.data && woodTypePrices.data.length > 0 ? (
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Wood Type</th>
-                      <th>Price per m³ ($)</th>
-                      <th>Created</th>
-                      <th>ID</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {woodTypePrices.data.map((price) => (
-                      <tr key={price.id}>
-                        <td>
-                          <strong>{getWoodTypeName(price.wood_type_id)}</strong>
-                        </td>
-                        <td>
-                          {editingPrice?.id === price.id ? (
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={editingPrice.price_per_m3}
-                              onChange={(e) => setEditingPrice({...editingPrice, price_per_m3: e.target.value})}
-                              className="form-input"
-                              style={{ margin: 0, width: '120px' }}
-                            />
-                          ) : (
-                            `$${price.price_per_m3.toFixed(2)}`
-                          )}
-                        </td>
-                        <td style={{ fontSize: '0.9em', color: '#666' }}>
-                          {new Date(price.created_at).toLocaleDateString()}
-                        </td>
-                        <td style={{ fontSize: '0.8em', color: '#666' }}>
-                          {price.id.substring(0, 8)}...
-                        </td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            {editingPrice?.id === price.id ? (
-                              <>
-                                <button
-                                  onClick={handleUpdatePrice}
-                                  className="btn btn-success"
-                                  disabled={mutating}
-                                  style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
-                                >
-                                  Save
-                                </button>
-                                <button
-                                  onClick={() => setEditingPrice(null)}
-                                  className="btn btn-secondary"
-                                  style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
-                                >
-                                  Cancel
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => setEditingPrice(price)}
-                                  className="btn btn-secondary"
-                                  style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => handleDeletePrice(price.id)}
-                                  className="btn btn-secondary"
-                                  disabled={mutating}
-                                  style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
-                                >
-                                  Delete
-                                </button>
-                              </>
-                            )}
+        {/* Wood Types Table with Integrated Pricing */}
+        {woodTypes && woodTypes.data && woodTypes.data.length > 0 ? (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>{SELLER_TEXTS.WOOD_TYPE}</th>
+                <th>{SELLER_TEXTS.DESCRIPTION}</th>
+                <th>{SELLER_TEXTS.CURRENT_PRICE}</th>
+                <th>{SELLER_TEXTS.PRICE_HISTORY}</th>
+                <th>{SELLER_TEXTS.ACTIONS}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {woodTypes.data.map((type) => {
+                const currentPrice = getCurrentPrice(type.id);
+                const priceHistory = getPriceHistory(type.id);
+                const isEditing = editingType?.id === type.id;
+                const isUpdatingPrice = updatingPrice[type.id];
+
+                return (
+                  <tr key={type.id}>
+                    {/* Wood Type Name */}
+                    <td>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editingType.neme}
+                          onChange={(e) => setEditingType({...editingType, neme: e.target.value})}
+                          className="form-input"
+                          style={{ margin: 0 }}
+                          placeholder="Wood type name"
+                        />
+                      ) : (
+                        <div>
+                          <strong>{type.neme || 'Unnamed Type'}</strong>
+                          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-light)', marginTop: '0.25rem' }}>
+                            ID: {type.id.substring(0, 8)}...
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-          ) : (
-            <div className="text-center">
-              <p>No prices found.</p>
-              <button
-                onClick={() => setShowAddPriceForm(true)}
-                className="btn btn-primary mt-4"
-              >
-                Add Your First Price
-              </button>
-            </div>
-          )}
+                        </div>
+                      )}
+                    </td>
 
-          {/* Pagination for Prices */}
-          {woodTypePrices && woodTypePrices.data && woodTypePrices.data.length > 0 && (
-            <div className="flex justify-between items-center mt-6">
-              <button
-                onClick={() => setPricePage(Math.max(0, pricePage - 1))}
-                disabled={pricePage === 0 || pricesLoading}
-                className="btn btn-secondary"
-              >
-                Previous
-              </button>
-              <span>Page {pricePage + 1}</span>
-              <button
-                onClick={() => setPricePage(pricePage + 1)}
-                disabled={!woodTypePrices?.data || woodTypePrices.data.length < 10 || pricesLoading}
-                className="btn btn-secondary"
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+                    {/* Description */}
+                    <td>
+                      {isEditing ? (
+                        <textarea
+                          value={editingType.description || ''}
+                          onChange={(e) => setEditingType({...editingType, description: e.target.value})}
+                          className="form-input"
+                          style={{ margin: 0 }}
+                          rows="2"
+                          placeholder="Description"
+                        />
+                      ) : (
+                        <div>
+                          {type.description ? (
+                            <span>{type.description.length > 100 ? `${type.description.substring(0, 100)}...` : type.description}</span>
+                          ) : (
+                            <em style={{ color: 'var(--color-text-light)' }}>No description</em>
+                          )}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Current Price with Update Functionality */}
+                    <td>
+                      {isUpdatingPrice ? (
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            className="form-input"
+                            style={{ margin: 0, width: '120px' }}
+                            placeholder="New price"
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                handleUpdatePrice(type.id, e.target.value);
+                              }
+                            }}
+                            autoFocus
+                          />
+                          <button
+                            onClick={(e) => {
+                              const input = e.target.parentElement.querySelector('input');
+                              handleUpdatePrice(type.id, input.value);
+                            }}
+                            className="btn btn-primary"
+                            style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
+                            disabled={mutating}
+                          >
+                            {SELLER_TEXTS.SET}
+                          </button>
+                          <button
+                            onClick={() => setUpdatingPrice(prev => ({...prev, [type.id]: false}))}
+                            className="btn btn-secondary"
+                            style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
+                          >
+                            {SELLER_TEXTS.CANCEL}
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          {currentPrice ? (
+                            <div>
+                              <strong style={{ color: 'var(--color-success)' }}>
+                                {currentPrice.price_per_m3.toFixed(2)} ₽/м³
+                              </strong>
+                              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-light)' }}>
+                                Обновлено: {formatDateTime(currentPrice.created_at)}
+                              </div>
+                              <button
+                                onClick={() => setUpdatingPrice(prev => ({...prev, [type.id]: true}))}
+                                className="btn btn-secondary"
+                                style={{ fontSize: '0.7em', padding: '0.2rem 0.4rem', marginTop: '0.25rem' }}
+                                disabled={mutating}
+                              >
+                                {SELLER_TEXTS.UPDATE} {SELLER_TEXTS.PRICE}
+                              </button>
+                            </div>
+                          ) : (
+                            <div>
+                              <em style={{ color: 'var(--color-text-light)' }}>{SELLER_TEXTS.PRICE_NOT_SET}</em>
+                              <button
+                                onClick={() => setUpdatingPrice(prev => ({...prev, [type.id]: true}))}
+                                className="btn btn-primary"
+                                style={{ fontSize: '0.7em', padding: '0.2rem 0.4rem', marginTop: '0.25rem' }}
+                                disabled={mutating}
+                              >
+                                {SELLER_TEXTS.SET} {SELLER_TEXTS.PRICE}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Price History */}
+                    <td>
+                      {priceHistory.length > 0 ? (
+                        <div>
+                          <div style={{ fontSize: 'var(--font-size-sm)', marginBottom: '0.5rem' }}>
+                            <strong>{priceHistory.length}</strong> ценов{priceHistory.length === 1 ? 'ая запись' : priceHistory.length < 5 ? 'ые записи' : 'ых записей'}
+                          </div>
+                          <button
+                            onClick={() => togglePriceHistory(type.id)}
+                            className="btn btn-secondary"
+                            style={{ fontSize: '0.7em', padding: '0.2rem 0.4rem' }}
+                          >
+                            {showPriceHistory[type.id] ? 'Скрыть историю' : 'Показать историю'}
+                          </button>
+
+                          {showPriceHistory[type.id] && (
+                            <div style={{ marginTop: '0.5rem', padding: '0.5rem', backgroundColor: 'var(--color-bg-light)', borderRadius: 'var(--border-radius)' }}>
+                              <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: '600', marginBottom: '0.5rem' }}>
+                                {SELLER_TEXTS.PRICE_HISTORY}:
+                              </div>
+                              {priceHistory.map((price, index) => (
+                                <div key={price.id} style={{
+                                  fontSize: 'var(--font-size-xs)',
+                                  marginBottom: '0.25rem',
+                                  color: index === 0 ? 'var(--color-success)' : 'var(--color-text-light)'
+                                }}>
+                                  <strong>{price.price_per_m3.toFixed(2)} ₽/м³</strong>
+                                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-light)' }}>
+                                    {formatDateTime(price.created_at)}
+                                    {index === 0 && <span style={{ color: 'var(--color-success)', marginLeft: '0.5rem' }}>(Текущая)</span>}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <em style={{ color: 'var(--color-text-light)' }}>Нет истории цен</em>
+                      )}
+                    </td>
+
+                    {/* Actions */}
+                    <td>
+                      <div className="flex gap-2">
+                        {isEditing ? (
+                          <>
+                            <button
+                              onClick={handleUpdateType}
+                              className="btn btn-primary"
+                              disabled={mutating}
+                              style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingType(null)}
+                              className="btn btn-secondary"
+                              style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => setEditingType(type)}
+                              className="btn btn-secondary"
+                              style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteType(type.id)}
+                              className="btn btn-secondary"
+                              disabled={mutating}
+                              style={{
+                                fontSize: '0.8em',
+                                padding: '0.25rem 0.5rem',
+                                backgroundColor: '#fee2e2',
+                                color: 'var(--color-error)'
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        ) : (
+          <div className="text-center">
+            <p>No wood types found.</p>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="btn btn-primary mt-4"
+            >
+              Add Your First Wood Type
+            </button>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {woodTypes && woodTypes.data && woodTypes.data.length > 0 && (
+          <div className="flex justify-between items-center mt-6">
+            <button
+              onClick={() => setPage(Math.max(0, page - 1))}
+              disabled={page === 0 || typesLoading}
+              className="btn btn-secondary"
+            >
+              Previous
+            </button>
+            <span>Page {page + 1}</span>
+            <button
+              onClick={() => setPage(page + 1)}
+              disabled={!woodTypes?.data || woodTypes.data.length < 10 || typesLoading}
+              className="btn btn-secondary"
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

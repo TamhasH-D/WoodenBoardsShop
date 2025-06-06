@@ -2,14 +2,15 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Button from './Button';
 import { cn } from '../../utils/helpers';
+import { ADMIN_TEXTS } from '../../utils/localization';
 
 /**
  * Empty state component for displaying when no data is available
  */
 const EmptyState = ({
   icon = '📊',
-  title = 'No Data Available',
-  description = 'There is no data to display at the moment.',
+  title = ADMIN_TEXTS.NO_DATA_AVAILABLE,
+  description = ADMIN_TEXTS.NO_DATA_DESCRIPTION,
   action = null,
   size = 'medium',
   variant = 'default',

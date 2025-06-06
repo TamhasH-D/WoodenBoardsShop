@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
+import { BUYER_TEXTS } from '../utils/localization';
 
 function BoardAnalyzer() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -43,11 +44,11 @@ function BoardAnalyzer() {
   return (
     <div>
       <div className="card">
-        <h2>🔍 AI-Powered Board Analyzer</h2>
-        <p>Upload an image of a wooden board to get volume estimation and quality analysis.</p>
-        
+        <h2>🔍 {BUYER_TEXTS.AI_POWERED_BOARD_ANALYZER}</h2>
+        <p>{BUYER_TEXTS.BOARD_ANALYZER_DESCRIPTION}</p>
+
         <div className="form-group">
-          <label className="form-label">Select Board Image *</label>
+          <label className="form-label">{BUYER_TEXTS.SELECT_BOARD_IMAGE} *</label>
           <input
             type="file"
             accept="image/*"
@@ -56,31 +57,31 @@ function BoardAnalyzer() {
           />
           {selectedFile && (
             <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#718096' }}>
-              Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+              {BUYER_TEXTS.SELECTED}: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
             </div>
           )}
         </div>
 
         <div className="grid grid-2">
           <div className="form-group">
-            <label className="form-label">Board Height (cm)</label>
+            <label className="form-label">{BUYER_TEXTS.HEIGHT} (см)</label>
             <input
               type="number"
               step="0.1"
               value={boardHeight}
               onChange={(e) => setBoardHeight(e.target.value)}
-              placeholder="Optional - helps improve accuracy"
+              placeholder="Необязательно - помогает повысить точность"
               className="form-input"
             />
           </div>
           <div className="form-group">
-            <label className="form-label">Board Length (cm)</label>
+            <label className="form-label">{BUYER_TEXTS.LENGTH} (см)</label>
             <input
               type="number"
               step="0.1"
               value={boardLength}
               onChange={(e) => setBoardLength(e.target.value)}
-              placeholder="Optional - helps improve accuracy"
+              placeholder="Необязательно - помогает повысить точность"
               className="form-input"
             />
           </div>
@@ -92,24 +93,24 @@ function BoardAnalyzer() {
             disabled={!selectedFile || loading}
             className="btn btn-primary"
           >
-            {loading ? 'Analyzing...' : 'Analyze Board'}
+            {loading ? BUYER_TEXTS.ANALYZING : BUYER_TEXTS.ANALYZE_BOARD}
           </button>
           {selectedFile && (
             <button onClick={clearAnalysis} className="btn btn-secondary">
-              Clear
+              {BUYER_TEXTS.CLEAR}
             </button>
           )}
         </div>
 
         {error && (
           <div className="error" style={{ marginTop: '1rem' }}>
-            Analysis failed: {error}
+            {BUYER_TEXTS.ANALYSIS_FAILED}: {error}
           </div>
         )}
 
         {success && analysisResult && (
           <div className="success" style={{ marginTop: '1rem' }}>
-            Analysis completed successfully!
+            {BUYER_TEXTS.ANALYSIS_COMPLETED}
           </div>
         )}
       </div>
@@ -136,21 +137,21 @@ function BoardAnalyzer() {
       {/* Analysis Results */}
       {analysisResult && (
         <div className="card">
-          <h3>📊 Analysis Results</h3>
-          
+          <h3>📊 {BUYER_TEXTS.ANALYSIS_RESULTS}</h3>
+
           <div className="grid grid-2">
             <div className="stats-card" style={{ background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)' }}>
               <div className="stats-number">
-                {analysisResult.volume?.toFixed(2) || 'N/A'} m³
+                {analysisResult.volume?.toFixed(2) || 'N/A'} {BUYER_TEXTS.CUBIC_METERS}
               </div>
-              <div className="stats-label">Estimated Volume</div>
+              <div className="stats-label">{BUYER_TEXTS.ESTIMATED_VOLUME}</div>
             </div>
 
             <div className="stats-card" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
               <div className="stats-number">
                 {analysisResult.confidence ? `${(analysisResult.confidence * 100).toFixed(1)}%` : 'N/A'}
               </div>
-              <div className="stats-label">Confidence Level</div>
+              <div className="stats-label">{BUYER_TEXTS.CONFIDENCE_LEVEL}</div>
             </div>
           </div>
 

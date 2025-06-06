@@ -116,24 +116,28 @@ export const apiService = {
 
   // Wood types and prices (for buyers to view)
   async getWoodTypes(page = 0, size = 20) {
-    const response = await api.get(`/api/v1/wood-types?offset=${page * size}&limit=${size}`);
+    // Ensure size doesn't exceed backend limit of 20
+    const actualSize = Math.min(size, 20);
+    const response = await api.get(`/api/v1/wood-types?offset=${page * actualSize}&limit=${actualSize}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
       total: response.data.pagination?.total || 0,
-      offset: page * size,
-      limit: size
+      offset: page * actualSize,
+      limit: actualSize
     };
   },
 
   async getWoodTypePrices(page = 0, size = 20) {
-    const response = await api.get(`/api/v1/wood-type-prices?offset=${page * size}&limit=${size}`);
+    // Ensure size doesn't exceed backend limit of 20
+    const actualSize = Math.min(size, 20);
+    const response = await api.get(`/api/v1/wood-type-prices?offset=${page * actualSize}&limit=${actualSize}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
       total: response.data.pagination?.total || 0,
-      offset: page * size,
-      limit: size
+      offset: page * actualSize,
+      limit: actualSize
     };
   },
 
@@ -215,7 +219,7 @@ export const apiService = {
       await this.ensureBuyerExists(buyerId);
 
       // Backend doesn't support buyer_id filtering, so we'll get all threads and filter client-side
-      const response = await api.get(`/api/v1/chat-threads?offset=0&limit=1000`);
+      const response = await api.get(`/api/v1/chat-threads?offset=0&limit=20`);
       const allThreads = response.data.data || response.data;
 
       // Filter threads by buyer_id client-side
@@ -251,7 +255,7 @@ export const apiService = {
 
   async getChatMessages(threadId, page = 0, size = 20) {
     // Backend doesn't support thread_id filtering, so we'll get all messages and filter client-side
-    const response = await api.get(`/api/v1/chat-messages?offset=0&limit=1000`);
+    const response = await api.get(`/api/v1/chat-messages?offset=0&limit=20`);
     const allMessages = response.data.data || response.data;
 
     // Filter messages by thread_id client-side

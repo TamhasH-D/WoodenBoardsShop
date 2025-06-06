@@ -2,6 +2,7 @@ import React from 'react';
 import { useApp } from '../../contexts/AppContext';
 import Button from '../ui/Button';
 import { cn } from '../../utils/helpers';
+import { ADMIN_TEXTS } from '../../utils/localization';
 
 /**
  * Premium header with glassmorphism and smooth animations
@@ -58,12 +59,12 @@ const Header = () => {
           {/* Page Title with Gradient */}
           <div className="flex flex-col">
             <h1 className="text-2xl font-bold text-gradient-primary">
-              {pageTitle || 'Dashboard'}
+              {pageTitle || ADMIN_TEXTS.DASHBOARD}
             </h1>
             <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-              <span>Enterprise Admin Panel</span>
+              <span>{ADMIN_TEXTS.ENTERPRISE_DASHBOARD}</span>
               <div className="w-1 h-1 bg-slate-400 rounded-full" />
-              <span>{new Date().toLocaleDateString()}</span>
+              <span>{new Date().toLocaleDateString('ru-RU')}</span>
             </div>
           </div>
         </div>

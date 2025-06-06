@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { SORT_DIRECTIONS, PAGINATION } from '../../utils/constants';
 import { formatDate, formatNumber, formatCurrency, truncateText, cn } from '../../utils/helpers';
+import { ADMIN_TEXTS } from '../../utils/localization';
 import Button from './Button';
 import Input from './Input';
 import Checkbox from './Checkbox';
@@ -179,12 +180,12 @@ const DataTable = ({
       <div className="p-8">
         <EmptyState
           icon="❌"
-          title="Error Loading Data"
+          title={ADMIN_TEXTS.ERROR}
           description={error}
           variant="error"
           action={
             <Button onClick={() => window.location.reload()}>
-              Retry
+              {ADMIN_TEXTS.REFRESH}
             </Button>
           }
         />
@@ -197,7 +198,7 @@ const DataTable = ({
       <div className="p-8">
         <EmptyState
           icon="📊"
-          title="No Data"
+          title={ADMIN_TEXTS.NO_DATA}
           description={emptyMessage}
         />
       </div>
@@ -212,7 +213,7 @@ const DataTable = ({
           {searchable && (
             <Input
               type="search"
-              placeholder="Search..."
+              placeholder={ADMIN_TEXTS.SEARCH_PLACEHOLDER}
               value={localSearchValue}
               onChange={handleSearchChange}
               icon="🔍"

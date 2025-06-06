@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useApp } from '../../contexts/AppContext';
 import { cn } from '../../utils/helpers';
+import { ADMIN_TEXTS } from '../../utils/localization';
 
 /**
  * Premium sidebar navigation with glassmorphism and smooth animations
@@ -14,70 +15,70 @@ const Sidebar = () => {
   const navigationItems = [
     {
       path: '/',
-      label: 'Dashboard',
+      label: ADMIN_TEXTS.DASHBOARD,
       icon: '📊',
       exact: true
     },
     {
       path: '/users',
-      label: 'Users',
+      label: ADMIN_TEXTS.USERS,
       icon: '👥',
       children: [
-        { path: '/users/buyers', label: 'Buyers', icon: '🛒' },
-        { path: '/users/sellers', label: 'Sellers', icon: '🏪' }
+        { path: '/users/buyers', label: ADMIN_TEXTS.BUYERS, icon: '🛒' },
+        { path: '/users/sellers', label: ADMIN_TEXTS.SELLERS, icon: '🏪' }
       ]
     },
     {
       path: '/products',
-      label: 'Products',
+      label: ADMIN_TEXTS.PRODUCTS,
       icon: '📦',
       children: [
-        { path: '/products/list', label: 'All Products', icon: '📋' },
-        { path: '/products/wood-types', label: 'Wood Types', icon: '🌳' },
-        { path: '/products/prices', label: 'Pricing', icon: '💰' },
-        { path: '/products/boards', label: 'Wooden Boards', icon: '🪵' }
+        { path: '/products/list', label: ADMIN_TEXTS.ALL_PRODUCTS, icon: '📋' },
+        { path: '/products/wood-types', label: ADMIN_TEXTS.WOOD_TYPES, icon: '🌳' },
+        { path: '/products/prices', label: ADMIN_TEXTS.PRICING, icon: '💰' },
+        { path: '/products/boards', label: ADMIN_TEXTS.WOODEN_BOARDS, icon: '🪵' }
       ]
     },
     {
       path: '/media',
-      label: 'Media',
+      label: ADMIN_TEXTS.MEDIA,
       icon: '🖼️',
       children: [
-        { path: '/media/images', label: 'Images', icon: '📸' }
+        { path: '/media/images', label: ADMIN_TEXTS.IMAGES, icon: '📸' }
       ]
     },
     {
       path: '/communication',
-      label: 'Communication',
+      label: ADMIN_TEXTS.COMMUNICATION,
       icon: '💬',
       children: [
-        { path: '/communication/threads', label: 'Chat Threads', icon: '🧵' },
-        { path: '/communication/messages', label: 'Messages', icon: '💌' }
+        { path: '/communication/threads', label: ADMIN_TEXTS.CHAT_THREADS, icon: '🧵' },
+        { path: '/communication/messages', label: ADMIN_TEXTS.MESSAGES, icon: '💌' }
       ]
     },
     {
       path: '/analytics',
-      label: 'Analytics',
+      label: ADMIN_TEXTS.ANALYTICS,
       icon: '📈'
     },
     {
       path: '/tools',
-      label: 'Tools',
+      label: ADMIN_TEXTS.TOOLS,
       icon: '🛠️',
       children: [
-        { path: '/tools/export', label: 'Data Export', icon: '📤' },
-        { path: '/tools/import', label: 'Data Import', icon: '📥' },
-        { path: '/tools/api-test', label: 'API Tester', icon: '🧪' }
+        { path: '/tools/export', label: ADMIN_TEXTS.DATA_EXPORT, icon: '📤' },
+        { path: '/tools/import', label: ADMIN_TEXTS.DATA_IMPORT, icon: '📥' },
+        { path: '/tools/api-test', label: ADMIN_TEXTS.API_TESTER, icon: '🧪' }
       ]
     },
     {
       path: '/system',
-      label: 'System',
+      label: ADMIN_TEXTS.SYSTEM,
       icon: '⚙️',
       children: [
-        { path: '/system/health', label: 'Health Check', icon: '🔧' },
-        { path: '/system/logs', label: 'System Logs', icon: '📝' },
-        { path: '/system/settings', label: 'Settings', icon: '⚙️' }
+        { path: '/system/health', label: ADMIN_TEXTS.HEALTH_CHECK, icon: '🔧' },
+        { path: '/system/logs', label: ADMIN_TEXTS.SYSTEM_LOGS, icon: '📝' },
+        { path: '/system/settings', label: ADMIN_TEXTS.SETTINGS, icon: '⚙️' }
       ]
     }
   ];
@@ -199,10 +200,10 @@ const Sidebar = () => {
           {!sidebarCollapsed && (
             <div className="flex flex-col min-w-0">
               <span className="text-lg font-bold text-gradient-primary truncate">
-                Admin Panel
+                {ADMIN_TEXTS.ADMIN_PANEL}
               </span>
               <span className="text-xs text-slate-400 truncate">
-                Enterprise Dashboard
+                {ADMIN_TEXTS.ENTERPRISE_DASHBOARD}
               </span>
             </div>
           )}

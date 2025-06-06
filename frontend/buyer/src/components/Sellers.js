@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 
 // Mock buyer ID - in real app this would come from authentication
-const MOCK_BUYER_ID = '123e4567-e89b-12d3-a456-426614174001';
+const MOCK_BUYER_ID = '81f81c96-c56e-4b36-aec3-656f3576d09f';
 
 function Sellers() {
   const [page, setPage] = useState(0);
-  const { data, loading, error, refetch } = useApi(() => apiService.getSellers(page, 10), [page]);
+
+  // Create stable API function to prevent infinite loops
+  const sellersApiFunction = useMemo(() => () => apiService.getSellers(page, 10), [page]);
+  const { data, loading, error, refetch } = useApi(sellersApiFunction, [page]);
   const { mutate, loading: contacting } = useApiMutation();
 
-  const handleContactSeller = async (sellerId) => {
+  const handleContactSeller = useCallback(async (sellerId) => {
     try {
       // Create a new chat thread
       const threadId = crypto.randomUUID();
@@ -26,7 +29,7 @@ function Sellers() {
       console.error('Failed to contact seller:', err);
       alert('Failed to contact seller. Please try again.');
     }
-  };
+  }, [mutate]);
 
   return (
     <div className="card">

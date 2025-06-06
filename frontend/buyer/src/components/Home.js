@@ -1,16 +1,23 @@
-import React from 'react';
+import { useCallback, useMemo } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
+import { BUYER_TEXTS } from '../utils/localization';
 
 // Mock buyer ID - in real app this would come from authentication
-const MOCK_BUYER_ID = '123e4567-e89b-12d3-a456-426614174001';
+const MOCK_BUYER_ID = '81f81c96-c56e-4b36-aec3-656f3576d09f';
 
 function Home() {
-  const { data: healthData, loading: healthLoading, error: healthError } = useApi(() => apiService.healthCheck());
-  const { data: productsData, loading: productsLoading } = useApi(() => apiService.getProducts(0, 6));
+  // Create stable API functions to prevent infinite loops
+  const healthApiFunction = useMemo(() => () => apiService.healthCheck(), []);
+  const productsApiFunction = useMemo(() => () => apiService.getProducts(0, 6), []);
+  const woodTypesApiFunction = useMemo(() => () => apiService.getWoodTypes(), []);
+
+  const { data: healthData, loading: healthLoading, error: healthError } = useApi(healthApiFunction, []);
+  const { data: productsData, loading: productsLoading } = useApi(productsApiFunction, []);
+  const { data: woodTypesData } = useApi(woodTypesApiFunction, []);
   const { mutate, loading: contacting } = useApiMutation();
 
-  const handleContactSeller = async (sellerId) => {
+  const handleContactSeller = useCallback(async (sellerId) => {
     try {
       // Create a new chat thread
       const threadId = crypto.randomUUID();
@@ -26,22 +33,21 @@ function Home() {
       console.error('Failed to contact seller:', err);
       alert('Failed to contact seller. Please try again.');
     }
-  };
-  const { data: woodTypesData } = useApi(() => apiService.getWoodTypes());
+  }, [mutate]);
 
   return (
     <div>
       {/* Hero Section */}
       <div className="header">
         <div className="container">
-          <h1>Welcome to Wood Products Marketplace</h1>
-          <p>Discover quality wood products from verified sellers</p>
+          <h1>{BUYER_TEXTS.WELCOME_TITLE}</h1>
+          <p>{BUYER_TEXTS.WELCOME_SUBTITLE}</p>
           <div className="flex gap-4 mt-6">
             <a href="/products" className="btn btn-primary">
-              Browse Products
+              {BUYER_TEXTS.BROWSE_PRODUCTS}
             </a>
             <a href="/analyzer" className="btn btn-secondary">
-              Analyze Wood Board
+              {BUYER_TEXTS.ANALYZE_WOOD_BOARD}
             </a>
           </div>
         </div>
@@ -51,18 +57,18 @@ function Home() {
         {/* System Status */}
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">System Status</h2>
+            <h2 className="card-title">{BUYER_TEXTS.SYSTEM_STATUS}</h2>
           </div>
           <div className="grid grid-auto-sm">
             <div className="card text-center">
-              <h3 style={{ marginBottom: '1rem' }}>Backend Connection</h3>
-              {healthLoading && <p className="loading">Loading...</p>}
-              {healthError && <p className="status status-error">Offline</p>}
-              {healthData && <p className="status status-success">Online</p>}
+              <h3 style={{ marginBottom: '1rem' }}>{BUYER_TEXTS.BACKEND_STATUS}</h3>
+              {healthLoading && <p className="loading">{BUYER_TEXTS.LOADING}</p>}
+              {healthError && <p className="status status-error">{BUYER_TEXTS.OFFLINE}</p>}
+              {healthData && <p className="status status-success">{BUYER_TEXTS.ONLINE}</p>}
             </div>
 
             <div className="card text-center">
-              <h3 style={{ marginBottom: '1rem' }}>Available Products</h3>
+              <h3 style={{ marginBottom: '1rem' }}>{BUYER_TEXTS.PRODUCTS}</h3>
               <p style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--color-primary)' }}>
                 {productsLoading ? (
                   <span className="loading">...</span>
@@ -73,7 +79,7 @@ function Home() {
             </div>
 
             <div className="card text-center">
-              <h3 style={{ marginBottom: '1rem' }}>Wood Types</h3>
+              <h3 style={{ marginBottom: '1rem' }}>{BUYER_TEXTS.WOOD_TYPES}</h3>
               <p style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--color-primary)' }}>
                 {woodTypesData?.total || woodTypesData?.data?.length || 0}
               </p>
@@ -177,13 +183,13 @@ function Home() {
             </div>
 
             <div>
-              <h3 style={{ marginBottom: '1rem' }}>Features Available</h3>
+              <h3 style={{ marginBottom: '1rem' }}>{BUYER_TEXTS.FEATURES_AVAILABLE}</h3>
               <ul style={{ marginLeft: '1.5rem' }}>
-                <li>Product search and filtering</li>
-                <li>Seller profiles and ratings</li>
-                <li>AI-powered board analysis</li>
-                <li>Real-time chat system</li>
-                <li>Price comparison tools</li>
+                <li>{BUYER_TEXTS.PRODUCT_SEARCH_FILTERING}</li>
+                <li>{BUYER_TEXTS.SELLER_PROFILES_RATINGS}</li>
+                <li>{BUYER_TEXTS.AI_POWERED_BOARD_ANALYSIS}</li>
+                <li>{BUYER_TEXTS.REAL_TIME_CHAT_SYSTEM}</li>
+                <li>{BUYER_TEXTS.PRICE_COMPARISON_TOOLS}</li>
               </ul>
             </div>
           </div>

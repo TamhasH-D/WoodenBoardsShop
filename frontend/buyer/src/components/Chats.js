@@ -1,43 +1,64 @@
-import React, { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 
 // Mock buyer ID - in real app this would come from authentication
-const MOCK_BUYER_ID = '123e4567-e89b-12d3-a456-426614174001';
+const MOCK_BUYER_ID = '81f81c96-c56e-4b36-aec3-656f3576d09f';
 
 function Chats() {
   const [page, setPage] = useState(0);
   const [selectedThread, setSelectedThread] = useState(null);
   const [newMessage, setNewMessage] = useState('');
 
-  const { data, loading, error, refetch } = useApi(() => apiService.getBuyerChats(MOCK_BUYER_ID, page, 10), [page]);
+  // Memoize the selected thread ID to prevent unnecessary re-renders
+  const selectedThreadId = useMemo(() => selectedThread?.id || null, [selectedThread?.id]);
+
+  // Create stable API functions to prevent infinite loops
+  const chatsApiFunction = useMemo(() => () => apiService.getBuyerChats(MOCK_BUYER_ID, page, 10), [page]);
+  const { data, loading, error, refetch } = useApi(chatsApiFunction, [page]);
+
+  // Create stable messages API function
+  const messagesApiFunction = useMemo(() => {
+    return () => {
+      if (selectedThreadId) {
+        return apiService.getChatMessages(selectedThreadId);
+      }
+      return Promise.resolve(null);
+    };
+  }, [selectedThreadId]);
+
   const { data: messages, loading: messagesLoading, refetch: refetchMessages } = useApi(
-    () => selectedThread ? apiService.getChatMessages(selectedThread.id) : Promise.resolve(null),
-    [selectedThread]
+    messagesApiFunction,
+    [selectedThreadId]
   );
+
   const { mutate, loading: sending } = useApiMutation();
 
-  const handleSendMessage = async (e) => {
+  const handleSendMessage = useCallback(async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedThread) return;
+    if (!newMessage.trim() || !selectedThreadId) return;
+
+    const messageText = newMessage.trim();
+    setNewMessage(''); // Clear immediately for better UX
 
     try {
       const messageId = crypto.randomUUID();
-      await mutate(() => apiService.sendMessage({
+      await mutate(apiService.sendMessage, {
         id: messageId,
-        message: newMessage.trim(),
+        message: messageText,
         is_read_by_buyer: true,
         is_read_by_seller: false,
-        thread_id: selectedThread.id,
+        thread_id: selectedThreadId,
         buyer_id: MOCK_BUYER_ID,
-        seller_id: selectedThread.seller_id
-      }));
-      setNewMessage('');
+        seller_id: selectedThread?.seller_id
+      });
       refetchMessages();
     } catch (err) {
       console.error('Failed to send message:', err);
+      // Restore message on error
+      setNewMessage(messageText);
     }
-  };
+  }, [newMessage, selectedThreadId, selectedThread?.seller_id, mutate, refetchMessages]);
 
   return (
     <div>

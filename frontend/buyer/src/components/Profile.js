@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 
 // Mock buyer ID - in real app this would come from authentication
-const MOCK_BUYER_ID = '123e4567-e89b-12d3-a456-426614174001';
+const MOCK_BUYER_ID = '81f81c96-c56e-4b36-aec3-656f3576d09f';
 
 function Profile() {
   const [isEditing, setIsEditing] = useState(false);
@@ -12,28 +12,41 @@ function Profile() {
     is_online: true
   });
 
-  const { data, loading, error, refetch } = useApi(() => apiService.getBuyerProfile(MOCK_BUYER_ID));
+  // Create stable API function to prevent infinite loops
+  const profileApiFunction = useMemo(() => () => apiService.getBuyerProfile(MOCK_BUYER_ID), []);
+  const { data, loading, error, refetch } = useApi(profileApiFunction, []);
   const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
 
-  const handleSaveProfile = async (e) => {
+  const handleSaveProfile = useCallback(async (e) => {
     e.preventDefault();
     try {
-      await mutate(() => apiService.updateBuyerProfile(MOCK_BUYER_ID, profileData));
+      await mutate(apiService.updateBuyerProfile, MOCK_BUYER_ID, profileData);
       setIsEditing(false);
       refetch();
     } catch (err) {
       console.error('Failed to update profile:', err);
     }
-  };
+  }, [profileData, mutate, refetch]);
 
-  React.useEffect(() => {
+  // Use useEffect with proper dependency to prevent infinite loops
+  useEffect(() => {
     if (data?.data) {
-      setProfileData({
-        keycloak_uuid: data.data.keycloak_uuid || '',
-        is_online: data.data.is_online || false
+      setProfileData(prevData => {
+        const newData = {
+          keycloak_uuid: data.data.keycloak_uuid || '',
+          is_online: data.data.is_online || false
+        };
+
+        // Only update if data actually changed to prevent unnecessary re-renders
+        if (prevData.keycloak_uuid !== newData.keycloak_uuid ||
+            prevData.is_online !== newData.is_online) {
+          return newData;
+        }
+        return prevData;
       });
     }
-  }, [data]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.data?.keycloak_uuid, data?.data?.is_online]);
 
   return (
     <div className="card">

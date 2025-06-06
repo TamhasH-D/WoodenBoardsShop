@@ -1,9 +1,11 @@
-import React from 'react';
+import { useMemo } from 'react';
 import { useApi } from '../hooks/useApi';
 import { apiService } from '../services/api';
 
 function HealthCheck() {
-  const { data, loading, error, refetch } = useApi(() => apiService.healthCheck());
+  // Create stable API function to prevent infinite loops
+  const healthApiFunction = useMemo(() => () => apiService.healthCheck(), []);
+  const { data, loading, error, refetch } = useApi(healthApiFunction, []);
 
   return (
     <div className="card">

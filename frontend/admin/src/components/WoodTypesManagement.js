@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 
@@ -10,15 +10,24 @@ const WoodTypesManagement = React.memo(() => {
   const [formData, setFormData] = useState({ name: '', description: '' });
   const [priceFormData, setPriceFormData] = useState({ wood_type_id: '', price_per_m3: '' });
 
-  // API hooks for wood types
+  // API hooks for wood types (paginated for display)
+  const woodTypesApiFunction = useMemo(() => () => apiService.getWoodTypes(page, 10), [page]);
   const { data: woodTypes, loading: typesLoading, error: typesError, refetch: refetchTypes } = useApi(
-    () => apiService.getWoodTypes(page, 10),
+    woodTypesApiFunction,
     [page]
   );
 
+  // API hooks for all wood types (for dropdown)
+  const allWoodTypesApiFunction = useMemo(() => () => apiService.getAllWoodTypes(), []);
+  const { data: allWoodTypes, loading: allWoodTypesLoading, error: allWoodTypesError } = useApi(
+    allWoodTypesApiFunction,
+    []
+  );
+
   // API hooks for prices
+  const pricesApiFunction = useMemo(() => () => apiService.getWoodTypePrices(page, 10), [page]);
   const { data: prices, loading: pricesLoading, error: pricesError, refetch: refetchPrices } = useApi(
-    () => apiService.getWoodTypePrices(page, 10),
+    pricesApiFunction,
     [page]
   );
 
@@ -31,6 +40,8 @@ const WoodTypesManagement = React.memo(() => {
       setFormData({ name: '', description: '' });
       setShowAddForm(false);
       refetchTypes();
+      // Also refetch all wood types for dropdown
+      window.location.reload(); // Simple way to refresh all data
     } catch (error) {
       console.error('Add failed:', error);
     }
@@ -39,10 +50,7 @@ const WoodTypesManagement = React.memo(() => {
   const handleAddPrice = async (e) => {
     e.preventDefault();
     try {
-      await mutate(() => apiService.createWoodTypePrice({
-        wood_type_id: priceFormData.wood_type_id,
-        price_per_m3: parseFloat(priceFormData.price_per_m3)
-      }));
+      await mutate(() => apiService.createWoodTypePrice(priceFormData));
       setPriceFormData({ wood_type_id: '', price_per_m3: '' });
       setShowAddPriceForm(false);
       refetchPrices();
@@ -105,6 +113,16 @@ const WoodTypesManagement = React.memo(() => {
       {mutationError && (
         <div className="error mb-4">
           <strong>Operation failed:</strong> {mutationError}
+          <br />
+          <small>
+            This may be due to validation errors. Please check that all required fields are filled correctly.
+            {mutationError.includes('422') && (
+              <span>
+                <br />
+                <strong>Validation Error (422):</strong> The server rejected the request due to invalid data format.
+              </span>
+            )}
+          </small>
         </div>
       )}
 
@@ -209,7 +227,7 @@ const WoodTypesManagement = React.memo(() => {
                       <td>
                         <strong>{type.id.substring(0, 8)}...</strong>
                       </td>
-                      <td>{type.name}</td>
+                      <td>{type.neme || type.name}</td>
                       <td>{type.description || 'N/A'}</td>
                       <td>
                         {new Date(type.created_at).toLocaleDateString()}
@@ -298,19 +316,34 @@ const WoodTypesManagement = React.memo(() => {
               <form onSubmit={handleAddPrice}>
                 <div className="form-group">
                   <label className="form-label">Wood Type</label>
-                  <select
-                    value={priceFormData.wood_type_id}
-                    onChange={(e) => setPriceFormData({ ...priceFormData, wood_type_id: e.target.value })}
-                    className="form-input"
-                    required
-                  >
-                    <option value="">Select Wood Type</option>
-                    {woodTypes?.data?.map((type) => (
-                      <option key={type.id} value={type.id}>
-                        {type.name}
-                      </option>
-                    ))}
-                  </select>
+                  {allWoodTypesLoading ? (
+                    <div className="form-input" style={{ color: 'var(--color-text-light)' }}>
+                      Loading wood types...
+                    </div>
+                  ) : allWoodTypesError ? (
+                    <div className="error">
+                      Failed to load wood types: {allWoodTypesError}
+                    </div>
+                  ) : (
+                    <select
+                      value={priceFormData.wood_type_id}
+                      onChange={(e) => setPriceFormData({ ...priceFormData, wood_type_id: e.target.value })}
+                      className="form-input"
+                      required
+                    >
+                      <option value="">Select Wood Type</option>
+                      {allWoodTypes?.data?.map((type) => (
+                        <option key={type.id} value={type.id}>
+                          {type.neme || type.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {allWoodTypes?.data?.length > 0 && (
+                    <small style={{ color: 'var(--color-success)', fontSize: '0.8em' }}>
+                      ✅ {allWoodTypes.data.length} wood types available
+                    </small>
+                  )}
                 </div>
                 <div className="form-group">
                   <label className="form-label">Price per m³ (€)</label>

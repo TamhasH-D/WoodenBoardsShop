@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
+import { SELLER_TEXTS } from '../utils/localization';
 
 // Mock seller ID - in real app this would come from authentication
-const MOCK_SELLER_ID = '123e4567-e89b-12d3-a456-426614174000';
+const MOCK_SELLER_ID = '3ab0f210-ca78-4312-841b-8b1ae774adac';
 
 function Profile() {
   const [isEditing, setIsEditing] = useState(false);
@@ -38,34 +39,34 @@ function Profile() {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Seller Profile</h1>
-        <p className="page-description">Manage your seller account information and availability status</p>
+        <h1 className="page-title">{SELLER_TEXTS.SELLER_PROFILE}</h1>
+        <p className="page-description">{SELLER_TEXTS.MANAGE_BUSINESS_INFO}</p>
       </div>
 
       <div className="flex justify-between items-center mb-6">
         <div>
-          <p>Profile ID: {MOCK_SELLER_ID.substring(0, 8)}...</p>
+          <p>{SELLER_TEXTS.SELLER_ID}: {MOCK_SELLER_ID.substring(0, 8)}...</p>
         </div>
         <div className="flex gap-4">
           {!isEditing && (
             <button onClick={() => setIsEditing(true)} className="btn btn-primary">
-              Edit Profile
+              {SELLER_TEXTS.EDIT_PROFILE}
             </button>
           )}
           <button onClick={refetch} className="btn btn-secondary" disabled={loading}>
-            {loading ? 'Loading...' : 'Refresh'}
+            {loading ? SELLER_TEXTS.LOADING : SELLER_TEXTS.REFRESH}
           </button>
         </div>
       </div>
 
       {error && (
         <div className="error mb-4">
-          <strong>Profile Loading Issue:</strong> {error}
+          <strong>{SELLER_TEXTS.PROFILE_ERROR}:</strong> {error}
           <br />
-          <small>Using development mode with mock data. In production, this would require proper authentication.</small>
+          <small>Режим разработки с тестовыми данными. В продакшне потребуется настоящая аутентификация.</small>
           <div style={{ marginTop: '1rem' }}>
             <button onClick={refetch} className="btn btn-secondary">
-              Retry Loading Profile
+              Повторить загрузку профиля
             </button>
           </div>
         </div>
@@ -73,28 +74,28 @@ function Profile() {
 
       {mutationError && (
         <div className="error mb-4">
-          <strong>Failed to update profile:</strong> {mutationError}
+          <strong>{SELLER_TEXTS.PROFILE_UPDATE_ERROR}:</strong> {mutationError}
         </div>
       )}
 
       {success && (
         <div className="success mb-4">
-          <strong>Success:</strong> Profile updated successfully!
+          <strong>Успешно:</strong> {SELLER_TEXTS.PROFILE_UPDATED}
         </div>
       )}
 
-      {loading && <div className="loading">Loading profile...</div>}
+      {loading && <div className="loading">{SELLER_TEXTS.LOADING_PROFILE}</div>}
 
       {data && (
         <div className="card">
           {isEditing ? (
             <div>
               <div className="card-header">
-                <h2 className="card-title">Edit Profile</h2>
+                <h2 className="card-title">{SELLER_TEXTS.EDIT_PROFILE}</h2>
               </div>
               <form onSubmit={handleSaveProfile}>
               <div className="form-group">
-                <label className="form-label">Seller ID</label>
+                <label className="form-label">{SELLER_TEXTS.SELLER_ID}</label>
                 <input
                   type="text"
                   className="form-input"
@@ -102,17 +103,17 @@ function Profile() {
                   disabled
                   style={{ backgroundColor: '#f7fafc' }}
                 />
-                <small style={{ color: '#718096' }}>This ID cannot be changed</small>
+                <small style={{ color: '#718096' }}>{SELLER_TEXTS.SELLER_ID_CANNOT_CHANGE}</small>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Keycloak UUID</label>
+                <label className="form-label">{SELLER_TEXTS.KEYCLOAK_UUID}</label>
                 <input
                   type="text"
                   className="form-input"
                   value={profileData.keycloak_uuid}
                   onChange={(e) => setProfileData({...profileData, keycloak_uuid: e.target.value})}
-                  placeholder="Enter your Keycloak UUID"
+                  placeholder={SELLER_TEXTS.KEYCLOAK_UUID_PLACEHOLDER}
                 />
               </div>
 
@@ -123,13 +124,13 @@ function Profile() {
                     checked={profileData.is_online}
                     onChange={(e) => setProfileData({...profileData, is_online: e.target.checked})}
                   />
-                  <span>Available for customer inquiries</span>
+                  <span>{SELLER_TEXTS.SHOW_ONLINE}</span>
                 </label>
               </div>
 
                 <div className="flex gap-4">
                   <button type="submit" className="btn btn-primary" disabled={mutating}>
-                    {mutating ? 'Saving...' : 'Save Changes'}
+                    {mutating ? SELLER_TEXTS.SAVING : SELLER_TEXTS.SAVE_CHANGES}
                   </button>
                   <button
                     type="button"
@@ -137,7 +138,7 @@ function Profile() {
                     className="btn btn-secondary"
                     disabled={mutating}
                   >
-                    Cancel
+                    {SELLER_TEXTS.CANCEL}
                   </button>
                 </div>
               </form>
@@ -145,63 +146,63 @@ function Profile() {
           ) : (
             <div>
               <div className="card-header">
-                <h2 className="card-title">Profile Information</h2>
+                <h2 className="card-title">{SELLER_TEXTS.BUSINESS_INFORMATION}</h2>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }}>
                 <div>
-                  <h3>Basic Information</h3>
+                  <h3>Основная информация</h3>
                   <div style={{ marginBottom: '1rem' }}>
-                    <strong>Seller ID:</strong>
+                    <strong>{SELLER_TEXTS.SELLER_ID}:</strong>
                     <br />
                     <code style={{ backgroundColor: '#f7fafc', padding: '0.25rem', borderRadius: '0.25rem' }}>
                       {MOCK_SELLER_ID}
                     </code>
                   </div>
-                  
+
                   <div style={{ marginBottom: '1rem' }}>
-                    <strong>Keycloak UUID:</strong>
+                    <strong>{SELLER_TEXTS.KEYCLOAK_UUID}:</strong>
                     <br />
                     {data.data?.keycloak_uuid ? (
                       <code style={{ backgroundColor: '#f7fafc', padding: '0.25rem', borderRadius: '0.25rem' }}>
                         {data.data.keycloak_uuid}
                       </code>
                     ) : (
-                      <span style={{ color: '#718096' }}>Not set</span>
+                      <span style={{ color: '#718096' }}>Не установлен</span>
                     )}
                   </div>
 
                   <div style={{ marginBottom: '1rem' }}>
-                    <strong>Status:</strong>
+                    <strong>{SELLER_TEXTS.ONLINE_STATUS}:</strong>
                     <br />
                     <span className={`status ${data.data?.is_online ? 'status-success' : 'status-error'}`}>
-                      {data.data?.is_online ? 'Online' : 'Offline'}
+                      {data.data?.is_online ? SELLER_TEXTS.ONLINE : SELLER_TEXTS.OFFLINE}
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <h3>Account Details</h3>
+                  <h3>Детали аккаунта</h3>
                   <div style={{ marginBottom: '1rem' }}>
-                    <strong>Created:</strong>
+                    <strong>{SELLER_TEXTS.ACCOUNT_CREATED}:</strong>
                     <br />
-                    {data.data?.created_at ? new Date(data.data.created_at).toLocaleDateString() : 'Unknown'}
+                    {data.data?.created_at ? new Date(data.data.created_at).toLocaleDateString('ru-RU') : 'Неизвестно'}
                   </div>
-                  
+
                   <div style={{ marginBottom: '1rem' }}>
-                    <strong>Last Updated:</strong>
+                    <strong>{SELLER_TEXTS.LAST_UPDATED}:</strong>
                     <br />
-                    {data.data?.updated_at ? new Date(data.data.updated_at).toLocaleDateString() : 'Unknown'}
+                    {data.data?.updated_at ? new Date(data.data.updated_at).toLocaleDateString('ru-RU') : 'Неизвестно'}
                   </div>
                 </div>
               </div>
 
               <div className="card mt-6" style={{ backgroundColor: '#dcfce7' }}>
-                <h4>Profile Tips</h4>
+                <h4>{SELLER_TEXTS.BUSINESS_TIPS}</h4>
                 <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
-                  <li>Keep your status online to receive customer inquiries</li>
-                  <li>Make sure your Keycloak UUID is correctly configured</li>
-                  <li>Update your profile information regularly</li>
+                  <li>{SELLER_TEXTS.STAY_ONLINE_TIP}</li>
+                  <li>Убедитесь, что ваш Keycloak UUID настроен правильно</li>
+                  <li>Регулярно обновляйте информацию профиля</li>
                 </ul>
               </div>
             </div>
