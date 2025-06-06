@@ -22,5 +22,6 @@ include:
 
 networks:
   diplom_default:
-    driver: bridge
+    name: diplom_default
+    external: true
 

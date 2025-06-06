@@ -7,6 +7,7 @@ services:
       - "${DETECT_PORT}:${DETECT_PORT}"
     networks:
       - app_network
+      - diplom_default
     volumes:
       - ./detect/models:/app/models
     environment:
@@ -29,6 +30,7 @@ services:
       - "${PROSTO_BOARD_PORT}:${PROSTO_BOARD_PORT}"
     networks:
       - app_network
+      - diplom_default
     depends_on:
       detect:
         condition: service_healthy
@@ -38,7 +40,7 @@ services:
       - CONFIDENCE_THRESHOLD=${CONFIDENCE_THRESHOLD}
       - CORS_URL=${CORS_URL}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${BACKEND_PORT}/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${PROSTO_BOARD_PORT}/health"]
       interval: 5m
       timeout: 10s
       retries: 3
@@ -71,3 +73,6 @@ services:
 networks:
   app_network:
     driver: bridge
+  diplom_default:
+    name: diplom_default
+    external: true

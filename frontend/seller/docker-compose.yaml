@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
       args:
         - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
+        - REACT_APP_WOODEN_BOARDS_API_URL=${REACT_APP_WOODEN_BOARDS_API_URL:-http://localhost:8001}
     container_name: seller-frontend
     ports:
       - "${FRONTEND_SELLER_PORT:-8081}:80"
@@ -17,3 +18,8 @@ services:
       retries: 3
       start_period: 60s
     restart: unless-stopped
+
+networks:
+  diplom_default:
+    name: diplom_default
+    external: true

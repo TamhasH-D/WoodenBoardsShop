@@ -161,25 +161,25 @@ export const VALIDATION_RULES = {
   }
 };
 
-// Error messages
+// Error messages (Russian)
 export const ERROR_MESSAGES = {
-  NETWORK_ERROR: 'Network error. Please check your connection.',
-  SERVER_ERROR: 'Server error. Please try again later.',
-  VALIDATION_ERROR: 'Please check your input and try again.',
-  UNAUTHORIZED: 'You are not authorized to perform this action.',
-  NOT_FOUND: 'The requested resource was not found.',
-  TIMEOUT: 'Request timeout. Please try again.',
-  UNKNOWN_ERROR: 'An unexpected error occurred.'
+  NETWORK_ERROR: 'Ошибка сети. Проверьте подключение к интернету.',
+  SERVER_ERROR: 'Ошибка сервера. Попробуйте позже.',
+  VALIDATION_ERROR: 'Проверьте введенные данные и попробуйте снова.',
+  UNAUTHORIZED: 'У вас нет прав для выполнения этого действия.',
+  NOT_FOUND: 'Запрашиваемый ресурс не найден.',
+  TIMEOUT: 'Превышено время ожидания. Попробуйте снова.',
+  UNKNOWN_ERROR: 'Произошла неожиданная ошибка.'
 };
 
-// Success messages
+// Success messages (Russian)
 export const SUCCESS_MESSAGES = {
-  CREATED: 'Item created successfully',
-  UPDATED: 'Item updated successfully',
-  DELETED: 'Item deleted successfully',
-  BULK_DELETED: 'Items deleted successfully',
-  EXPORTED: 'Data exported successfully',
-  IMPORTED: 'Data imported successfully'
+  CREATED: 'Элемент успешно создан',
+  UPDATED: 'Элемент успешно обновлен',
+  DELETED: 'Элемент успешно удален',
+  BULK_DELETED: 'Элементы успешно удалены',
+  EXPORTED: 'Данные успешно экспортированы',
+  IMPORTED: 'Данные успешно импортированы'
 };
 
 // Loading states

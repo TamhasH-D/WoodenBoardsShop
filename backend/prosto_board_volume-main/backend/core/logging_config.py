@@ -14,7 +14,8 @@ log_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(messa
 
 def setup_logger(name):
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+    # Set to DEBUG level for detailed debugging
+    logger.setLevel(logging.DEBUG)
 
     # Обработчик для записи в файл
     file_handler = RotatingFileHandler(

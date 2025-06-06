@@ -7,7 +7,7 @@ The seller frontend has been comprehensively fixed to eliminate all 422 HTTP err
 ## 🔍 **ROOT CAUSE ANALYSIS COMPLETED**
 
 ### **Primary Issue Identified**
-The core problem was that the mock seller ID `123e4567-e89b-12d3-a456-426614174000` did not exist in the database, causing 422 (Unprocessable Entity) errors when attempting to:
+The core problem was that the mock seller ID `3ab0f210-ca78-4312-841b-8b1ae774adac` did not exist in the database, causing 422 (Unprocessable Entity) errors when attempting to:
 - Fetch seller profile information
 - Retrieve seller-specific products
 - Access seller chat threads

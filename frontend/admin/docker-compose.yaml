@@ -17,3 +17,8 @@ services:
       retries: 3
       start_period: 60s
     restart: unless-stopped
+
+networks:
+  diplom_default:
+    name: diplom_default
+    external: true

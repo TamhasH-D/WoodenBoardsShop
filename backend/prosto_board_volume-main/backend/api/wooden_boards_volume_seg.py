@@ -3,6 +3,7 @@ from typing import Annotated, List
 from PIL import Image
 import aiohttp
 import io
+import json
 import numpy as np
 import cv2
 import math
@@ -104,14 +105,24 @@ def order_points_consistently(points: np.ndarray) -> np.ndarray:
 def calculate_timber_dimensions(quadrilateral_points: List[dict], input_height: float) -> tuple:
     """
     Calculates the dimensions of a timber board based on the quadrilateral points.
-    
+
     Args:
         quadrilateral_points: List of points {x, y} defining the corners of the timber
-        input_height: Reference height in real-world units
-        
+        input_height: Reference height in real-world units (meters)
+
     Returns:
         tuple of (width, height, ratio)
     """
+    # Validate input
+    if len(quadrilateral_points) != 4:
+        raise ValueError(f"Expected 4 points, got {len(quadrilateral_points)}")
+
+    if input_height <= 0:
+        raise ValueError(f"Input height must be positive, got {input_height}")
+
+    logger.debug(f"Расчет размеров для точек: {quadrilateral_points}")
+    logger.debug(f"Входная высота: {input_height} м")
+
     # Calculate side lengths
     sides = []
     for i in range(4):
@@ -119,18 +130,43 @@ def calculate_timber_dimensions(quadrilateral_points: List[dict], input_height: 
         p2 = quadrilateral_points[(i + 1) % 4]
         side_length = math.sqrt((p2["x"] - p1["x"]) ** 2 + (p2["y"] - p1["y"]) ** 2)
         sides.append(side_length)
-    
+        logger.debug(f"Сторона {i}: от ({p1['x']:.2f}, {p1['y']:.2f}) до ({p2['x']:.2f}, {p2['y']:.2f}) = {side_length:.2f} пикселей")
+
+    # Validate that we have valid side lengths
+    if any(side <= 0 for side in sides):
+        raise ValueError(f"Invalid side lengths: {sides}")
+
+    logger.debug(f"Длины сторон: {[f'{s:.2f}' for s in sides]}")
+
     # Average opposite sides
     width = (sides[0] + sides[2]) / 2
     height = (sides[1] + sides[3]) / 2
-    
+
+    logger.debug(f"Средние размеры: ширина={(sides[0] + sides[2])/2:.2f}, высота={(sides[1] + sides[3])/2:.2f}")
+
+    # Validate dimensions
+    if width <= 0 or height <= 0:
+        raise ValueError(f"Invalid dimensions: width={width}, height={height}")
+
     # If width < height, swap them (for consistent orientation)
+    original_width, original_height = width, height
     if width < height:
         width, height = height, width
-    
-    # Calculate scaling ratio
+        logger.debug(f"Поменяли местами размеры: {original_width:.2f} x {original_height:.2f} -> {width:.2f} x {height:.2f}")
+
+    # Calculate scaling ratio with validation
+    if height <= 0:
+        raise ValueError(f"Height in pixels must be positive, got {height}")
+
     ratio = input_height / height
-    
+    logger.debug(f"Коэффициент масштабирования: {input_height} / {height:.2f} = {ratio:.6f}")
+
+    # Validate ratio
+    if ratio <= 0 or not math.isfinite(ratio):
+        raise ValueError(f"Invalid scaling ratio: {ratio}")
+
+    logger.debug(f"Финальные размеры: ширина={width:.2f}px, высота={height:.2f}px, коэффициент={ratio:.6f}")
+
     return width, height, ratio
 
 
@@ -157,6 +193,9 @@ async def wooden_boards_volume(
         Image.open(io.BytesIO(image_bytes))
         
         # Send image to YOLO detection service
+        logger.info(f"Отправка запроса к сервису сегментации: {settings.YOLO_SERVICE_SEGMENT_URL}")
+        logger.info(f"Размер изображения: {len(image_bytes)} байт")
+
         async with aiohttp.ClientSession() as session:
             form_data = aiohttp.FormData()
             form_data.add_field(
@@ -165,61 +204,153 @@ async def wooden_boards_volume(
                 filename=input.image.filename,
                 content_type=input.image.content_type,
             )
-            
-            async with session.post(settings.YOLO_SERVICE_SEGMENT_URL, data=form_data) as response:
-                if response.status != 200:
-                    error_message = await response.text()
-                    logger.error(f"Ошибка сервиса Wood_detection_seg: {error_message}")
-                    raise HTTPException(
-                        status_code=response.status,
-                        detail=f"Ошибка от Wood_detection: {error_message}",
-                    )
-                
-                detection_results_raw = await response.json()
-                logger.debug("Получен ответ от сервиса сегментации")
-                
-                try:
-                    detection_results = parse_obj_as(List[Detection_Seg], detection_results_raw)
-                    logger.info(f"Успешно обработано {len(detection_results)} результатов сегментации")
-                except Exception as e:
-                    logger.error(f"Ошибка валидации результатов сегментации: {str(e)}")
-                    raise HTTPException(
-                        status_code=500,
-                        detail=f"Validation error: {e}",
-                    )
+
+            try:
+                async with session.post(settings.YOLO_SERVICE_SEGMENT_URL, data=form_data) as response:
+                    logger.info(f"Получен ответ от сервиса сегментации: HTTP {response.status}")
+
+                    if response.status != 200:
+                        error_message = await response.text()
+                        logger.error(f"Ошибка сервиса Wood_detection_seg: HTTP {response.status} - {error_message}")
+                        raise HTTPException(
+                            status_code=response.status,
+                            detail=f"Ошибка от Wood_detection: {error_message}",
+                        )
+
+                    # Get response text first for debugging
+                    response_text = await response.text()
+                    logger.debug(f"Сырой ответ от сервиса сегментации: {response_text[:500]}...")
+
+                    # Parse JSON
+                    try:
+                        detection_results_raw = json.loads(response_text)
+                        logger.info(f"JSON успешно распарсен, тип: {type(detection_results_raw)}")
+
+                        if isinstance(detection_results_raw, list):
+                            logger.info(f"Получен список из {len(detection_results_raw)} элементов")
+                        else:
+                            logger.warning(f"Ожидался список, получен: {type(detection_results_raw)}")
+
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Ошибка парсинга JSON: {str(e)}")
+                        logger.error(f"Проблемный ответ: {response_text}")
+                        raise HTTPException(
+                            status_code=500,
+                            detail=f"Invalid JSON response from detection service: {e}",
+                        )
+
+                    # Validate response structure
+                    try:
+                        detection_results = parse_obj_as(List[Detection_Seg], detection_results_raw)
+                        logger.info(f"Успешно обработано {len(detection_results)} результатов сегментации")
+
+                        # Log details about each detection
+                        for i, detection in enumerate(detection_results):
+                            logger.debug(f"Обнаружение {i}: класс={detection.class_name}, уверенность={detection.confidence}, точек={len(detection.points)}")
+
+                    except Exception as e:
+                        logger.error(f"Ошибка валидации результатов сегментации: {str(e)}")
+                        logger.error(f"Проблемные данные: {detection_results_raw}")
+                        raise HTTPException(
+                            status_code=500,
+                            detail=f"Validation error: {e}",
+                        )
+
+            except aiohttp.ClientError as e:
+                logger.error(f"Ошибка сетевого соединения с сервисом сегментации: {str(e)}")
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Cannot connect to detection service: {e}",
+                )
         
         total_volume = 0
         detections = []
-        
-        for detection in detection_results:
+
+        logger.info(f"Начинаем обработку {len(detection_results)} результатов сегментации")
+        logger.info(f"Порог уверенности: {settings.CONFIDENCE_THRESHOLD}")
+        logger.info(f"Входные параметры: высота={input.height}м, длина={input.length}м")
+
+        # Collect statistics for debugging
+        confidence_stats = [d.confidence for d in detection_results]
+        class_stats = [d.class_name for d in detection_results]
+
+        if confidence_stats:
+            logger.info(f"Статистика уверенности: мин={min(confidence_stats):.3f}, макс={max(confidence_stats):.3f}, среднее={sum(confidence_stats)/len(confidence_stats):.3f}")
+
+        if class_stats:
+            unique_classes = set(class_stats)
+            logger.info(f"Найденные классы: {unique_classes}")
+            for class_name in unique_classes:
+                count = class_stats.count(class_name)
+                logger.info(f"  Класс '{class_name}': {count} обнаружений")
+
+        for i, detection in enumerate(detection_results):
+            logger.debug(f"Обрабатываем обнаружение {i}: класс={detection.class_name}, уверенность={detection.confidence}")
+
             if detection.confidence < settings.CONFIDENCE_THRESHOLD:
-                logger.debug(f"Пропущено обнаружение с уверенностью {detection.confidence} < {settings.CONFIDENCE_THRESHOLD}")
+                logger.debug(f"Пропущено обнаружение {i} с уверенностью {detection.confidence} < {settings.CONFIDENCE_THRESHOLD}")
                 continue
-            
-            if detection.class_name != "wood":
-                logger.debug(f"Пропущено обнаружение с классом {detection.class_name}")
+
+            # More flexible class name matching
+            valid_class_names = ["wood", "wooden", "board", "timber", "lumber"]
+            if detection.class_name.lower() not in valid_class_names:
+                logger.debug(f"Пропущено обнаружение {i} с классом '{detection.class_name}' (ожидается один из: {valid_class_names})")
                 continue
+
+            logger.info(f"Обрабатываем валидное обнаружение {i}: класс={detection.class_name}, уверенность={detection.confidence}, точек={len(detection.points)}")
             # Convert detection points to numpy array
-            points_array = np.array([(point.x, point.y) for point in detection.points], dtype=np.float32)
-            
-            # Optimize to get exactly 4 corner points
-            optimized_points = optimize_quad_points(points_array)
-            
-            # Order points consistently
-            ordered_points = order_points_consistently(optimized_points)
-            
-            # Convert points back to dictionary format
-            quad_points = [{"x": float(p[0]), "y": float(p[1])} for p in ordered_points]
-            
-            # Calculate dimensions and volume
-            width_px, height_px, ratio = calculate_timber_dimensions(quad_points, input.height)
-            
-            # Real-world dimensions
-            width_real = width_px * ratio
-            height_real = height_px * ratio
-            
-            # Calculate volume
-            volume = width_real * height_real * input.length
+            try:
+                points_array = np.array([(point.x, point.y) for point in detection.points], dtype=np.float32)
+                logger.debug(f"Обнаружение {i}: исходных точек={len(detection.points)}")
+
+                # Optimize to get exactly 4 corner points
+                optimized_points = optimize_quad_points(points_array)
+                logger.debug(f"Обнаружение {i}: оптимизированных точек={len(optimized_points)}")
+
+                # Order points consistently
+                ordered_points = order_points_consistently(optimized_points)
+                logger.debug(f"Обнаружение {i}: упорядоченных точек={len(ordered_points)}")
+
+                # Convert points back to dictionary format
+                quad_points = [{"x": float(p[0]), "y": float(p[1])} for p in ordered_points]
+
+                # Log detailed point information
+                logger.debug(f"Обнаружение {i}: четырехугольные точки: {quad_points}")
+
+                # Calculate dimensions and volume
+                width_px, height_px, ratio = calculate_timber_dimensions(quad_points, input.height)
+                logger.info(f"Обнаружение {i}: размеры в пикселях - ширина={width_px:.2f}, высота={height_px:.2f}, коэффициент={ratio:.6f}")
+
+                # Real-world dimensions
+                width_real = width_px * ratio
+                height_real = height_px * ratio
+                logger.info(f"Обнаружение {i}: реальные размеры - ширина={width_real:.6f}м, высота={height_real:.6f}м")
+
+                # Calculate volume
+                volume = width_real * height_real * input.length
+                logger.info(f"Обнаружение {i}: рассчитанный объем={volume:.8f} м³")
+                logger.info(f"  Формула: {width_real:.6f} × {height_real:.6f} × {input.length} = {volume:.8f}")
+
+                # Enhanced validation with detailed logging
+                if volume <= 0:
+                    logger.warning(f"Обнаружение {i}: объем <= 0 ({volume}), пропускаем")
+                    logger.warning(f"  Детали: width_real={width_real}, height_real={height_real}, length={input.length}")
+                    continue
+
+                if width_real <= 0 or height_real <= 0:
+                    logger.warning(f"Обнаружение {i}: недопустимые размеры (ширина={width_real}, высота={height_real}), пропускаем")
+                    continue
+
+                # Additional sanity checks
+                if width_real > 10 or height_real > 10:  # Boards larger than 10m seem unrealistic
+                    logger.warning(f"Обнаружение {i}: подозрительно большие размеры (ширина={width_real}м, высота={height_real}м), но продолжаем")
+
+                if volume > 100:  # Volume larger than 100 m³ seems unrealistic for a single board
+                    logger.warning(f"Обнаружение {i}: подозрительно большой объем ({volume:.6f} м³), но продолжаем")
+
+            except Exception as calc_error:
+                logger.error(f"Ошибка при расчете объема для обнаружения {i}: {str(calc_error)}")
+                continue
             
             # Format points for output
             output_points = [Point(x=p["x"], y=p["y"]) for p in quad_points]
@@ -243,18 +374,30 @@ async def wooden_boards_volume(
             )
             
             total_volume += volume
-        
+            logger.debug(f"Добавлен объем {volume:.6f}, общий объем теперь: {total_volume:.6f}")
+
         # Create final output
+        logger.info(f"Создаем финальный результат: досок={len(detections)}, общий_объем={total_volume:.6f}")
+
         result = Wooden_boards_seg_schema_output(
             total_volume=total_volume,
             total_count=len(detections),
             wooden_boards=detections,
         )
-        
+
+        # Validate final result
+        logger.info(f"Финальный результат создан: total_volume={result.total_volume}, total_count={result.total_count}, boards_count={len(result.wooden_boards)}")
+
+        # Additional validation
+        if result.total_volume == 0 and len(detection_results) > 0:
+            logger.warning("ВНИМАНИЕ: Общий объем равен 0, но были обнаружения от сервиса сегментации!")
+            logger.warning(f"Исходных обнаружений: {len(detection_results)}")
+            logger.warning(f"Обработанных досок: {len(detections)}")
+
         logger.info(
             f"Завершена обработка изображения {input.image.filename}. "
             f"Обработано досок: {result.total_count}, "
-            f"Общий объем: {result.total_volume:.2f}."
+            f"Общий объем: {result.total_volume:.6f} м³."
         )
         
         return result

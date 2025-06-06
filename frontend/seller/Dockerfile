@@ -5,7 +5,9 @@ WORKDIR /app
 
 # Accept build arguments
 ARG REACT_APP_API_URL=http://localhost:8000
+ARG REACT_APP_WOODEN_BOARDS_API_URL=http://localhost:8001
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
+ENV REACT_APP_WOODEN_BOARDS_API_URL=$REACT_APP_WOODEN_BOARDS_API_URL
 
 # Copy package files
 COPY package*.json ./

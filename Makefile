@@ -26,16 +26,21 @@ help: ## Show available commands
 	@echo "📦 Main Commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -v "^help:" | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
-	@echo "🌐 Service URLs:"
-	@echo "  Backend API:      http://$(BACKEND_HOST):$(BACKEND_PORT)"
-	@echo "  API Docs:         http://$(BACKEND_HOST):$(BACKEND_PORT)/docs"
+	@echo "🌐 Service URLs (accessible from host system):"
+	@echo "  Backend API:      http://localhost:$(BACKEND_PORT)"
+	@echo "  API Docs:         http://localhost:$(BACKEND_PORT)/docs"
+	@echo "  Admin Frontend:   http://localhost:$(FRONTEND_ADMIN_PORT)"
+	@echo "  Seller Frontend:  http://localhost:$(FRONTEND_SELLER_PORT)"
+	@echo "  Buyer Frontend:   http://localhost:$(FRONTEND_BUYER_PORT)"
+	@echo "  YOLO Backend:     http://localhost:$(PROSTO_BOARD_PORT)"
+	@echo "  YOLO Detect:      http://localhost:$(DETECT_PORT)"
 
 # ============================================================================
 # 🚀 MAIN COMMANDS
 # ============================================================================
 
 .PHONY: up
-up: ## Start all services
+up: init-network ## Start all services
 	$(COMPOSE) up -d
 
 .PHONY: down
@@ -47,7 +52,7 @@ build: ## Build all services
 	$(COMPOSE) build --no-cache
 
 .PHONY: rebuild
-rebuild: down build up ## Rebuild and restart all services
+rebuild: down init-network build up ## Rebuild and restart all services
 
 .PHONY: logs
 logs: ## Show logs from all services
@@ -81,10 +86,19 @@ backend-migrate: ## Run database migrations
 # 🧹 CLEANUP & UTILITY
 # ============================================================================
 
+.PHONY: init-network
+init-network: ## Initialize Docker networks
+	@./scripts/init-network.sh
+
 .PHONY: clean
 clean: ## Clean Docker resources
 	docker system prune -f
 
+.PHONY: clean-all
+clean-all: down ## Clean all Docker resources including networks
+	docker system prune -af
+	docker network prune -f
+
 .PHONY: dev
 dev: backend-up ## Quick start for development (backend only)
-	@echo "🎯 Backend ready at http://$(BACKEND_HOST):$(BACKEND_PORT)/docs"
+	@echo "🎯 Backend ready at http://localhost:$(BACKEND_PORT)/docs"

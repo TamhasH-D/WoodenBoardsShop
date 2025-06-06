@@ -177,7 +177,7 @@ NODE_ENV=development                      # Environment mode
 
 The application uses a mock buyer ID for development:
 ```javascript
-const MOCK_BUYER_ID = '123e4567-e89b-12d3-a456-426614174001';
+const MOCK_BUYER_ID = '81f81c96-c56e-4b36-aec3-656f3576d09f';
 ```
 
 ## 🚀 Deployment
