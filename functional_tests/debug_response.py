@@ -10,31 +10,35 @@ async def debug_responses():
         buyer_data = generate_test_data('buyer')
         print('Input data:')
         print(json.dumps(buyer_data, indent=2, ensure_ascii=False))
-        
+
         create_response = await client.post('/api/v1/buyers/', json=buyer_data)
         print(f'\nPOST status: {create_response.status_code}')
-        created_buyer = create_response.json()
+        created_buyer = assert_response_success(create_response, 201)
         print('POST response:')
         print(json.dumps(created_buyer, indent=2, ensure_ascii=False))
-        
-        # Получаем по ID
-        buyer_id = created_buyer['data']['id']
-        get_response = await client.get(f'/api/v1/buyers/{buyer_id}')
-        print(f'\nGET by ID status: {get_response.status_code}')
+
+        # Обновляем покупателя
+        update_data = {'is_online': not created_buyer['is_online']}
+        patch_response = await client.patch(f'/api/v1/buyers/{created_buyer["id"]}', json=update_data)
+        print(f'\nPATCH status: {patch_response.status_code}')
+        print(f'PATCH headers: {dict(patch_response.headers)}')
+        print(f'PATCH content: {patch_response.text}')
+
+        if patch_response.status_code in [200, 204]:
+            if patch_response.text:
+                patch_data = patch_response.json()
+                print('PATCH response:')
+                print(json.dumps(patch_data, indent=2, ensure_ascii=False))
+            else:
+                print('PATCH response: No content (204)')
+
+        # Получаем по ID после обновления
+        get_response = await client.get(f'/api/v1/buyers/{created_buyer["id"]}')
+        print(f'\nGET after PATCH status: {get_response.status_code}')
         if get_response.status_code == 200:
-            retrieved_data = get_response.json()
-            print('GET by ID response:')
+            retrieved_data = assert_response_success(get_response, 200)
+            print('GET after PATCH response:')
             print(json.dumps(retrieved_data, indent=2, ensure_ascii=False))
-        else:
-            print(f'GET error: {get_response.text}')
-        
-        # Получаем список
-        list_response = await client.get('/api/v1/buyers/')
-        print(f'\nGET list status: {list_response.status_code}')
-        if list_response.status_code == 200:
-            list_data = list_response.json()
-            print('GET list response:')
-            print(json.dumps(list_data, indent=2, ensure_ascii=False))
 
 if __name__ == '__main__':
     asyncio.run(debug_responses())

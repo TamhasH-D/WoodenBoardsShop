@@ -103,6 +103,31 @@ test-api-wooden-board: ## Запустить API тесты для wooden_board
 	TEST_TYPE=api PYTEST_ARGS="-v api_tests/wooden_board/" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
 	@$(MAKE) down
 
+test-api-image: ## Запустить API тесты для image
+	@echo "$(YELLOW)🖼️  Запуск API тестов для image...$(NC)"
+	TEST_TYPE=api PYTEST_ARGS="-v api_tests/image/" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
+	@$(MAKE) down
+
+test-api-chat: ## Запустить API тесты для chat
+	@echo "$(YELLOW)💬 Запуск API тестов для chat...$(NC)"
+	TEST_TYPE=api PYTEST_ARGS="-v api_tests/chat/" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
+	@$(MAKE) down
+
+test-api-get-by-id: ## Запустить тесты GET by ID
+	@echo "$(YELLOW)🔍 Запуск тестов GET by ID...$(NC)"
+	TEST_TYPE=api PYTEST_ARGS="-v api_tests/test_get_by_id.py" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
+	@$(MAKE) down
+
+test-api-patch: ## Запустить тесты PATCH операций
+	@echo "$(YELLOW)✏️  Запуск тестов PATCH операций...$(NC)"
+	TEST_TYPE=api PYTEST_ARGS="-v api_tests/test_patch_operations.py" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
+	@$(MAKE) down
+
+test-api-delete: ## Запустить тесты DELETE операций
+	@echo "$(YELLOW)🗑️  Запуск тестов DELETE операций...$(NC)"
+	TEST_TYPE=api PYTEST_ARGS="-v api_tests/test_delete_operations.py" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
+	@$(MAKE) down
+
 test-api-integration: ## Запустить интеграционные API тесты
 	@echo "$(YELLOW)🔗 Запуск интеграционных API тестов...$(NC)"
 	TEST_TYPE=api PYTEST_ARGS="-v -m integration api_tests/" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit

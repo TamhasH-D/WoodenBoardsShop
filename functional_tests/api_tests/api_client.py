@@ -10,16 +10,17 @@ import httpx
 from httpx import Response
 
 
-def assert_response_success(response: Response, expected_status: int = 200) -> Dict[str, Any]:
+def assert_response_success(response: Response, expected_status: int = 200):
     """Проверка успешного ответа API."""
     assert response.status_code == expected_status, (
         f"Expected status {expected_status}, got {response.status_code}. "
         f"Response: {response.text}"
     )
-    
+
     data = response.json()
     assert "data" in data, f"Response missing 'data' field: {data}"
-    
+
+    # Возвращаем data, даже если это None (для PATCH операций)
     return data["data"]
 
 
@@ -100,7 +101,14 @@ def generate_test_data(entity_type: str) -> Dict[str, Any]:
             "image_path": "/test/path/image.jpg",
             "product_id": str(uuid4()),  # Будет заменен на реальный ID
         }
-    
+
+    elif entity_type == "chat":
+        return {
+            **base_data,
+            "buyer_id": str(uuid4()),  # Будет заменен на реальный ID
+            "seller_id": str(uuid4()),  # Будет заменен на реальный ID
+        }
+
     else:
         raise ValueError(f"Unknown entity type: {entity_type}")
 
@@ -168,3 +176,9 @@ def validate_entity_fields(data: Dict[str, Any], entity_type: str) -> None:
         assert "product_id" in data, "Missing 'product_id' field"
         assert isinstance(data["image_path"], str), f"'image_path' should be string: {data['image_path']}"
         assert validate_uuid(data["product_id"]), f"Invalid UUID in 'product_id': {data['product_id']}"
+
+    elif entity_type == "chat":
+        assert "buyer_id" in data, "Missing 'buyer_id' field"
+        assert "seller_id" in data, "Missing 'seller_id' field"
+        assert validate_uuid(data["buyer_id"]), f"Invalid UUID in 'buyer_id': {data['buyer_id']}"
+        assert validate_uuid(data["seller_id"]), f"Invalid UUID in 'seller_id': {data['seller_id']}"
