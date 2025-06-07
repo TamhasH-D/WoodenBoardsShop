@@ -15,9 +15,9 @@ services:
         condition: service_healthy
     command: >
       bash -c "
-        echo '🚀 Starting Simple API Server for testing...' &&
+        echo '🚀 Starting Backend API Server...' &&
         cd /app &&
-        python3 simple_server.py
+        python -m backend
       "
     environment:
       BACKEND_CORS_ALLOW_ORIGINS: ${BACKEND_CORS_ALLOW_ORIGINS:-"*"}
