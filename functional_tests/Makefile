@@ -128,6 +128,31 @@ test-api-delete: ## Запустить тесты DELETE операций
 	TEST_TYPE=api PYTEST_ARGS="-v api_tests/test_delete_operations.py" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
 	@$(MAKE) down
 
+test-api-wood-type-price: ## Запустить тесты wood-type-price API
+	@echo "$(YELLOW)💰 Запуск тестов wood-type-price API...$(NC)"
+	TEST_TYPE=api PYTEST_ARGS="-v api_tests/wood_type_price/" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
+	@$(MAKE) down
+
+test-api-calculate-volume: ## Запустить тесты расчета объема
+	@echo "$(YELLOW)📐 Запуск тестов расчета объема...$(NC)"
+	TEST_TYPE=api PYTEST_ARGS="-v api_tests/wooden_board/test_calculate_volume.py" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
+	@$(MAKE) down
+
+test-api-comprehensive: ## Запустить комплексные API тесты
+	@echo "$(YELLOW)🎯 Запуск комплексных API тестов...$(NC)"
+	TEST_TYPE=api PYTEST_ARGS="-v api_tests/test_comprehensive_suite.py" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
+	@$(MAKE) down
+
+test-api-smoke: ## Запустить smoke тесты API
+	@echo "$(YELLOW)💨 Запуск smoke тестов API...$(NC)"
+	TEST_TYPE=api PYTEST_ARGS="-v -m smoke api_tests/" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
+	@$(MAKE) down
+
+test-api-stress: ## Запустить стресс тесты API
+	@echo "$(YELLOW)⚡ Запуск стресс тестов API...$(NC)"
+	TEST_TYPE=api PYTEST_ARGS="-v -m stress api_tests/" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
+	@$(MAKE) down
+
 test-api-integration: ## Запустить интеграционные API тесты
 	@echo "$(YELLOW)🔗 Запуск интеграционных API тестов...$(NC)"
 	TEST_TYPE=api PYTEST_ARGS="-v -m integration api_tests/" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit

@@ -18,10 +18,17 @@ def assert_response_success(response: Response, expected_status: int = 200):
     )
 
     data = response.json()
-    assert "data" in data, f"Response missing 'data' field: {data}"
 
-    # Возвращаем data, даже если это None (для PATCH операций)
-    return data["data"]
+    # Если ответ - простое значение (например, boolean для health), возвращаем как есть
+    if not isinstance(data, dict):
+        return data
+
+    # Если есть поле data, возвращаем его содержимое
+    if "data" in data:
+        return data["data"]
+
+    # Иначе возвращаем весь объект (для endpoints без обертки data)
+    return data
 
 
 def assert_response_error(response: Response, expected_status: int) -> Dict[str, Any]:
@@ -102,11 +109,21 @@ def generate_test_data(entity_type: str) -> Dict[str, Any]:
             "product_id": str(uuid4()),  # Будет заменен на реальный ID
         }
 
-    elif entity_type == "chat":
+    elif entity_type == "chat_thread":
         return {
             **base_data,
             "buyer_id": str(uuid4()),  # Будет заменен на реальный ID
             "seller_id": str(uuid4()),  # Будет заменен на реальный ID
+        }
+
+    elif entity_type == "chat":  # Алиас для обратной совместимости
+        return generate_test_data("chat_thread")
+
+    elif entity_type == "wood_type_price":
+        return {
+            **base_data,
+            "price_per_m3": 1500.0,  # Цена за кубический метр
+            "wood_type_id": str(uuid4()),  # Будет заменен на реальный ID
         }
 
     else:
@@ -177,8 +194,14 @@ def validate_entity_fields(data: Dict[str, Any], entity_type: str) -> None:
         assert isinstance(data["image_path"], str), f"'image_path' should be string: {data['image_path']}"
         assert validate_uuid(data["product_id"]), f"Invalid UUID in 'product_id': {data['product_id']}"
 
-    elif entity_type == "chat":
+    elif entity_type in ["chat", "chat_thread"]:
         assert "buyer_id" in data, "Missing 'buyer_id' field"
         assert "seller_id" in data, "Missing 'seller_id' field"
         assert validate_uuid(data["buyer_id"]), f"Invalid UUID in 'buyer_id': {data['buyer_id']}"
         assert validate_uuid(data["seller_id"]), f"Invalid UUID in 'seller_id': {data['seller_id']}"
+
+    elif entity_type == "wood_type_price":
+        assert "price_per_m3" in data, "Missing 'price_per_m3' field"
+        assert "wood_type_id" in data, "Missing 'wood_type_id' field"
+        assert isinstance(data["price_per_m3"], (int, float)), f"'price_per_m3' should be number: {data['price_per_m3']}"
+        assert validate_uuid(data["wood_type_id"]), f"Invalid UUID in 'wood_type_id': {data['wood_type_id']}"
