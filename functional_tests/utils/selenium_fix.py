@@ -15,7 +15,34 @@ class SeleniumFixer:
     def __init__(self):
         self.compose_file = "docker-compose.test.yaml"
         self.project_name = "diplom-functional-tests"
-        self.selenium_hub_url = "http://selenium-hub:4444"
+        # Определяем URL в зависимости от окружения
+        self.selenium_hub_url = self._determine_selenium_url()
+
+    def _determine_selenium_url(self) -> str:
+        """Определение правильного URL для Selenium Hub."""
+        # Проверяем, запущены ли мы внутри Docker контейнера
+        if self._is_running_in_docker():
+            return "http://selenium-hub:4444"
+        else:
+            return "http://localhost:4444"
+
+    def _is_running_in_docker(self) -> bool:
+        """Проверка, запущен ли скрипт внутри Docker контейнера."""
+        try:
+            # Проверяем наличие файла .dockerenv
+            with open('/.dockerenv', 'r'):
+                return True
+        except FileNotFoundError:
+            pass
+
+        try:
+            # Проверяем cgroup для Docker
+            with open('/proc/1/cgroup', 'r') as f:
+                return 'docker' in f.read()
+        except FileNotFoundError:
+            pass
+
+        return False
     
     def run_command(self, command: List[str], capture_output: bool = True) -> subprocess.CompletedProcess:
         """Выполнение команды с логированием."""
@@ -166,37 +193,85 @@ class SeleniumFixer:
     def verify_selenium_health(self) -> bool:
         """Проверка здоровья Selenium после исправления."""
         print("🏥 Проверка здоровья Selenium Grid...")
-        
-        max_attempts = 10
+        print(f"🔗 Используется URL: {self.selenium_hub_url}")
+
+        max_attempts = 15
         for attempt in range(1, max_attempts + 1):
             print(f"🔍 Попытка {attempt}/{max_attempts}")
-            
+
             try:
+                # Сначала проверяем доступность порта
+                if not self._check_port_availability():
+                    print(f"⏳ Порт 4444 еще недоступен, ждем...")
+                    time.sleep(10)
+                    continue
+
                 # Проверяем Hub
-                response = requests.get(f"{self.selenium_hub_url}/wd/hub/status", timeout=10)
+                response = requests.get(f"{self.selenium_hub_url}/wd/hub/status", timeout=15)
                 if response.status_code == 200:
                     data = response.json()
                     if data.get("value", {}).get("ready", False):
                         print("✅ Selenium Hub готов!")
-                        
+
                         # Дополнительная проверка Grid API
                         try:
-                            grid_response = requests.get(f"{self.selenium_hub_url}/grid/api/hub", timeout=5)
+                            grid_response = requests.get(f"{self.selenium_hub_url}/grid/api/hub", timeout=10)
                             if grid_response.status_code == 200:
                                 print("✅ Selenium Grid API работает!")
                                 return True
-                        except Exception:
-                            pass
-                
-                print(f"⏳ Hub еще не готов, ждем...")
+                            else:
+                                print(f"⚠️ Grid API недоступен: {grid_response.status_code}")
+                        except Exception as grid_e:
+                            print(f"⚠️ Ошибка Grid API: {grid_e}")
+
+                        # Даже если Grid API недоступен, Hub готов
+                        return True
+                    else:
+                        print(f"⏳ Hub не готов. Статус: {data}")
+                else:
+                    print(f"⏳ Hub вернул статус: {response.status_code}")
+
                 time.sleep(10)
-                
+
+            except requests.exceptions.ConnectionError as e:
+                print(f"❌ Ошибка подключения (попытка {attempt}): {e}")
+                print(f"🔍 Проверяем доступность контейнера...")
+                self._check_container_status()
+                time.sleep(10)
             except Exception as e:
-                print(f"❌ Ошибка проверки (попытка {attempt}): {e}")
+                print(f"❌ Общая ошибка проверки (попытка {attempt}): {e}")
                 time.sleep(10)
-        
+
         print(f"❌ Selenium Grid не готов после {max_attempts} попыток")
         return False
+
+    def _check_port_availability(self) -> bool:
+        """Проверка доступности порта 4444."""
+        try:
+            import socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(5)
+            result = sock.connect_ex(("localhost", 4444))
+            sock.close()
+            return result == 0
+        except Exception:
+            return False
+
+    def _check_container_status(self) -> None:
+        """Проверка статуса контейнера Selenium Hub."""
+        try:
+            result = self.run_command([
+                "docker", "ps", "--filter", "name=selenium-hub",
+                "--format", "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            ], capture_output=True)
+
+            if result.returncode == 0 and result.stdout:
+                print(f"📊 Статус контейнера selenium-hub:")
+                print(result.stdout)
+            else:
+                print("❌ Контейнер selenium-hub не найден или не запущен")
+        except Exception as e:
+            print(f"⚠️ Не удалось проверить статус контейнера: {e}")
     
     def fix_selenium_issues(self) -> bool:
         """Полное исправление проблем Selenium."""

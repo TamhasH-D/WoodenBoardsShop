@@ -1,6 +1,6 @@
 # Makefile для функциональных тестов
 
-.PHONY: help build rebuild up down test test-rebuild test-api test-api-rebuild test-browser test-integration test-uuid test-uuid-rebuild test-uuid-validation test-uuid-integration selenium-diagnostics selenium-status selenium-fix selenium-restart clean logs shell
+.PHONY: help build rebuild up down test test-rebuild test-api test-api-rebuild test-browser test-integration test-uuid test-uuid-rebuild test-uuid-validation test-uuid-integration selenium-diagnostics selenium-status selenium-fix selenium-fix-docker selenium-fix-local selenium-restart clean logs shell
 
 # Переменные
 COMPOSE_FILE = docker-compose.test.yaml
@@ -215,9 +215,23 @@ selenium-fix: ## Автоматическое исправление пробл�
 	@echo "$(YELLOW)🔧 Автоматическое исправление Selenium проблем...$(NC)"
 	python utils/selenium_fix.py
 
+selenium-fix-docker: ## Автоматическое исправление Selenium внутри Docker
+	@echo "$(YELLOW)🔧 Автоматическое исправление Selenium через Docker...$(NC)"
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(PWD):/workspace -w /workspace \
+		--network host \
+		python:3.12-slim bash -c "\
+		apt-get update && apt-get install -y docker.io curl && \
+		pip install requests && \
+		python utils/selenium_fix.py"
+
 selenium-restart: ## Перезапуск Selenium сервисов
 	@echo "$(YELLOW)🔄 Перезапуск Selenium сервисов...$(NC)"
 	docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) restart selenium-hub selenium-chrome
+
+selenium-fix-local: ## Локальное исправление Selenium (рекомендуется)
+	@echo "$(YELLOW)🔧 Локальное исправление Selenium проблем...$(NC)"
+	./selenium_fix_local.sh
 
 logs-all: ## Показать все логи
 	@echo "$(YELLOW)📋 Все логи тестового окружения:$(NC)"
