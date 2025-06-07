@@ -110,26 +110,51 @@ The pipeline handles all project microservices:
 - **Reports**: JUnit XML, coverage reports, code quality
 - **Duration**: ~5-8 minutes
 
-#### `test:frontend-quality`
-- **Purpose**: Frontend code quality and build testing
-- **Features**:
-  - Tests all three frontend applications
-  - Dependency installation and caching
-  - Build verification and size analysis
-  - Linting and unit testing
-  - Security vulnerability scanning
-- **Reports**: JUnit XML, coverage reports, build artifacts
-- **Duration**: ~8-12 minutes
+### 🧪 FUNCTIONAL TEST STAGE
 
-#### `test:performance`
-- **Purpose**: Basic performance testing and benchmarking
+#### `functional-test:api`
+- **Purpose**: Комплексное тестирование всех API эндпоинтов
 - **Features**:
-  - API response time testing
-  - Load testing with Apache Bench
-  - Frontend performance testing
-  - Performance metrics collection
+  - Тестирование всех CRUD операций для каждой сущности
+  - Позитивные и негативные сценарии
+  - Валидация данных и граничные случаи
+  - Проверка бизнес-логики и целостности данных
+- **Coverage**: Buyer, Seller, Product, Wood Type, Chat APIs
 - **Duration**: ~10-15 minutes
-- **Triggers**: main and dev branches only
+- **Dependencies**: build:all-services
+
+#### `functional-test:browser`
+- **Purpose**: Автоматизированное тестирование frontend приложений
+- **Features**:
+  - Selenium WebDriver автоматизация
+  - Тестирование всех страниц и навигации
+  - Проверка отзывчивого дизайна
+  - Автоматические скриншоты при ошибках
+- **Coverage**: Admin, Seller, Buyer frontends
+- **Duration**: ~20-30 minutes
+- **Triggers**: main и dev ветки
+
+#### `functional-test:integration`
+- **Purpose**: End-to-end интеграционные тесты
+- **Features**:
+  - Полные пользовательские сценарии
+  - Тестирование взаимодействия API и UI
+  - Проверка бизнес-процессов
+  - Валидация данных между сервисами
+- **Scenarios**: Создание продуктов, чаты, управление ценами
+- **Duration**: ~15-25 minutes
+- **Triggers**: main и dev ветки
+
+#### `functional-test:full-suite`
+- **Purpose**: Полный набор функциональных тестов с покрытием
+- **Features**:
+  - Все типы функциональных тестов
+  - Генерация отчетов о покрытии
+  - Комплексная валидация системы
+  - Детальные HTML отчеты
+- **Reports**: JUnit XML, Coverage, HTML отчеты
+- **Duration**: ~30-45 minutes
+- **Triggers**: main ветка (ручной запуск)
 
 ### 🔒 SECURITY STAGE
 
