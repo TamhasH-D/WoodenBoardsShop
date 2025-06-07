@@ -20,13 +20,17 @@ BACKEND_DIR := backend/backend
 
 .PHONY: help
 help: ## Show available commands
-	@echo "🚀 Diplom Project - Available Commands"
-	@echo "======================================"
+	@echo "$(GREEN)🚀 Diplom Project - Available Commands$(NC)"
+	@echo "$(YELLOW)======================================$(NC)"
 	@echo ""
-	@echo "📦 Main Commands:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -v "^help:" | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo "$(BLUE)📦 Main Commands:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -v "^help:" | grep -v "^help-test:" | grep -v "^test-" | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
-	@echo "🌐 Service URLs (accessible from host system):"
+	@echo "$(BLUE)🧪 Testing Commands:$(NC)"
+	@grep -E '^test[a-zA-Z_-]*:.*?## .*$$' $(MAKEFILE_LIST) | head -8 | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo "  $(GREEN)help-test$(NC)           Показать полную справку по тестированию"
+	@echo ""
+	@echo "$(BLUE)🌐 Service URLs (accessible from host system):$(NC)"
 	@echo "  Backend API:      http://localhost:$(BACKEND_PORT)"
 	@echo "  API Docs:         http://localhost:$(BACKEND_PORT)/docs"
 	@echo "  Admin Frontend:   http://localhost:$(FRONTEND_ADMIN_PORT)"
@@ -83,6 +87,321 @@ backend-migrate: ## Run database migrations
 	cd $(BACKEND_DIR) && docker compose exec api alembic upgrade head
 
 # ============================================================================
+# 🧪 FUNCTIONAL TESTS
+# ============================================================================
+
+# Colors for output
+GREEN := \033[0;32m
+YELLOW := \033[1;33m
+RED := \033[0;31m
+BLUE := \033[0;34m
+NC := \033[0m # No Color
+
+# Test configuration
+FUNCTIONAL_TESTS_DIR := functional_tests
+TEST_COMPOSE_FILE := $(FUNCTIONAL_TESTS_DIR)/docker-compose.test.yaml
+TEST_PROJECT_NAME := diplom-functional-tests
+
+# Check dependencies
+.PHONY: check-test-deps
+check-test-deps:
+	@echo "$(BLUE)🔍 Проверка зависимостей для тестирования...$(NC)"
+	@command -v docker >/dev/null 2>&1 || { echo "$(RED)❌ Docker не установлен$(NC)"; exit 1; }
+	@command -v docker-compose >/dev/null 2>&1 || { echo "$(RED)❌ Docker Compose не установлен$(NC)"; exit 1; }
+	@[ -f "$(TEST_COMPOSE_FILE)" ] || { echo "$(RED)❌ Файл $(TEST_COMPOSE_FILE) не найден$(NC)"; exit 1; }
+	@echo "$(GREEN)✅ Все зависимости установлены$(NC)"
+
+.PHONY: help-test
+help-test: ## Показать справку по командам тестирования
+	@echo "$(GREEN)🧪 Функциональные тесты - Справка$(NC)"
+	@echo "$(YELLOW)========================================$(NC)"
+	@echo ""
+	@echo "$(BLUE)📋 Основные команды тестирования:$(NC)"
+	@echo "  $(GREEN)make test$(NC)              - Запуск всех функциональных тестов"
+	@echo "  $(GREEN)make test-api$(NC)          - Запуск только API тестов"
+	@echo "  $(GREEN)make test-browser$(NC)      - Запуск только браузерных тестов"
+	@echo "  $(GREEN)make test-integration$(NC)  - Запуск только интеграционных тестов"
+	@echo ""
+	@echo "$(BLUE)⚡ Команды с дополнительными опциями:$(NC)"
+	@echo "  $(GREEN)make test-quick$(NC)        - Быстрый запуск критических тестов"
+	@echo "  $(GREEN)make test-local$(NC)        - Запуск тестов локально (без Docker)"
+	@echo "  $(GREEN)make test-debug$(NC)        - Запуск в режиме отладки"
+	@echo "  $(GREEN)make test-coverage$(NC)     - Запуск с отчетом о покрытии"
+	@echo ""
+	@echo "$(BLUE)🔧 Управление окружением:$(NC)"
+	@echo "  $(GREEN)make test-build$(NC)        - Сборка Docker образов для тестов"
+	@echo "  $(GREEN)make test-up$(NC)           - Запуск тестового окружения"
+	@echo "  $(GREEN)make test-down$(NC)         - Остановка тестового окружения"
+	@echo "  $(GREEN)make test-clean$(NC)        - Очистка тестовых данных"
+	@echo ""
+	@echo "$(BLUE)📊 Работа с результатами:$(NC)"
+	@echo "  $(GREEN)make test-logs$(NC)         - Просмотр логов тестов"
+	@echo "  $(GREEN)make test-reports$(NC)      - Открытие HTML отчетов"
+	@echo "  $(GREEN)make test-status$(NC)       - Статус тестовых сервисов"
+	@echo ""
+	@echo "$(BLUE)🔍 Анализ логов:$(NC)"
+	@echo "  $(GREEN)make test-logs-latest$(NC)  - Последний лог тестов"
+	@echo "  $(GREEN)make test-logs-tail$(NC)    - Мониторинг логов в реальном времени"
+	@echo "  $(GREEN)make test-logs-stats$(NC)   - Статистика последнего запуска"
+
+# ============================================================================
+# 🧪 ОСНОВНЫЕ КОМАНДЫ ТЕСТИРОВАНИЯ
+# ============================================================================
+
+.PHONY: test
+test: check-test-deps ## Запуск всех функциональных тестов (api + browser + integration)
+	@echo "$(YELLOW)🚀 Запуск всех функциональных тестов...$(NC)"
+	@TEST_TYPE=all $(MAKE) _run-tests
+	@$(MAKE) _show-test-results
+
+.PHONY: test-api
+test-api: check-test-deps ## Запуск только API тестов
+	@echo "$(YELLOW)🔌 Запуск API тестов...$(NC)"
+	@TEST_TYPE=api $(MAKE) _run-tests
+	@$(MAKE) _show-test-results
+
+.PHONY: test-browser
+test-browser: check-test-deps ## Запуск только браузерных тестов
+	@echo "$(YELLOW)🌐 Запуск браузерных тестов...$(NC)"
+	@TEST_TYPE=browser $(MAKE) _run-tests
+	@$(MAKE) _show-test-results
+
+.PHONY: test-integration
+test-integration: check-test-deps ## Запуск только интеграционных тестов
+	@echo "$(YELLOW)🔗 Запуск интеграционных тестов...$(NC)"
+	@TEST_TYPE=integration $(MAKE) _run-tests
+	@$(MAKE) _show-test-results
+
+# ============================================================================
+# ⚡ КОМАНДЫ С ДОПОЛНИТЕЛЬНЫМИ ОПЦИЯМИ
+# ============================================================================
+
+.PHONY: test-quick
+test-quick: check-test-deps ## Быстрый запуск критических тестов
+	@echo "$(YELLOW)⚡ Быстрый запуск критических тестов...$(NC)"
+	@TEST_TYPE=api PYTEST_ARGS="-m critical" $(MAKE) _run-tests
+	@$(MAKE) _show-test-results
+
+.PHONY: test-local
+test-local: check-test-deps ## Запуск тестов локально (без Docker)
+	@echo "$(YELLOW)🏠 Запуск тестов локально...$(NC)"
+	@if [ ! -d "$(FUNCTIONAL_TESTS_DIR)/venv" ]; then \
+		echo "$(BLUE)📦 Создание виртуального окружения...$(NC)"; \
+		cd $(FUNCTIONAL_TESTS_DIR) && python3 -m venv venv; \
+		cd $(FUNCTIONAL_TESTS_DIR) && source venv/bin/activate && pip install -r requirements.txt; \
+	fi
+	@echo "$(BLUE)🧪 Запуск тестов в локальном окружении...$(NC)"
+	@cd $(FUNCTIONAL_TESTS_DIR) && source venv/bin/activate && \
+		BACKEND_URL=http://localhost:$(BACKEND_PORT) \
+		FRONTEND_ADMIN_URL=http://localhost:$(FRONTEND_ADMIN_PORT) \
+		FRONTEND_SELLER_URL=http://localhost:$(FRONTEND_SELLER_PORT) \
+		FRONTEND_BUYER_URL=http://localhost:$(FRONTEND_BUYER_PORT) \
+		TEST_TYPE=${TEST_TYPE:-all} \
+		pytest -v --html=reports/local_tests_report.html --self-contained-html
+	@$(MAKE) _show-test-results
+
+.PHONY: test-with-script
+test-with-script: check-test-deps ## Запуск тестов через расширенный скрипт
+	@echo "$(YELLOW)🔧 Запуск тестов через расширенный скрипт...$(NC)"
+	@./scripts/test-runner.sh ${TEST_TYPE:-all} "${PYTEST_ARGS}"
+
+.PHONY: test-health
+test-health: ## Проверка готовности системы к тестированию
+	@./scripts/test-health-check.sh
+
+.PHONY: test-debug
+test-debug: check-test-deps ## Запуск тестов в режиме отладки
+	@echo "$(YELLOW)🐛 Запуск тестов в режиме отладки...$(NC)"
+	@TEST_TYPE=${TEST_TYPE:-all} PYTEST_ARGS="-v -s --tb=long --capture=no" $(MAKE) _run-tests
+	@$(MAKE) _show-test-results
+
+.PHONY: test-coverage
+test-coverage: check-test-deps ## Запуск тестов с отчетом о покрытии
+	@echo "$(YELLOW)📊 Запуск тестов с отчетом о покрытии...$(NC)"
+	@TEST_TYPE=${TEST_TYPE:-all} PYTEST_ARGS="--cov=. --cov-report=html:reports/coverage --cov-report=xml:reports/coverage.xml --cov-report=term" $(MAKE) _run-tests
+	@$(MAKE) _show-test-results
+	@echo "$(GREEN)📈 Отчет о покрытии: $(FUNCTIONAL_TESTS_DIR)/reports/coverage/index.html$(NC)"
+
+# ============================================================================
+# 🔧 УПРАВЛЕНИЕ ОКРУЖЕНИЕМ
+# ============================================================================
+
+.PHONY: test-build
+test-build: check-test-deps ## Сборка Docker образов для тестов
+	@echo "$(YELLOW)🔨 Сборка Docker образов для тестов...$(NC)"
+	@cd $(FUNCTIONAL_TESTS_DIR) && docker-compose -f docker-compose.test.yaml -p $(TEST_PROJECT_NAME) build --no-cache
+	@echo "$(GREEN)✅ Сборка завершена$(NC)"
+
+.PHONY: test-up
+test-up: check-test-deps ## Запуск тестового окружения без выполнения тестов
+	@echo "$(YELLOW)🚀 Запуск тестового окружения...$(NC)"
+	@cd $(FUNCTIONAL_TESTS_DIR) && docker-compose -f docker-compose.test.yaml -p $(TEST_PROJECT_NAME) up -d --remove-orphans
+	@echo "$(BLUE)⏳ Ожидание готовности сервисов...$(NC)"
+	@sleep 10
+	@$(MAKE) test-status
+	@echo "$(GREEN)✅ Тестовое окружение готово$(NC)"
+
+.PHONY: test-down
+test-down: ## Остановка тестового окружения
+	@echo "$(YELLOW)🛑 Остановка тестового окружения...$(NC)"
+	@cd $(FUNCTIONAL_TESTS_DIR) && docker-compose -f docker-compose.test.yaml -p $(TEST_PROJECT_NAME) down --remove-orphans
+	@echo "$(GREEN)✅ Тестовое окружение остановлено$(NC)"
+
+.PHONY: test-clean
+test-clean: test-down ## Очистка тестовых данных и контейнеров
+	@echo "$(YELLOW)🧹 Очистка тестовых данных...$(NC)"
+	@cd $(FUNCTIONAL_TESTS_DIR) && docker-compose -f docker-compose.test.yaml -p $(TEST_PROJECT_NAME) down -v --remove-orphans
+	@docker system prune -f --filter "label=com.docker.compose.project=$(TEST_PROJECT_NAME)"
+	@echo "$(BLUE)🗑️ Очистка отчетов и логов...$(NC)"
+	@rm -rf $(FUNCTIONAL_TESTS_DIR)/reports/* $(FUNCTIONAL_TESTS_DIR)/screenshots/* 2>/dev/null || true
+	@echo "$(GREEN)✅ Очистка завершена$(NC)"
+
+# ============================================================================
+# 📊 РАБОТА С РЕЗУЛЬТАТАМИ
+# ============================================================================
+
+.PHONY: test-logs
+test-logs: ## Просмотр логов последнего запуска тестов
+	@echo "$(YELLOW)📋 Логи последнего запуска тестов:$(NC)"
+	@cd $(FUNCTIONAL_TESTS_DIR) && docker-compose -f docker-compose.test.yaml -p $(TEST_PROJECT_NAME) logs functional-tests
+
+.PHONY: test-logs-latest
+test-logs-latest: ## Показать последний лог тестов
+	@echo "$(YELLOW)📋 Последний лог тестов:$(NC)"
+	@if [ -d "$(FUNCTIONAL_TESTS_DIR)/logs" ] && [ "$$(ls -A $(FUNCTIONAL_TESTS_DIR)/logs/)" ]; then \
+		LATEST_LOG=$$(ls -t $(FUNCTIONAL_TESTS_DIR)/logs/test_results_*.log 2>/dev/null | head -1); \
+		if [ -n "$$LATEST_LOG" ]; then \
+			echo "$(GREEN)Файл: $$LATEST_LOG$(NC)"; \
+			cat "$$LATEST_LOG"; \
+		else \
+			echo "$(RED)❌ Лог файлы не найдены$(NC)"; \
+		fi; \
+	else \
+		echo "$(RED)❌ Директория logs пуста или не существует$(NC)"; \
+	fi
+
+.PHONY: test-logs-tail
+test-logs-tail: ## Мониторинг логов в реальном времени
+	@echo "$(YELLOW)👀 Мониторинг последнего лога...$(NC)"
+	@if [ -d "$(FUNCTIONAL_TESTS_DIR)/logs" ] && [ "$$(ls -A $(FUNCTIONAL_TESTS_DIR)/logs/)" ]; then \
+		LATEST_LOG=$$(ls -t $(FUNCTIONAL_TESTS_DIR)/logs/test_results_*.log 2>/dev/null | head -1); \
+		if [ -n "$$LATEST_LOG" ]; then \
+			echo "$(GREEN)Мониторинг: $$LATEST_LOG$(NC)"; \
+			tail -f "$$LATEST_LOG"; \
+		else \
+			echo "$(RED)❌ Лог файлы не найдены$(NC)"; \
+		fi; \
+	else \
+		echo "$(RED)❌ Директория logs пуста или не существует$(NC)"; \
+	fi
+
+.PHONY: test-logs-stats
+test-logs-stats: ## Статистика последнего запуска
+	@echo "$(YELLOW)📊 Статистика последнего тестирования:$(NC)"
+	@if [ -d "$(FUNCTIONAL_TESTS_DIR)/logs" ] && [ "$$(ls -A $(FUNCTIONAL_TESTS_DIR)/logs/)" ]; then \
+		LATEST_JSON=$$(ls -t $(FUNCTIONAL_TESTS_DIR)/logs/test_results_*.json 2>/dev/null | head -1); \
+		if [ -n "$$LATEST_JSON" ]; then \
+			echo "$(GREEN)JSON отчет: $$LATEST_JSON$(NC)"; \
+			cd $(FUNCTIONAL_TESTS_DIR) && python3 -c "import json; data=json.load(open('$$LATEST_JSON')); stats=data['statistics']; print(f'Всего: {stats[\"total\"]}, Пройдено: {stats[\"passed\"]}, Упало: {stats[\"failed\"]}, Пропущено: {stats[\"skipped\"]}')"; \
+		else \
+			LATEST_LOG=$$(ls -t $(FUNCTIONAL_TESTS_DIR)/logs/test_results_*.log 2>/dev/null | head -1); \
+			if [ -n "$$LATEST_LOG" ]; then \
+				echo "$(GREEN)Извлечение из лога: $$LATEST_LOG$(NC)"; \
+				grep "ИТОГОВАЯ СТАТИСТИКА" -A 10 "$$LATEST_LOG" | tail -8; \
+			else \
+				echo "$(RED)❌ Лог файлы не найдены$(NC)"; \
+			fi; \
+		fi; \
+	else \
+		echo "$(RED)❌ Директория logs пуста или не существует$(NC)"; \
+	fi
+
+.PHONY: test-reports
+test-reports: ## Открытие HTML отчетов в браузере
+	@echo "$(YELLOW)📊 Открытие HTML отчетов...$(NC)"
+	@if [ -d "$(FUNCTIONAL_TESTS_DIR)/reports" ]; then \
+		REPORTS_FOUND=0; \
+		for report in $(FUNCTIONAL_TESTS_DIR)/reports/*_report.html; do \
+			if [ -f "$$report" ]; then \
+				echo "$(GREEN)📄 Найден отчет: $$report$(NC)"; \
+				if command -v xdg-open >/dev/null 2>&1; then \
+					xdg-open "$$report" 2>/dev/null & \
+				elif command -v open >/dev/null 2>&1; then \
+					open "$$report" 2>/dev/null & \
+				else \
+					echo "$(BLUE)💡 Откройте в браузере: file://$(PWD)/$$report$(NC)"; \
+				fi; \
+				REPORTS_FOUND=1; \
+			fi; \
+		done; \
+		if [ $$REPORTS_FOUND -eq 0 ]; then \
+			echo "$(RED)❌ HTML отчеты не найдены в $(FUNCTIONAL_TESTS_DIR)/reports/$(NC)"; \
+		fi; \
+	else \
+		echo "$(RED)❌ Директория reports не найдена$(NC)"; \
+	fi
+
+.PHONY: test-status
+test-status: ## Проверка статуса тестовых сервисов
+	@echo "$(YELLOW)🔍 Статус тестовых сервисов:$(NC)"
+	@cd $(FUNCTIONAL_TESTS_DIR) && docker-compose -f docker-compose.test.yaml -p $(TEST_PROJECT_NAME) ps
+	@echo ""
+	@echo "$(BLUE)🌐 Проверка доступности сервисов:$(NC)"
+	@$(MAKE) _check-service-health
+
+# ============================================================================
+# 🔧 ВНУТРЕННИЕ ФУНКЦИИ
+# ============================================================================
+
+.PHONY: _run-tests
+_run-tests:
+	@echo "$(BLUE)🔧 Подготовка тестового окружения...$(NC)"
+	@$(MAKE) test-down 2>/dev/null || true
+	@$(MAKE) test-up
+	@echo "$(BLUE)🧪 Запуск тестов (TEST_TYPE=$(TEST_TYPE))...$(NC)"
+	@cd $(FUNCTIONAL_TESTS_DIR) && \
+		TEST_TYPE=$(TEST_TYPE) \
+		PYTEST_ARGS="$(PYTEST_ARGS)" \
+		docker-compose -f docker-compose.test.yaml -p $(TEST_PROJECT_NAME) run --rm functional-tests || \
+		(echo "$(RED)❌ Тесты завершились с ошибкой$(NC)" && $(MAKE) _cleanup-on-error && exit 1)
+	@$(MAKE) test-down
+
+.PHONY: _show-test-results
+_show-test-results:
+	@echo ""
+	@echo "$(GREEN)✅ Тестирование завершено!$(NC)"
+	@echo "$(BLUE)📊 Результаты доступны в:$(NC)"
+	@echo "  • HTML отчеты: $(FUNCTIONAL_TESTS_DIR)/reports/"
+	@echo "  • Логи тестов: $(FUNCTIONAL_TESTS_DIR)/logs/"
+	@echo "  • Скриншоты: $(FUNCTIONAL_TESTS_DIR)/screenshots/"
+	@echo ""
+	@echo "$(BLUE)🔍 Для анализа используйте:$(NC)"
+	@echo "  • $(GREEN)make test-logs-stats$(NC) - статистика последнего запуска"
+	@echo "  • $(GREEN)make test-reports$(NC) - открыть HTML отчеты"
+	@echo "  • $(GREEN)cd $(FUNCTIONAL_TESTS_DIR) && python utils/log_analyzer.py --latest$(NC) - детальный анализ"
+
+.PHONY: _check-service-health
+_check-service-health:
+	@for service in "Backend API:http://localhost:$(BACKEND_PORT)/health" \
+					"Admin Frontend:http://localhost:$(FRONTEND_ADMIN_PORT)" \
+					"Seller Frontend:http://localhost:$(FRONTEND_SELLER_PORT)" \
+					"Buyer Frontend:http://localhost:$(FRONTEND_BUYER_PORT)"; do \
+		name=$$(echo $$service | cut -d: -f1); \
+		url=$$(echo $$service | cut -d: -f2-); \
+		if curl -s -f "$$url" >/dev/null 2>&1; then \
+			echo "  $(GREEN)✅ $$name$(NC) - доступен"; \
+		else \
+			echo "  $(RED)❌ $$name$(NC) - недоступен ($$url)"; \
+		fi; \
+	done
+
+.PHONY: _cleanup-on-error
+_cleanup-on-error:
+	@echo "$(YELLOW)🧹 Очистка после ошибки...$(NC)"
+	@$(MAKE) test-logs 2>/dev/null || true
+	@$(MAKE) test-down 2>/dev/null || true
+
+# ============================================================================
 # 🧹 CLEANUP & UTILITY
 # ============================================================================
 
@@ -94,6 +413,19 @@ clean: ## Clean Docker resources
 clean-all: down ## Clean all Docker resources including networks
 	docker system prune -af
 	docker network prune -f
+
+.PHONY: test-clean-logs
+test-clean-logs: ## Очистить только логи тестов
+	@echo "$(YELLOW)🗑️ Очистка логов тестов...$(NC)"
+	@rm -rf $(FUNCTIONAL_TESTS_DIR)/logs/*
+	@echo "$(GREEN)✅ Логи очищены$(NC)"
+
+.PHONY: test-clean-old-logs
+test-clean-old-logs: ## Очистить логи старше 30 дней
+	@echo "$(YELLOW)🗑️ Очистка старых логов (>30 дней)...$(NC)"
+	@find $(FUNCTIONAL_TESTS_DIR)/logs/ -name "test_results_*.log" -mtime +30 -delete 2>/dev/null || true
+	@find $(FUNCTIONAL_TESTS_DIR)/logs/ -name "test_results_*.json" -mtime +30 -delete 2>/dev/null || true
+	@echo "$(GREEN)✅ Старые логи очищены$(NC)"
 
 .PHONY: dev
 dev: backend-up ## Quick start for development (backend only)

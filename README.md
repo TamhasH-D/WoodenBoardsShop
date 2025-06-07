@@ -22,6 +22,11 @@ diplom/
 │   ├── admin/                  # Панель администратора
 │   ├── buyer/                  # Интерфейс покупателей
 │   └── seller/                 # Интерфейс продавцов
+├── functional_tests/            # Функциональные тесты
+│   ├── api_tests/              # API тесты
+│   ├── browser_tests/          # Браузерные тесты
+│   └── integration_tests/      # Интеграционные тесты
+├── ci/                         # CI/CD конфигурация
 ├── docker-compose.yaml         # Основной compose файл
 └── Makefile                    # Команды автоматизации
 ```
@@ -78,31 +83,64 @@ After startup, the following services are available on any system:
 
 ## 🛠️ Доступные команды
 
+### 📦 Основные команды
 ```bash
-# Setup and initialization
 make help           # Show all commands with URLs from .env
-./scripts/setup.sh  # One-time setup for new environments
-make init-network   # Initialize Docker networks
-
-# Service management
 make up             # Start all services
 make down           # Stop all services
 make rebuild        # Rebuild and restart all services
 make dev            # Quick start backend for development
 make logs           # View logs from all services
 make ps             # List running containers
+```
 
-# Cleanup
-make clean          # Clean Docker resources
-make clean-all      # Clean all Docker resources including networks
+### 🧪 Функциональные тесты
+```bash
+# Основные команды тестирования
+make test           # Запуск всех функциональных тестов
+make test-api       # Запуск только API тестов
+make test-browser   # Запуск только браузерных тестов
+make test-integration # Запуск только интеграционных тестов
 
-# Backend-specific commands
+# Дополнительные опции
+make test-quick     # Быстрый запуск критических тестов
+make test-local     # Запуск тестов локально (без Docker)
+make test-debug     # Запуск в режиме отладки
+make test-coverage  # Запуск с отчетом о покрытии
+
+# Управление окружением
+make test-build     # Сборка Docker образов для тестов
+make test-up        # Запуск тестового окружения
+make test-down      # Остановка тестового окружения
+make test-clean     # Очистка тестовых данных
+make test-health    # Проверка готовности системы
+
+# Работа с результатами
+make test-logs      # Просмотр логов тестов
+make test-reports   # Открытие HTML отчетов
+make test-status    # Статус тестовых сервисов
+make help-test      # Полная справка по тестированию
+```
+
+### 🔧 Backend команды
+```bash
 make backend-up     # Start only backend services
 make backend-down   # Stop backend services
 make backend-logs   # View backend logs
 make backend-migrate # Run database migrations
+```
 
-# Configuration
+### 🧹 Очистка
+```bash
+make clean          # Clean Docker resources
+make clean-all      # Clean all Docker resources including networks
+make test-clean-logs # Очистить логи тестов
+```
+
+### ⚙️ Настройка и инициализация
+```bash
+./scripts/setup.sh  # One-time setup for new environments
+make init-network   # Initialize Docker networks
 # Edit .env file to configure ports and URLs
 ```
 
