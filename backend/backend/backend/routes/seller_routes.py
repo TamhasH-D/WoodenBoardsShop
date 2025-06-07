@@ -24,7 +24,7 @@ async def create_seller(
     return DataResponse(data=SellerDTO.model_validate(created_obj))
 
 
-@router.patch("/{seller_id}", status_code=200)
+@router.patch("/{seller_id}")
 async def update_seller(
     seller_id: UUID,
     update_dto: SellerUpdateDTO,
@@ -35,14 +35,14 @@ async def update_seller(
     return EmptyResponse()
 
 
-@router.delete("/{seller_id}", status_code=204)
+@router.delete("/{seller_id}")
 async def delete_seller(
     seller_id: UUID,
     daos: GetDAOs,
-) -> None:
+) -> EmptyResponse:
     """Delete a Seller by id."""
     await daos.seller.delete(id=seller_id)
-    # HTTP 204 No Content must have empty body - no return statement needed
+    return EmptyResponse()
 
 
 @router.get("/")

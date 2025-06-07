@@ -24,7 +24,7 @@ async def create_buyer(
     return DataResponse(data=BuyerDTO.model_validate(created_obj))
 
 
-@router.patch("/{buyer_id}", status_code=200)
+@router.patch("/{buyer_id}")
 async def update_buyer(
     buyer_id: UUID,
     update_dto: BuyerUpdateDTO,
@@ -35,14 +35,14 @@ async def update_buyer(
     return EmptyResponse()
 
 
-@router.delete("/{buyer_id}", status_code=204)
+@router.delete("/{buyer_id}")
 async def delete_buyer(
     buyer_id: UUID,
     daos: GetDAOs,
-) -> None:
+) -> EmptyResponse:
     """Delete a Buyer by id."""
     await daos.buyer.delete(id=buyer_id)
-    # HTTP 204 No Content must have empty body - no return statement needed
+    return EmptyResponse()
 
 
 @router.get("/")

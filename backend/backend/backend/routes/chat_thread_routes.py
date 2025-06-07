@@ -28,7 +28,7 @@ async def create_chat_thread(
     return DataResponse(data=ChatThreadDTO.model_validate(created_obj))
 
 
-@router.patch("/{chat_thread_id}", status_code=200)
+@router.patch("/{chat_thread_id}")
 async def update_chat_thread(
     chat_thread_id: UUID,
     update_dto: ChatThreadUpdateDTO,
@@ -39,14 +39,14 @@ async def update_chat_thread(
     return EmptyResponse()
 
 
-@router.delete("/{chat_thread_id}", status_code=204)
+@router.delete("/{chat_thread_id}")
 async def delete_chat_thread(
     chat_thread_id: UUID,
     daos: GetDAOs,
-) -> None:
+) -> EmptyResponse:
     """Delete a ChatThread by id."""
     await daos.chat_thread.delete(id=chat_thread_id)
-    # HTTP 204 No Content must have empty body - no return statement needed
+    return EmptyResponse()
 
 
 @router.get("/")
