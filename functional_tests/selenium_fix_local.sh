@@ -101,50 +101,59 @@ start_selenium_services() {
 verify_selenium_health() {
     log "🏥 Проверка здоровья Selenium Grid..."
     log "🔗 Используется URL: $SELENIUM_HUB_URL"
-    
+
     local max_attempts=15
-    
+
     for attempt in $(seq 1 $max_attempts); do
         log "🔍 Попытка $attempt/$max_attempts"
-        
-        # Проверяем доступность порта
-        if ! nc -z localhost 4444 2>/dev/null; then
-            log "⏳ Порт 4444 еще недоступен, ждем..."
-            sleep 10
-            continue
-        fi
-        
-        # Проверяем Hub status
-        if curl -s -f "$SELENIUM_HUB_URL/wd/hub/status" >/dev/null 2>&1; then
-            local status_response=$(curl -s "$SELENIUM_HUB_URL/wd/hub/status")
+
+        # Проверяем статус контейнеров
+        log "📊 Статус контейнеров:"
+        docker ps --filter "name=selenium" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" || true
+
+        # Проверяем Hub status через Docker exec (более надежно)
+        if docker exec selenium-hub curl -s -f "http://localhost:4444/wd/hub/status" >/dev/null 2>&1; then
+            local status_response=$(docker exec selenium-hub curl -s "http://localhost:4444/wd/hub/status")
             local ready=$(echo "$status_response" | grep -o '"ready":[^,}]*' | cut -d':' -f2 | tr -d ' ')
-            
+
             if [ "$ready" = "true" ]; then
                 success "Selenium Hub готов!"
-                
-                # Проверяем Grid API
-                if curl -s -f "$SELENIUM_HUB_URL/grid/api/hub" >/dev/null 2>&1; then
-                    success "Selenium Grid API работает!"
+
+                # Проверяем количество узлов
+                local nodes_count=$(echo "$status_response" | grep -o '"nodes":\[' | wc -l)
+                if [ "$nodes_count" -gt 0 ]; then
+                    success "Chrome Node подключен к Hub!"
+
+                    # Дополнительная проверка Grid API
+                    if docker exec selenium-hub curl -s -f "http://localhost:4444/grid/api/hub" >/dev/null 2>&1; then
+                        success "Selenium Grid API работает!"
+                    else
+                        warning "Grid API недоступен, но Hub готов"
+                    fi
+
+                    return 0
                 else
-                    warning "Grid API недоступен, но Hub готов"
+                    log "⏳ Chrome Node еще не подключился к Hub"
                 fi
-                
-                return 0
             else
                 log "⏳ Hub не готов. Статус: $ready"
             fi
         else
-            log "⏳ Hub недоступен"
+            log "⏳ Hub недоступен или не отвечает"
         fi
-        
-        # Показываем статус контейнеров
-        log "📊 Статус контейнеров:"
-        docker ps --filter "name=selenium" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" || true
-        
+
         sleep 10
     done
-    
+
     error "Selenium Grid не готов после $max_attempts попыток"
+
+    # Показываем детальную диагностику при неудаче
+    log "🔍 Детальная диагностика:"
+    log "Логи Selenium Hub:"
+    docker logs --tail=10 selenium-hub || true
+    log "Логи Chrome Node:"
+    docker logs --tail=10 selenium-chrome || true
+
     return 1
 }
 
@@ -160,7 +169,7 @@ show_selenium_logs() {
 # Основная функция
 main() {
     log "🚀 Автоматическое исправление проблем Selenium Grid"
-    log "=" * 60
+    echo "============================================================"
     
     # Проверяем зависимости
     if ! command -v docker >/dev/null 2>&1; then
@@ -185,7 +194,7 @@ main() {
     # Показываем текущие логи
     show_selenium_logs
     
-    log "=" * 60
+    echo "============================================================"
     
     # Выполняем исправление
     local steps=(

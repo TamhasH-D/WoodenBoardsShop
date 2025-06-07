@@ -97,6 +97,9 @@ services:
       SE_EVENT_BUS_SUBSCRIBE_PORT: 4443
       SE_SESSION_MAP_HOST: selenium-hub
       SE_SESSION_MAP_PORT: 5556
+      SE_ENABLE_TRACING: false
+      SE_ENABLE_OBSERVABILITY: false
+      JAVA_OPTS: "-Dselenium.LOGGER.level=WARNING"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4444/wd/hub/status"]
       interval: 15s
@@ -123,6 +126,9 @@ services:
       NODE_MAX_SESSION: 2
       SE_NODE_MAX_SESSIONS: 2
       SE_NODE_OVERRIDE_MAX_SESSIONS: true
+      SE_ENABLE_TRACING: false
+      SE_ENABLE_OBSERVABILITY: false
+      JAVA_OPTS: "-Dselenium.LOGGER.level=WARNING"
     volumes:
       - /dev/shm:/dev/shm
     shm_size: 2gb
