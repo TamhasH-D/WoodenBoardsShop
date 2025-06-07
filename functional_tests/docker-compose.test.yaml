@@ -149,7 +149,7 @@ services:
     container_name: functional-tests
     environment:
       BACKEND_URL: http://test-backend:8000
-      SELENIUM_HUB_URL: http://selenium-hub:4444/wd/hub
+      SELENIUM_HUB_URL: http://selenium-hub:4444
       FRONTEND_ADMIN_URL: http://admin-frontend
       FRONTEND_SELLER_URL: http://seller-frontend
       FRONTEND_BUYER_URL: http://buyer-frontend

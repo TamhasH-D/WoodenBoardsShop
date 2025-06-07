@@ -13,12 +13,13 @@ class ServiceWaiter:
     """Класс для ожидания готовности сервисов."""
     
     def __init__(self):
-        self.backend_url = os.getenv("BACKEND_URL", "http://localhost:8001")
-        self.selenium_hub_url = os.getenv("SELENIUM_HUB_URL", "http://localhost:4444")
+        # Убираем слеш в конце URL для консистентности
+        self.backend_url = os.getenv("BACKEND_URL", "http://localhost:8001").rstrip('/')
+        self.selenium_hub_url = os.getenv("SELENIUM_HUB_URL", "http://localhost:4444").rstrip('/')
         self.frontend_urls = {
-            "admin": os.getenv("FRONTEND_ADMIN_URL", "http://localhost:8080"),
-            "seller": os.getenv("FRONTEND_SELLER_URL", "http://localhost:8081"),
-            "buyer": os.getenv("FRONTEND_BUYER_URL", "http://localhost:8082"),
+            "admin": os.getenv("FRONTEND_ADMIN_URL", "http://localhost:8080").rstrip('/'),
+            "seller": os.getenv("FRONTEND_SELLER_URL", "http://localhost:8081").rstrip('/'),
+            "buyer": os.getenv("FRONTEND_BUYER_URL", "http://localhost:8082").rstrip('/'),
         }
     
     @retry(
@@ -28,15 +29,37 @@ class ServiceWaiter:
     )
     def wait_for_backend(self) -> bool:
         """Ожидание готовности backend сервиса."""
-        print(f"🔍 Проверка готовности backend: {self.backend_url}")
-        
+        health_url = f"{self.backend_url}/api/v1/health/"
+        print(f"🔍 Проверка готовности backend: {health_url}")
+
         try:
-            response = requests.get(f"{self.backend_url}/api/v1/health/", timeout=10)
+            response = requests.get(health_url, timeout=10, allow_redirects=True)
+            print(f"📊 Backend ответ: статус {response.status_code}, URL: {response.url}")
+
             if response.status_code == 200:
                 print("✅ Backend сервис готов!")
                 return True
+            elif response.status_code == 307:
+                print(f"⚠️ Backend перенаправил запрос (307). Финальный URL: {response.url}")
+                # Если получили 307, но финальный запрос успешен, считаем это успехом
+                if response.history and response.history[0].status_code == 307:
+                    print("✅ Backend сервис готов (после перенаправления)!")
+                    return True
+                else:
+                    raise requests.exceptions.RequestException(f"Backend redirect failed: {response.status_code}")
             else:
                 print(f"❌ Backend вернул статус: {response.status_code}")
+                # Попробуем альтернативные endpoints
+                try:
+                    alt_url = f"{self.backend_url}/api/v1/health"  # без слеша
+                    alt_response = requests.get(alt_url, timeout=5, allow_redirects=True)
+                    print(f"🔍 Альтернативный endpoint (без слеша): {alt_response.status_code}")
+                    if alt_response.status_code == 200:
+                        print("✅ Backend готов через альтернативный endpoint!")
+                        return True
+                except Exception as alt_e:
+                    print(f"🔍 Альтернативный endpoint недоступен: {alt_e}")
+
                 raise requests.exceptions.RequestException(f"Backend not ready: {response.status_code}")
         except requests.exceptions.RequestException as e:
             print(f"❌ Ошибка подключения к backend: {e}")
@@ -52,8 +75,8 @@ class ServiceWaiter:
         print(f"🔍 Проверка готовности Selenium Hub: {self.selenium_hub_url}")
 
         try:
-            # Сначала проверяем базовую доступность
-            response = requests.get(f"{self.selenium_hub_url}/wd/hub/status", timeout=15)
+            # Используем правильный endpoint для Selenium 4.x
+            response = requests.get(f"{self.selenium_hub_url}/status", timeout=15)
             if response.status_code == 200:
                 data = response.json()
                 print(f"📊 Selenium Hub ответ: {data}")
@@ -62,7 +85,21 @@ class ServiceWaiter:
                 if data.get("value", {}).get("ready", False):
                     print("✅ Selenium Hub готов!")
 
-                    # Дополнительно проверяем доступность Grid
+                    # Проверяем наличие узлов
+                    nodes = data.get("value", {}).get("nodes", [])
+                    if nodes:
+                        active_nodes = [node for node in nodes if node.get("availability") == "UP"]
+                        print(f"📊 Активных узлов: {len(active_nodes)}/{len(nodes)}")
+
+                        if active_nodes:
+                            total_slots = sum(len(node.get("slots", [])) for node in active_nodes)
+                            print(f"🎯 Доступно слотов для тестирования: {total_slots}")
+                        else:
+                            print("⚠️ Нет активных узлов, но Hub готов")
+                    else:
+                        print("⚠️ Нет подключенных узлов, но Hub готов")
+
+                    # Дополнительно проверяем доступность Grid API
                     try:
                         grid_response = requests.get(f"{self.selenium_hub_url}/grid/api/hub", timeout=10)
                         if grid_response.status_code == 200:
@@ -83,11 +120,11 @@ class ServiceWaiter:
             print(f"❌ Ошибка подключения к Selenium Hub: {e}")
             # Дополнительная диагностика
             try:
-                # Пробуем альтернативные endpoints
-                alt_response = requests.get(f"{self.selenium_hub_url}/status", timeout=5)
-                print(f"🔍 Альтернативный endpoint /status: {alt_response.status_code}")
+                # Пробуем старый endpoint для совместимости
+                alt_response = requests.get(f"{self.selenium_hub_url}/wd/hub/status", timeout=5)
+                print(f"🔍 Старый endpoint /wd/hub/status: {alt_response.status_code}")
             except Exception as alt_e:
-                print(f"🔍 Альтернативный endpoint недоступен: {alt_e}")
+                print(f"🔍 Старый endpoint недоступен: {alt_e}")
             raise
     
     @retry(
@@ -151,7 +188,7 @@ class ServiceWaiter:
         
         # Проверяем Selenium Hub
         try:
-            response = requests.get(f"{self.selenium_hub_url}/wd/hub/status", timeout=5)
+            response = requests.get(f"{self.selenium_hub_url}/status", timeout=5)
             if response.status_code == 200:
                 data = response.json()
                 health_status["selenium_hub"] = data.get("value", {}).get("ready", False)
