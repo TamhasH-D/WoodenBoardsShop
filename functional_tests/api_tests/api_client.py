@@ -57,10 +57,12 @@ def generate_test_data(entity_type: str) -> Dict[str, Any]:
         }
     
     elif entity_type == "wood_type":
+        import time
+        timestamp = str(int(time.time() * 1000))  # Миллисекунды для уникальности
         return {
             **base_data,
-            "neme": "Тестовая древесина",
-            "description": "Описание тестовой древесины",
+            "neme": f"Тестовая древесина {timestamp}",
+            "description": f"Описание тестовой древесины {timestamp}",
         }
     
     elif entity_type == "wood_type_price":
