@@ -1,0 +1,97 @@
+# Simple Makefile for functional tests
+# No colors, just functionality
+
+FUNCTIONAL_TESTS_DIR := .
+TEST_COMPOSE_FILE := docker-compose.test.yaml
+TEST_PROJECT_NAME := diplom-functional-tests
+
+.PHONY: help
+help: ## Show available commands
+	@echo "Functional Tests - Simple Commands"
+	@echo "=================================="
+	@echo ""
+	@echo "Main Commands:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
+
+.PHONY: check-deps
+check-deps:
+	@echo "Checking dependencies..."
+	@command -v docker >/dev/null 2>&1 || { echo "ERROR: Docker not installed"; exit 1; }
+	@command -v docker-compose >/dev/null 2>&1 || { echo "ERROR: Docker Compose not installed"; exit 1; }
+	@[ -f "$(TEST_COMPOSE_FILE)" ] || { echo "ERROR: File $(TEST_COMPOSE_FILE) not found"; exit 1; }
+	@echo "All dependencies OK"
+
+.PHONY: test
+test: check-deps ## Run all functional tests
+	@echo "Starting all functional tests..."
+	@$(MAKE) -f Makefile.simple test-down 2>/dev/null || true
+	@$(MAKE) -f Makefile.simple test-up
+	@echo "Running tests..."
+	@TEST_TYPE=all docker-compose -f $(TEST_COMPOSE_FILE) -p $(TEST_PROJECT_NAME) run --rm functional-tests || \
+		(echo "Tests failed" && $(MAKE) -f Makefile.simple test-down && exit 1)
+	@$(MAKE) -f Makefile.simple test-down
+	@echo "Tests completed!"
+
+.PHONY: test-api
+test-api: check-deps ## Run API tests only
+	@echo "Starting API tests..."
+	@$(MAKE) -f Makefile.simple test-down 2>/dev/null || true
+	@$(MAKE) -f Makefile.simple test-up
+	@echo "Running API tests..."
+	@TEST_TYPE=api docker-compose -f $(TEST_COMPOSE_FILE) -p $(TEST_PROJECT_NAME) run --rm functional-tests || \
+		(echo "API tests failed" && $(MAKE) -f Makefile.simple test-down && exit 1)
+	@$(MAKE) -f Makefile.simple test-down
+	@echo "API tests completed!"
+
+.PHONY: test-browser
+test-browser: check-deps ## Run browser tests only
+	@echo "Starting browser tests..."
+	@$(MAKE) -f Makefile.simple test-down 2>/dev/null || true
+	@$(MAKE) -f Makefile.simple test-up
+	@echo "Running browser tests..."
+	@TEST_TYPE=browser docker-compose -f $(TEST_COMPOSE_FILE) -p $(TEST_PROJECT_NAME) run --rm functional-tests || \
+		(echo "Browser tests failed" && $(MAKE) -f Makefile.simple test-down && exit 1)
+	@$(MAKE) -f Makefile.simple test-down
+	@echo "Browser tests completed!"
+
+.PHONY: test-up
+test-up: check-deps ## Start test environment
+	@echo "Starting test environment..."
+	@docker-compose -f $(TEST_COMPOSE_FILE) -p $(TEST_PROJECT_NAME) up -d --remove-orphans
+	@echo "Waiting for services..."
+	@sleep 15
+	@$(MAKE) -f Makefile.simple test-status
+	@echo "Test environment ready"
+
+.PHONY: test-down
+test-down: ## Stop test environment
+	@echo "Stopping test environment..."
+	@docker-compose -f $(TEST_COMPOSE_FILE) -p $(TEST_PROJECT_NAME) down --remove-orphans
+	@echo "Test environment stopped"
+
+.PHONY: test-status
+test-status: ## Check test services status
+	@echo "Test services status:"
+	@docker-compose -f $(TEST_COMPOSE_FILE) -p $(TEST_PROJECT_NAME) ps
+
+.PHONY: test-logs
+test-logs: ## Show test logs
+	@echo "Test logs:"
+	@docker-compose -f $(TEST_COMPOSE_FILE) -p $(TEST_PROJECT_NAME) logs functional-tests
+
+.PHONY: test-clean
+test-clean: test-down ## Clean test data
+	@echo "Cleaning test data..."
+	@docker-compose -f $(TEST_COMPOSE_FILE) -p $(TEST_PROJECT_NAME) down -v --remove-orphans
+	@docker system prune -f --filter "label=com.docker.compose.project=$(TEST_PROJECT_NAME)" 2>/dev/null || true
+	@echo "Test data cleaned"
+
+.PHONY: selenium-fix
+selenium-fix: ## Fix Selenium issues
+	@echo "Running Selenium fix..."
+	@./selenium_fix_local.sh
+
+.PHONY: selenium-status
+selenium-status: ## Check Selenium status
+	@echo "Checking Selenium status..."
+	@docker exec selenium-hub curl -s http://localhost:4444/status | jq . 2>/dev/null || echo "Selenium not available"
