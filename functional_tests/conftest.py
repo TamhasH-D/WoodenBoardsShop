@@ -1,6 +1,8 @@
 import os
 import pytest
 import asyncio
+import time
+from datetime import datetime
 from typing import AsyncGenerator, Generator
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -8,6 +10,7 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 import httpx
 from utils.api_client import APIClient
 from utils.data_factory import TestDataFactory
+from utils.test_logger import TestLogger
 
 
 @pytest.fixture(scope="session")
@@ -96,9 +99,16 @@ async def cleanup_test_data(api_client: APIClient):
 
 def pytest_configure(config):
     """Конфигурация pytest."""
-    # Создание директорий для отчетов
+    # Создание директорий для отчетов и логов
     os.makedirs("reports", exist_ok=True)
     os.makedirs("screenshots", exist_ok=True)
+    os.makedirs("logs", exist_ok=True)
+
+    # Регистрация плагина логирования
+    from utils.pytest_logger_plugin import TestLoggerPlugin
+    if not hasattr(config, '_test_logger_plugin'):
+        config._test_logger_plugin = TestLoggerPlugin()
+        config.pluginmanager.register(config._test_logger_plugin, "test_logger_plugin")
 
 
 def pytest_runtest_makereport(item, call):
@@ -107,9 +117,20 @@ def pytest_runtest_makereport(item, call):
         # Проверяем, есть ли webdriver в фикстурах теста
         if hasattr(item, "funcargs") and "webdriver_instance" in item.funcargs:
             driver = item.funcargs["webdriver_instance"]
-            screenshot_path = f"screenshots/{item.name}_{call.when}.png"
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            screenshot_path = f"screenshots/{item.name}_{timestamp}.png"
             driver.save_screenshot(screenshot_path)
             print(f"Скриншот сохранен: {screenshot_path}")
+
+            # Логирование скриншота
+            logger = TestLogger.get_test_logger() if hasattr(TestLogger, 'get_test_logger') else None
+            if logger:
+                logger.log_test_result(
+                    f"SCREENSHOT_{item.name}",
+                    "INFO",
+                    0.0,
+                    f"Скриншот сохранен: {screenshot_path}"
+                )
 
 
 @pytest.fixture(scope="session")

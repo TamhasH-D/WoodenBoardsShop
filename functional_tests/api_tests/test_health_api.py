@@ -4,6 +4,7 @@ import pytest
 from typing import Dict, Any
 from base.test_base import BaseAPITest
 from utils.api_client import APIClient
+from utils.test_logger import LogCapture
 
 
 class TestHealthAPI(BaseAPITest):

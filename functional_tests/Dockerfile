@@ -31,8 +31,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Копирование тестов
 COPY . .
 
-# Создание директории для отчетов
-RUN mkdir -p /app/reports
+# Создание директорий для отчетов, скриншотов и логов
+RUN mkdir -p /app/reports /app/screenshots /app/logs
 
 # Переменные окружения для Selenium
 ENV DISPLAY=:99

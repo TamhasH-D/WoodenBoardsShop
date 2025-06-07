@@ -121,9 +121,13 @@ services:
       FRONTEND_BUYER_URL: http://buyer-frontend
       TEST_TYPE: ${TEST_TYPE:-all}
       PYTHONPATH: /app
+      # Настройки логирования
+      LOG_LEVEL: INFO
+      PYTEST_CURRENT_TEST: ""
     volumes:
       - ./reports:/app/reports
       - ./screenshots:/app/screenshots
+      - ./logs:/app/logs
     depends_on:
       test-backend:
         condition: service_healthy

@@ -70,13 +70,84 @@ clean: ## Очистить Docker ресурсы и отчеты
 	@echo "$(YELLOW)🧹 Очистка Docker ресурсов...$(NC)"
 	docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) down -v --remove-orphans
 	docker system prune -f
-	@echo "$(YELLOW)🗑️  Очистка отчетов и скриншотов...$(NC)"
-	rm -rf reports/* screenshots/*
+	@echo "$(YELLOW)🗑️  Очистка отчетов, скриншотов и логов...$(NC)"
+	rm -rf reports/* screenshots/* logs/*
 	@echo "$(GREEN)✅ Очистка завершена$(NC)"
+
+clean-logs: ## Очистить только логи тестов
+	@echo "$(YELLOW)🗑️  Очистка логов тестов...$(NC)"
+	rm -rf logs/*
+	@echo "$(GREEN)✅ Логи очищены$(NC)"
+
+clean-old-logs: ## Очистить логи старше 30 дней
+	@echo "$(YELLOW)🗑️  Очистка старых логов (>30 дней)...$(NC)"
+	find logs/ -name "test_results_*.log" -mtime +30 -delete 2>/dev/null || true
+	find logs/ -name "test_results_*.json" -mtime +30 -delete 2>/dev/null || true
+	@echo "$(GREEN)✅ Старые логи очищены$(NC)"
 
 logs: ## Показать логи тестов
 	@echo "$(YELLOW)📋 Логи функциональных тестов:$(NC)"
 	docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) logs functional-tests
+
+logs-test: ## Показать последний лог тестов
+	@echo "$(YELLOW)📋 Последний лог тестов:$(NC)"
+	@if [ -d "logs" ] && [ "$$(ls -A logs/)" ]; then \
+		LATEST_LOG=$$(ls -t logs/test_results_*.log 2>/dev/null | head -1); \
+		if [ -n "$$LATEST_LOG" ]; then \
+			echo "$(GREEN)Файл: $$LATEST_LOG$(NC)"; \
+			cat "$$LATEST_LOG"; \
+		else \
+			echo "$(RED)❌ Лог файлы не найдены$(NC)"; \
+		fi; \
+	else \
+		echo "$(RED)❌ Директория logs пуста или не существует$(NC)"; \
+	fi
+
+logs-tail: ## Следить за последним логом в реальном времени
+	@echo "$(YELLOW)👀 Мониторинг последнего лога...$(NC)"
+	@if [ -d "logs" ] && [ "$$(ls -A logs/)" ]; then \
+		LATEST_LOG=$$(ls -t logs/test_results_*.log 2>/dev/null | head -1); \
+		if [ -n "$$LATEST_LOG" ]; then \
+			echo "$(GREEN)Мониторинг: $$LATEST_LOG$(NC)"; \
+			tail -f "$$LATEST_LOG"; \
+		else \
+			echo "$(RED)❌ Лог файлы не найдены$(NC)"; \
+		fi; \
+	else \
+		echo "$(RED)❌ Директория logs пуста или не существует$(NC)"; \
+	fi
+
+logs-list: ## Показать список всех логов
+	@echo "$(YELLOW)📋 Список всех логов:$(NC)"
+	@if [ -d "logs" ] && [ "$$(ls -A logs/)" ]; then \
+		ls -la logs/; \
+		echo ""; \
+		echo "$(YELLOW)Статистика:$(NC)"; \
+		echo "Всего логов: $$(ls logs/test_results_*.log 2>/dev/null | wc -l)"; \
+		echo "JSON отчетов: $$(ls logs/test_results_*.json 2>/dev/null | wc -l)"; \
+	else \
+		echo "$(RED)❌ Логи не найдены$(NC)"; \
+	fi
+
+logs-stats: ## Показать статистику из последнего лога
+	@echo "$(YELLOW)📊 Статистика последнего тестирования:$(NC)"
+	@if [ -d "logs" ] && [ "$$(ls -A logs/)" ]; then \
+		LATEST_JSON=$$(ls -t logs/test_results_*.json 2>/dev/null | head -1); \
+		if [ -n "$$LATEST_JSON" ]; then \
+			echo "$(GREEN)JSON отчет: $$LATEST_JSON$(NC)"; \
+			python3 -c "import json; data=json.load(open('$$LATEST_JSON')); stats=data['statistics']; print(f'Всего: {stats[\"total\"]}, Пройдено: {stats[\"passed\"]}, Упало: {stats[\"failed\"]}, Пропущено: {stats[\"skipped\"]}')"; \
+		else \
+			LATEST_LOG=$$(ls -t logs/test_results_*.log 2>/dev/null | head -1); \
+			if [ -n "$$LATEST_LOG" ]; then \
+				echo "$(GREEN)Извлечение из лога: $$LATEST_LOG$(NC)"; \
+				grep "ИТОГОВАЯ СТАТИСТИКА" -A 10 "$$LATEST_LOG" | tail -8; \
+			else \
+				echo "$(RED)❌ Лог файлы не найдены$(NC)"; \
+			fi; \
+		fi; \
+	else \
+		echo "$(RED)❌ Директория logs пуста или не существует$(NC)"; \
+	fi
 
 logs-backend: ## Показать логи тестового backend
 	@echo "$(YELLOW)📋 Логи тестового backend:$(NC)"
