@@ -25,7 +25,7 @@ class WoodenBoardDAO(
 
         # Calculate volume if not provided
         if "volume" not in data or data["volume"] is None:
-            data["volume"] = data["height"] * data["width"] * data["lenght"]
+            data["volume"] = data["height"] * data["width"] * data["length"]
 
         # Set default confidence if not provided
         if "confidence" not in data or data["confidence"] is None:

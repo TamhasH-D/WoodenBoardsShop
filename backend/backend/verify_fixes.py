@@ -12,8 +12,8 @@ def test_model_field_names():
     try:
         # Test WoodenBoard model
         from backend.models.wooden_board_models import WoodenBoard
-        assert hasattr(WoodenBoard, 'lenght'), "WoodenBoard should have 'lenght' field"
-        print("✅ WoodenBoard model has 'lenght' field")
+        assert hasattr(WoodenBoard, 'length'), "WoodenBoard should have 'length' field"
+        print("✅ WoodenBoard model has 'length' field")
         
         # Test WoodType model preserves typo
         from backend.models.wood_type_models import WoodType
@@ -33,17 +33,17 @@ def test_dto_field_names():
         from uuid import uuid4
         from datetime import datetime, UTC
         
-        # Test WoodenBoardInputDTO accepts lenght
+        # Test WoodenBoardInputDTO accepts length
         input_data = {
             "height": 2.0,
             "width": 2.0,
-            "lenght": 2.0,
+            "length": 2.0,
             "image_id": uuid4(),
         }
-        
+
         input_dto = WoodenBoardInputDTO(**input_data)
-        assert input_dto.lenght == 2.0, "InputDTO should accept 'lenght' field"
-        print("✅ WoodenBoardInputDTO accepts 'lenght' field")
+        assert input_dto.length == 2.0, "InputDTO should accept 'length' field"
+        print("✅ WoodenBoardInputDTO accepts 'length' field")
         
         return True
     except Exception as e:
@@ -77,7 +77,7 @@ def test_dao_create_method():
         input_data = {
             "height": 2.0,
             "width": 2.0,
-            "lenght": 2.0,
+            "length": 2.0,
             "image_id": uuid4(),
         }
 
@@ -85,7 +85,7 @@ def test_dao_create_method():
         # This should not raise validation errors
         assert input_dto.height == 2.0
         assert input_dto.width == 2.0
-        assert input_dto.lenght == 2.0
+        assert input_dto.length == 2.0
         print("✅ WoodenBoardInputDTO handles minimal test input")
 
         return True

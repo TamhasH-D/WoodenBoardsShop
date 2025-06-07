@@ -22,7 +22,7 @@ class WoodenBoard(Base):
     )
     height: Mapped[float] = mapped_column(sa.Float, comment="Height in meters")
     width: Mapped[float] = mapped_column(sa.Float, comment="Width in meters")
-    lenght: Mapped[float] = mapped_column(sa.Float, comment="Length in meters")  # Keep typo for backward compatibility
+    length: Mapped[float] = mapped_column(sa.Float, comment="Length in meters")  # Fixed typo to match migration
     volume: Mapped[float] = mapped_column(sa.Float, comment="Calculated volume in cubic meters")
     confidence: Mapped[float] = mapped_column(sa.Float, comment="AI detection confidence (0-1)")
     created_at: Mapped[datetime] = mapped_column(

@@ -12,7 +12,7 @@ class WoodenBoardDTO(BaseOrmModel):
     id: UUID
     height: float = Field(..., description="Height in meters")
     width: float = Field(..., description="Width in meters")
-    lenght: float = Field(..., description="Length in meters")  # Keep typo for backward compatibility
+    length: float = Field(..., description="Length in meters")  # Fixed typo to match migration
     volume: float = Field(..., description="Calculated volume in cubic meters")
     confidence: float = Field(..., description="AI detection confidence (0-1)")
     created_at: datetime
@@ -27,7 +27,7 @@ class WoodenBoardInputDTO(BaseModel):
     id: UUID | None = None  # Allow id to be provided for testing
     height: float = Field(..., gt=0, description="Height in meters")
     width: float = Field(..., gt=0, description="Width in meters")
-    lenght: float = Field(..., gt=0, description="Length in meters")  # Keep typo for backward compatibility
+    length: float = Field(..., gt=0, description="Length in meters")  # Fixed typo to match migration
     volume: float | None = Field(None, gt=0, description="Calculated volume in cubic meters")  # Make optional
     confidence: float | None = Field(None, ge=0, le=1, description="AI detection confidence (0-1)")  # Make optional
     image_id: UUID
@@ -39,7 +39,7 @@ class WoodenBoardUpdateDTO(BaseModel):
 
     height: float | None = Field(None, gt=0, description="Height in meters")
     width: float | None = Field(None, gt=0, description="Width in meters")
-    lenght: float | None = Field(None, gt=0, description="Length in meters")  # Keep typo for backward compatibility
+    length: float | None = Field(None, gt=0, description="Length in meters")  # Fixed typo to match migration
     volume: float | None = Field(None, gt=0, description="Calculated volume in cubic meters")
     confidence: float | None = Field(None, ge=0, le=1, description="AI detection confidence (0-1)")
     image_id: UUID | None = None

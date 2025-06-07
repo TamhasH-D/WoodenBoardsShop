@@ -103,7 +103,7 @@ class ProductService:
                     board_input = WoodenBoardInputDTO(
                         height=board_data.height,
                         width=board_data.width,
-                        lenght=board_data.length,  # Use lenght field name for backward compatibility
+                        length=board_data.length,  # Fixed field name to match migration
                         volume=board_data.volume,
                         confidence=board_data.detection.confidence,
                         image_id=image_dto.id,
@@ -221,7 +221,7 @@ class ProductService:
                             board_input = WoodenBoardInputDTO(
                                 height=board_data.height,
                                 width=board_data.width,
-                                lenght=board_data.length,  # Use lenght field name for backward compatibility
+                                length=board_data.length,  # Fixed field name to match migration
                                 volume=board_data.volume,
                                 confidence=board_data.detection.confidence,
                                 image_id=image_dto.id,
