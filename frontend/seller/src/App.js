@@ -10,7 +10,6 @@ import ErrorBoundary from './components/ErrorBoundary';
 import RequestMonitor from './components/RequestMonitor';
 import { SELLER_TEXTS } from './utils/localization';
 import { MOCK_SELLER_ID } from './utils/constants';
-import SellerAutoRefreshManager from './utils/autoRefresh';
 import './index.css';
 
 function Navigation() {
@@ -60,32 +59,7 @@ function App() {
     lastActivity: null,
     error: null
   });
-  const [, setAutoRefreshManager] = useState(null);
-
-  // Initialize auto-refresh system
-  useEffect(() => {
-    const manager = new SellerAutoRefreshManager(MOCK_SELLER_ID, {
-      onRefresh: async () => {
-        // This will be called every 5 minutes to refresh data
-        // Individual components can listen to this via custom events
-        window.dispatchEvent(new CustomEvent('seller-auto-refresh'));
-      },
-      onStatusChange: setOnlineStatus,
-      onError: (error) => {
-        // Log error for debugging in development
-        if (process.env.NODE_ENV === 'development') {
-          console.error('[App] Auto-refresh error:', error);
-        }
-      }
-    });
-
-    manager.start();
-    setAutoRefreshManager(manager);
-
-    return () => {
-      manager.destroy();
-    };
-  }, []);
+  // Auto-refresh functionality removed as it was an unsuccessful experiment
 
   return (
     <Router>
