@@ -20,9 +20,10 @@ RUN uv add aiohttp python-multipart
 
 FROM python:3.12-slim-bookworm
 
-# Install bash for command chaining
+# Install bash and curl for command chaining and health checks
 RUN apt-get update && apt-get install -y \
     bash \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/app/.venv/bin:$PATH"

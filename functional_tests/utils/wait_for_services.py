@@ -43,29 +43,51 @@ class ServiceWaiter:
             raise
     
     @retry(
-        stop=stop_after_attempt(20),
-        wait=wait_fixed(3),
+        stop=stop_after_attempt(30),
+        wait=wait_fixed(5),
         retry=retry_if_exception_type((requests.exceptions.RequestException, ConnectionError))
     )
     def wait_for_selenium_hub(self) -> bool:
         """Ожидание готовности Selenium Hub."""
         print(f"🔍 Проверка готовности Selenium Hub: {self.selenium_hub_url}")
-        
+
         try:
-            response = requests.get(f"{self.selenium_hub_url}/status", timeout=10)
+            # Сначала проверяем базовую доступность
+            response = requests.get(f"{self.selenium_hub_url}/wd/hub/status", timeout=15)
             if response.status_code == 200:
                 data = response.json()
+                print(f"📊 Selenium Hub ответ: {data}")
+
+                # Проверяем готовность Hub
                 if data.get("value", {}).get("ready", False):
                     print("✅ Selenium Hub готов!")
+
+                    # Дополнительно проверяем доступность Grid
+                    try:
+                        grid_response = requests.get(f"{self.selenium_hub_url}/grid/api/hub", timeout=10)
+                        if grid_response.status_code == 200:
+                            print("✅ Selenium Grid API доступен!")
+                        else:
+                            print(f"⚠️ Selenium Grid API недоступен: {grid_response.status_code}")
+                    except Exception as e:
+                        print(f"⚠️ Не удалось проверить Grid API: {e}")
+
                     return True
                 else:
-                    print("❌ Selenium Hub не готов")
+                    print(f"❌ Selenium Hub не готов. Статус: {data}")
                     raise requests.exceptions.RequestException("Selenium Hub not ready")
             else:
                 print(f"❌ Selenium Hub вернул статус: {response.status_code}")
                 raise requests.exceptions.RequestException(f"Selenium Hub not ready: {response.status_code}")
         except requests.exceptions.RequestException as e:
             print(f"❌ Ошибка подключения к Selenium Hub: {e}")
+            # Дополнительная диагностика
+            try:
+                # Пробуем альтернативные endpoints
+                alt_response = requests.get(f"{self.selenium_hub_url}/status", timeout=5)
+                print(f"🔍 Альтернативный endpoint /status: {alt_response.status_code}")
+            except Exception as alt_e:
+                print(f"🔍 Альтернативный endpoint недоступен: {alt_e}")
             raise
     
     @retry(
@@ -129,8 +151,12 @@ class ServiceWaiter:
         
         # Проверяем Selenium Hub
         try:
-            response = requests.get(f"{self.selenium_hub_url}/status", timeout=5)
-            health_status["selenium_hub"] = response.status_code == 200
+            response = requests.get(f"{self.selenium_hub_url}/wd/hub/status", timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                health_status["selenium_hub"] = data.get("value", {}).get("ready", False)
+            else:
+                health_status["selenium_hub"] = False
         except Exception:
             health_status["selenium_hub"] = False
         

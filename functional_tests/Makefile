@@ -1,6 +1,6 @@
 # Makefile для функциональных тестов
 
-.PHONY: help build rebuild up down test test-rebuild test-api test-api-rebuild test-browser test-integration test-uuid test-uuid-rebuild test-uuid-validation test-uuid-integration clean logs shell
+.PHONY: help build rebuild up down test test-rebuild test-api test-api-rebuild test-browser test-integration test-uuid test-uuid-rebuild test-uuid-validation test-uuid-integration selenium-diagnostics selenium-status selenium-fix selenium-restart clean logs shell
 
 # Переменные
 COMPOSE_FILE = docker-compose.test.yaml
@@ -195,6 +195,29 @@ logs-backend: ## Показать логи тестового backend
 logs-selenium: ## Показать логи Selenium Hub
 	@echo "$(YELLOW)📋 Логи Selenium Hub:$(NC)"
 	docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) logs selenium-hub
+
+logs-selenium-chrome: ## Показать логи Chrome Node
+	@echo "$(YELLOW)📋 Логи Chrome Node:$(NC)"
+	docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) logs selenium-chrome
+
+selenium-diagnostics: ## Запустить диагностику Selenium Grid
+	@echo "$(YELLOW)🔍 Диагностика Selenium Grid...$(NC)"
+	docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) exec functional-tests python utils/selenium_diagnostics.py
+
+selenium-status: ## Проверить статус Selenium сервисов
+	@echo "$(YELLOW)📊 Статус Selenium сервисов:$(NC)"
+	@echo "Hub контейнер:"
+	@docker ps --filter "name=selenium-hub" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+	@echo "Chrome Node контейнер:"
+	@docker ps --filter "name=selenium-chrome" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+selenium-fix: ## Автоматическое исправление проблем Selenium
+	@echo "$(YELLOW)🔧 Автоматическое исправление Selenium проблем...$(NC)"
+	python utils/selenium_fix.py
+
+selenium-restart: ## Перезапуск Selenium сервисов
+	@echo "$(YELLOW)🔄 Перезапуск Selenium сервисов...$(NC)"
+	docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) restart selenium-hub selenium-chrome
 
 logs-all: ## Показать все логи
 	@echo "$(YELLOW)📋 Все логи тестового окружения:$(NC)"

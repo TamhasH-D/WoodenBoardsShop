@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Тестовая база данных
   test-postgres:
@@ -42,14 +40,20 @@ services:
       dockerfile: Dockerfile
     container_name: test-backend
     environment:
-      BACKEND_DB_HOST: test-postgres
-      BACKEND_DB_PORT: 5432
-      BACKEND_DB_USER: test_user
-      BACKEND_DB_PASS: test_password
-      BACKEND_DB_BASE: test_diplom
+      # Database settings (используем правильные префиксы из settings.py)
+      BACKEND_PG_HOST: test-postgres
+      BACKEND_PG_PORT: 5432
+      BACKEND_PG_USER: test_user
+      BACKEND_PG_PASSWORD: test_password
+      BACKEND_PG_DATABASE: test_diplom
+      # Redis settings
       BACKEND_REDIS_HOST: test-redis
       BACKEND_REDIS_PORT: 6379
+      # Server settings
       BACKEND_PORT: 8000
+      BACKEND_HOST: "0.0.0.0"
+      BACKEND_LOG_LEVEL: "info"
+      # CORS settings
       BACKEND_CORS_ALLOW_ORIGINS: "*"
       BACKEND_CORS_ALLOW_CREDENTIALS: "True"
       BACKEND_CORS_ALLOW_METHODS: "*"
@@ -80,7 +84,7 @@ services:
 
   # Selenium Grid Hub
   selenium-hub:
-    image: selenium/hub:4.15.0
+    image: selenium/hub:4.25.0
     container_name: selenium-hub
     ports:
       - "4444:4444"
@@ -88,22 +92,46 @@ services:
       GRID_MAX_SESSION: 16
       GRID_BROWSER_TIMEOUT: 300
       GRID_TIMEOUT: 300
+      SE_EVENT_BUS_HOST: selenium-hub
+      SE_EVENT_BUS_PUBLISH_PORT: 4442
+      SE_EVENT_BUS_SUBSCRIBE_PORT: 4443
+      SE_SESSION_MAP_HOST: selenium-hub
+      SE_SESSION_MAP_PORT: 5556
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4444/wd/hub/status"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
     networks:
       - test_network
 
   # Chrome Node
   selenium-chrome:
-    image: selenium/node-chrome:4.15.0
+    image: selenium/node-chrome:4.25.0
     container_name: selenium-chrome
     depends_on:
-      - selenium-hub
+      selenium-hub:
+        condition: service_healthy
     environment:
-      HUB_HOST: selenium-hub
-      HUB_PORT: 4444
-      NODE_MAX_INSTANCES: 4
-      NODE_MAX_SESSION: 4
+      SE_EVENT_BUS_HOST: selenium-hub
+      SE_EVENT_BUS_PUBLISH_PORT: 4442
+      SE_EVENT_BUS_SUBSCRIBE_PORT: 4443
+      SE_SESSION_MAP_HOST: selenium-hub
+      SE_SESSION_MAP_PORT: 5556
+      NODE_MAX_INSTANCES: 2
+      NODE_MAX_SESSION: 2
+      SE_NODE_MAX_SESSIONS: 2
+      SE_NODE_OVERRIDE_MAX_SESSIONS: true
     volumes:
       - /dev/shm:/dev/shm
+    shm_size: 2gb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5555/status"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     networks:
       - test_network
 
@@ -132,9 +160,9 @@ services:
       test-backend:
         condition: service_healthy
       selenium-hub:
-        condition: service_started
+        condition: service_healthy
       selenium-chrome:
-        condition: service_started
+        condition: service_healthy
     networks:
       - test_network
       - diplom_default
