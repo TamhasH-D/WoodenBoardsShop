@@ -14,48 +14,96 @@ class TestProductAPI(BaseAPITest, APITestMixin):
     
     @pytest.mark.asyncio
     async def test_create_product_success(self, api_client: APIClient, test_data_factory: TestDataFactory):
-        """Тест успешного создания продукта."""
+        """Тест успешного создания продукта с корректным UUID."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
-        
+
         # Создаем продавца для продукта
         seller = await test_data_factory.create_seller()
         seller_id = seller["data"]["id"]
-        
+
+        # Используем фабрику для генерации уникального UUID
+        product_uuid = test_data_factory.generate_uuid()
         product_data = {
-            "id": str(uuid.uuid4()),
+            "id": product_uuid,
             "seller_id": seller_id,
             "neme": "Тестовая доска",  # Используем typo как в API
             "descrioption": "Описание тестовой доски",  # Используем typo как в API
             "price": "1500.50"
         }
-        
+
         response = await self.test_create_entity(
             api_client.create_product,
             product_data
         )
-        
-        # Дополнительные проверки для product
+
+        # Проверяем, что backend вернул тот же UUID, который мы передали
+        assert response["data"]["id"] == product_uuid
         assert response["data"]["seller_id"] == seller_id
         assert response["data"]["neme"] == product_data["neme"]
         assert response["data"]["descrioption"] == product_data["descrioption"]
         assert float(response["data"]["price"]) == float(product_data["price"])
     
     @pytest.mark.asyncio
-    async def test_create_product_without_seller(self, api_client: APIClient):
-        """Тест создания продукта без продавца."""
+    async def test_create_product_missing_uuid(self, api_client: APIClient, test_data_factory: TestDataFactory):
+        """Тест создания продукта без UUID - должен вернуть ошибку."""
         self.api_client = api_client
-        
+
+        # Создаем продавца
+        seller = await test_data_factory.create_seller()
+        seller_id = seller["data"]["id"]
+
+        # Тест без обязательного поля id (UUID)
         product_data = {
-            "id": str(uuid.uuid4()),
-            "seller_id": str(uuid.uuid4()),  # Несуществующий продавец
+            "seller_id": seller_id,
             "neme": "Тестовая доска",
             "descrioption": "Описание",
             "price": "1000.00"
         }
-        
+
+        with pytest.raises(Exception):  # Ожидаем ошибку валидации
+            await api_client.create_product(product_data)
+
+    @pytest.mark.asyncio
+    async def test_create_product_invalid_seller_uuid(self, api_client: APIClient, test_data_factory: TestDataFactory):
+        """Тест создания продукта с несуществующим продавцом."""
+        self.api_client = api_client
+
+        product_data = {
+            "id": test_data_factory.generate_uuid(),
+            "seller_id": test_data_factory.generate_uuid(),  # Несуществующий продавец
+            "neme": "Тестовая доска",
+            "descrioption": "Описание",
+            "price": "1000.00"
+        }
+
         with pytest.raises(Exception):  # Ожидаем ошибку внешнего ключа
             await api_client.create_product(product_data)
+
+    @pytest.mark.asyncio
+    async def test_create_product_duplicate_uuid(self, api_client: APIClient, test_data_factory: TestDataFactory):
+        """Тест создания продукта с дублирующимся UUID."""
+        self.api_client = api_client
+        self.test_data_factory = test_data_factory
+
+        # Создаем первый продукт
+        first_product = await test_data_factory.create_product()
+        first_product_id = first_product["data"]["id"]
+
+        # Создаем продавца для второго продукта
+        seller = await test_data_factory.create_seller()
+
+        # Пытаемся создать второй продукт с тем же UUID
+        duplicate_data = {
+            "id": first_product_id,  # Дублирующийся UUID
+            "seller_id": seller["data"]["id"],
+            "neme": "Другой продукт",
+            "descrioption": "Другое описание",
+            "price": "2000.00"
+        }
+
+        with pytest.raises(Exception):  # Ожидаем ошибку дублирования UUID
+            await api_client.create_product(duplicate_data)
     
     @pytest.mark.asyncio
     async def test_get_product_success(self, api_client: APIClient, test_data_factory: TestDataFactory):

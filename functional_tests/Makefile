@@ -1,6 +1,6 @@
 # Makefile для функциональных тестов
 
-.PHONY: help build up down test test-api test-browser test-integration clean logs shell
+.PHONY: help build up down test test-api test-browser test-integration test-uuid test-uuid-validation test-uuid-integration clean logs shell
 
 # Переменные
 COMPOSE_FILE = docker-compose.test.yaml
@@ -65,6 +65,23 @@ test-browser-local: ## Запустить браузерные тесты лок
 test-integration-local: ## Запустить интеграционные тесты локально
 	@echo "$(YELLOW)🔗 Запуск интеграционных тестов локально...$(NC)"
 	pytest integration_tests/ -v --html=reports/integration_tests_local_report.html --self-contained-html
+
+test-uuid: ## Запустить только UUID тесты
+	@echo "$(YELLOW)🆔 Запуск UUID тестов...$(NC)"
+	TEST_TYPE=api PYTEST_ARGS="-v -k uuid" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
+	@$(MAKE) down
+
+test-uuid-local: ## Запустить UUID тесты локально
+	@echo "$(YELLOW)🆔 Запуск UUID тестов локально...$(NC)"
+	pytest -v -k uuid --html=reports/uuid_tests_local_report.html --self-contained-html
+
+test-uuid-validation: ## Запустить тесты валидации UUID
+	@echo "$(YELLOW)✅ Запуск тестов валидации UUID...$(NC)"
+	pytest api_tests/test_uuid_validation.py -v --html=reports/uuid_validation_report.html --self-contained-html
+
+test-uuid-integration: ## Запустить интеграционные UUID тесты
+	@echo "$(YELLOW)🔗 Запуск интеграционных UUID тестов...$(NC)"
+	pytest integration_tests/test_uuid_integration.py -v --html=reports/uuid_integration_report.html --self-contained-html
 
 clean: ## Очистить Docker ресурсы и отчеты
 	@echo "$(YELLOW)🧹 Очистка Docker ресурсов...$(NC)"
@@ -230,6 +247,10 @@ dev-setup: ## Настройка окружения для разработки
 dev-test: ## Быстрый тест для разработки (только API)
 	@echo "$(YELLOW)⚡ Быстрый тест для разработки...$(NC)"
 	pytest api_tests/test_health_api.py -v
+
+dev-test-uuid: ## Быстрый тест UUID для разработки
+	@echo "$(YELLOW)⚡ Быстрый тест UUID для разработки...$(NC)"
+	pytest api_tests/test_buyer_api.py::TestBuyerAPI::test_create_buyer_success -v
 
 # Команды для отладки
 debug-selenium: ## Запуск Selenium в режиме отладки
