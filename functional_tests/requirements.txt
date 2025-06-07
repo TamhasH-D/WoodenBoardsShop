@@ -1,0 +1,37 @@
+# Тестовый фреймворк
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-html==4.1.1
+pytest-cov==6.1.1
+pytest-xdist==3.6.0
+
+# Selenium для браузерных тестов
+selenium==4.27.1
+webdriver-manager==4.0.2
+
+# HTTP клиент для API тестов
+httpx==0.28.1
+requests==2.32.3
+
+# Фабрики для тестовых данных
+factory-boy==3.3.3
+faker==33.1.0
+
+# Утилиты для ожидания сервисов
+tenacity==9.0.0
+
+# Логирование и отчеты
+loguru==0.7.3
+allure-pytest==2.13.5
+
+# Работа с изображениями для тестов
+pillow==11.2.1
+
+# Переменные окружения
+python-dotenv==1.0.1
+
+# Валидация данных
+pydantic==2.10.4
+
+# Работа с JSON
+jsonschema==4.23.0

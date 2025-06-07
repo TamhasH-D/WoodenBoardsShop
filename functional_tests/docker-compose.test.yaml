@@ -1,0 +1,186 @@
+version: '3.8'
+
+services:
+  # Тестовая база данных
+  test-postgres:
+    image: postgres:16-alpine
+    container_name: test-postgres
+    environment:
+      POSTGRES_DB: test_diplom
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d test_diplom"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test_network
+
+  # Тестовый Redis
+  test-redis:
+    image: redis:7-alpine
+    container_name: test-redis
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - test_network
+
+  # Тестовый backend
+  test-backend:
+    build:
+      context: ../backend/backend
+      dockerfile: Dockerfile
+    container_name: test-backend
+    environment:
+      BACKEND_DB_HOST: test-postgres
+      BACKEND_DB_PORT: 5432
+      BACKEND_DB_USER: test_user
+      BACKEND_DB_PASS: test_password
+      BACKEND_DB_BASE: test_diplom
+      BACKEND_REDIS_HOST: test-redis
+      BACKEND_REDIS_PORT: 6379
+      BACKEND_PORT: 8000
+      BACKEND_CORS_ALLOW_ORIGINS: "*"
+      BACKEND_CORS_ALLOW_CREDENTIALS: "True"
+      BACKEND_CORS_ALLOW_METHODS: "*"
+      BACKEND_CORS_ALLOW_HEADERS: "*"
+    ports:
+      - "8001:8000"
+    depends_on:
+      test-postgres:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+    command: >
+      bash -c "
+        echo '🔄 Running test database migrations...' &&
+        python -m alembic upgrade head &&
+        echo '✅ Test migrations completed successfully' &&
+        echo '🚀 Starting test FastAPI application...' &&
+        python -m backend
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - test_network
+
+  # Selenium Grid Hub
+  selenium-hub:
+    image: selenium/hub:4.15.0
+    container_name: selenium-hub
+    ports:
+      - "4444:4444"
+    environment:
+      GRID_MAX_SESSION: 16
+      GRID_BROWSER_TIMEOUT: 300
+      GRID_TIMEOUT: 300
+    networks:
+      - test_network
+
+  # Chrome Node
+  selenium-chrome:
+    image: selenium/node-chrome:4.15.0
+    container_name: selenium-chrome
+    depends_on:
+      - selenium-hub
+    environment:
+      HUB_HOST: selenium-hub
+      HUB_PORT: 4444
+      NODE_MAX_INSTANCES: 4
+      NODE_MAX_SESSION: 4
+    volumes:
+      - /dev/shm:/dev/shm
+    networks:
+      - test_network
+
+  # Тестовый runner
+  functional-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: functional-tests
+    environment:
+      BACKEND_URL: http://test-backend:8000
+      SELENIUM_HUB_URL: http://selenium-hub:4444/wd/hub
+      FRONTEND_ADMIN_URL: http://admin-frontend
+      FRONTEND_SELLER_URL: http://seller-frontend
+      FRONTEND_BUYER_URL: http://buyer-frontend
+      TEST_TYPE: ${TEST_TYPE:-all}
+      PYTHONPATH: /app
+    volumes:
+      - ./reports:/app/reports
+      - ./screenshots:/app/screenshots
+    depends_on:
+      test-backend:
+        condition: service_healthy
+      selenium-hub:
+        condition: service_started
+      selenium-chrome:
+        condition: service_started
+    networks:
+      - test_network
+      - diplom_default
+
+  # Frontend сервисы для браузерных тестов
+  admin-frontend:
+    build:
+      context: ../frontend/admin
+      dockerfile: Dockerfile
+    container_name: test-admin-frontend
+    ports:
+      - "8080:80"
+    environment:
+      REACT_APP_API_URL: http://test-backend:8000
+    networks:
+      - test_network
+      - diplom_default
+
+  seller-frontend:
+    build:
+      context: ../frontend/seller
+      dockerfile: Dockerfile
+    container_name: test-seller-frontend
+    ports:
+      - "8081:80"
+    environment:
+      REACT_APP_API_URL: http://test-backend:8000
+    networks:
+      - test_network
+      - diplom_default
+
+  buyer-frontend:
+    build:
+      context: ../frontend/buyer
+      dockerfile: Dockerfile
+    container_name: test-buyer-frontend
+    ports:
+      - "8082:80"
+    environment:
+      REACT_APP_API_URL: http://test-backend:8000
+    networks:
+      - test_network
+      - diplom_default
+
+volumes:
+  test_postgres_data:
+
+networks:
+  test_network:
+    driver: bridge
+  diplom_default:
+    name: diplom_default
+    external: true
