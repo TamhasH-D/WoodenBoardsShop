@@ -83,52 +83,52 @@ function Products() {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Browse Wood Products</h1>
-        <p className="page-description">Find quality wood products from trusted sellers</p>
+        <h1 className="page-title">{BUYER_TEXTS.BROWSE_PRODUCTS}</h1>
+        <p className="page-description">{BUYER_TEXTS.FIND_QUALITY_PRODUCTS}</p>
       </div>
 
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">Search Products</h2>
+          <h2 className="card-title">{BUYER_TEXTS.SEARCH_PRODUCTS}</h2>
         </div>
 
         <form onSubmit={handleSearch} className="flex gap-4 mb-4">
           <input
             type="text"
-            placeholder="Search products by name, type, or description..."
+            placeholder={BUYER_TEXTS.SEARCH_PLACEHOLDER}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="form-input flex-1"
           />
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Searching...' : 'Search'}
+            {loading ? BUYER_TEXTS.SEARCHING : BUYER_TEXTS.SEARCH}
           </button>
           {isSearching && (
             <button type="button" onClick={clearSearch} className="btn btn-secondary">
-              Clear
+              {BUYER_TEXTS.CLEAR}
             </button>
           )}
           <button type="button" onClick={refetch} className="btn btn-secondary" disabled={loading}>
-            Refresh
+            {BUYER_TEXTS.REFRESH}
           </button>
         </form>
 
         {isSearching && (
           <div className="success mb-4">
-            Searching for: <strong>"{searchQuery}"</strong>
+            {BUYER_TEXTS.SEARCHING_FOR}: <strong>"{searchQuery}"</strong>
           </div>
         )}
       </div>
 
       {error && (
         <div className="error">
-          Failed to load products: {error}
+          {BUYER_TEXTS.FAILED_TO_LOAD_PRODUCTS}: {error}
         </div>
       )}
 
       {loading && (
         <div className="loading">
-          Loading products...
+          {BUYER_TEXTS.LOADING_PRODUCTS}...
         </div>
       )}
 
@@ -136,8 +136,8 @@ function Products() {
         <>
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3>Available Products</h3>
-              <span>Total: {data.total || data.data?.length || 0}</span>
+              <h3>{BUYER_TEXTS.AVAILABLE_PRODUCTS}</h3>
+              <span>{BUYER_TEXTS.TOTAL}: {data.total || data.data?.length || 0}</span>
             </div>
 
             {data.data && data.data.length > 0 ? (
@@ -169,15 +169,15 @@ function Products() {
                       </div>
                       {product.pickup_location && (
                         <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-light)' }}>
-                          Location: {product.pickup_location}
+                          {BUYER_TEXTS.LOCATION}: {product.pickup_location}
                         </div>
                       )}
                     </div>
 
                     <div className="mb-4" style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-light)' }}>
-                      <div>Wood Type: {product.wood_type_id?.substring(0, 8)}...</div>
-                      <div>Seller: {product.seller_id?.substring(0, 8)}...</div>
-                      <div>Listed: {new Date(product.created_at).toLocaleDateString()}</div>
+                      <div>{BUYER_TEXTS.WOOD_TYPE}: {product.wood_type_id?.substring(0, 8)}...</div>
+                      <div>{BUYER_TEXTS.SELLER}: {product.seller_id?.substring(0, 8)}...</div>
+                      <div>{BUYER_TEXTS.LISTED}: {new Date(product.created_at).toLocaleDateString('ru-RU')}</div>
                     </div>
 
                     <div className="flex gap-4">
@@ -187,10 +187,10 @@ function Products() {
                         onClick={() => handleContactSeller(product.seller_id)}
                         disabled={contacting}
                       >
-                        {contacting ? 'Contacting...' : 'Contact Seller'}
+                        {contacting ? BUYER_TEXTS.CONTACTING : BUYER_TEXTS.CONTACT_SELLER}
                       </button>
                       <button className="btn btn-secondary">
-                        Details
+                        {BUYER_TEXTS.DETAILS}
                       </button>
                     </div>
                   </div>
@@ -198,11 +198,11 @@ function Products() {
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: '3rem' }}>
-                <h3>No products found</h3>
+                <h3>{BUYER_TEXTS.NO_PRODUCTS_FOUND}</h3>
                 {isSearching ? (
-                  <p>Try adjusting your search terms or <button onClick={clearSearch} className="btn btn-primary">browse all products</button></p>
+                  <p>{BUYER_TEXTS.TRY_ADJUSTING_SEARCH} <button onClick={clearSearch} className="btn btn-primary">{BUYER_TEXTS.BROWSE_ALL_PRODUCTS}</button></p>
                 ) : (
-                  <p>No products are currently available. Check back later!</p>
+                  <p>{BUYER_TEXTS.NO_PRODUCTS_AVAILABLE}</p>
                 )}
               </div>
             )}
@@ -213,15 +213,15 @@ function Products() {
                 disabled={page === 0 || loading}
                 className="btn btn-secondary"
               >
-                Previous
+                {BUYER_TEXTS.PREVIOUS}
               </button>
-              <span>Page {page + 1}</span>
+              <span>{BUYER_TEXTS.PAGE} {page + 1}</span>
               <button
                 onClick={() => setPage(page + 1)}
                 disabled={!data?.data || data.data.length < 12 || loading}
                 className="btn btn-secondary"
               >
-                Next
+                {BUYER_TEXTS.NEXT}
               </button>
             </div>
           </div>
@@ -231,13 +231,13 @@ function Products() {
       {woodTypes?.data && (
         <div className="card">
           <div className="card-header">
-            <h3 className="card-title">Available Wood Types</h3>
+            <h3 className="card-title">{BUYER_TEXTS.AVAILABLE_WOOD_TYPES}</h3>
           </div>
           <div className="grid grid-auto-sm">
             {woodTypes.data.slice(0, 6).map((type) => (
               <div key={type.id} className="card text-center">
                 <div style={{ fontWeight: '600' }}>
-                  {type.name || `Type ${type.id.substring(0, 8)}`}
+                  {type.neme || type.name || `${BUYER_TEXTS.TYPE} ${type.id.substring(0, 8)}`}
                 </div>
                 <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-light)' }}>
                   ID: {type.id.substring(0, 8)}...
@@ -247,7 +247,7 @@ function Products() {
           </div>
           {woodTypes.data.length > 6 && (
             <div className="text-center mt-4" style={{ color: 'var(--color-text-light)' }}>
-              And {woodTypes.data.length - 6} more wood types available
+              {BUYER_TEXTS.AND} {woodTypes.data.length - 6} {BUYER_TEXTS.MORE_WOOD_TYPES_AVAILABLE}
             </div>
           )}
         </div>

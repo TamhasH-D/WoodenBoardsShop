@@ -28,6 +28,7 @@ dependencies = [
     "fakeredis>=2.28.1",
     "pillow>=11.2.1",
     "aiofiles>=24.1.0",
+    "aiosqlite>=0.20.0",
 ]
 
 [tool.pytest.ini_options]

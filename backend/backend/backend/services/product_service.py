@@ -103,7 +103,7 @@ class ProductService:
                     board_input = WoodenBoardInputDTO(
                         height=board_data.height,
                         width=board_data.width,
-                        length=board_data.length,
+                        lenght=board_data.length,  # Use lenght field name for backward compatibility
                         volume=board_data.volume,
                         confidence=board_data.detection.confidence,
                         image_id=image_dto.id,
@@ -221,7 +221,7 @@ class ProductService:
                             board_input = WoodenBoardInputDTO(
                                 height=board_data.height,
                                 width=board_data.width,
-                                length=board_data.length,
+                                lenght=board_data.length,  # Use lenght field name for backward compatibility
                                 volume=board_data.volume,
                                 confidence=board_data.detection.confidence,
                                 image_id=image_dto.id,
@@ -273,17 +273,17 @@ class ProductService:
         try:
             async with session.begin():
                 # Get product images for cleanup
-                images = await daos.image.get_by_product_id(product_id)
-                image_paths = [img.image_path for img in images]
-                
+                images = await daos.image.filter(product_id=product_id)
+                image_paths = [img.image_path for img in images] if images else []
+
                 # Delete product (cascade will handle related records)
-                deleted = await daos.product.delete(product_id)
-                
+                await daos.product.delete(id=product_id)
+
                 # Clean up image files
                 for image_path in image_paths:
                     file_service.delete_file(image_path)
-                
-                return deleted
+
+                return True
                 
         except Exception as e:
             raise HTTPException(

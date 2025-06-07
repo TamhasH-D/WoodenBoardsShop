@@ -7,34 +7,35 @@ import BoardAnalyzer from './components/BoardAnalyzer';
 import Chats from './components/Chats';
 import Profile from './components/Profile';
 import HealthCheck from './components/HealthCheck';
+import { BUYER_TEXTS } from './utils/localization';
 
 function Navigation() {
   const location = useLocation();
-  
+
   const isActive = (path) => location.pathname === path;
-  
+
   return (
     <nav className="nav">
       <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
-        Home
+        {BUYER_TEXTS.HOME}
       </Link>
       <Link to="/products" className={`nav-link ${isActive('/products') ? 'active' : ''}`}>
-        Browse Products
+        {BUYER_TEXTS.PRODUCTS}
       </Link>
       <Link to="/sellers" className={`nav-link ${isActive('/sellers') ? 'active' : ''}`}>
-        Find Sellers
+        {BUYER_TEXTS.SELLERS}
       </Link>
       <Link to="/analyzer" className={`nav-link ${isActive('/analyzer') ? 'active' : ''}`}>
-        Board Analyzer
+        {BUYER_TEXTS.BOARD_ANALYZER}
       </Link>
       <Link to="/chats" className={`nav-link ${isActive('/chats') ? 'active' : ''}`}>
-        My Chats
+        {BUYER_TEXTS.CHATS}
       </Link>
       <Link to="/profile" className={`nav-link ${isActive('/profile') ? 'active' : ''}`}>
-        My Profile
+        {BUYER_TEXTS.PROFILE}
       </Link>
       <Link to="/health" className={`nav-link ${isActive('/health') ? 'active' : ''}`}>
-        System Status
+        {BUYER_TEXTS.HEALTH_CHECK}
       </Link>
     </nav>
   );
@@ -46,8 +47,8 @@ function App() {
       <div className="App">
         <header className="header">
           <div className="container">
-            <h1>Wood Products Marketplace</h1>
-            <p>Find quality wood products from trusted sellers</p>
+            <h1>{BUYER_TEXTS.WELCOME_TITLE}</h1>
+            <p>{BUYER_TEXTS.WELCOME_SUBTITLE}</p>
           </div>
         </header>
         

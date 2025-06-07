@@ -70,7 +70,7 @@ function BoardAnalyzer() {
               step="0.1"
               value={boardHeight}
               onChange={(e) => setBoardHeight(e.target.value)}
-              placeholder="Необязательно - помогает повысить точность"
+              placeholder={BUYER_TEXTS.HEIGHT_PLACEHOLDER}
               className="form-input"
             />
           </div>
@@ -81,7 +81,7 @@ function BoardAnalyzer() {
               step="0.1"
               value={boardLength}
               onChange={(e) => setBoardLength(e.target.value)}
-              placeholder="Необязательно - помогает повысить точность"
+              placeholder={BUYER_TEXTS.LENGTH_PLACEHOLDER}
               className="form-input"
             />
           </div>
@@ -118,7 +118,7 @@ function BoardAnalyzer() {
       {/* Image Preview */}
       {selectedFile && (
         <div className="card">
-          <h3>Image Preview</h3>
+          <h3>{BUYER_TEXTS.IMAGE_PREVIEW}</h3>
           <div style={{ textAlign: 'center' }}>
             <img
               src={URL.createObjectURL(selectedFile)}
@@ -156,23 +156,23 @@ function BoardAnalyzer() {
           </div>
 
           <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#f7fafc', borderRadius: '0.375rem' }}>
-            <h4>Analysis Details</h4>
+            <h4>Детали анализа</h4>
             <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
-              <li>Volume estimation: {analysisResult.volume?.toFixed(3) || 'N/A'} cubic meters</li>
-              <li>Analysis confidence: {analysisResult.confidence ? `${(analysisResult.confidence * 100).toFixed(1)}%` : 'N/A'}</li>
-              <li>Status: {analysisResult.success ? 'Successful' : 'Failed'}</li>
-              {analysisResult.message && <li>Message: {analysisResult.message}</li>}
+              <li>Оценка объема: {analysisResult.volume?.toFixed(3) || 'N/A'} кубических метров</li>
+              <li>Достоверность анализа: {analysisResult.confidence ? `${(analysisResult.confidence * 100).toFixed(1)}%` : 'N/A'}</li>
+              <li>Статус: {analysisResult.success ? 'Успешно' : 'Неудачно'}</li>
+              {analysisResult.message && <li>Сообщение: {analysisResult.message}</li>}
             </ul>
           </div>
 
           {analysisResult.volume && (
             <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#e6fffa', borderRadius: '0.375rem' }}>
-              <h4>💡 Recommendations</h4>
+              <h4>💡 Рекомендации</h4>
               <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
-                <li>Estimated market value: ${(analysisResult.volume * 150).toFixed(2)} - ${(analysisResult.volume * 250).toFixed(2)}</li>
-                <li>Consider comparing with similar products in our marketplace</li>
-                <li>Contact sellers with similar wood types for pricing</li>
-                <li>Use this volume estimate when negotiating with sellers</li>
+                <li>Оценочная рыночная стоимость: {(analysisResult.volume * 150).toFixed(2)} ₽ - {(analysisResult.volume * 250).toFixed(2)} ₽</li>
+                <li>Рассмотрите возможность сравнения с аналогичными товарами на нашей торговой площадке</li>
+                <li>Свяжитесь с продавцами аналогичных типов древесины для уточнения цен</li>
+                <li>Используйте эту оценку объема при переговорах с продавцами</li>
               </ul>
             </div>
           )}
@@ -181,36 +181,36 @@ function BoardAnalyzer() {
 
       {/* How It Works */}
       <div className="card">
-        <h3>How Board Analysis Works</h3>
+        <h3>Как работает анализ досок</h3>
         <div className="grid grid-2">
           <div>
-            <h4>🤖 AI Technology</h4>
+            <h4>🤖 ИИ технология</h4>
             <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
-              <li>Advanced computer vision algorithms</li>
-              <li>Machine learning models trained on wood data</li>
-              <li>Real-time image processing</li>
-              <li>Accurate volume calculations</li>
+              <li>Передовые алгоритмы компьютерного зрения</li>
+              <li>Модели машинного обучения, обученные на данных древесины</li>
+              <li>Обработка изображений в реальном времени</li>
+              <li>Точные расчеты объема</li>
             </ul>
           </div>
-          
+
           <div>
-            <h4>📏 What We Analyze</h4>
+            <h4>📏 Что мы анализируем</h4>
             <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
-              <li>Board dimensions and geometry</li>
-              <li>Wood grain patterns and quality</li>
-              <li>Surface defects and irregularities</li>
-              <li>Volume estimation with confidence scores</li>
+              <li>Размеры и геометрия доски</li>
+              <li>Узоры волокон древесины и качество</li>
+              <li>Дефекты поверхности и неровности</li>
+              <li>Оценка объема с показателями достоверности</li>
             </ul>
           </div>
         </div>
 
         <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#fff5cd', borderRadius: '0.375rem' }}>
-          <h4>⚠️ Important Notes</h4>
+          <h4>⚠️ {BUYER_TEXTS.IMPORTANT_NOTES}</h4>
           <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
-            <li>Results are estimates and may vary from actual measurements</li>
-            <li>For best results, ensure good lighting and clear board visibility</li>
-            <li>Include reference objects (like rulers) for scale when possible</li>
-            <li>This tool is for estimation purposes only</li>
+            <li>{BUYER_TEXTS.RESULTS_ARE_ESTIMATES}</li>
+            <li>{BUYER_TEXTS.ENSURE_GOOD_LIGHTING}</li>
+            <li>{BUYER_TEXTS.INCLUDE_REFERENCE_OBJECTS}</li>
+            <li>{BUYER_TEXTS.ESTIMATION_PURPOSES_ONLY}</li>
           </ul>
         </div>
       </div>

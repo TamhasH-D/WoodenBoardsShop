@@ -90,11 +90,11 @@ function Home() {
         {/* Featured Products */}
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">Featured Products</h2>
+            <h2 className="card-title">{BUYER_TEXTS.FEATURED_PRODUCTS}</h2>
           </div>
 
           {productsLoading && (
-            <div className="loading">Loading products...</div>
+            <div className="loading">{BUYER_TEXTS.LOADING_PRODUCTS}...</div>
           )}
 
           {productsData?.data && productsData.data.length > 0 ? (
@@ -102,40 +102,40 @@ function Home() {
               {productsData.data.slice(0, 6).map((product) => (
                 <div key={product.id} className="product-card">
                   <h4 className="product-title">
-                    {product.title || 'Untitled Product'}
+                    {product.title || BUYER_TEXTS.UNTITLED_PRODUCT}
                   </h4>
                   {product.descrioption && (
                     <p className="product-description">
                       {product.descrioption}
                     </p>
                   )}
-                  <div className="product-price">${product.price}</div>
+                  <div className="product-price">{product.price} {BUYER_TEXTS.RUBLES}</div>
                   <div style={{ color: 'var(--color-text-light)', marginBottom: 'var(--space-2)' }}>
-                    {product.volume} m³
+                    {product.volume} {BUYER_TEXTS.CUBIC_METERS}
                   </div>
                   <div className={`status ${product.delivery_possible ? 'status-success' : 'status-error'} mb-4`}>
-                    {product.delivery_possible ? 'Delivery Available' : 'Pickup Only'}
+                    {product.delivery_possible ? BUYER_TEXTS.DELIVERY_AVAILABLE : BUYER_TEXTS.PICKUP_ONLY}
                   </div>
                   <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-light)', marginBottom: 'var(--space-3)' }}>
-                    <div>Wood Type: {product.wood_type_id?.substring(0, 8)}...</div>
-                    <div>Seller: {product.seller_id?.substring(0, 8)}...</div>
+                    <div>{BUYER_TEXTS.WOOD_TYPE}: {product.wood_type_id?.substring(0, 8)}...</div>
+                    <div>{BUYER_TEXTS.SELLER}: {product.seller_id?.substring(0, 8)}...</div>
                   </div>
                   <button
                     className="btn btn-primary"
                     onClick={() => handleContactSeller(product.seller_id)}
                     disabled={contacting}
                   >
-                    {contacting ? 'Contacting...' : 'Contact Seller'}
+                    {contacting ? BUYER_TEXTS.CONTACTING : BUYER_TEXTS.CONTACT_SELLER}
                   </button>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="empty-state">No products available at the moment.</div>
+            <div className="empty-state">{BUYER_TEXTS.NO_PRODUCTS_AVAILABLE_MOMENT}</div>
           )}
 
           <div className="text-center mt-6">
-            <a href="/products" className="btn btn-primary">View All Products</a>
+            <a href="/products" className="btn btn-primary">{BUYER_TEXTS.VIEW_ALL_PRODUCTS}</a>
           </div>
         </div>
 
@@ -143,25 +143,25 @@ function Home() {
         <div className="grid grid-auto-sm">
           <div className="card text-center">
             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🌲</div>
-            <h3 style={{ marginBottom: '1rem' }}>Quality Wood Products</h3>
+            <h3 style={{ marginBottom: '1rem' }}>{BUYER_TEXTS.QUALITY_WOOD_PRODUCTS}</h3>
             <p style={{ color: 'var(--color-text-light)' }}>
-              Browse through a wide selection of quality wood products from verified sellers.
+              {BUYER_TEXTS.BROWSE_WIDE_SELECTION}
             </p>
           </div>
 
           <div className="card text-center">
             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
-            <h3 style={{ marginBottom: '1rem' }}>AI Board Analysis</h3>
+            <h3 style={{ marginBottom: '1rem' }}>{BUYER_TEXTS.AI_BOARD_ANALYSIS}</h3>
             <p style={{ color: 'var(--color-text-light)' }}>
-              Use our AI-powered board analyzer to estimate wood volume and quality.
+              {BUYER_TEXTS.USE_AI_POWERED_ANALYZER}
             </p>
           </div>
 
           <div className="card text-center">
             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>💬</div>
-            <h3 style={{ marginBottom: '1rem' }}>Direct Communication</h3>
+            <h3 style={{ marginBottom: '1rem' }}>{BUYER_TEXTS.DIRECT_COMMUNICATION}</h3>
             <p style={{ color: 'var(--color-text-light)' }}>
-              Chat directly with sellers to negotiate prices and discuss requirements.
+              {BUYER_TEXTS.CHAT_DIRECTLY_WITH_SELLERS}
             </p>
           </div>
         </div>
@@ -169,16 +169,16 @@ function Home() {
         {/* Getting Started */}
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">Getting Started</h2>
+            <h2 className="card-title">{BUYER_TEXTS.GETTING_STARTED}</h2>
           </div>
           <div className="grid grid-auto">
             <div>
-              <h3 style={{ marginBottom: '1rem' }}>For Buyers</h3>
+              <h3 style={{ marginBottom: '1rem' }}>{BUYER_TEXTS.FOR_BUYERS}</h3>
               <ol style={{ marginLeft: '1.5rem' }}>
-                <li>Browse available wood products</li>
-                <li>Use the board analyzer for volume estimation</li>
-                <li>Contact sellers directly through chat</li>
-                <li>Negotiate prices and arrange delivery</li>
+                <li>{BUYER_TEXTS.BROWSE_AVAILABLE_PRODUCTS}</li>
+                <li>{BUYER_TEXTS.USE_BOARD_ANALYZER}</li>
+                <li>{BUYER_TEXTS.CONTACT_SELLERS_CHAT}</li>
+                <li>{BUYER_TEXTS.NEGOTIATE_PRICES_DELIVERY}</li>
               </ol>
             </div>
 
