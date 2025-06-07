@@ -71,27 +71,27 @@ def test_selenium_grid():
 def test_grid_status():
     """Проверка статуса Grid через API."""
     import requests
-    
+
     print("\n🔍 Проверка статуса Selenium Grid...")
-    
+
     try:
         response = requests.get("http://selenium-hub:4444/status", timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            print(f"✅ Grid готов: {data['value']['ready']}")
-            print(f"📊 Количество узлов: {len(data['value']['nodes'])}")
-            
-            for i, node in enumerate(data['value']['nodes']):
-                print(f"  📍 Узел {i+1}: {node['availability']} ({len(node['slots'])} слотов)")
-                
-            return True
-        else:
-            print(f"❌ Grid недоступен: HTTP {response.status_code}")
-            return False
-            
+        assert response.status_code == 200, f"Grid недоступен: HTTP {response.status_code}"
+
+        data = response.json()
+        print(f"✅ Grid готов: {data['value']['ready']}")
+        print(f"📊 Количество узлов: {len(data['value']['nodes'])}")
+
+        assert data['value']['ready'] is True, "Grid не готов"
+        assert len(data['value']['nodes']) > 0, "Нет доступных узлов"
+
+        for i, node in enumerate(data['value']['nodes']):
+            print(f"  📍 Узел {i+1}: {node['availability']} ({len(node['slots'])} слотов)")
+            assert node['availability'] == 'UP', f"Узел {i+1} недоступен"
+
     except Exception as e:
         print(f"❌ Ошибка проверки статуса: {e}")
-        return False
+        raise
 
 
 if __name__ == "__main__":

@@ -133,7 +133,6 @@ def pytest_runtest_makereport(item, call):
                 )
 
 
-@pytest.fixture(scope="session")
-def pytest_html_report_title():
+def pytest_html_report_title(report):
     """Заголовок для HTML отчета."""
-    return "Функциональные тесты - Diplom Project"
+    report.title = "Функциональные тесты - Diplom Project"
