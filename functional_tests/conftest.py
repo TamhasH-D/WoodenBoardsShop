@@ -133,6 +133,133 @@ def pytest_runtest_makereport(item, call):
                 )
 
 
+@pytest.fixture(scope="session")
+def frontend_urls() -> Dict[str, str]:
+    """URL-адреса frontend приложений."""
+    return {
+        "buyer": "http://test-buyer-frontend:3000",
+        "seller": "http://test-seller-frontend:3000",
+        "admin": "http://test-admin-frontend:3000"
+    }
+
+
+@pytest.fixture(scope="function")
+async def enhanced_test_data_factory(api_client: APIClient):
+    """Расширенная фабрика тестовых данных с автоматической очисткой."""
+    from utils.enhanced_data_factory import EnhancedTestDataFactory
+    factory = EnhancedTestDataFactory(api_client)
+    yield factory
+    await factory.cleanup()
+
+
+@pytest.fixture(scope="session")
+def performance_thresholds() -> Dict[str, float]:
+    """Пороговые значения для тестов производительности."""
+    return {
+        "api_response_time": 2.0,  # секунды
+        "page_load_time": 5.0,     # секунды
+        "concurrent_requests": 50,  # количество
+        "max_memory_usage": 512,   # MB
+    }
+
+
+@pytest.fixture(scope="function")
+async def clean_database(api_client: APIClient):
+    """Очистка базы данных перед тестом."""
+    # Очищаем все тестовые данные перед началом теста
+    entities_to_clean = [
+        "/api/v1/chat-messages",
+        "/api/v1/chat-threads",
+        "/api/v1/images",
+        "/api/v1/products",
+        "/api/v1/wooden-boards",
+        "/api/v1/wood-type-prices",
+        "/api/v1/wood-types",
+        "/api/v1/sellers",
+        "/api/v1/buyers"
+    ]
+
+    for endpoint in entities_to_clean:
+        try:
+            # Получаем все сущности
+            response = await api_client.get(f"{endpoint}/?limit=1000")
+            if response.status_code == 200:
+                data = response.json()
+                if "data" in data:
+                    # Удаляем каждую сущность
+                    for item in data["data"]:
+                        await api_client.delete(f"{endpoint}/{item['id']}")
+        except Exception:
+            # Игнорируем ошибки при очистке
+            pass
+
+
+@pytest.fixture(scope="function")
+async def sample_marketplace_data(api_client: APIClient, enhanced_test_data_factory):
+    """Создает образцовые данные маркетплейса для тестов."""
+    # Создаем базовый набор данных
+    scenario_data = await enhanced_test_data_factory.create_complete_marketplace_scenario()
+    return scenario_data
+
+
 def pytest_html_report_title(report):
     """Заголовок для HTML отчета."""
-    report.title = "Функциональные тесты - Diplom Project"
+    report.title = f"Функциональные тесты WoodenBoardsShop - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+
+
+def pytest_configure_extended(config):
+    """Расширенная конфигурация pytest."""
+    # Добавляем кастомные маркеры
+    markers = [
+        "api: API тесты",
+        "browser: Браузерные тесты",
+        "integration: Интеграционные тесты",
+        "performance: Тесты производительности",
+        "security: Тесты безопасности",
+        "crud: CRUD тесты",
+        "validation: Тесты валидации",
+        "pagination: Тесты пагинации",
+        "yolo: Тесты YOLO интеграции",
+        "database: Тесты базы данных",
+        "error_handling: Тесты обработки ошибок",
+        "data_validation: Тесты валидации данных",
+        "buyer: Тесты buyer frontend",
+        "seller: Тесты seller frontend",
+        "admin: Тесты admin frontend",
+        "slow: Медленные тесты",
+        "fast: Быстрые тесты"
+    ]
+
+    for marker in markers:
+        config.addinivalue_line("markers", marker)
+
+
+def pytest_collection_modifyitems_extended(config, items):
+    """Модификация собранных тестов."""
+    # Добавляем маркеры на основе имен файлов и функций
+    for item in items:
+        # Маркеры по директориям
+        if "api_tests" in str(item.fspath):
+            item.add_marker(pytest.mark.api)
+        elif "browser_tests" in str(item.fspath):
+            item.add_marker(pytest.mark.browser)
+        elif "integration_tests" in str(item.fspath):
+            item.add_marker(pytest.mark.integration)
+
+        # Маркеры по именам тестов
+        if "performance" in item.name:
+            item.add_marker(pytest.mark.performance)
+            item.add_marker(pytest.mark.slow)
+        elif "security" in item.name:
+            item.add_marker(pytest.mark.security)
+        elif "crud" in item.name:
+            item.add_marker(pytest.mark.crud)
+        elif "validation" in item.name:
+            item.add_marker(pytest.mark.validation)
+        elif "pagination" in item.name:
+            item.add_marker(pytest.mark.pagination)
+        elif "yolo" in item.name:
+            item.add_marker(pytest.mark.yolo)
+            item.add_marker(pytest.mark.slow)
+        else:
+            item.add_marker(pytest.mark.fast)
