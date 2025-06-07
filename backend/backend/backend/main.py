@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from loguru import logger
 
 from backend.db import db_lifetime
-from backend.middleware_setup import add_middleware
+from backend.middleware import add_middleware
 from backend.routes import base_router
 from backend.services.redis import redis_lifetime
 from backend.settings import settings
@@ -36,17 +36,3 @@ def get_app() -> FastAPI:
     add_middleware(app)
     app.include_router(base_router)
     return app
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(
-        "backend.main:get_app",
-        host=settings.host,
-        port=settings.port,
-        log_level=settings.log_level,
-        reload=settings.reload,
-        lifespan="on",
-        factory=True,
-    )

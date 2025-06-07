@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.settings import settings
-# ActivityTrackingMiddleware removed to fix CORS state attribute errors
 
 def _add_cors_middleware(app: FastAPI) -> None:
     """Add CORS Middleware."""
@@ -17,4 +16,3 @@ def _add_cors_middleware(app: FastAPI) -> None:
 def add_middleware(app: FastAPI) -> None:
     """Add all middlewares."""
     _add_cors_middleware(app)
-    # ActivityTrackingMiddleware removed to fix CORS state attribute errors
