@@ -282,26 +282,57 @@ async def test_uuid_case_sensitivity(self, api_client):
 
 ```bash
 # Все UUID тесты
-make test-api
+make test-uuid
+
+# UUID тесты с полной пересборкой (после изменений)
+make test-uuid-rebuild
 
 # Только валидация UUID
-pytest functional_tests/api_tests/test_uuid_validation.py -v
+make test-uuid-validation
 
 # Интеграционные UUID тесты
-pytest functional_tests/integration_tests/test_uuid_integration.py -v
+make test-uuid-integration
 
 # Конкретная сущность
 pytest functional_tests/api_tests/test_buyer_api.py::TestBuyerAPI::test_create_buyer_success -v
 ```
 
+### ⚠️ Важно: Пересборка Docker образов
+
+После любых изменений в коде тестов или backend **обязательно используйте команды с `-rebuild`**:
+
+```bash
+# Полная пересборка всех тестов
+make test-rebuild
+
+# Пересборка API тестов
+make test-api-rebuild
+
+# Пересборка UUID тестов
+make test-uuid-rebuild
+
+# Только пересборка образов без запуска
+make rebuild
+```
+
+**Когда нужна пересборка:**
+- ✅ Изменения в `utils/data_factory.py`
+- ✅ Обновления тестовых файлов
+- ✅ Изменения в `requirements.txt`
+- ✅ Обновления backend кода
+- ✅ После `git pull` с новыми изменениями
+
 ### Отладка UUID проблем
 
 ```bash
-# Запуск с подробным выводом
-make test-debug
+# Запуск UUID тестов с подробным выводом и пересборкой
+make test-uuid-rebuild
 
 # Только UUID тесты с логированием
-TEST_TYPE=api PYTEST_ARGS="-v -s -k uuid" make test
+TEST_TYPE=api PYTEST_ARGS="-v -s -k uuid" make test-rebuild
+
+# Отладка конкретного теста
+pytest api_tests/test_uuid_validation.py::TestUUIDValidation::test_invalid_uuid_format_rejection -v -s
 ```
 
 ## 📝 Лучшие практики

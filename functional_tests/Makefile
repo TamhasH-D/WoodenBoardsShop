@@ -1,6 +1,6 @@
 # Makefile для функциональных тестов
 
-.PHONY: help build up down test test-api test-browser test-integration test-uuid test-uuid-validation test-uuid-integration clean logs shell
+.PHONY: help build rebuild up down test test-rebuild test-api test-api-rebuild test-browser test-integration test-uuid test-uuid-rebuild test-uuid-validation test-uuid-integration clean logs shell
 
 # Переменные
 COMPOSE_FILE = docker-compose.test.yaml
@@ -22,6 +22,10 @@ build: ## Собрать Docker образы для тестов
 	@echo "$(YELLOW)🏗️  Сборка Docker образов для тестов...$(NC)"
 	docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) build
 
+rebuild: ## Пересобрать Docker образы с очисткой кэша
+	@echo "$(YELLOW)🔄 Пересборка Docker образов с очисткой кэша...$(NC)"
+	docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) build --no-cache
+
 up: ## Запустить тестовое окружение
 	@echo "$(YELLOW)🚀 Запуск тестового окружения...$(NC)"
 	docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up -d
@@ -33,6 +37,12 @@ down: ## Остановить тестовое окружение
 test: ## Запустить все тесты
 	@echo "$(YELLOW)🧪 Запуск всех функциональных тестов...$(NC)"
 	TEST_TYPE=all docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
+	@$(MAKE) down
+
+test-rebuild: ## Запустить все тесты с полной пересборкой
+	@echo "$(YELLOW)🔄 Запуск всех тестов с полной пересборкой...$(NC)"
+	@$(MAKE) rebuild
+	TEST_TYPE=all docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --abort-on-container-exit
 	@$(MAKE) down
 
 test-api: ## Запустить только API тесты
@@ -82,6 +92,18 @@ test-uuid-validation: ## Запустить тесты валидации UUID
 test-uuid-integration: ## Запустить интеграционные UUID тесты
 	@echo "$(YELLOW)🔗 Запуск интеграционных UUID тестов...$(NC)"
 	pytest integration_tests/test_uuid_integration.py -v --html=reports/uuid_integration_report.html --self-contained-html
+
+test-uuid-rebuild: ## Запустить UUID тесты с полной пересборкой
+	@echo "$(YELLOW)🔄 Запуск UUID тестов с полной пересборкой...$(NC)"
+	@$(MAKE) rebuild
+	TEST_TYPE=api PYTEST_ARGS="-v -k uuid" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --abort-on-container-exit
+	@$(MAKE) down
+
+test-api-rebuild: ## Запустить API тесты с полной пересборкой
+	@echo "$(YELLOW)🔄 Запуск API тестов с полной пересборкой...$(NC)"
+	@$(MAKE) rebuild
+	TEST_TYPE=api docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --abort-on-container-exit
+	@$(MAKE) down
 
 clean: ## Очистить Docker ресурсы и отчеты
 	@echo "$(YELLOW)🧹 Очистка Docker ресурсов...$(NC)"
