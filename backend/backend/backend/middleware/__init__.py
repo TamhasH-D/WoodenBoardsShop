@@ -1,5 +1,5 @@
 """Middleware package for backend application."""
 
-from .activity_tracking import ActivityTrackingMiddleware
+# ActivityTrackingMiddleware removed to fix CORS state attribute errors
 
-__all__ = ["ActivityTrackingMiddleware"]
+__all__ = []
