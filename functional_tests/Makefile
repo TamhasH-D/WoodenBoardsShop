@@ -68,6 +68,26 @@ test-api-local: ## Запустить API тесты локально
 	@echo "$(YELLOW)🔌 Запуск API тестов локально...$(NC)"
 	pytest api_tests/ -v --html=reports/api_tests_local_report.html --self-contained-html
 
+test-api-buyer: ## Запустить API тесты для buyer
+	@echo "$(YELLOW)👤 Запуск API тестов для buyer...$(NC)"
+	TEST_TYPE=api PYTEST_ARGS="-v api_tests/buyer/" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
+	@$(MAKE) down
+
+test-api-wood-type: ## Запустить API тесты для wood_type
+	@echo "$(YELLOW)🌳 Запуск API тестов для wood_type...$(NC)"
+	TEST_TYPE=api PYTEST_ARGS="-v api_tests/wood_type/" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
+	@$(MAKE) down
+
+test-api-crud: ## Запустить только CRUD API тесты
+	@echo "$(YELLOW)📝 Запуск CRUD API тестов...$(NC)"
+	TEST_TYPE=api PYTEST_ARGS="-v -m crud api_tests/" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
+	@$(MAKE) down
+
+test-api-validation: ## Запустить только валидационные API тесты
+	@echo "$(YELLOW)✅ Запуск валидационных API тестов...$(NC)"
+	TEST_TYPE=api PYTEST_ARGS="-v -m validation api_tests/" docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
+	@$(MAKE) down
+
 test-browser-local: ## Запустить браузерные тесты локально
 	@echo "$(YELLOW)🌐 Запуск браузерных тестов локально...$(NC)"
 	pytest browser_tests/ -v --html=reports/browser_tests_local_report.html --self-contained-html

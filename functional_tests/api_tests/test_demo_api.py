@@ -10,7 +10,7 @@ class TestDemoAPI(BaseAPITest):
     """Тесты для Demo API эндпоинтов."""
     
     @pytest.mark.asyncio
-    async def test_demo_endpoint_availability(self, api_client: APIClient):
+    async def test_demo_endpoint_availability(self, api_client: httpx.AsyncClient):
         """Тест доступности demo эндпоинта."""
         self.api_client = api_client
         
@@ -31,7 +31,7 @@ class TestDemoAPI(BaseAPITest):
             pytest.skip(f"Demo API не реализован: {e}")
     
     @pytest.mark.asyncio
-    async def test_demo_redis_operations(self, api_client: APIClient):
+    async def test_demo_redis_operations(self, api_client: httpx.AsyncClient):
         """Тест demo операций с Redis."""
         self.api_client = api_client
         
@@ -51,7 +51,7 @@ class TestDemoAPI(BaseAPITest):
             pytest.skip(f"Demo Redis API не реализован: {e}")
     
     @pytest.mark.asyncio
-    async def test_demo_database_operations(self, api_client: APIClient):
+    async def test_demo_database_operations(self, api_client: httpx.AsyncClient):
         """Тест demo операций с базой данных."""
         self.api_client = api_client
         
@@ -71,7 +71,7 @@ class TestDemoAPI(BaseAPITest):
             pytest.skip(f"Demo Database API не реализован: {e}")
     
     @pytest.mark.asyncio
-    async def test_demo_performance_metrics(self, api_client: APIClient):
+    async def test_demo_performance_metrics(self, api_client: httpx.AsyncClient):
         """Тест получения demo метрик производительности."""
         self.api_client = api_client
         

@@ -15,7 +15,7 @@ class APIClient:
     
     async def health_check(self) -> Dict[str, Any]:
         """Проверка здоровья сервиса."""
-        response = await self.client.get(f"{self.base_url}/health/")
+        response = await self.client.get(f"{self.base_url}/health")
         response.raise_for_status()
         return response.json()
     

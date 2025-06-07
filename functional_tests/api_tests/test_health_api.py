@@ -11,7 +11,7 @@ class TestHealthAPI(BaseAPITest):
     """Тесты для API проверки здоровья системы."""
     
     @pytest.mark.asyncio
-    async def test_health_check_success(self, api_client: APIClient):
+    async def test_health_check_success(self, api_client: httpx.AsyncClient):
         """Тест успешной проверки здоровья системы."""
         self.api_client = api_client
         
@@ -32,7 +32,7 @@ class TestHealthAPI(BaseAPITest):
             assert isinstance(response["version"], str)
     
     @pytest.mark.asyncio
-    async def test_health_check_response_time(self, api_client: APIClient):
+    async def test_health_check_response_time(self, api_client: httpx.AsyncClient):
         """Тест времени ответа health check."""
         self.api_client = api_client
         
@@ -51,7 +51,7 @@ class TestHealthAPI(BaseAPITest):
         assert response is not None
     
     @pytest.mark.asyncio
-    async def test_health_check_multiple_calls(self, api_client: APIClient):
+    async def test_health_check_multiple_calls(self, api_client: httpx.AsyncClient):
         """Тест множественных вызовов health check."""
         self.api_client = api_client
         
@@ -70,7 +70,7 @@ class TestHealthAPI(BaseAPITest):
             assert isinstance(response, dict)
     
     @pytest.mark.asyncio
-    async def test_health_check_consistency(self, api_client: APIClient):
+    async def test_health_check_consistency(self, api_client: httpx.AsyncClient):
         """Тест консистентности ответов health check."""
         self.api_client = api_client
         

@@ -13,7 +13,7 @@ class TestBuyerAPI(BaseAPITest, APITestMixin):
     """Тесты для API покупателей."""
     
     @pytest.mark.asyncio
-    async def test_create_buyer_success(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_create_buyer_success(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест успешного создания покупателя с корректным UUID."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -36,7 +36,7 @@ class TestBuyerAPI(BaseAPITest, APITestMixin):
         assert response["data"]["is_online"] == buyer_data["is_online"]
     
     @pytest.mark.asyncio
-    async def test_create_buyer_missing_uuid(self, api_client: APIClient):
+    async def test_create_buyer_missing_uuid(self, api_client: httpx.AsyncClient):
         """Тест создания покупателя без UUID - должен вернуть ошибку."""
         self.api_client = api_client
 
@@ -50,7 +50,7 @@ class TestBuyerAPI(BaseAPITest, APITestMixin):
             await api_client.create_buyer(invalid_data)
 
     @pytest.mark.asyncio
-    async def test_create_buyer_invalid_uuid_format(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_create_buyer_invalid_uuid_format(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест создания покупателя с невалидным форматом UUID."""
         self.api_client = api_client
 
@@ -61,7 +61,7 @@ class TestBuyerAPI(BaseAPITest, APITestMixin):
             await api_client.create_buyer(invalid_data)
 
     @pytest.mark.asyncio
-    async def test_create_buyer_duplicate_uuid(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_create_buyer_duplicate_uuid(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест создания покупателя с дублирующимся UUID."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -80,7 +80,7 @@ class TestBuyerAPI(BaseAPITest, APITestMixin):
             await api_client.create_buyer(duplicate_data)
     
     @pytest.mark.asyncio
-    async def test_get_buyer_success(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_get_buyer_success(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест успешного получения покупателя."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -98,7 +98,7 @@ class TestBuyerAPI(BaseAPITest, APITestMixin):
         assert response["data"]["id"] == buyer_id
     
     @pytest.mark.asyncio
-    async def test_get_buyer_not_found(self, api_client: APIClient):
+    async def test_get_buyer_not_found(self, api_client: httpx.AsyncClient):
         """Тест получения несуществующего покупателя."""
         self.api_client = api_client
         
@@ -108,7 +108,7 @@ class TestBuyerAPI(BaseAPITest, APITestMixin):
             await api_client.get_buyer(non_existent_id)
     
     @pytest.mark.asyncio
-    async def test_update_buyer_success(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_update_buyer_success(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест успешного обновления покупателя."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -131,7 +131,7 @@ class TestBuyerAPI(BaseAPITest, APITestMixin):
         assert updated_buyer["data"]["is_online"] == True
     
     @pytest.mark.asyncio
-    async def test_update_buyer_not_found(self, api_client: APIClient):
+    async def test_update_buyer_not_found(self, api_client: httpx.AsyncClient):
         """Тест обновления несуществующего покупателя."""
         self.api_client = api_client
         
@@ -142,7 +142,7 @@ class TestBuyerAPI(BaseAPITest, APITestMixin):
             await api_client.update_buyer(non_existent_id, update_data)
     
     @pytest.mark.asyncio
-    async def test_delete_buyer_success(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_delete_buyer_success(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест успешного удаления покупателя."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -162,7 +162,7 @@ class TestBuyerAPI(BaseAPITest, APITestMixin):
             await api_client.get_buyer(buyer_id)
     
     @pytest.mark.asyncio
-    async def test_delete_buyer_not_found(self, api_client: APIClient):
+    async def test_delete_buyer_not_found(self, api_client: httpx.AsyncClient):
         """Тест удаления несуществующего покупателя."""
         self.api_client = api_client
         
@@ -172,7 +172,7 @@ class TestBuyerAPI(BaseAPITest, APITestMixin):
             await api_client.delete_buyer(non_existent_id)
     
     @pytest.mark.asyncio
-    async def test_list_buyers_empty(self, api_client: APIClient):
+    async def test_list_buyers_empty(self, api_client: httpx.AsyncClient):
         """Тест получения пустого списка покупателей."""
         self.api_client = api_client
         
@@ -184,7 +184,7 @@ class TestBuyerAPI(BaseAPITest, APITestMixin):
         await self.assert_list_response(response, min_count=0)
     
     @pytest.mark.asyncio
-    async def test_list_buyers_with_data(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_list_buyers_with_data(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест получения списка покупателей с данными."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -210,7 +210,7 @@ class TestBuyerAPI(BaseAPITest, APITestMixin):
             assert buyer_id in response_ids
     
     @pytest.mark.asyncio
-    async def test_list_buyers_pagination(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_list_buyers_pagination(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест пагинации списка покупателей."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -237,7 +237,7 @@ class TestBuyerAPI(BaseAPITest, APITestMixin):
         assert len(set(first_page_ids) & set(second_page_ids)) == 0  # Нет пересечений
     
     @pytest.mark.asyncio
-    async def test_buyer_uuid_consistency(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_buyer_uuid_consistency(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест консистентности UUID покупателя через все операции."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -277,7 +277,7 @@ class TestBuyerAPI(BaseAPITest, APITestMixin):
         assert final_buyer["data"]["keycloak_uuid"] == keycloak_uuid
 
     @pytest.mark.asyncio
-    async def test_buyer_uuid_in_list(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_buyer_uuid_in_list(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест корректности UUID в списке покупателей."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory

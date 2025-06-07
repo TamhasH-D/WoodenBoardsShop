@@ -15,7 +15,7 @@ class TestComprehensiveAPI:
 
     @pytest.mark.asyncio
     @pytest.mark.api
-    async def test_health_endpoint_comprehensive(self, api_client: APIClient):
+    async def test_health_endpoint_comprehensive(self, api_client: httpx.AsyncClient):
         """Комплексное тестирование health endpoint."""
         # Тест базовой функциональности
         response = await api_client.get("/api/v1/health")
@@ -39,7 +39,7 @@ class TestComprehensiveAPI:
     @pytest.mark.asyncio
     @pytest.mark.api
     @pytest.mark.crud
-    async def test_buyer_crud_comprehensive(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_buyer_crud_comprehensive(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Комплексное CRUD тестирование для Buyer."""
         # CREATE - Создание покупателя
         buyer_data = await test_data_factory.create_buyer_data()
@@ -80,7 +80,7 @@ class TestComprehensiveAPI:
     @pytest.mark.asyncio
     @pytest.mark.api
     @pytest.mark.crud
-    async def test_seller_crud_comprehensive(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_seller_crud_comprehensive(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Комплексное CRUD тестирование для Seller."""
         # CREATE
         seller_data = await test_data_factory.create_seller_data()
@@ -105,7 +105,7 @@ class TestComprehensiveAPI:
     @pytest.mark.asyncio
     @pytest.mark.api
     @pytest.mark.crud
-    async def test_wood_type_crud_comprehensive(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_wood_type_crud_comprehensive(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Комплексное CRUD тестирование для WoodType."""
         # CREATE
         wood_type_data = await test_data_factory.create_wood_type_data()
@@ -133,7 +133,7 @@ class TestComprehensiveAPI:
     @pytest.mark.asyncio
     @pytest.mark.api
     @pytest.mark.crud
-    async def test_product_crud_comprehensive(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_product_crud_comprehensive(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Комплексное CRUD тестирование для Product."""
         # Создаем зависимости
         seller_data = await test_data_factory.create_seller_data()
@@ -175,7 +175,7 @@ class TestComprehensiveAPI:
     @pytest.mark.asyncio
     @pytest.mark.api
     @pytest.mark.pagination
-    async def test_pagination_comprehensive(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_pagination_comprehensive(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Комплексное тестирование пагинации."""
         # Создаем множество покупателей для тестирования пагинации
         buyers_data = []
@@ -210,7 +210,7 @@ class TestComprehensiveAPI:
     @pytest.mark.asyncio
     @pytest.mark.api
     @pytest.mark.validation
-    async def test_validation_errors_comprehensive(self, api_client: APIClient):
+    async def test_validation_errors_comprehensive(self, api_client: httpx.AsyncClient):
         """Комплексное тестирование валидации данных."""
         # Тест создания покупателя с невалидными данными
         invalid_buyer_data = {
@@ -238,7 +238,7 @@ class TestComprehensiveAPI:
     @pytest.mark.asyncio
     @pytest.mark.api
     @pytest.mark.performance
-    async def test_api_performance_comprehensive(self, api_client: APIClient):
+    async def test_api_performance_comprehensive(self, api_client: httpx.AsyncClient):
         """Комплексное тестирование производительности API."""
         # Тест производительности health endpoint
         start_time = datetime.now()
@@ -256,7 +256,7 @@ class TestComprehensiveAPI:
     @pytest.mark.asyncio
     @pytest.mark.api
     @pytest.mark.security
-    async def test_security_comprehensive(self, api_client: APIClient):
+    async def test_security_comprehensive(self, api_client: httpx.AsyncClient):
         """Комплексное тестирование безопасности API."""
         # Тест SQL injection
         malicious_id = "'; DROP TABLE buyer; --"
@@ -277,7 +277,7 @@ class TestComprehensiveAPI:
     @pytest.mark.asyncio
     @pytest.mark.api
     @pytest.mark.integration
-    async def test_cross_entity_relationships(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_cross_entity_relationships(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тестирование связей между сущностями."""
         # Создаем полную цепочку связанных сущностей
         seller_data = await test_data_factory.create_seller_data()

@@ -13,7 +13,7 @@ class TestUUIDValidation(BaseAPITest, APITestMixin):
     """Тесты для валидации UUID требований во всех API."""
     
     @pytest.mark.asyncio
-    async def test_all_entities_require_uuid_on_creation(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_all_entities_require_uuid_on_creation(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест того, что все сущности требуют UUID при создании."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -34,7 +34,7 @@ class TestUUIDValidation(BaseAPITest, APITestMixin):
                 await create_method(base_data)
     
     @pytest.mark.asyncio
-    async def test_invalid_uuid_format_rejection(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_invalid_uuid_format_rejection(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест отклонения невалидных форматов UUID."""
         self.api_client = api_client
         
@@ -58,7 +58,7 @@ class TestUUIDValidation(BaseAPITest, APITestMixin):
                 await api_client.create_buyer(buyer_data)
     
     @pytest.mark.asyncio
-    async def test_uuid_uniqueness_across_entities(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_uuid_uniqueness_across_entities(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест уникальности UUID в рамках одного типа сущности."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -78,7 +78,7 @@ class TestUUIDValidation(BaseAPITest, APITestMixin):
             await api_client.create_buyer(duplicate_buyer_data)
     
     @pytest.mark.asyncio
-    async def test_uuid_consistency_in_responses(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_uuid_consistency_in_responses(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест консистентности UUID в ответах API."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -105,7 +105,7 @@ class TestUUIDValidation(BaseAPITest, APITestMixin):
             assert created_entity["data"]["id"] == entity_id
     
     @pytest.mark.asyncio
-    async def test_uuid_in_relationships(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_uuid_in_relationships(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест корректности UUID в связях между сущностями."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -134,7 +134,7 @@ class TestUUIDValidation(BaseAPITest, APITestMixin):
         assert retrieved_price["data"]["wood_type_id"] == wood_type_id
     
     @pytest.mark.asyncio
-    async def test_uuid_in_chat_system(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_uuid_in_chat_system(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест UUID в системе чатов."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -171,7 +171,7 @@ class TestUUIDValidation(BaseAPITest, APITestMixin):
         assert retrieved_message["data"]["sender_id"] == buyer_id
     
     @pytest.mark.asyncio
-    async def test_uuid_format_validation(self, api_client: APIClient):
+    async def test_uuid_format_validation(self, api_client: httpx.AsyncClient):
         """Тест валидации формата UUID."""
         self.api_client = api_client
         
@@ -197,7 +197,7 @@ class TestUUIDValidation(BaseAPITest, APITestMixin):
             await api_client.delete_buyer(valid_uuid)
     
     @pytest.mark.asyncio
-    async def test_uuid_case_sensitivity(self, api_client: APIClient):
+    async def test_uuid_case_sensitivity(self, api_client: httpx.AsyncClient):
         """Тест чувствительности UUID к регистру."""
         self.api_client = api_client
         
@@ -236,7 +236,7 @@ class TestUUIDValidation(BaseAPITest, APITestMixin):
         await api_client.delete_buyer(lower_uuid)
     
     @pytest.mark.asyncio
-    async def test_uuid_persistence_after_updates(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_uuid_persistence_after_updates(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест сохранности UUID после обновлений."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory

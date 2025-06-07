@@ -12,7 +12,7 @@ class TestWoodTypeAPI(BaseAPITest, APITestMixin):
     """Тесты для API типов древесины."""
     
     @pytest.mark.asyncio
-    async def test_create_wood_type_success(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_create_wood_type_success(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест успешного создания типа древесины."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -33,7 +33,7 @@ class TestWoodTypeAPI(BaseAPITest, APITestMixin):
         assert response["data"]["description"] == wood_type_data["description"]
     
     @pytest.mark.asyncio
-    async def test_create_wood_type_duplicate_name(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_create_wood_type_duplicate_name(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест создания типа древесины с дублирующимся названием."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -59,7 +59,7 @@ class TestWoodTypeAPI(BaseAPITest, APITestMixin):
             pass
     
     @pytest.mark.asyncio
-    async def test_get_wood_type_success(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_get_wood_type_success(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест успешного получения типа древесины."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -77,7 +77,7 @@ class TestWoodTypeAPI(BaseAPITest, APITestMixin):
         assert response["data"]["id"] == wood_type_id
     
     @pytest.mark.asyncio
-    async def test_update_wood_type_description(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_update_wood_type_description(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест обновления описания типа древесины."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -104,7 +104,7 @@ class TestWoodTypeAPI(BaseAPITest, APITestMixin):
         assert updated_wood_type["data"]["description"] == new_description
     
     @pytest.mark.asyncio
-    async def test_update_wood_type_name(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_update_wood_type_name(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест обновления названия типа древесины."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -128,7 +128,7 @@ class TestWoodTypeAPI(BaseAPITest, APITestMixin):
         assert updated_wood_type["data"]["neme"] == new_name
     
     @pytest.mark.asyncio
-    async def test_delete_wood_type_success(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_delete_wood_type_success(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест успешного удаления типа древесины."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -148,7 +148,7 @@ class TestWoodTypeAPI(BaseAPITest, APITestMixin):
             await api_client.get_wood_type(wood_type_id)
     
     @pytest.mark.asyncio
-    async def test_delete_wood_type_with_prices(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_delete_wood_type_with_prices(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест удаления типа древесины, у которого есть цены."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -175,7 +175,7 @@ class TestWoodTypeAPI(BaseAPITest, APITestMixin):
             await api_client.delete_wood_type(wood_type_id)
     
     @pytest.mark.asyncio
-    async def test_list_wood_types_empty(self, api_client: APIClient):
+    async def test_list_wood_types_empty(self, api_client: httpx.AsyncClient):
         """Тест получения пустого списка типов древесины."""
         self.api_client = api_client
         
@@ -187,7 +187,7 @@ class TestWoodTypeAPI(BaseAPITest, APITestMixin):
         await self.assert_list_response(response, min_count=0)
     
     @pytest.mark.asyncio
-    async def test_list_wood_types_with_data(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_list_wood_types_with_data(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест получения списка типов древесины с данными."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -215,7 +215,7 @@ class TestWoodTypeAPI(BaseAPITest, APITestMixin):
             assert wood_type_id in response_ids
     
     @pytest.mark.asyncio
-    async def test_wood_type_search_functionality(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_wood_type_search_functionality(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест функциональности поиска типов древесины."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -243,7 +243,7 @@ class TestWoodTypeAPI(BaseAPITest, APITestMixin):
             assert data["neme"] in all_names
     
     @pytest.mark.asyncio
-    async def test_wood_type_data_integrity(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_wood_type_data_integrity(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест целостности данных типа древесины."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory

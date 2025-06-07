@@ -12,7 +12,7 @@ class TestSellerAPI(BaseAPITest, APITestMixin):
     """Тесты для API продавцов."""
     
     @pytest.mark.asyncio
-    async def test_create_seller_success(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_create_seller_success(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест успешного создания продавца."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -33,7 +33,7 @@ class TestSellerAPI(BaseAPITest, APITestMixin):
         assert response["data"]["is_online"] == seller_data["is_online"]
     
     @pytest.mark.asyncio
-    async def test_create_seller_duplicate_keycloak_uuid(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_create_seller_duplicate_keycloak_uuid(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест создания продавца с дублирующимся keycloak_uuid."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -53,7 +53,7 @@ class TestSellerAPI(BaseAPITest, APITestMixin):
             await api_client.create_seller(duplicate_data)
     
     @pytest.mark.asyncio
-    async def test_get_seller_success(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_get_seller_success(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест успешного получения продавца."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -71,7 +71,7 @@ class TestSellerAPI(BaseAPITest, APITestMixin):
         assert response["data"]["id"] == seller_id
     
     @pytest.mark.asyncio
-    async def test_update_seller_online_status(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_update_seller_online_status(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест обновления статуса онлайн продавца."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -101,7 +101,7 @@ class TestSellerAPI(BaseAPITest, APITestMixin):
         assert updated_seller["data"]["is_online"] == False
     
     @pytest.mark.asyncio
-    async def test_delete_seller_success(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_delete_seller_success(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест успешного удаления продавца."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -121,7 +121,7 @@ class TestSellerAPI(BaseAPITest, APITestMixin):
             await api_client.get_seller(seller_id)
     
     @pytest.mark.asyncio
-    async def test_list_sellers_with_filtering(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_list_sellers_with_filtering(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест получения списка продавцов с фильтрацией."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -149,7 +149,7 @@ class TestSellerAPI(BaseAPITest, APITestMixin):
             assert seller["data"]["id"] in all_seller_ids
     
     @pytest.mark.asyncio
-    async def test_seller_business_workflow(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_seller_business_workflow(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест бизнес-процесса работы с продавцом."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -180,7 +180,7 @@ class TestSellerAPI(BaseAPITest, APITestMixin):
         assert offline_seller["data"]["is_online"] == False
     
     @pytest.mark.asyncio
-    async def test_seller_concurrent_updates(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_seller_concurrent_updates(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест конкурентных обновлений продавца."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -204,7 +204,7 @@ class TestSellerAPI(BaseAPITest, APITestMixin):
             assert updated_seller["data"]["is_online"] == update_data["is_online"]
     
     @pytest.mark.asyncio
-    async def test_seller_data_validation(self, api_client: APIClient):
+    async def test_seller_data_validation(self, api_client: httpx.AsyncClient):
         """Тест валидации данных продавца."""
         self.api_client = api_client
         

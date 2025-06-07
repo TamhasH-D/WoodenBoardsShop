@@ -119,19 +119,31 @@ verify_selenium_health() {
             if [ "$ready" = "true" ]; then
                 success "Selenium Hub готов!"
 
-                # Проверяем количество узлов
-                local nodes_count=$(echo "$status_response" | grep -o '"nodes":\[' | wc -l)
-                if [ "$nodes_count" -gt 0 ]; then
-                    success "Chrome Node подключен к Hub!"
+                # Проверяем наличие узлов в массиве nodes
+                local nodes_array=$(echo "$status_response" | grep -o '"nodes":\[[^]]*\]')
+                if [ -n "$nodes_array" ] && [ "$nodes_array" != '"nodes":[]' ]; then
+                    # Подсчитываем количество узлов со статусом UP
+                    local up_nodes=$(echo "$status_response" | grep -o '"availability":"UP"' | wc -l)
+                    if [ "$up_nodes" -gt 0 ]; then
+                        success "Chrome Node подключен к Hub! ($up_nodes узлов активно)"
 
-                    # Дополнительная проверка Grid API
-                    if docker exec selenium-hub curl -s -f "http://localhost:4444/grid/api/hub" >/dev/null 2>&1; then
-                        success "Selenium Grid API работает!"
+                        # Проверяем количество доступных слотов
+                        local slots_count=$(echo "$status_response" | grep -o '"slots":\[' | wc -l)
+                        if [ "$slots_count" -gt 0 ]; then
+                            success "Доступно слотов для тестирования: $slots_count"
+                        fi
+
+                        # Дополнительная проверка Grid API
+                        if docker exec selenium-hub curl -s -f "http://localhost:4444/grid/api/hub" >/dev/null 2>&1; then
+                            success "Selenium Grid API работает!"
+                        else
+                            warning "Grid API недоступен, но Hub готов"
+                        fi
+
+                        return 0
                     else
-                        warning "Grid API недоступен, но Hub готов"
+                        log "⏳ Chrome Node подключен, но не активен (статус не UP)"
                     fi
-
-                    return 0
                 else
                     log "⏳ Chrome Node еще не подключился к Hub"
                 fi

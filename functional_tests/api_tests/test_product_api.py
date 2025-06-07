@@ -13,7 +13,7 @@ class TestProductAPI(BaseAPITest, APITestMixin):
     """Тесты для API продуктов."""
     
     @pytest.mark.asyncio
-    async def test_create_product_success(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_create_product_success(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест успешного создания продукта с корректным UUID."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -45,7 +45,7 @@ class TestProductAPI(BaseAPITest, APITestMixin):
         assert float(response["data"]["price"]) == float(product_data["price"])
     
     @pytest.mark.asyncio
-    async def test_create_product_missing_uuid(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_create_product_missing_uuid(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест создания продукта без UUID - должен вернуть ошибку."""
         self.api_client = api_client
 
@@ -65,7 +65,7 @@ class TestProductAPI(BaseAPITest, APITestMixin):
             await api_client.create_product(product_data)
 
     @pytest.mark.asyncio
-    async def test_create_product_invalid_seller_uuid(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_create_product_invalid_seller_uuid(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест создания продукта с несуществующим продавцом."""
         self.api_client = api_client
 
@@ -81,7 +81,7 @@ class TestProductAPI(BaseAPITest, APITestMixin):
             await api_client.create_product(product_data)
 
     @pytest.mark.asyncio
-    async def test_create_product_duplicate_uuid(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_create_product_duplicate_uuid(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест создания продукта с дублирующимся UUID."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -106,7 +106,7 @@ class TestProductAPI(BaseAPITest, APITestMixin):
             await api_client.create_product(duplicate_data)
     
     @pytest.mark.asyncio
-    async def test_get_product_success(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_get_product_success(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест успешного получения продукта."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -124,7 +124,7 @@ class TestProductAPI(BaseAPITest, APITestMixin):
         assert response["data"]["id"] == product_id
     
     @pytest.mark.asyncio
-    async def test_update_product_price(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_update_product_price(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест обновления цены продукта."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -148,7 +148,7 @@ class TestProductAPI(BaseAPITest, APITestMixin):
         assert float(updated_product["data"]["price"]) == float(new_price)
     
     @pytest.mark.asyncio
-    async def test_update_product_description(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_update_product_description(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест обновления описания продукта."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -172,7 +172,7 @@ class TestProductAPI(BaseAPITest, APITestMixin):
         assert updated_product["data"]["descrioption"] == new_description
     
     @pytest.mark.asyncio
-    async def test_delete_product_success(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_delete_product_success(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест успешного удаления продукта."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -192,7 +192,7 @@ class TestProductAPI(BaseAPITest, APITestMixin):
             await api_client.get_product(product_id)
     
     @pytest.mark.asyncio
-    async def test_list_products_by_seller(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_list_products_by_seller(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест получения списка продуктов конкретного продавца."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -223,7 +223,7 @@ class TestProductAPI(BaseAPITest, APITestMixin):
             assert product["data"]["id"] in all_product_ids
     
     @pytest.mark.asyncio
-    async def test_product_price_validation(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_product_price_validation(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест валидации цены продукта."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -253,7 +253,7 @@ class TestProductAPI(BaseAPITest, APITestMixin):
                 await api_client.create_product(product_data)
     
     @pytest.mark.asyncio
-    async def test_product_name_length_validation(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_product_name_length_validation(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест валидации длины названия продукта."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory
@@ -283,7 +283,7 @@ class TestProductAPI(BaseAPITest, APITestMixin):
             pass
     
     @pytest.mark.asyncio
-    async def test_product_lifecycle(self, api_client: APIClient, test_data_factory: TestDataFactory):
+    async def test_product_lifecycle(self, api_client: httpx.AsyncClient, test_data_factory: TestDataFactory):
         """Тест полного жизненного цикла продукта."""
         self.api_client = api_client
         self.test_data_factory = test_data_factory

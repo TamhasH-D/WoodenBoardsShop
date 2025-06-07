@@ -29,7 +29,7 @@ class ServiceWaiter:
     )
     def wait_for_backend(self) -> bool:
         """Ожидание готовности backend сервиса."""
-        health_url = f"{self.backend_url}/api/v1/health/"
+        health_url = f"{self.backend_url}/api/v1/health"
         print(f"🔍 Проверка готовности backend: {health_url}")
 
         try:
@@ -181,7 +181,7 @@ class ServiceWaiter:
         
         # Проверяем backend
         try:
-            response = requests.get(f"{self.backend_url}/api/v1/health/", timeout=5)
+            response = requests.get(f"{self.backend_url}/api/v1/health", timeout=5)
             health_status["backend"] = response.status_code == 200
         except Exception:
             health_status["backend"] = False

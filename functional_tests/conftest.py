@@ -36,12 +36,12 @@ def selenium_hub_url() -> str:
 
 
 
-@pytest.fixture(scope="session")
-async def api_client(backend_url: str) -> AsyncGenerator[APIClient, None]:
+@pytest.fixture(scope="function")
+async def api_client() -> AsyncGenerator[httpx.AsyncClient, None]:
     """HTTP клиент для API тестов."""
+    backend_url = os.getenv("BACKEND_URL", "http://test-backend:8000")
     async with httpx.AsyncClient(base_url=backend_url, timeout=30.0) as client:
-        api_client = APIClient(client)
-        yield api_client
+        yield client
 
 
 @pytest.fixture(scope="function")
@@ -75,16 +75,18 @@ def webdriver_instance(selenium_hub_url: str, chrome_options: Options) -> Genera
 
 
 @pytest.fixture(scope="function")
-async def test_data_factory(api_client: APIClient) -> TestDataFactory:
+async def test_data_factory(api_client: httpx.AsyncClient) -> TestDataFactory:
     """Фабрика для создания тестовых данных."""
-    factory = TestDataFactory(api_client)
+    from utils.api_client import APIClient
+    api_client_wrapper = APIClient(api_client)
+    factory = TestDataFactory(api_client_wrapper)
     yield factory
     # Cleanup после теста
     await factory.cleanup()
 
 
 @pytest.fixture(autouse=True)
-async def cleanup_test_data(api_client: APIClient):
+async def cleanup_test_data(api_client: httpx.AsyncClient):
     """Автоматическая очистка тестовых данных после каждого теста."""
     yield
     # Здесь можно добавить логику очистки, если необходимо
@@ -137,10 +139,12 @@ def frontend_urls() -> Dict[str, str]:
 
 
 @pytest.fixture(scope="function")
-async def enhanced_test_data_factory(api_client: APIClient):
+async def enhanced_test_data_factory(api_client: httpx.AsyncClient):
     """Расширенная фабрика тестовых данных с автоматической очисткой."""
     from utils.enhanced_data_factory import EnhancedTestDataFactory
-    factory = EnhancedTestDataFactory(api_client)
+    from utils.api_client import APIClient
+    api_client_wrapper = APIClient(api_client)
+    factory = EnhancedTestDataFactory(api_client_wrapper)
     yield factory
     await factory.cleanup()
 
@@ -157,7 +161,7 @@ def performance_thresholds() -> Dict[str, float]:
 
 
 @pytest.fixture(scope="function")
-async def clean_database(api_client: APIClient):
+async def clean_database(api_client: httpx.AsyncClient):
     """Очистка базы данных перед тестом."""
     # Очищаем все тестовые данные перед началом теста
     entities_to_clean = [
@@ -188,7 +192,7 @@ async def clean_database(api_client: APIClient):
 
 
 @pytest.fixture(scope="function")
-async def sample_marketplace_data(api_client: APIClient, enhanced_test_data_factory):
+async def sample_marketplace_data(api_client: httpx.AsyncClient, enhanced_test_data_factory):
     """Создает образцовые данные маркетплейса для тестов."""
     # Создаем базовый набор данных
     scenario_data = await enhanced_test_data_factory.create_complete_marketplace_scenario()
