@@ -3,7 +3,7 @@ import pytest
 import asyncio
 import time
 from datetime import datetime
-from typing import AsyncGenerator, Generator
+from typing import AsyncGenerator, Generator, Dict
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
@@ -33,14 +33,7 @@ def selenium_hub_url() -> str:
     return os.getenv("SELENIUM_HUB_URL", "http://localhost:4444/wd/hub")
 
 
-@pytest.fixture(scope="session")
-def frontend_urls() -> dict:
-    """URLs всех frontend приложений."""
-    return {
-        "admin": os.getenv("FRONTEND_ADMIN_URL", "http://localhost:8080"),
-        "seller": os.getenv("FRONTEND_SELLER_URL", "http://localhost:8081"),
-        "buyer": os.getenv("FRONTEND_BUYER_URL", "http://localhost:8082"),
-    }
+
 
 
 @pytest.fixture(scope="session")
@@ -207,59 +200,3 @@ def pytest_html_report_title(report):
     report.title = f"Функциональные тесты WoodenBoardsShop - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
 
 
-def pytest_configure_extended(config):
-    """Расширенная конфигурация pytest."""
-    # Добавляем кастомные маркеры
-    markers = [
-        "api: API тесты",
-        "browser: Браузерные тесты",
-        "integration: Интеграционные тесты",
-        "performance: Тесты производительности",
-        "security: Тесты безопасности",
-        "crud: CRUD тесты",
-        "validation: Тесты валидации",
-        "pagination: Тесты пагинации",
-        "yolo: Тесты YOLO интеграции",
-        "database: Тесты базы данных",
-        "error_handling: Тесты обработки ошибок",
-        "data_validation: Тесты валидации данных",
-        "buyer: Тесты buyer frontend",
-        "seller: Тесты seller frontend",
-        "admin: Тесты admin frontend",
-        "slow: Медленные тесты",
-        "fast: Быстрые тесты"
-    ]
-
-    for marker in markers:
-        config.addinivalue_line("markers", marker)
-
-
-def pytest_collection_modifyitems_extended(config, items):
-    """Модификация собранных тестов."""
-    # Добавляем маркеры на основе имен файлов и функций
-    for item in items:
-        # Маркеры по директориям
-        if "api_tests" in str(item.fspath):
-            item.add_marker(pytest.mark.api)
-        elif "browser_tests" in str(item.fspath):
-            item.add_marker(pytest.mark.browser)
-        elif "integration_tests" in str(item.fspath):
-            item.add_marker(pytest.mark.integration)
-
-        # Маркеры по именам тестов
-        if "performance" in item.name:
-            item.add_marker(pytest.mark.performance)
-            item.add_marker(pytest.mark.slow)
-        elif "security" in item.name:
-            item.add_marker(pytest.mark.security)
-        elif "crud" in item.name:
-            item.add_marker(pytest.mark.crud)
-        elif "validation" in item.name:
-            item.add_marker(pytest.mark.validation)
-        elif "pagination" in item.name:
-            item.add_marker(pytest.mark.pagination)
-        elif "yolo" in item.name:
-            item.add_marker(pytest.mark.yolo)
-            item.add_marker(pytest.mark.slow)
-        else:
-            item.add_marker(pytest.mark.fast)
