@@ -22,6 +22,7 @@ class ChatMessageDTO(BaseOrmModel):
 class ChatMessageInputDTO(BaseModel):
     """ChatMessage input DTO."""
 
+    id: UUID
     message: str
     is_read_by_buyer: bool = False
     is_read_by_seller: bool = False

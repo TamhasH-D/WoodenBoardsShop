@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -11,7 +11,6 @@ from backend.models.wood_type_models import WoodType
 
 if TYPE_CHECKING:
     from backend.models.image_models import Image
-    from backend.models.wooden_board_models import WoodenBoard
 
 
 class Product(Base):
@@ -20,7 +19,7 @@ class Product(Base):
     __tablename__ = "product"
 
     id: Mapped[UUID] = mapped_column(
-        sa.UUID(as_uuid=True), primary_key=True, unique=True, index=True, default=uuid4
+        sa.UUID(as_uuid=True), primary_key=True, unique=True, index=True
     )
     volume: Mapped[float] = mapped_column(sa.Float, index=True)
     price: Mapped[float] = mapped_column(sa.Float, index=True)
@@ -56,4 +55,3 @@ class Product(Base):
         foreign_keys=[wood_type_id], back_populates="product", uselist=False
     )
     image: Mapped[list["Image"]] = relationship(back_populates="product")
-    wooden_boards: Mapped[list["WoodenBoard"]] = relationship(back_populates="product")

@@ -16,6 +16,7 @@ class ImageDTO(BaseOrmModel):
 class ImageInputDTO(BaseModel):
     """Image input DTO."""
 
+    id: UUID
     image_path: str
     product_id: UUID
 
