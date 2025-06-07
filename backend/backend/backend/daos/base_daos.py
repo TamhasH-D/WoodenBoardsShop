@@ -145,13 +145,11 @@ class BaseDAO[
         self,
         id: UUID,
         update_dto: UpdateDTO,
-    ) -> Model:
-        """Update a record by ID and return the updated record."""
+    ) -> None:
+        """Update a record by ID."""
         update_dict = update_dto.model_dump(exclude_none=True)
         if not update_dict:
-            # If no updates, just return the existing record
-            return await self.filter_first(id=id)
-
+            return
         query = (
             sa.update(self.model)
             .where(self.model.get_primary_key_column() == id)
@@ -160,9 +158,6 @@ class BaseDAO[
             )
         )
         await self.session.execute(query)
-
-        # Return the updated record
-        return await self.filter_first(id=id)
 
     async def delete(
         self,

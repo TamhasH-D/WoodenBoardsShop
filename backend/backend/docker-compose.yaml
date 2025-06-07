@@ -3,7 +3,7 @@ services:
     &api
     build:
       context: .
-    image: diplom-backend:latest
+    image: backend:latest
     container_name: backend-api
     restart: always
     ports:
@@ -15,8 +15,10 @@ services:
         condition: service_healthy
     command: >
       bash -c "
-        echo '🚀 Starting Backend API Server...' &&
-        cd /app &&
+        echo '🔄 Running database migrations...' &&
+        python -m alembic upgrade head &&
+        echo '✅ Migrations completed successfully' &&
+        echo '🚀 Starting FastAPI application...' &&
         python -m backend
       "
     environment:
@@ -24,7 +26,6 @@ services:
       BACKEND_CORS_ALLOW_CREDENTIALS: ${BACKEND_CORS_ALLOW_CREDENTIALS:-True}
       BACKEND_CORS_ALLOW_METHODS: ${BACKEND_CORS_ALLOW_METHODS:-"*"}
       BACKEND_CORS_ALLOW_HEADERS: ${BACKEND_CORS_ALLOW_HEADERS:-"*"}
-      BACKEND_PROSTO_BOARD_VOLUME_SEG_URL: ${BACKEND_PROSTO_BOARD_VOLUME_SEG_URL:-"http://yolo_backend:8001/wooden_boards_volume_seg/"}
       POSTGRES_PASSWORD: ${BACKEND_PG_PASSWORD:-backend}
       POSTGRES_USER: ${BACKEND_PG_USER:-backend}
       POSTGRES_DB: ${BACKEND_PG_DATABASE:-backend}
@@ -32,7 +33,6 @@ services:
       - ./migrations:/app/migrations
     networks:
       - backend-network
-      - diplom_default
 
   postgres:
     image: postgres:17.4-bookworm
@@ -79,6 +79,3 @@ volumes:
 networks:
   backend-network:
     driver: bridge
-  diplom_default:
-    name: diplom_default
-    external: true

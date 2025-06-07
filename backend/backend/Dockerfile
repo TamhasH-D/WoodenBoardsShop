@@ -13,6 +13,10 @@ ADD . /app
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
+    
+# TODO remove
+RUN uv add aiohttp python-multipart
+
 
 FROM python:3.12-slim-bookworm
 
@@ -22,7 +26,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/app/.venv/bin:$PATH"
-ENV PYTHONPATH="/app:/app/backend"
+ENV PYTHONPATH="/app"
 
 COPY --from=builder --chown=app:app /app /app
 
