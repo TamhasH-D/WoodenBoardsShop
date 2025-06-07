@@ -27,8 +27,8 @@ help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -v "^help:" | grep -v "^help-test:" | grep -v "^test-" | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(BLUE)🧪 Testing Commands:$(NC)"
-	@grep -E '^test[a-zA-Z_-]*:.*?## .*$$' $(MAKEFILE_LIST) | head -8 | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
-	@echo "  $(GREEN)help-test$(NC)           Показать полную справку по тестированию"
+	@grep -E '^test[a-zA-Z_-]*:.*?## .*$$' $(MAKEFILE_LIST) | head -12 | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-25s\033[0m %s\n", $$1, $$2}'
+	@echo "  $(GREEN)help-test$(NC)                Показать полную справку по тестированию"
 	@echo ""
 	@echo "$(BLUE)🌐 Service URLs (accessible from host system):$(NC)"
 	@echo "  Backend API:      http://localhost:$(BACKEND_PORT)"
@@ -122,6 +122,12 @@ help-test: ## Показать справку по командам тестир
 	@echo "  $(GREEN)make test-browser$(NC)      - Запуск только браузерных тестов"
 	@echo "  $(GREEN)make test-integration$(NC)  - Запуск только интеграционных тестов"
 	@echo ""
+	@echo "$(BLUE)🔄 Команды с пересборкой (после изменений в коде):$(NC)"
+	@echo "  $(GREEN)make test-rebuild$(NC)      - Запуск всех тестов с пересборкой"
+	@echo "  $(GREEN)make test-api-rebuild$(NC)  - Запуск API тестов с пересборкой"
+	@echo "  $(GREEN)make test-browser-rebuild$(NC) - Запуск браузерных тестов с пересборкой"
+	@echo "  $(GREEN)make test-integration-rebuild$(NC) - Запуск интеграционных тестов с пересборкой"
+	@echo ""
 	@echo "$(BLUE)⚡ Команды с дополнительными опциями:$(NC)"
 	@echo "  $(GREEN)make test-quick$(NC)        - Быстрый запуск критических тестов"
 	@echo "  $(GREEN)make test-local$(NC)        - Запуск тестов локально (без Docker)"
@@ -170,6 +176,34 @@ test-browser: check-test-deps ## Запуск только браузерных 
 test-integration: check-test-deps ## Запуск только интеграционных тестов
 	@echo "$(YELLOW)🔗 Запуск интеграционных тестов...$(NC)"
 	@TEST_TYPE=integration $(MAKE) _run-tests
+	@$(MAKE) _show-test-results
+
+.PHONY: test-rebuild
+test-rebuild: check-test-deps ## Запуск всех тестов с полной пересборкой образов
+	@echo "$(YELLOW)🔄 Запуск всех тестов с полной пересборкой...$(NC)"
+	@$(MAKE) test-build
+	@TEST_TYPE=all $(MAKE) _run-tests-no-build
+	@$(MAKE) _show-test-results
+
+.PHONY: test-api-rebuild
+test-api-rebuild: check-test-deps ## Запуск API тестов с полной пересборкой образов
+	@echo "$(YELLOW)🔄 Запуск API тестов с полной пересборкой...$(NC)"
+	@$(MAKE) test-build
+	@TEST_TYPE=api $(MAKE) _run-tests-no-build
+	@$(MAKE) _show-test-results
+
+.PHONY: test-browser-rebuild
+test-browser-rebuild: check-test-deps ## Запуск браузерных тестов с полной пересборкой образов
+	@echo "$(YELLOW)🔄 Запуск браузерных тестов с полной пересборкой...$(NC)"
+	@$(MAKE) test-build
+	@TEST_TYPE=browser $(MAKE) _run-tests-no-build
+	@$(MAKE) _show-test-results
+
+.PHONY: test-integration-rebuild
+test-integration-rebuild: check-test-deps ## Запуск интеграционных тестов с полной пересборкой образов
+	@echo "$(YELLOW)🔄 Запуск интеграционных тестов с полной пересборкой...$(NC)"
+	@$(MAKE) test-build
+	@TEST_TYPE=integration $(MAKE) _run-tests-no-build
 	@$(MAKE) _show-test-results
 
 # ============================================================================
@@ -358,6 +392,22 @@ _run-tests:
 	@echo "$(BLUE)🔧 Подготовка тестового окружения...$(NC)"
 	@$(MAKE) test-down 2>/dev/null || true
 	@$(MAKE) test-up
+	@echo "$(BLUE)🧪 Запуск тестов (TEST_TYPE=$(TEST_TYPE))...$(NC)"
+	@cd $(FUNCTIONAL_TESTS_DIR) && \
+		TEST_TYPE=$(TEST_TYPE) \
+		PYTEST_ARGS="$(PYTEST_ARGS)" \
+		docker-compose -f docker-compose.test.yaml -p $(TEST_PROJECT_NAME) run --rm functional-tests || \
+		(echo "$(RED)❌ Тесты завершились с ошибкой$(NC)" && $(MAKE) _cleanup-on-error && exit 1)
+	@$(MAKE) test-down
+
+.PHONY: _run-tests-no-build
+_run-tests-no-build:
+	@echo "$(BLUE)🔧 Подготовка тестового окружения (без пересборки)...$(NC)"
+	@$(MAKE) test-down 2>/dev/null || true
+	@echo "$(BLUE)🚀 Запуск тестового окружения с готовыми образами...$(NC)"
+	@cd $(FUNCTIONAL_TESTS_DIR) && docker-compose -f docker-compose.test.yaml -p $(TEST_PROJECT_NAME) up -d --remove-orphans
+	@echo "$(BLUE)⏳ Ожидание готовности сервисов...$(NC)"
+	@sleep 10
 	@echo "$(BLUE)🧪 Запуск тестов (TEST_TYPE=$(TEST_TYPE))...$(NC)"
 	@cd $(FUNCTIONAL_TESTS_DIR) && \
 		TEST_TYPE=$(TEST_TYPE) \
