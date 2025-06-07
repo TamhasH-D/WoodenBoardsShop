@@ -15,55 +15,33 @@ from backend.dtos.wooden_board_dtos import (
     WoodenBoardUpdateDTO,
 )
 from fastapi import UploadFile, File
+import aiohttp
 
 router = APIRouter(prefix="/wooden-boards")
 
 @router.post("/calculate-volume", status_code=200)
 async def calculate_wooden_board_volume(
     image: UploadFile = File(...),
-    height: float = 0.05,
-    length: float = 1.0,
+    board_height: float = 0.0,
+    board_length: float = 0.0,
 ):
-    """
-    Calculate wooden board volume using YOLO image processing.
+    async with aiohttp.ClientSession() as session:
+        form_data = aiohttp.FormData()
+        form_data.add_field(
+            "image",
+            await image.read(),
+            filename=image.filename,
+            content_type=image.content_type,
+        )
+        form_data.add_field("board_height", str(board_height))
+        form_data.add_field("board_length", str(board_length))
 
-    This endpoint uses the unified WoodenBoardAnalysisService to eliminate code duplication
-    and ensure consistent behavior across the application.
+        from backend.settings import settings
+        volume_service_url = settings.prosto_board_volume_seg_url
 
-    Args:
-        image: The uploaded image file
-        height: Board height in meters (default: 0.05 = 5cm)
-        length: Board length in meters (default: 1.0 = 100cm)
-
-    Returns:
-        Volume calculation results with detected boards
-    """
-    from backend.services.wooden_board_analysis_service import WoodenBoardAnalysisService
-
-    analysis_service = WoodenBoardAnalysisService()
-    result = await analysis_service.analyze_image(image, height, length)
-
-    if result:
-        return {
-            "total_volume": result.total_volume,
-            "total_count": result.total_count,
-            "wooden_boards": [
-                {
-                    "volume": board.volume,
-                    "height": board.height,
-                    "width": board.width,
-                    "length": board.length,
-                    "detection": {
-                        "confidence": board.detection.confidence,
-                        "class_name": board.detection.class_name,
-                        "points": board.detection.points
-                    }
-                }
-                for board in result.wooden_boards
-            ]
-        }
-    else:
-        return {"total_volume": 0, "total_count": 0, "wooden_boards": []}
+        async with session.post(volume_service_url, data=form_data) as response:
+            response.raise_for_status()  # Raise an exception for HTTP errors
+            return await response.json()
 
 
 @router.post("/", status_code=201)
@@ -76,7 +54,7 @@ async def create_wooden_board(
     return DataResponse(data=WoodenBoardDTO.model_validate(created_obj))
 
 
-@router.patch("/{wooden_board_id}", status_code=200)
+@router.patch("/{wooden_board_id}")
 async def update_wooden_board(
     wooden_board_id: UUID,
     update_dto: WoodenBoardUpdateDTO,
@@ -87,14 +65,14 @@ async def update_wooden_board(
     return EmptyResponse()
 
 
-@router.delete("/{wooden_board_id}", status_code=204)
+@router.delete("/{wooden_board_id}")
 async def delete_wooden_board(
     wooden_board_id: UUID,
     daos: GetDAOs,
-) -> None:
+) -> EmptyResponse:
     """Delete a WoodenBoard by id."""
     await daos.wooden_board.delete(id=wooden_board_id)
-    # HTTP 204 No Content must have empty body - no return statement needed
+    return EmptyResponse()
 
 
 @router.get("/")
