@@ -1,1 +1,0 @@
-# Demo endpoints tests

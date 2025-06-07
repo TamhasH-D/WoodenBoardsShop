@@ -12,11 +12,11 @@ async def test_delete_chat_thread(
     client: AsyncClient,
     daos: AllDAOs,
 ) -> None:
-    """Test delete ChatThread: 204."""
+    """Test delete ChatThread: 200."""
     chat_thread = await factories.ChatThreadFactory.create()
 
     response = await client.delete(URI.format(chat_thread_id=chat_thread.id))
-    assert response.status_code == 204
+    assert response.status_code == 200
 
     db_chat_thread = await daos.chat_thread.filter_first(id=chat_thread.id)
     assert db_chat_thread is None

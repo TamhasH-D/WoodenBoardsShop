@@ -176,11 +176,9 @@ class WoodenBoardFactory(BaseFactory[WoodenBoard]):
         model = WoodenBoard
 
     id = factory.Faker("uuid4")
-    height = factory.Faker("pyfloat", positive=True, min_value=0.1, max_value=10)
-    width = factory.Faker("pyfloat", positive=True, min_value=0.1, max_value=10)
-    lenght = factory.Faker("pyfloat", positive=True, min_value=0.1, max_value=10)
-    volume = factory.LazyAttribute(lambda obj: obj.height * obj.width * obj.lenght)
-    confidence = factory.Faker("pyfloat", positive=True, min_value=0.1, max_value=1.0)
+    height = factory.Faker("pyfloat", positive=True, min_value=0.1, max_value=100)
+    width = factory.Faker("pyfloat", positive=True, min_value=0.1, max_value=100)
+    lenght = factory.Faker("pyfloat", positive=True, min_value=0.1, max_value=100)
 
     @classmethod
     async def _create_model(
@@ -189,8 +187,6 @@ class WoodenBoardFactory(BaseFactory[WoodenBoard]):
         """Create a new instance of the model."""
         if "image" not in kwargs:
             kwargs["image"] = await ImageFactory.create()
-        if "product" not in kwargs:
-            kwargs["product"] = await ProductFactory.create()
         return await super()._create_model(model_class, *args, **kwargs)
 
 
