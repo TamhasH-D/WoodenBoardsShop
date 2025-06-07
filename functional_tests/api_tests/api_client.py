@@ -77,6 +77,10 @@ def generate_test_data(entity_type: str) -> Dict[str, Any]:
             "descrioption": "Описание тестового товара",
             "price": 2500.00,
             "seller_id": str(uuid4()),  # Будет заменен на реальный ID
+            "volume": 1.5,  # Объем в м3
+            "title": "Заголовок товара",
+            "pickup_location": "Москва, ул. Тестовая, 1",
+            "wood_type_id": str(uuid4()),  # Будет заменен на реальный ID
         }
     
     elif entity_type == "wooden_board":
@@ -138,8 +142,14 @@ def validate_entity_fields(data: Dict[str, Any], entity_type: str) -> None:
         assert "descrioption" in data, "Missing 'descrioption' field"
         assert "price" in data, "Missing 'price' field"
         assert "seller_id" in data, "Missing 'seller_id' field"
+        assert "volume" in data, "Missing 'volume' field"
+        assert "title" in data, "Missing 'title' field"
+        assert "pickup_location" in data, "Missing 'pickup_location' field"
+        assert "wood_type_id" in data, "Missing 'wood_type_id' field"
         assert isinstance(data["price"], (int, float)), f"'price' should be number: {data['price']}"
+        assert isinstance(data["volume"], (int, float)), f"'volume' should be number: {data['volume']}"
         assert validate_uuid(data["seller_id"]), f"Invalid UUID in 'seller_id': {data['seller_id']}"
+        assert validate_uuid(data["wood_type_id"]), f"Invalid UUID in 'wood_type_id': {data['wood_type_id']}"
     
     elif entity_type == "wooden_board":
         assert "height" in data, "Missing 'height' field"

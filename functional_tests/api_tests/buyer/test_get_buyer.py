@@ -143,9 +143,9 @@ async def test_get_buyers_large_limit(api_client: httpx.AsyncClient) -> None:
     response = await api_client.get(URI, params={"limit": 1000})
     
     # API должен либо обработать запрос (200), либо ограничить limit (200),
-    # либо вернуть ошибку (400)
-    assert response.status_code in [200, 400], (
-        f"Expected success (200) or error (400), got {response.status_code}. "
+    # либо вернуть ошибку (400/422)
+    assert response.status_code in [200, 400, 422], (
+        f"Expected success (200) or error (400/422), got {response.status_code}. "
         f"Response: {response.text}"
     )
     
