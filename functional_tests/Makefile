@@ -434,3 +434,102 @@ version: ## Показать версии компонентов
 	@echo "Docker Compose: $$(docker-compose --version)"
 	@echo "Python: $$(python --version 2>&1)"
 	@echo "Pytest: $$(pytest --version 2>&1 | head -1)"
+
+# ========================================
+# SELENIUM BROWSER TESTS
+# ========================================
+
+selenium-up: ## Запустить Selenium Grid и браузеры
+	@echo "$(YELLOW)🌐 Запуск Selenium Grid...$(NC)"
+	docker-compose -f docker-compose.selenium.yml up -d selenium-hub selenium-chrome selenium-firefox selenium-edge
+	@echo "$(YELLOW)⏳ Ожидание готовности Selenium Grid...$(NC)"
+	@sleep 30
+	@echo "$(GREEN)✅ Selenium Grid готов!$(NC)"
+
+selenium-down: ## Остановить Selenium Grid
+	@echo "$(YELLOW)🛑 Остановка Selenium Grid...$(NC)"
+	docker-compose -f docker-compose.selenium.yml down
+
+selenium-test: ## Запустить Selenium браузерные тесты
+	@echo "$(YELLOW)🌐 Запуск Selenium браузерных тестов...$(NC)"
+	docker-compose -f docker-compose.selenium.yml up --build selenium-tests
+
+selenium-test-chrome: ## Запустить Selenium тесты только в Chrome
+	@echo "$(YELLOW)🌐 Запуск Selenium тестов в Chrome...$(NC)"
+	docker-compose -f docker-compose.selenium.yml run --rm selenium-tests \
+		python -m pytest browser_tests/ --browser=chrome -v
+
+selenium-test-firefox: ## Запустить Selenium тесты только в Firefox
+	@echo "$(YELLOW)🌐 Запуск Selenium тестов в Firefox...$(NC)"
+	docker-compose -f docker-compose.selenium.yml run --rm selenium-tests \
+		python -m pytest browser_tests/ --browser=firefox -v
+
+selenium-test-all-browsers: ## Запустить Selenium тесты во всех браузерах
+	@echo "$(YELLOW)🌐 Запуск Selenium тестов во всех браузерах...$(NC)"
+	docker-compose -f docker-compose.selenium.yml run --rm selenium-tests \
+		python -m pytest browser_tests/ --browser=all -v
+
+selenium-test-debug: ## Запустить Selenium тесты с VNC для отладки
+	@echo "$(YELLOW)🌐 Запуск Selenium с VNC для отладки...$(NC)"
+	docker-compose -f docker-compose.selenium.yml --profile debug up -d
+	@echo "$(GREEN)🔍 VNC доступен по адресам:$(NC)"
+	@echo "  Chrome: vnc://localhost:5900 (пароль: secret)"
+	@echo "  Firefox: vnc://localhost:5901 (пароль: secret)"
+	@echo "$(YELLOW)Нажмите Ctrl+C для остановки сессии отладки$(NC)"
+	@read -p "Нажмите Enter для запуска тестов..." dummy
+	docker-compose -f docker-compose.selenium.yml run --rm selenium-tests \
+		python -m pytest browser_tests/ --browser=chrome --headless=false -v -s
+
+selenium-clean: selenium-down ## Очистить Selenium контейнеры и образы
+	@echo "$(YELLOW)🧹 Очистка Selenium контейнеров...$(NC)"
+	docker-compose -f docker-compose.selenium.yml down --volumes --remove-orphans
+	@echo "$(GREEN)✅ Очистка Selenium завершена!$(NC)"
+
+# Frontend Integration Tests
+frontend-test: up selenium-up ## Запустить полные frontend интеграционные тесты
+	@echo "$(YELLOW)🎯 Запуск полных frontend интеграционных тестов...$(NC)"
+	@echo "$(YELLOW)📊 Запуск backend и frontends...$(NC)"
+	@sleep 10
+	@echo "$(YELLOW)🌐 Запуск Selenium браузерных тестов...$(NC)"
+	docker-compose -f docker-compose.selenium.yml up --build selenium-tests
+	@$(MAKE) selenium-down
+
+# Comprehensive Test Suite
+test-all: test frontend-test ## Запустить все тесты (API + Browser)
+	@echo "$(GREEN)🎉 Все тесты завершены!$(NC)"
+
+# Test Reports
+test-reports: ## Генерация комплексных отчетов тестирования
+	@echo "$(YELLOW)📊 Генерация отчетов тестирования...$(NC)"
+	@mkdir -p reports
+	@echo "API Test Reports:" > reports/test-summary.txt
+	@find logs -name "*.json" -exec echo "  {}" \; >> reports/test-summary.txt 2>/dev/null || true
+	@echo "Browser Test Reports:" >> reports/test-summary.txt
+	@find test-reports -name "*.html" -exec echo "  {}" \; >> reports/test-summary.txt 2>/dev/null || true
+	@echo "$(GREEN)✅ Отчеты тестирования созданы в директории reports/$(NC)"
+
+# Browser Test Specific Commands
+browser-test-buyer: selenium-up ## Запустить тесты только buyer frontend
+	@echo "$(YELLOW)👤 Запуск тестов buyer frontend...$(NC)"
+	docker-compose -f docker-compose.selenium.yml run --rm selenium-tests \
+		python -m pytest browser_tests/test_buyer_frontend.py -v
+
+browser-test-seller: selenium-up ## Запустить тесты только seller frontend
+	@echo "$(YELLOW)🏪 Запуск тестов seller frontend...$(NC)"
+	docker-compose -f docker-compose.selenium.yml run --rm selenium-tests \
+		python -m pytest browser_tests/test_seller_frontend.py -v
+
+browser-test-admin: selenium-up ## Запустить тесты только admin frontend
+	@echo "$(YELLOW)👑 Запуск тестов admin frontend...$(NC)"
+	docker-compose -f docker-compose.selenium.yml run --rm selenium-tests \
+		python -m pytest browser_tests/test_admin_frontend.py -v
+
+browser-test-smoke: selenium-up ## Запустить smoke тесты всех frontends
+	@echo "$(YELLOW)💨 Запуск smoke тестов frontends...$(NC)"
+	docker-compose -f docker-compose.selenium.yml run --rm selenium-tests \
+		python -m pytest browser_tests/ -m smoke -v
+
+browser-test-responsive: selenium-up ## Запустить тесты адаптивного дизайна
+	@echo "$(YELLOW)📱 Запуск тестов адаптивного дизайна...$(NC)"
+	docker-compose -f docker-compose.selenium.yml run --rm selenium-tests \
+		python -m pytest browser_tests/ -m responsive -v
