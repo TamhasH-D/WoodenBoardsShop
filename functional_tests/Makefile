@@ -115,27 +115,29 @@ test-rebuild: ## Запустить все тесты с полной перес
 	@$(MAKE) down
 
 test-api: ## Запустить только API тесты
-	@echo "$(YELLOW)🔌 Запуск API тестов...$(NC)"
+	@echo "Запуск API тестов..."
 	@mkdir -p reports logs screenshots
+	@echo "Запуск backend сервисов..."
+	@docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up -d test-backend test-postgres test-redis
+	@echo "Ожидание готовности сервисов..."
+	@sleep 15
+	@echo "Запуск pytest API тестов..."
 	@TIMESTAMP=$$(date +"%Y-%m-%d_%H-%M-%S"); \
-	echo "$(YELLOW)📊 Запуск API тестов в $$TIMESTAMP$(NC)"; \
-	docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up -d test-backend test-postgres test-redis; \
-	sleep 10; \
 	if docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) run --rm -e TEST_TYPE=api functional-tests \
-		python -m pytest test_simple_api.py api_tests/test_simple_wood_type.py -v \
-		--tb=short --maxfail=5 \
+		python -m pytest test_api_basic.py -v --tb=short \
 		--html=reports/api_tests_$$TIMESTAMP.html --self-contained-html \
 		--junitxml=reports/api_tests_$$TIMESTAMP.xml \
 		2>&1 | tee logs/api_tests_$$TIMESTAMP.log; then \
-		echo "$(GREEN)✅ API тесты прошли успешно!$(NC)" | tee -a logs/api_tests_$$TIMESTAMP.log; \
+		echo "✅ API тесты прошли успешно!" | tee -a logs/api_tests_$$TIMESTAMP.log; \
 		echo "SUCCESS" > logs/last_api_test_status.txt; \
 	else \
-		echo "$(RED)❌ API тесты не прошли$(NC)" | tee -a logs/api_tests_$$TIMESTAMP.log; \
+		echo "❌ API тесты не прошли" | tee -a logs/api_tests_$$TIMESTAMP.log; \
 		echo "FAILED" > logs/last_api_test_status.txt; \
 	fi; \
 	echo "$$TIMESTAMP" > logs/last_api_test_timestamp.txt; \
-	echo "$(GREEN)📋 Лог API тестов: logs/api_tests_$$TIMESTAMP.log$(NC)"; \
-	echo "$(GREEN)📊 Отчет API тестов: reports/api_tests_$$TIMESTAMP.html$(NC)"
+	echo "📋 Лог API тестов: logs/api_tests_$$TIMESTAMP.log"; \
+	echo "📊 Отчет API тестов: reports/api_tests_$$TIMESTAMP.html"
+	@echo "API тесты завершены!"
 	@$(MAKE) down
 
 test-browser: ## Запустить только браузерные тесты
