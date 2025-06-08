@@ -92,7 +92,7 @@ const BoardImageAnalyzer = ({
       const lengthInMeters = length / 1000;
 
       const response = await fetch(
-        `/api/v1/wooden_boards_volume_seg/?height=${heightInMeters}&length=${lengthInMeters}`,
+        `/api/v1/wooden-boards/calculate-volume?board_height=${height}&board_length=${length}`,
         {
           method: 'POST',
           body: formData,

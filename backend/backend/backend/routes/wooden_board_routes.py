@@ -33,11 +33,13 @@ async def calculate_wooden_board_volume(
             filename=image.filename,
             content_type=image.content_type,
         )
-        form_data.add_field("board_height", str(board_height))
-        form_data.add_field("board_length", str(board_length))
 
         from backend.settings import settings
-        volume_service_url = settings.prosto_board_volume_seg_url
+        # Конвертируем мм в метры для API микросервиса
+        height_in_meters = board_height / 1000 if board_height > 0 else 0.05  # default 50mm
+        length_in_meters = board_length / 1000 if board_length > 0 else 6.0   # default 6000mm
+
+        volume_service_url = f"{settings.prosto_board_volume_seg_url}/wooden_boards_volume_seg/?height={height_in_meters}&length={length_in_meters}"
 
         async with session.post(volume_service_url, data=form_data) as response:
             response.raise_for_status()  # Raise an exception for HTTP errors
