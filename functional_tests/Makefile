@@ -54,7 +54,7 @@ test-comprehensive: clean-logs up selenium-up ## Comprehensive test suite with c
 	echo "1. UNIT TESTS (API + Integration)" >> logs/comprehensive_test_$$TIMESTAMP.log; \
 	echo "Starting unit tests..." >> logs/comprehensive_test_$$TIMESTAMP.log; \
 	if docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) run --rm functional-tests \
-		python -m pytest test_unit_comprehensive.py -v \
+		python -m pytest api_tests/ integration_tests/ -v \
 		--tb=short --maxfail=10 \
 		--html=reports/unit_tests_$$TIMESTAMP.html --self-contained-html \
 		--junitxml=reports/unit_tests_$$TIMESTAMP.xml \
@@ -70,7 +70,7 @@ test-comprehensive: clean-logs up selenium-up ## Comprehensive test suite with c
 	echo "2. FUNCTIONAL TESTS (Browser + Frontend)" >> logs/comprehensive_test_$$TIMESTAMP.log; \
 	echo "Starting functional tests..." >> logs/comprehensive_test_$$TIMESTAMP.log; \
 	if docker-compose -f docker-compose.selenium.yml run --rm selenium-tests \
-		python -m pytest test_functional_comprehensive.py -v \
+		python -m pytest browser_tests/ -v \
 		--tb=short --maxfail=5 \
 		--html=reports/functional_tests_$$TIMESTAMP.html --self-contained-html \
 		--junitxml=reports/functional_tests_$$TIMESTAMP.xml \
@@ -694,22 +694,45 @@ test-open-reports: ## Открыть последние отчеты в брау
 		echo "$(RED)❌ Тесты еще не запускались$(NC)"; \
 	fi
 
+test-count: ## Подсчитать количество всех тестов
+	@echo "$(GREEN)📊 ПОДСЧЕТ ВСЕХ ТЕСТОВ$(NC)"
+	@echo "$(YELLOW)Unit Tests (API + Integration):$(NC)"
+	@docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) run --rm functional-tests \
+		python -m pytest api_tests/ integration_tests/ --collect-only -q 2>/dev/null | grep "test session starts" -A 20 | grep "collected" || echo "Не удалось подсчитать unit тесты"
+	@echo ""
+	@echo "$(YELLOW)Functional Tests (Browser):$(NC)"
+	@docker-compose -f docker-compose.selenium.yml run --rm selenium-tests \
+		python -m pytest browser_tests/ --collect-only -q 2>/dev/null | grep "test session starts" -A 20 | grep "collected" || echo "Не удалось подсчитать functional тесты"
+	@echo ""
+	@echo "$(YELLOW)Детальный подсчет по директориям:$(NC)"
+	@echo "API Tests:"
+	@find api_tests/ -name "test_*.py" -exec grep -l "def test_" {} \; | wc -l | xargs echo "  Файлов с тестами:"
+	@find api_tests/ -name "test_*.py" -exec grep -h "def test_" {} \; | wc -l | xargs echo "  Тестовых методов:"
+	@echo "Integration Tests:"
+	@find integration_tests/ -name "test_*.py" -exec grep -l "def test_" {} \; | wc -l | xargs echo "  Файлов с тестами:"
+	@find integration_tests/ -name "test_*.py" -exec grep -h "def test_" {} \; | wc -l | xargs echo "  Тестовых методов:"
+	@echo "Browser Tests:"
+	@find browser_tests/ -name "test_*.py" -exec grep -l "def test_" {} \; | wc -l | xargs echo "  Файлов с тестами:"
+	@find browser_tests/ -name "test_*.py" -exec grep -h "def test_" {} \; | wc -l | xargs echo "  Тестовых методов:"
+
 # Quick test commands for development
-test-unit-only: up ## Запустить только unit тесты
-	@echo "$(YELLOW)🔬 Запуск только unit тестов...$(NC)"
+test-unit-only: up ## Запустить только unit тесты (API + Integration)
+	@echo "$(YELLOW)🔬 Запуск только unit тестов (API + Integration)...$(NC)"
 	@TIMESTAMP=$$(date +"%Y-%m-%d_%H-%M-%S"); \
 	docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) run --rm functional-tests \
-		python -m pytest test_unit_comprehensive.py -v \
+		python -m pytest api_tests/ integration_tests/ -v \
 		--tb=short --maxfail=10 \
-		--html=reports/unit_tests_$$TIMESTAMP.html --self-contained-html
+		--html=reports/unit_tests_$$TIMESTAMP.html --self-contained-html \
+		--junitxml=reports/unit_tests_$$TIMESTAMP.xml
 	@$(MAKE) down
 
-test-functional-only: up selenium-up ## Запустить только functional тесты
-	@echo "$(YELLOW)🌐 Запуск только functional тестов...$(NC)"
+test-functional-only: up selenium-up ## Запустить только functional тесты (Browser)
+	@echo "$(YELLOW)🌐 Запуск только functional тестов (Browser)...$(NC)"
 	@TIMESTAMP=$$(date +"%Y-%m-%d_%H-%M-%S"); \
 	docker-compose -f docker-compose.selenium.yml run --rm selenium-tests \
-		python -m pytest test_functional_comprehensive.py -v \
+		python -m pytest browser_tests/ -v \
 		--tb=short --maxfail=5 \
-		--html=reports/functional_tests_$$TIMESTAMP.html --self-contained-html
+		--html=reports/functional_tests_$$TIMESTAMP.html --self-contained-html \
+		--junitxml=reports/functional_tests_$$TIMESTAMP.xml
 	@$(MAKE) selenium-down
 	@$(MAKE) down
