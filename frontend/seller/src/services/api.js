@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { generateEntityUUID, withUUID, ENTITY_TYPES } from '../utils/uuid';
 import { fetchAllPages } from '../utils/paginationUtils';
 
 // Get API URL from environment variables or use default
@@ -148,7 +149,9 @@ export const apiService = {
 
   async createSeller(sellerData) {
     try {
-      const response = await api.post('/api/v1/sellers', sellerData);
+      // Генерируем UUID если не передан
+      const payload = sellerData.id ? sellerData : withUUID(sellerData, ENTITY_TYPES.SELLER);
+      const response = await api.post('/api/v1/sellers', payload);
       return response.data;
     } catch (error) {
       console.error('Failed to create seller:', error);
@@ -231,7 +234,9 @@ export const apiService = {
       }
 
       // Handle backend typo: 'description' -> 'descrioption'
+      // Генерируем UUID если не передан
       const payload = {
+        id: productData.id || generateEntityUUID(ENTITY_TYPES.PRODUCT),
         volume: parseFloat(productData.volume),
         price: parseFloat(productData.price),
         title: productData.title,
@@ -267,7 +272,8 @@ export const apiService = {
       // Add image file
       formData.append('image', imageFile);
 
-      // Add product data
+      // Add product data with UUID
+      formData.append('id', productData.id || generateEntityUUID(ENTITY_TYPES.PRODUCT));
       formData.append('title', productData.title);
       formData.append('description', productData.description || '');
       formData.append('price', parseFloat(productData.price));
@@ -411,7 +417,9 @@ export const apiService = {
   },
 
   async createWoodType(woodTypeData) {
-    const response = await api.post('/api/v1/wood-types', woodTypeData);
+    // Генерируем UUID если не передан
+    const payload = woodTypeData.id ? woodTypeData : withUUID(woodTypeData, ENTITY_TYPES.WOOD_TYPE);
+    const response = await api.post('/api/v1/wood-types', payload);
     return response.data;
   },
 
@@ -479,7 +487,9 @@ export const apiService = {
   },
 
   async createWoodTypePrice(priceData) {
-    const response = await api.post('/api/v1/wood-type-prices', priceData);
+    // Генерируем UUID если не передан
+    const payload = priceData.id ? priceData : withUUID(priceData, ENTITY_TYPES.WOOD_TYPE_PRICE);
+    const response = await api.post('/api/v1/wood-type-prices', payload);
     return response.data;
   },
 
@@ -571,7 +581,9 @@ export const apiService = {
         await this.ensureSellerExists(messageData.seller_id);
       }
 
-      const response = await api.post('/api/v1/chat-messages', messageData);
+      // Генерируем UUID если не передан
+      const payload = messageData.id ? messageData : withUUID(messageData, ENTITY_TYPES.CHAT_MESSAGE);
+      const response = await api.post('/api/v1/chat-messages', payload);
       return response.data;
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -580,7 +592,9 @@ export const apiService = {
   },
 
   async createChatThread(threadData) {
-    const response = await api.post('/api/v1/chat-threads', threadData);
+    // Генерируем UUID если не передан
+    const payload = threadData.id ? threadData : withUUID(threadData, ENTITY_TYPES.CHAT_THREAD);
+    const response = await api.post('/api/v1/chat-threads', payload);
     return response.data;
   },
 

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { generateEntityUUID, withUUID, ENTITY_TYPES } from '../utils/uuid';
 
 // Get API URL from environment variables or use default
 const API_BASE_URL = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
@@ -188,7 +189,9 @@ export const apiService = {
 
   async createBuyer(buyerData) {
     try {
-      const response = await api.post('/api/v1/buyers', buyerData);
+      // Генерируем UUID если не передан
+      const payload = buyerData.id ? buyerData : withUUID(buyerData, ENTITY_TYPES.BUYER);
+      const response = await api.post('/api/v1/buyers', payload);
       return response.data;
     } catch (error) {
       console.error('Failed to create buyer:', error);
@@ -249,7 +252,9 @@ export const apiService = {
   },
 
   async createChatThread(threadData) {
-    const response = await api.post('/api/v1/chat-threads', threadData);
+    // Генерируем UUID если не передан
+    const payload = threadData.id ? threadData : withUUID(threadData, ENTITY_TYPES.CHAT_THREAD);
+    const response = await api.post('/api/v1/chat-threads', payload);
     return response.data;
   },
 
@@ -284,7 +289,9 @@ export const apiService = {
         await this.ensureBuyerExists(messageData.buyer_id);
       }
 
-      const response = await api.post('/api/v1/chat-messages', messageData);
+      // Генерируем UUID если не передан
+      const payload = messageData.id ? messageData : withUUID(messageData, ENTITY_TYPES.CHAT_MESSAGE);
+      const response = await api.post('/api/v1/chat-messages', payload);
       return response.data;
     } catch (error) {
       console.error('Failed to send message:', error);
