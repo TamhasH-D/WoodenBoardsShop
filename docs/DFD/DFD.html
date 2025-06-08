@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFD Диаграммы - WoodenBoardsShop</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2563eb;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: #64748b;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab {
+            background: transparent;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 5px;
+            border-radius: 10px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #64748b;
+        }
+
+        .tab.active {
+            background: #2563eb;
+            color: white;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .tab:hover:not(.active) {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .diagram-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            overflow-x: auto;
+            display: none;
+        }
+
+        .diagram-container.active {
+            display: block;
+        }
+
+        .diagram-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .mermaid {
+            text-align: center;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .description {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .description h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 15px;
+        }
+
+        .description-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .description-item {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 15px;
+            border-left: 4px solid #2563eb;
+        }
+
+        .description-item h4 {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .description-item p {
+            color: #64748b;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .tabs {
+                flex-wrap: wrap;
+            }
+            
+            .tab {
+                margin: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 Data Flow Diagrams</h1>
+            <p>Диаграммы потоков данных системы WoodenBoardsShop - визуализация движения данных через процессы, хранилища и внешние сущности</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showDiagram('context')">Контекстная диаграмма</button>
+            <button class="tab" onclick="showDiagram('level1')">Уровень 1</button>
+            <button class="tab" onclick="showDiagram('products')">Управление товарами</button>
+            <button class="tab" onclick="showDiagram('communications')">Коммуникации</button>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="downloadCurrentDiagram()">💾 Скачать диаграмму</button>
+            <button class="btn" onclick="resetZoom()">↻ Сбросить масштаб</button>
+        </div>
+
+        <!-- Контекстная диаграмма -->
+        <div id="context" class="diagram-container active">
+            <div class="diagram-title">Контекстная диаграмма (Уровень 0)</div>
+            <div class="mermaid">
+graph TB
+    %% Внешние сущности
+    Buyer[👤 Покупатель]
+    Seller[🏪 Продавец]
+    Admin[👨‍💼 Администратор]
+    Keycloak[🔐 Keycloak]
+    AI[🤖 AI Микросервис]
+    
+    %% Основная система
+    System[🏢 WoodenBoardsShop<br/>Система маркетплейса]
+    
+    %% Потоки данных
+    Buyer -->|Поиск товаров<br/>Сообщения| System
+    System -->|Каталог товаров<br/>Результаты поиска| Buyer
+    
+    Seller -->|Управление товарами<br/>Изображения досок<br/>Сообщения| System
+    System -->|Статистика продаж<br/>Уведомления| Seller
+    
+    Admin -->|Управление системой<br/>Модерация| System
+    System -->|Отчеты<br/>Аналитика| Admin
+    
+    System <-->|Аутентификация<br/>Авторизация| Keycloak
+    System <-->|Анализ изображений<br/>Размеры досок| AI
+    
+    %% Стили
+    classDef external fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef system fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
+    
+    class Buyer,Seller,Admin,Keycloak,AI external
+    class System system
+            </div>
+            
+            <div class="description">
+                <h3>📝 Описание контекстной диаграммы</h3>
+                <div class="description-grid">
+                    <div class="description-item">
+                        <h4>👤 Покупатели</h4>
+                        <p>Ищут и покупают товары из древесины, общаются с продавцами через систему чатов</p>
+                    </div>
+                    <div class="description-item">
+                        <h4>🏪 Продавцы</h4>
+                        <p>Управляют товарами, загружают изображения для анализа, общаются с покупателями</p>
+                    </div>
+                    <div class="description-item">
+                        <h4>👨‍💼 Администраторы</h4>
+                        <p>Управляют системой, модерируют контент, анализируют статистику</p>
+                    </div>
+                    <div class="description-item">
+                        <h4>🔐 Keycloak</h4>
+                        <p>Система аутентификации и авторизации пользователей</p>
+                    </div>
+                    <div class="description-item">
+                        <h4>🤖 AI Микросервис</h4>
+                        <p>Анализирует изображения досок, определяет размеры и объемы</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Диаграмма уровня 1 -->
+        <div id="level1" class="diagram-container">
+            <div class="diagram-title">Диаграмма уровня 1 - Основные процессы</div>
+            <div class="mermaid">
+graph TB
+    %% Внешние сущности
+    Buyer[👤 Покупатель]
+    Seller[🏪 Продавец]
+    Admin[👨‍💼 Администратор]
+    Keycloak[🔐 Keycloak]
+    AI[🤖 AI Микросервис]
+    
+    %% Процессы
+    P1[1.0<br/>Управление<br/>пользователями]
+    P2[2.0<br/>Управление<br/>каталогом древесины]
+    P3[3.0<br/>Управление<br/>товарами]
+    P4[4.0<br/>Анализ изображений<br/>досок]
+    P5[5.0<br/>Система<br/>коммуникаций]
+    P6[6.0<br/>Администрирование]
+    
+    %% Хранилища данных
+    D1[(D1<br/>Пользователи)]
+    D2[(D2<br/>Каталог<br/>древесины)]
+    D3[(D3<br/>Товары)]
+    D4[(D4<br/>Анализ<br/>досок)]
+    D5[(D5<br/>Коммуникации)]
+    
+    %% Потоки данных
+    Keycloak -->|Данные аутентификации| P1
+    P1 -->|Профили пользователей| D1
+    D1 -->|Данные пользователей| P1
+    
+    Admin -->|Типы древесины, цены| P2
+    P2 -->|Каталог древесины| D2
+    D2 -->|Справочники| P2
+    
+    Seller -->|Данные товаров| P3
+    P3 -->|Товары| D3
+    D3 -->|Каталог товаров| P3
+    P3 -->|Результаты поиска| Buyer
+    
+    Seller -->|Изображения досок| P4
+    P4 <-->|Анализ изображений| AI
+    P4 -->|Размеры досок| D4
+    D4 -->|Данные анализа| P4
+    
+    Buyer -->|Сообщения| P5
+    Seller -->|Сообщения| P5
+    P5 -->|Чаты| D5
+    D5 -->|История сообщений| P5
+    
+    Admin -->|Команды управления| P6
+    P6 -->|Отчеты, статистика| Admin
+    D1 -.->|Чтение данных| P6
+    D2 -.->|Чтение данных| P6
+    D3 -.->|Чтение данных| P6
+    D4 -.->|Чтение данных| P6
+    D5 -.->|Чтение данных| P6
+    
+    %% Стили
+    classDef external fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef process fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef datastore fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    
+    class Buyer,Seller,Admin,Keycloak,AI external
+    class P1,P2,P3,P4,P5,P6 process
+    class D1,D2,D3,D4,D5 datastore
+            </div>
+        </div>
+
+        <!-- Управление товарами -->
+        <div id="products" class="diagram-container">
+            <div class="diagram-title">Уровень 2 - Управление товарами</div>
+            <div class="mermaid">
+graph TB
+    %% Внешние сущности
+    Seller[🏪 Продавец]
+    Buyer[👤 Покупатель]
+    AI[🤖 AI Микросервис]
+    
+    %% Подпроцессы управления товарами
+    P31[3.1<br/>Создание<br/>товара]
+    P32[3.2<br/>Загрузка<br/>изображений]
+    P33[3.3<br/>Анализ изображений<br/>досок]
+    P34[3.4<br/>Поиск<br/>товаров]
+    P35[3.5<br/>Обновление<br/>товара]
+    P36[3.6<br/>Удаление<br/>товара]
+    
+    %% Хранилища данных
+    D3[(D3<br/>Товары)]
+    D31[(D3.1<br/>Изображения)]
+    D32[(D3.2<br/>Анализ досок)]
+    D2[(D2<br/>Типы древесины)]
+    
+    %% Потоки данных для создания товара
+    Seller -->|Данные товара| P31
+    P31 -->|Новый товар| D3
+    D2 -->|Типы древесины| P31
+    
+    %% Потоки для изображений
+    Seller -->|Файлы изображений| P32
+    P32 -->|Метаданные изображений| D31
+    D31 -->|Изображения товара| P32
+    
+    %% Потоки для анализа
+    P32 -->|Изображение доски| P33
+    Seller -->|Размеры (высота, длина)| P33
+    P33 <-->|Запрос/результат анализа| AI
+    P33 -->|Размеры досок| D32
+    
+    %% Потоки для поиска
+    Buyer -->|Критерии поиска| P34
+    D3 -->|Данные товаров| P34
+    D2 -->|Фильтры по типу| P34
+    P34 -->|Результаты поиска| Buyer
+    
+    %% Потоки для обновления
+    Seller -->|Обновленные данные| P35
+    D3 <-->|Чтение/запись| P35
+    
+    %% Потоки для удаления
+    Seller -->|ID товара| P36
+    P36 -->|Удаление записи| D3
+    P36 -->|Каскадное удаление| D31
+    P36 -->|Каскадное удаление| D32
+    
+    %% Стили
+    classDef external fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef process fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef datastore fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    
+    class Seller,Buyer,AI external
+    class P31,P32,P33,P34,P35,P36 process
+    class D3,D31,D32,D2 datastore
+            </div>
+        </div>
+
+        <!-- Система коммуникаций -->
+        <div id="communications" class="diagram-container">
+            <div class="diagram-title">Уровень 2 - Система коммуникаций</div>
+            <div class="mermaid">
+graph TB
+    %% Внешние сущности
+    Buyer[👤 Покупатель]
+    Seller[🏪 Продавец]
+    
+    %% Подпроцессы коммуникаций
+    P51[5.1<br/>Создание треда<br/>общения]
+    P52[5.2<br/>Отправка<br/>сообщения]
+    P53[5.3<br/>Получение<br/>сообщений]
+    P54[5.4<br/>Отметка<br/>прочтения]
+    P55[5.5<br/>Получение<br/>списка тредов]
+    
+    %% Хранилища данных
+    D51[(D5.1<br/>Треды чатов)]
+    D52[(D5.2<br/>Сообщения)]
+    D1[(D1<br/>Пользователи)]
+    
+    %% Потоки для создания треда
+    Buyer -->|Запрос на общение| P51
+    Seller -->|Согласие на общение| P51
+    D1 -->|Проверка пользователей| P51
+    P51 -->|Новый тред| D51
+    
+    %% Потоки для отправки сообщений
+    Buyer -->|Текст сообщения| P52
+    Seller -->|Текст сообщения| P52
+    D51 -->|Валидация треда| P52
+    P52 -->|Новое сообщение| D52
+    
+    %% Потоки для получения сообщений
+    Buyer -->|Запрос сообщений| P53
+    Seller -->|Запрос сообщений| P53
+    D52 -->|История сообщений| P53
+    P53 -->|Список сообщений| Buyer
+    P53 -->|Список сообщений| Seller
+    
+    %% Потоки для отметки прочтения
+    Buyer -->|Отметка прочтения| P54
+    Seller -->|Отметка прочтения| P54
+    P54 <-->|Обновление флагов| D52
+    
+    %% Потоки для списка тредов
+    Buyer -->|Запрос тредов| P55
+    Seller -->|Запрос тредов| P55
+    D51 -->|Список тредов| P55
+    D52 -->|Последние сообщения| P55
+    P55 -->|Треды с превью| Buyer
+    P55 -->|Треды с превью| Seller
+    
+    %% Стили
+    classDef external fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef process fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef datastore fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    
+    class Buyer,Seller external
+    class P51,P52,P53,P54,P55 process
+    class D51,D52,D1 datastore
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#2563eb',
+                primaryTextColor: '#1e293b',
+                primaryBorderColor: '#3b82f6',
+                lineColor: '#64748b',
+                sectionBkgColor: '#f8fafc',
+                altSectionBkgColor: '#e2e8f0',
+                gridColor: '#cbd5e1',
+                secondaryColor: '#f1f5f9',
+                tertiaryColor: '#f8fafc'
+            },
+            flowchart: {
+                diagramPadding: 20,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+
+        function showDiagram(diagramId) {
+            // Скрыть все диаграммы
+            const diagrams = document.querySelectorAll('.diagram-container');
+            diagrams.forEach(diagram => diagram.classList.remove('active'));
+            
+            // Показать выбранную диаграмму
+            document.getElementById(diagramId).classList.add('active');
+            
+            // Обновить активную вкладку
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function resetZoom() {
+            const activeDiagram = document.querySelector('.diagram-container.active .mermaid svg');
+            if (activeDiagram) {
+                activeDiagram.style.transform = 'scale(1)';
+                activeDiagram.style.transformOrigin = 'center top';
+            }
+        }
+
+        function downloadCurrentDiagram() {
+            const activeDiagram = document.querySelector('.diagram-container.active .mermaid svg');
+            if (activeDiagram) {
+                const svgData = new XMLSerializer().serializeToString(activeDiagram);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = function() {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    
+                    const activeContainer = document.querySelector('.diagram-container.active');
+                    const title = activeContainer.querySelector('.diagram-title').textContent;
+                    const filename = `WoodenBoardsShop_DFD_${title.replace(/\s+/g, '_')}.png`;
+                    
+                    const link = document.createElement('a');
+                    link.download = filename;
+                    link.href = canvas.toDataURL();
+                    link.click();
+                };
+                
+                img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+            }
+        }
+
+        // Добавляем возможность масштабирования диаграмм колесиком мыши
+        document.addEventListener('wheel', function(e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                const activeDiagram = document.querySelector('.diagram-container.active .mermaid svg');
+                if (activeDiagram) {
+                    const currentScale = activeDiagram.style.transform.match(/scale\(([^)]+)\)/);
+                    let scale = currentScale ? parseFloat(currentScale[1]) : 1;
+
+                    scale += e.deltaY > 0 ? -0.1 : 0.1;
+                    scale = Math.max(0.5, Math.min(3, scale));
+
+                    activeDiagram.style.transform = `scale(${scale})`;
+                    activeDiagram.style.transformOrigin = 'center top';
+                }
+            }
+        });
+
+        // Инициализация после загрузки
+        setTimeout(() => {
+            resetZoom();
+        }, 1000);
+    </script>
+</body>
+</html>

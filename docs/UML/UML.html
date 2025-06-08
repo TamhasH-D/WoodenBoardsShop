@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UML Диаграммы - WoodenBoardsShop</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2563eb;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: #64748b;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            background: transparent;
+            border: none;
+            padding: 10px 16px;
+            margin: 5px;
+            border-radius: 10px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+
+        .tab.active {
+            background: #2563eb;
+            color: white;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .tab:hover:not(.active) {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .diagram-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            overflow-x: auto;
+            display: none;
+        }
+
+        .diagram-container.active {
+            display: block;
+        }
+
+        .diagram-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .mermaid {
+            text-align: center;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .description {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .description h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 15px;
+        }
+
+        .description-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .description-item {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 15px;
+            border-left: 4px solid #2563eb;
+        }
+
+        .description-item h4 {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .description-item p {
+            color: #64748b;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .tab {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 UML Диаграммы</h1>
+            <p>Unified Modeling Language диаграммы системы WoodenBoardsShop - различные представления архитектуры и поведения системы</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showDiagram('class')">Диаграмма классов</button>
+            <button class="tab" onclick="showDiagram('sequence')">Диаграмма последовательности</button>
+            <button class="tab" onclick="showDiagram('usecase')">Варианты использования</button>
+            <button class="tab" onclick="showDiagram('component')">Диаграмма компонентов</button>
+            <button class="tab" onclick="showDiagram('deployment')">Диаграмма развертывания</button>
+            <button class="tab" onclick="showDiagram('state')">Диаграмма состояний</button>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="downloadCurrentDiagram()">💾 Скачать диаграмму</button>
+            <button class="btn" onclick="resetZoom()">↻ Сбросить масштаб</button>
+        </div>
+
+        <!-- Диаграмма классов -->
+        <div id="class" class="diagram-container active">
+            <div class="diagram-title">Диаграмма классов - Основные модели системы</div>
+            <div class="mermaid">
+classDiagram
+    class Buyer {
+        +UUID id
+        +UUID keycloak_uuid
+        +bool is_online
+        +datetime created_at
+        +datetime updated_at
+        +List~ChatThread~ chat_threads
+        +List~ChatMessage~ chat_messages
+    }
+    
+    class Seller {
+        +UUID id
+        +UUID keycloak_uuid
+        +bool is_online
+        +datetime created_at
+        +datetime updated_at
+        +List~Product~ products
+        +List~ChatThread~ chat_threads
+        +List~ChatMessage~ chat_messages
+    }
+    
+    class WoodType {
+        +UUID id
+        +str neme
+        +str description
+        +List~Product~ products
+        +List~WoodTypePrice~ wood_type_prices
+    }
+    
+    class WoodTypePrice {
+        +UUID id
+        +float price_per_m3
+        +datetime created_at
+        +UUID wood_type_id
+        +WoodType wood_type
+    }
+    
+    class Product {
+        +UUID id
+        +float volume
+        +float price
+        +str title
+        +str descrioption
+        +bool delivery_possible
+        +str pickup_location
+        +datetime created_at
+        +datetime updated_at
+        +UUID seller_id
+        +UUID wood_type_id
+        +Seller seller
+        +WoodType wood_type
+        +List~Image~ images
+    }
+    
+    class Image {
+        +UUID id
+        +str image_path
+        +UUID product_id
+        +Product product
+        +WoodenBoard wooden_board
+    }
+    
+    class WoodenBoard {
+        +UUID id
+        +float height
+        +float width
+        +float lenght
+        +UUID image_id
+        +Image image
+    }
+    
+    class ChatThread {
+        +UUID id
+        +datetime created_at
+        +UUID buyer_id
+        +UUID seller_id
+        +Buyer buyer
+        +Seller seller
+        +List~ChatMessage~ chat_messages
+    }
+    
+    class ChatMessage {
+        +UUID id
+        +str message
+        +bool is_read_by_buyer
+        +bool is_read_by_seller
+        +datetime created_at
+        +UUID thread_id
+        +UUID buyer_id
+        +UUID seller_id
+        +ChatThread thread
+        +Buyer buyer
+        +Seller seller
+    }
+    
+    %% Relationships
+    Seller ||--o{ Product : creates
+    WoodType ||--o{ Product : categorizes
+    WoodType ||--o{ WoodTypePrice : has_prices
+    Product ||--o{ Image : contains
+    Image ||--|| WoodenBoard : analyzed_as
+    
+    Buyer ||--o{ ChatThread : participates
+    Seller ||--o{ ChatThread : participates
+    ChatThread ||--o{ ChatMessage : contains
+    Buyer ||--o{ ChatMessage : sends
+    Seller ||--o{ ChatMessage : sends
+            </div>
+            
+            <div class="description">
+                <h3>📝 Описание диаграммы классов</h3>
+                <div class="description-grid">
+                    <div class="description-item">
+                        <h4>👥 Пользователи</h4>
+                        <p>Buyer и Seller - основные актеры системы с общими атрибутами аутентификации и временными метками</p>
+                    </div>
+                    <div class="description-item">
+                        <h4>📦 Товары</h4>
+                        <p>Product связан с Seller и WoodType, содержит изображения и метаданные для торговли</p>
+                    </div>
+                    <div class="description-item">
+                        <h4>🌳 Каталог древесины</h4>
+                        <p>WoodType и WoodTypePrice обеспечивают каталогизацию и ценообразование типов древесины</p>
+                    </div>
+                    <div class="description-item">
+                        <h4>🔬 Анализ изображений</h4>
+                        <p>Image и WoodenBoard связаны отношением 1:1 для хранения результатов AI анализа</p>
+                    </div>
+                    <div class="description-item">
+                        <h4>💬 Коммуникации</h4>
+                        <p>ChatThread и ChatMessage обеспечивают общение между покупателями и продавцами</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Диаграмма последовательности -->
+        <div id="sequence" class="diagram-container">
+            <div class="diagram-title">Диаграмма последовательности - Создание товара с анализом изображения</div>
+            <div class="mermaid">
+sequenceDiagram
+    participant S as Продавец
+    participant SF as Seller Frontend
+    participant API as Backend API
+    participant DAO as ProductDAO
+    participant DB as PostgreSQL
+    participant AI as AI Микросервис
+    participant WB as WoodenBoardDAO
+    
+    S->>SF: Заполняет форму товара
+    SF->>API: POST /api/v1/products
+    API->>DAO: create(product_data)
+    DAO->>DB: INSERT INTO products
+    DB-->>DAO: product_id
+    DAO-->>API: created_product
+    API-->>SF: DataResponse[ProductDTO]
+    
+    S->>SF: Загружает изображение доски
+    SF->>API: POST /api/v1/wooden-boards/calculate-volume
+    Note over API: Добавляет параметры height, length
+    API->>AI: POST /wooden_boards_volume_seg/
+    Note over AI: AI анализ изображения
+    AI-->>API: analysis_results (размеры, объем, координаты)
+    API->>WB: create(board_data)
+    WB->>DB: INSERT INTO wooden_boards
+    DB-->>WB: board_id
+    WB-->>API: created_board
+    API-->>SF: analysis_response
+    SF-->>S: Показывает результаты анализа
+            </div>
+        </div>
+
+        <!-- Варианты использования -->
+        <div id="usecase" class="diagram-container">
+            <div class="diagram-title">Диаграмма вариантов использования</div>
+            <div class="mermaid">
+graph TB
+    %% Актеры
+    Buyer[👤 Покупатель]
+    Seller[🏪 Продавец]
+    Admin[👨‍💼 Администратор]
+    AI[🤖 AI Система]
+    
+    %% Варианты использования для покупателя
+    UC1[Регистрация в системе]
+    UC2[Поиск товаров]
+    UC3[Просмотр деталей товара]
+    UC4[Общение с продавцом]
+    UC5[Управление профилем]
+    
+    %% Варианты использования для продавца
+    UC6[Создание товаров]
+    UC7[Загрузка изображений]
+    UC8[Анализ изображений досок]
+    UC9[Управление каталогом]
+    UC10[Просмотр статистики продаж]
+    
+    %% Варианты использования для администратора
+    UC11[Управление пользователями]
+    UC12[Модерация товаров]
+    UC13[Мониторинг системы]
+    UC14[Просмотр аналитики]
+    UC15[Управление типами древесины]
+    
+    %% Варианты использования для AI
+    UC16[Анализ изображений досок]
+    UC17[Определение размеров]
+    UC18[Расчет объемов]
+    
+    %% Связи
+    Buyer --> UC1
+    Buyer --> UC2
+    Buyer --> UC3
+    Buyer --> UC4
+    Buyer --> UC5
+    
+    Seller --> UC1
+    Seller --> UC6
+    Seller --> UC7
+    Seller --> UC8
+    Seller --> UC9
+    Seller --> UC10
+    Seller --> UC4
+    
+    Admin --> UC11
+    Admin --> UC12
+    Admin --> UC13
+    Admin --> UC14
+    Admin --> UC15
+    
+    AI --> UC16
+    AI --> UC17
+    AI --> UC18
+    
+    %% Расширения и включения
+    UC8 ..> UC16 : includes
+    UC16 ..> UC17 : includes
+    UC17 ..> UC18 : includes
+    
+    %% Стили
+    classDef actor fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef usecase fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    
+    class Buyer,Seller,Admin,AI actor
+    class UC1,UC2,UC3,UC4,UC5,UC6,UC7,UC8,UC9,UC10,UC11,UC12,UC13,UC14,UC15,UC16,UC17,UC18 usecase
+            </div>
+        </div>
+
+        <!-- Диаграмма компонентов -->
+        <div id="component" class="diagram-container">
+            <div class="diagram-title">Диаграмма компонентов - Архитектура системы</div>
+            <div class="mermaid">
+graph TB
+    subgraph "Frontend Layer"
+        AF[Admin Frontend<br/>React:8080]
+        SF[Seller Frontend<br/>React:8081]
+        BF[Buyer Frontend<br/>React:8082]
+    end
+    
+    subgraph "API Gateway"
+        API[Backend API<br/>FastAPI:8000]
+        MW[Middleware]
+        AUTH[Authentication]
+    end
+    
+    subgraph "Business Logic"
+        DAO[DAO Components]
+        SVC[Service Components]
+        VAL[Validation Components]
+    end
+    
+    subgraph "Data Access"
+        MOD[Models]
+        DB[PostgreSQL Database]
+        MIG[Migrations]
+    end
+    
+    subgraph "External Services"
+        KC[Keycloak<br/>Authentication]
+        AI[AI Microservice<br/>Image Analysis]
+    end
+    
+    %% Связи
+    AF -->|HTTP REST API| API
+    SF -->|HTTP REST API| API
+    BF -->|HTTP REST API| API
+    
+    API --> MW
+    API --> AUTH
+    API --> DAO
+    
+    DAO --> SVC
+    DAO --> VAL
+    DAO --> MOD
+    
+    MOD --> DB
+    MIG --> DB
+    
+    AUTH -->|OIDC/OAuth2| KC
+    API -->|HTTP API| AI
+    
+    %% Стили
+    classDef frontend fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef backend fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef data fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    classDef external fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    
+    class AF,SF,BF frontend
+    class API,MW,AUTH,DAO,SVC,VAL backend
+    class MOD,DB,MIG data
+    class KC,AI external
+            </div>
+        </div>
+
+        <!-- Диаграмма развертывания -->
+        <div id="deployment" class="diagram-container">
+            <div class="diagram-title">Диаграмма развертывания - Docker инфраструктура</div>
+            <div class="mermaid">
+graph TB
+    subgraph "Docker Host"
+        subgraph "Frontend Containers"
+            AC[admin-frontend<br/>:8080]
+            SC[seller-frontend<br/>:8081]
+            BC[buyer-frontend<br/>:8082]
+        end
+        
+        subgraph "Backend Containers"
+            API[backend-api<br/>:8000]
+            AI[ai-microservice<br/>:8001]
+        end
+        
+        subgraph "Database Containers"
+            PG[postgresql<br/>:5432]
+            KC[keycloak<br/>:8080]
+        end
+        
+        subgraph "Networks"
+            FN[Frontend Network]
+            BN[Backend Network]
+            EN[External Network]
+        end
+    end
+    
+    subgraph "Artifacts"
+        NI[node:18-alpine]
+        PI[python:3.11-slim]
+        PGI[postgres:15-alpine]
+        KCI[quay.io/keycloak/keycloak]
+    end
+    
+    %% Развертывание артефактов
+    NI -.-> AC
+    NI -.-> SC
+    NI -.-> BC
+    PI -.-> API
+    PI -.-> AI
+    PGI -.-> PG
+    KCI -.-> KC
+    
+    %% Сетевые связи
+    AC --- FN
+    SC --- FN
+    BC --- FN
+    
+    API --- BN
+    AI --- BN
+    PG --- BN
+    KC --- BN
+    
+    FN --- EN
+    BN --- EN
+    
+    %% Стили
+    classDef container fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef network fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef artifact fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    
+    class AC,SC,BC,API,AI,PG,KC container
+    class FN,BN,EN network
+    class NI,PI,PGI,KCI artifact
+            </div>
+        </div>
+
+        <!-- Диаграмма состояний -->
+        <div id="state" class="diagram-container">
+            <div class="diagram-title">Диаграмма состояний - Жизненный цикл товара</div>
+            <div class="mermaid">
+stateDiagram-v2
+    [*] --> Создан : Продавец создает товар
+    
+    Создан --> Черновик : Сохранение без публикации
+    Создан --> НаМодерации : Отправка на модерацию
+    
+    Черновик --> НаМодерации : Отправка на модерацию
+    Черновик --> Удален : Удаление черновика
+    
+    НаМодерации --> Опубликован : Одобрение модератором
+    НаМодерации --> Отклонен : Отклонение модератором
+    
+    Отклонен --> Черновик : Исправление и повторная отправка
+    Отклонен --> Удален : Окончательное удаление
+    
+    Опубликован --> Активен : Активация продавцом
+    Опубликован --> Архивирован : Архивирование
+    
+    Активен --> Продан : Успешная продажа
+    Активен --> Архивирован : Снятие с продажи
+    Активен --> НаМодерации : Жалобы пользователей
+    
+    Продан --> Архивирован : Завершение сделки
+    
+    Архивирован --> Активен : Возврат в продажу
+    Архивирован --> Удален : Окончательное удаление
+    
+    Удален --> [*] : Физическое удаление
+    
+    note right of НаМодерации
+        Автоматическая проверка:
+        - Валидация данных
+        - Проверка изображений
+        - Анализ содержания
+    end note
+    
+    note right of Активен
+        Доступен для:
+        - Поиска покупателями
+        - Добавления в избранное
+        - Создания чатов
+    end note
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#2563eb',
+                primaryTextColor: '#1e293b',
+                primaryBorderColor: '#3b82f6',
+                lineColor: '#64748b',
+                sectionBkgColor: '#f8fafc',
+                altSectionBkgColor: '#e2e8f0',
+                gridColor: '#cbd5e1',
+                secondaryColor: '#f1f5f9',
+                tertiaryColor: '#f8fafc'
+            },
+            classDiagram: {
+                diagramPadding: 20,
+                htmlLabels: true
+            },
+            sequenceDiagram: {
+                diagramMarginX: 50,
+                diagramMarginY: 10,
+                actorMargin: 50,
+                width: 150,
+                height: 65,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageMargin: 35
+            },
+            stateDiagram: {
+                diagramPadding: 20
+            }
+        });
+
+        function showDiagram(diagramId) {
+            // Скрыть все диаграммы
+            const diagrams = document.querySelectorAll('.diagram-container');
+            diagrams.forEach(diagram => diagram.classList.remove('active'));
+            
+            // Показать выбранную диаграмму
+            document.getElementById(diagramId).classList.add('active');
+            
+            // Обновить активную вкладку
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function resetZoom() {
+            const activeDiagram = document.querySelector('.diagram-container.active .mermaid svg');
+            if (activeDiagram) {
+                activeDiagram.style.transform = 'scale(1)';
+                activeDiagram.style.transformOrigin = 'center top';
+            }
+        }
+
+        function downloadCurrentDiagram() {
+            const activeDiagram = document.querySelector('.diagram-container.active .mermaid svg');
+            if (activeDiagram) {
+                const svgData = new XMLSerializer().serializeToString(activeDiagram);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = function() {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    
+                    const activeContainer = document.querySelector('.diagram-container.active');
+                    const title = activeContainer.querySelector('.diagram-title').textContent;
+                    const filename = `WoodenBoardsShop_UML_${title.replace(/\s+/g, '_').replace(/[^\w]/g, '')}.png`;
+                    
+                    const link = document.createElement('a');
+                    link.download = filename;
+                    link.href = canvas.toDataURL();
+                    link.click();
+                };
+                
+                img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+            }
+        }
+
+        // Добавляем возможность масштабирования диаграмм колесиком мыши
+        document.addEventListener('wheel', function(e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                const activeDiagram = document.querySelector('.diagram-container.active .mermaid svg');
+                if (activeDiagram) {
+                    const currentScale = activeDiagram.style.transform.match(/scale\(([^)]+)\)/);
+                    let scale = currentScale ? parseFloat(currentScale[1]) : 1;
+                    
+                    scale += e.deltaY > 0 ? -0.1 : 0.1;
+                    scale = Math.max(0.5, Math.min(3, scale));
+                    
+                    activeDiagram.style.transform = `scale(${scale})`;
+                    activeDiagram.style.transformOrigin = 'center top';
+                }
+            }
+        });
+
+        // Инициализация после загрузки
+        setTimeout(() => {
+            resetZoom();
+        }, 1000);
+    </script>
+</body>
+</html>

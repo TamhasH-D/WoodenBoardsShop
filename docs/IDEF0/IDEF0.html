@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDEF0 Диаграммы - WoodenBoardsShop</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2563eb;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: #64748b;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            background: transparent;
+            border: none;
+            padding: 12px 20px;
+            margin: 5px;
+            border-radius: 10px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .tab.active {
+            background: #2563eb;
+            color: white;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .tab:hover:not(.active) {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .diagram-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            overflow-x: auto;
+            display: none;
+        }
+
+        .diagram-container.active {
+            display: block;
+        }
+
+        .diagram-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .mermaid {
+            text-align: center;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .idef0-legend {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .legend-item {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+        }
+
+        .legend-item.input {
+            border-left: 6px solid #10b981;
+        }
+
+        .legend-item.output {
+            border-right: 6px solid #f59e0b;
+        }
+
+        .legend-item.control {
+            border-top: 6px solid #ef4444;
+        }
+
+        .legend-item.mechanism {
+            border-bottom: 6px solid #8b5cf6;
+        }
+
+        .legend-item h4 {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+
+        .legend-item p {
+            color: #64748b;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .hierarchy {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .hierarchy h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .hierarchy-tree {
+            font-family: 'Courier New', monospace;
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.6;
+            color: #1e293b;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .tab {
+                padding: 10px 16px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 IDEF0 Функциональная модель</h1>
+            <p>Функциональная модель системы WoodenBoardsShop по методологии IDEF0 - описание функций системы и их взаимосвязей через входы, выходы, управление и механизмы</p>
+        </div>
+
+        <div class="idef0-legend">
+            <h3 style="text-align: center; margin-bottom: 20px; color: #1e293b;">📚 Легенда IDEF0</h3>
+            <div class="legend-grid">
+                <div class="legend-item input">
+                    <h4>➡️ Входы (Input)</h4>
+                    <p>Данные или объекты, которые преобразуются или потребляются функцией</p>
+                </div>
+                <div class="legend-item output">
+                    <h4>⬅️ Выходы (Output)</h4>
+                    <p>Результат выполнения функции - созданные или преобразованные данные</p>
+                </div>
+                <div class="legend-item control">
+                    <h4>⬇️ Управление (Control)</h4>
+                    <p>Правила, ограничения, стандарты и политики, управляющие выполнением функции</p>
+                </div>
+                <div class="legend-item mechanism">
+                    <h4>⬆️ Механизмы (Mechanism)</h4>
+                    <p>Ресурсы, инструменты и системы, необходимые для выполнения функции</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showDiagram('context')">A-0: Контекст</button>
+            <button class="tab" onclick="showDiagram('level0')">A0: Основные функции</button>
+            <button class="tab" onclick="showDiagram('catalog')">A2: Каталог товаров</button>
+            <button class="tab" onclick="showDiagram('analysis')">A3: Анализ изображений</button>
+            <button class="tab" onclick="showDiagram('hierarchy')">Иерархия функций</button>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="downloadCurrentDiagram()">💾 Скачать диаграмму</button>
+            <button class="btn" onclick="resetZoom()">↻ Сбросить масштаб</button>
+        </div>
+
+        <!-- Контекстная диаграмма A-0 -->
+        <div id="context" class="diagram-container active">
+            <div class="diagram-title">A-0: Контекстная диаграмма - Управление маркетплейсом древесных товаров</div>
+            <div class="mermaid">
+graph TB
+    %% Входы
+    I1[Запросы пользователей]
+    I2[Данные товаров]
+    I3[Изображения досок]
+    I4[Сообщения участников]
+    I5[Команды администратора]
+    
+    %% Основная функция
+    A0[A-0<br/>Управление маркетплейсом<br/>древесных товаров]
+    
+    %% Выходы
+    O1[Каталог товаров]
+    O2[Результаты поиска]
+    O3[Результаты анализа изображений]
+    O4[Отчеты и аналитика]
+    O5[Уведомления пользователям]
+    
+    %% Управление
+    C1[Бизнес-правила маркетплейса]
+    C2[Политики безопасности]
+    C3[Стандарты качества данных]
+    C4[Требования к производительности]
+    
+    %% Механизмы
+    M1[Backend API FastAPI]
+    M2[Frontend React приложения]
+    M3[База данных PostgreSQL]
+    M4[AI микросервис анализа]
+    M5[Система аутентификации Keycloak]
+    M6[Инфраструктура Docker]
+    
+    %% Связи
+    I1 --> A0
+    I2 --> A0
+    I3 --> A0
+    I4 --> A0
+    I5 --> A0
+    
+    A0 --> O1
+    A0 --> O2
+    A0 --> O3
+    A0 --> O4
+    A0 --> O5
+    
+    C1 --> A0
+    C2 --> A0
+    C3 --> A0
+    C4 --> A0
+    
+    M1 --> A0
+    M2 --> A0
+    M3 --> A0
+    M4 --> A0
+    M5 --> A0
+    M6 --> A0
+    
+    %% Стили
+    classDef input fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    classDef output fill:#fef3c7,stroke:#d97706,stroke-width:2px
+    classDef control fill:#fecaca,stroke:#dc2626,stroke-width:2px
+    classDef mechanism fill:#e9d5ff,stroke:#9333ea,stroke-width:2px
+    classDef function fill:#dbeafe,stroke:#2563eb,stroke-width:3px
+    
+    class I1,I2,I3,I4,I5 input
+    class O1,O2,O3,O4,O5 output
+    class C1,C2,C3,C4 control
+    class M1,M2,M3,M4,M5,M6 mechanism
+    class A0 function
+            </div>
+        </div>
+
+        <!-- Диаграмма уровня A0 -->
+        <div id="level0" class="diagram-container">
+            <div class="diagram-title">A0: Основные функции системы</div>
+            <div class="mermaid">
+graph TB
+    %% Входы
+    I1[Запросы пользователей]
+    I2[Данные товаров]
+    I3[Изображения досок]
+    I4[Сообщения участников]
+    I5[Команды администратора]
+    
+    %% Функции
+    A1[A1<br/>Управление<br/>пользователями]
+    A2[A2<br/>Управление каталогом<br/>товаров]
+    A3[A3<br/>Анализ изображений<br/>досок]
+    A4[A4<br/>Система<br/>коммуникаций]
+    A5[A5<br/>Администрирование<br/>системы]
+    
+    %% Выходы
+    O1[Профили пользователей]
+    O2[Каталог товаров]
+    O3[Результаты анализа]
+    O4[Потоки сообщений]
+    O5[Отчеты и аналитика]
+    
+    %% Управление
+    C1[Политики безопасности]
+    C2[Правила валидации]
+    C3[Алгоритмы ML]
+    C4[Правила модерации]
+    C5[Административные политики]
+    
+    %% Механизмы
+    M1[Keycloak]
+    M2[Backend API]
+    M3[AI микросервис]
+    M4[База данных]
+    M5[Admin frontend]
+    
+    %% Связи входов
+    I1 --> A1
+    I1 --> A2
+    I2 --> A2
+    I3 --> A3
+    I4 --> A4
+    I5 --> A5
+    
+    %% Связи выходов
+    A1 --> O1
+    A2 --> O2
+    A3 --> O3
+    A4 --> O4
+    A5 --> O5
+    
+    %% Связи управления
+    C1 --> A1
+    C2 --> A2
+    C3 --> A3
+    C4 --> A4
+    C5 --> A5
+    
+    %% Связи механизмов
+    M1 --> A1
+    M2 --> A2
+    M3 --> A3
+    M4 --> A4
+    M5 --> A5
+    
+    %% Внутренние связи
+    A1 -.-> A2
+    A1 -.-> A4
+    A2 -.-> A3
+    A4 -.-> A5
+    
+    %% Стили
+    classDef input fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    classDef output fill:#fef3c7,stroke:#d97706,stroke-width:2px
+    classDef control fill:#fecaca,stroke:#dc2626,stroke-width:2px
+    classDef mechanism fill:#e9d5ff,stroke:#9333ea,stroke-width:2px
+    classDef function fill:#dbeafe,stroke:#2563eb,stroke-width:3px
+    
+    class I1,I2,I3,I4,I5 input
+    class O1,O2,O3,O4,O5 output
+    class C1,C2,C3,C4,C5 control
+    class M1,M2,M3,M4,M5 mechanism
+    class A1,A2,A3,A4,A5 function
+            </div>
+        </div>
+
+        <!-- Управление каталогом товаров A2 -->
+        <div id="catalog" class="diagram-container">
+            <div class="diagram-title">A2: Управление каталогом товаров</div>
+            <div class="mermaid">
+graph TB
+    %% Входы
+    I1[Данные товара]
+    I2[Поисковые запросы]
+    I3[Обновления товаров]
+    I4[Запросы на удаление]
+    
+    %% Подфункции
+    A21[A21<br/>Создание<br/>товаров]
+    A22[A22<br/>Поиск и фильтрация<br/>товаров]
+    A23[A23<br/>Обновление<br/>товаров]
+    A24[A24<br/>Удаление<br/>товаров]
+    
+    %% Выходы
+    O1[Новые товары в каталоге]
+    O2[Результаты поиска]
+    O3[Обновленные товары]
+    O4[Подтверждения удаления]
+    
+    %% Управление
+    C1[Правила валидации товаров]
+    C2[Алгоритмы поиска]
+    C3[Права доступа продавца]
+    C4[Политики архивирования]
+    
+    %% Механизмы
+    M1[Seller frontend]
+    M2[Buyer frontend]
+    M3[Backend API]
+    M4[Поисковые индексы]
+    M5[UUID генератор]
+    
+    %% Связи входов
+    I1 --> A21
+    I2 --> A22
+    I3 --> A23
+    I4 --> A24
+    
+    %% Связи выходов
+    A21 --> O1
+    A22 --> O2
+    A23 --> O3
+    A24 --> O4
+    
+    %% Связи управления
+    C1 --> A21
+    C2 --> A22
+    C3 --> A23
+    C4 --> A24
+    
+    %% Связи механизмов
+    M1 --> A21
+    M2 --> A22
+    M3 --> A23
+    M5 --> A24
+    
+    %% Внутренние связи
+    A21 -.-> A22
+    A23 -.-> A22
+    
+    %% Стили
+    classDef input fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    classDef output fill:#fef3c7,stroke:#d97706,stroke-width:2px
+    classDef control fill:#fecaca,stroke:#dc2626,stroke-width:2px
+    classDef mechanism fill:#e9d5ff,stroke:#9333ea,stroke-width:2px
+    classDef function fill:#dbeafe,stroke:#2563eb,stroke-width:3px
+    
+    class I1,I2,I3,I4 input
+    class O1,O2,O3,O4 output
+    class C1,C2,C3,C4 control
+    class M1,M2,M3,M4,M5 mechanism
+    class A21,A22,A23,A24 function
+            </div>
+        </div>
+
+        <!-- Анализ изображений досок A3 -->
+        <div id="analysis" class="diagram-container">
+            <div class="diagram-title">A3: Анализ изображений досок</div>
+            <div class="mermaid">
+graph TB
+    %% Входы
+    I1[Исходные изображения]
+    I2[Эталонные размеры]
+    I3[Параметры анализа]
+    
+    %% Подфункции
+    A31[A31<br/>Предобработка<br/>изображений]
+    A32[A32<br/>AI-анализ<br/>досок]
+    A33[A33<br/>Расчет<br/>объемов]
+    A34[A34<br/>Сохранение<br/>результатов]
+    
+    %% Выходы
+    O1[Обработанные изображения]
+    O2[Размеры и координаты досок]
+    O3[Объемы древесины]
+    O4[Сохраненные данные анализа]
+    
+    %% Управление
+    C1[Стандарты качества изображений]
+    C2[Модели машинного обучения]
+    C3[Формулы расчета объема]
+    C4[Схема базы данных]
+    
+    %% Механизмы
+    M1[Библиотеки обработки изображений]
+    M2[AI микросервис]
+    M3[Нейронные сети]
+    M4[Математические библиотеки]
+    M5[PostgreSQL база данных]
+    
+    %% Связи входов
+    I1 --> A31
+    I2 --> A32
+    I3 --> A32
+    
+    %% Связи между функциями
+    A31 --> A32
+    A32 --> A33
+    A33 --> A34
+    
+    %% Связи выходов
+    A31 --> O1
+    A32 --> O2
+    A33 --> O3
+    A34 --> O4
+    
+    %% Связи управления
+    C1 --> A31
+    C2 --> A32
+    C3 --> A33
+    C4 --> A34
+    
+    %% Связи механизмов
+    M1 --> A31
+    M2 --> A32
+    M3 --> A32
+    M4 --> A33
+    M5 --> A34
+    
+    %% Стили
+    classDef input fill:#dcfce7,stroke:#16a34a,stroke-width:2px
+    classDef output fill:#fef3c7,stroke:#d97706,stroke-width:2px
+    classDef control fill:#fecaca,stroke:#dc2626,stroke-width:2px
+    classDef mechanism fill:#e9d5ff,stroke:#9333ea,stroke-width:2px
+    classDef function fill:#dbeafe,stroke:#2563eb,stroke-width:3px
+    
+    class I1,I2,I3 input
+    class O1,O2,O3,O4 output
+    class C1,C2,C3,C4 control
+    class M1,M2,M3,M4,M5 mechanism
+    class A31,A32,A33,A34 function
+            </div>
+        </div>
+
+        <!-- Иерархия функций -->
+        <div id="hierarchy" class="diagram-container">
+            <div class="hierarchy">
+                <h3>🌳 Иерархия функций IDEF0</h3>
+                <div class="hierarchy-tree">A-0: Управление маркетплейсом древесных товаров
+├── A1: Управление пользователями
+│   ├── A11: Регистрация пользователей
+│   ├── A12: Аутентификация
+│   ├── A13: Управление профилями
+│   └── A14: Контроль статуса онлайн
+│
+├── A2: Управление каталогом товаров
+│   ├── A21: Создание товаров
+│   ├── A22: Поиск и фильтрация товаров
+│   ├── A23: Обновление товаров
+│   └── A24: Удаление товаров
+│
+├── A3: Анализ изображений досок
+│   ├── A31: Предобработка изображений
+│   ├── A32: AI-анализ досок
+│   ├── A33: Расчет объемов
+│   └── A34: Сохранение результатов
+│
+├── A4: Система коммуникаций
+│   ├── A41: Создание тредов общения
+│   ├── A42: Отправка сообщений
+│   ├── A43: Получение сообщений
+│   ├── A44: Отметка прочтения
+│   └── A45: Модерация сообщений
+│
+└── A5: Администрирование системы
+    ├── A51: Мониторинг системы
+    ├── A52: Управление пользователями
+    ├── A53: Аналитика и отчеты
+    ├── A54: Настройки системы
+    └── A55: Резервное копирование</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#2563eb',
+                primaryTextColor: '#1e293b',
+                primaryBorderColor: '#3b82f6',
+                lineColor: '#64748b',
+                sectionBkgColor: '#f8fafc',
+                altSectionBkgColor: '#e2e8f0',
+                gridColor: '#cbd5e1',
+                secondaryColor: '#f1f5f9',
+                tertiaryColor: '#f8fafc'
+            },
+            flowchart: {
+                diagramPadding: 20,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+
+        function showDiagram(diagramId) {
+            // Скрыть все диаграммы
+            const diagrams = document.querySelectorAll('.diagram-container');
+            diagrams.forEach(diagram => diagram.classList.remove('active'));
+            
+            // Показать выбранную диаграмму
+            document.getElementById(diagramId).classList.add('active');
+            
+            // Обновить активную вкладку
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function resetZoom() {
+            const activeDiagram = document.querySelector('.diagram-container.active .mermaid svg');
+            if (activeDiagram) {
+                activeDiagram.style.transform = 'scale(1)';
+                activeDiagram.style.transformOrigin = 'center top';
+            }
+        }
+
+        function downloadCurrentDiagram() {
+            const activeDiagram = document.querySelector('.diagram-container.active .mermaid svg');
+            if (activeDiagram) {
+                const svgData = new XMLSerializer().serializeToString(activeDiagram);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = function() {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    
+                    const activeContainer = document.querySelector('.diagram-container.active');
+                    const title = activeContainer.querySelector('.diagram-title, h3').textContent;
+                    const filename = `WoodenBoardsShop_IDEF0_${title.replace(/\s+/g, '_').replace(/[^\w]/g, '')}.png`;
+                    
+                    const link = document.createElement('a');
+                    link.download = filename;
+                    link.href = canvas.toDataURL();
+                    link.click();
+                };
+                
+                img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+            }
+        }
+
+        // Добавляем возможность масштабирования диаграмм колесиком мыши
+        document.addEventListener('wheel', function(e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                const activeDiagram = document.querySelector('.diagram-container.active .mermaid svg');
+                if (activeDiagram) {
+                    const currentScale = activeDiagram.style.transform.match(/scale\(([^)]+)\)/);
+                    let scale = currentScale ? parseFloat(currentScale[1]) : 1;
+                    
+                    scale += e.deltaY > 0 ? -0.1 : 0.1;
+                    scale = Math.max(0.5, Math.min(3, scale));
+                    
+                    activeDiagram.style.transform = `scale(${scale})`;
+                    activeDiagram.style.transformOrigin = 'center top';
+                }
+            }
+        });
+
+        // Инициализация после загрузки
+        setTimeout(() => {
+            resetZoom();
+        }, 1000);
+    </script>
+</body>
+</html>

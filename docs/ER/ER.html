@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ER Диаграмма - WoodenBoardsShop</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2563eb;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: #64748b;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .diagram-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+
+        .diagram-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .mermaid {
+            text-align: center;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .legend {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .legend h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 15px;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .legend-item {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 15px;
+            border-left: 4px solid #2563eb;
+        }
+
+        .legend-item h4 {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .legend-item p {
+            color: #64748b;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .stats {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .diagram-container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗄️ Entity-Relationship Диаграмма</h1>
+            <p>Модель данных системы WoodenBoardsShop - маркетплейс для торговли изделиями из древесины с интегрированным анализом изображений досок</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="zoomIn()">🔍 Увеличить</button>
+            <button class="btn" onclick="zoomOut()">🔍 Уменьшить</button>
+            <button class="btn" onclick="resetZoom()">↻ Сбросить</button>
+            <button class="btn" onclick="downloadDiagram()">💾 Скачать</button>
+        </div>
+
+        <div class="diagram-container">
+            <div class="diagram-title">Схема базы данных WoodenBoardsShop</div>
+            <div class="mermaid" id="erDiagram">
+erDiagram
+    BUYER {
+        UUID id PK "Уникальный идентификатор"
+        UUID keycloak_uuid UK "ID в Keycloak"
+        BOOLEAN is_online "Статус онлайн"
+        DATETIME created_at "Время создания"
+        DATETIME updated_at "Время обновления"
+    }
+    
+    SELLER {
+        UUID id PK "Уникальный идентификатор"
+        UUID keycloak_uuid UK "ID в Keycloak"
+        BOOLEAN is_online "Статус онлайн"
+        DATETIME created_at "Время создания"
+        DATETIME updated_at "Время обновления"
+    }
+    
+    WOOD_TYPE {
+        UUID id PK "Уникальный идентификатор"
+        STRING neme UK "Название типа древесины"
+        STRING description "Описание"
+    }
+    
+    WOOD_TYPE_PRICE {
+        UUID id PK "Уникальный идентификатор"
+        FLOAT price_per_m3 "Цена за м³"
+        DATETIME created_at "Время создания"
+        UUID wood_type_id FK "Ссылка на тип древесины"
+    }
+    
+    PRODUCT {
+        UUID id PK "Уникальный идентификатор"
+        FLOAT volume "Объем в м³"
+        FLOAT price "Цена товара"
+        STRING title "Название товара"
+        STRING descrioption "Описание"
+        BOOLEAN delivery_possible "Возможность доставки"
+        STRING pickup_location "Адрес самовывоза"
+        DATETIME created_at "Время создания"
+        DATETIME updated_at "Время обновления"
+        UUID seller_id FK "Ссылка на продавца"
+        UUID wood_type_id FK "Ссылка на тип древесины"
+    }
+    
+    IMAGE {
+        UUID id PK "Уникальный идентификатор"
+        STRING image_path UK "Путь к изображению"
+        UUID product_id FK "Ссылка на товар"
+    }
+    
+    WOODEN_BOARD {
+        UUID id PK "Уникальный идентификатор"
+        FLOAT height "Высота доски"
+        FLOAT width "Ширина доски"
+        FLOAT lenght "Длина доски"
+        UUID image_id FK "Ссылка на изображение"
+    }
+    
+    CHAT_THREAD {
+        UUID id PK "Уникальный идентификатор"
+        DATETIME created_at "Время создания"
+        UUID buyer_id FK "Ссылка на покупателя"
+        UUID seller_id FK "Ссылка на продавца"
+    }
+    
+    CHAT_MESSAGE {
+        UUID id PK "Уникальный идентификатор"
+        STRING message "Текст сообщения"
+        BOOLEAN is_read_by_buyer "Прочитано покупателем"
+        BOOLEAN is_read_by_seller "Прочитано продавцом"
+        DATETIME created_at "Время создания"
+        UUID thread_id FK "Ссылка на тред"
+        UUID buyer_id FK "Ссылка на покупателя"
+        UUID seller_id FK "Ссылка на продавца"
+    }
+
+    %% Основные связи
+    SELLER ||--o{ PRODUCT : "создает"
+    WOOD_TYPE ||--o{ PRODUCT : "используется_в"
+    WOOD_TYPE ||--o{ WOOD_TYPE_PRICE : "имеет_цены"
+    PRODUCT ||--o{ IMAGE : "содержит"
+    IMAGE ||--|| WOODEN_BOARD : "анализируется"
+    
+    %% Связи чата
+    BUYER ||--o{ CHAT_THREAD : "участвует"
+    SELLER ||--o{ CHAT_THREAD : "участвует"
+    CHAT_THREAD ||--o{ CHAT_MESSAGE : "содержит"
+    BUYER ||--o{ CHAT_MESSAGE : "отправляет"
+    SELLER ||--o{ CHAT_MESSAGE : "отправляет"
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3>📚 Легенда и описание сущностей</h3>
+            <div class="legend-grid">
+                <div class="legend-item">
+                    <h4>👤 Пользователи</h4>
+                    <p><strong>Buyer</strong> - покупатели товаров<br>
+                    <strong>Seller</strong> - продавцы товаров<br>
+                    Интеграция с Keycloak для аутентификации</p>
+                </div>
+                <div class="legend-item">
+                    <h4>🌳 Каталог древесины</h4>
+                    <p><strong>WoodType</strong> - типы древесины<br>
+                    <strong>WoodTypePrice</strong> - исторические цены<br>
+                    Поддержка динамического ценообразования</p>
+                </div>
+                <div class="legend-item">
+                    <h4>📦 Товары</h4>
+                    <p><strong>Product</strong> - товары в маркетплейсе<br>
+                    <strong>Image</strong> - изображения товаров<br>
+                    Поддержка множественных изображений</p>
+                </div>
+                <div class="legend-item">
+                    <h4>🔬 Анализ досок</h4>
+                    <p><strong>WoodenBoard</strong> - результаты AI анализа<br>
+                    Автоматическое определение размеров<br>
+                    Интеграция с микросервисом анализа</p>
+                </div>
+                <div class="legend-item">
+                    <h4>💬 Коммуникации</h4>
+                    <p><strong>ChatThread</strong> - потоки общения<br>
+                    <strong>ChatMessage</strong> - сообщения<br>
+                    Система чтения сообщений</p>
+                </div>
+                <div class="legend-item">
+                    <h4>🔑 Ключевые особенности</h4>
+                    <p>UUID как первичные ключи<br>
+                    Каскадные удаления<br>
+                    Временные метки с UTC</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <h3 style="text-align: center; margin-bottom: 20px; color: #1e293b;">📊 Статистика модели данных</h3>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">9</div>
+                    <div class="stat-label">Сущностей</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">42</div>
+                    <div class="stat-label">Атрибутов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">12</div>
+                    <div class="stat-label">Связей</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">15</div>
+                    <div class="stat-label">Индексов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">5</div>
+                    <div class="stat-label">Уникальных ограничений</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">8</div>
+                    <div class="stat-label">Каскадных удалений</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#2563eb',
+                primaryTextColor: '#1e293b',
+                primaryBorderColor: '#3b82f6',
+                lineColor: '#64748b',
+                sectionBkgColor: '#f8fafc',
+                altSectionBkgColor: '#e2e8f0',
+                gridColor: '#cbd5e1',
+                secondaryColor: '#f1f5f9',
+                tertiaryColor: '#f8fafc'
+            },
+            er: {
+                diagramPadding: 20,
+                layoutDirection: 'TB',
+                minEntityWidth: 100,
+                minEntityHeight: 75,
+                entityPadding: 15,
+                stroke: '#64748b',
+                fill: '#f8fafc',
+                fontSize: 12
+            }
+        });
+
+        let currentZoom = 1;
+
+        function zoomIn() {
+            currentZoom += 0.1;
+            applyZoom();
+        }
+
+        function zoomOut() {
+            currentZoom = Math.max(0.5, currentZoom - 0.1);
+            applyZoom();
+        }
+
+        function resetZoom() {
+            currentZoom = 1;
+            applyZoom();
+        }
+
+        function applyZoom() {
+            const diagram = document.querySelector('.mermaid svg');
+            if (diagram) {
+                diagram.style.transform = `scale(${currentZoom})`;
+                diagram.style.transformOrigin = 'center top';
+            }
+        }
+
+        function downloadDiagram() {
+            const svg = document.querySelector('.mermaid svg');
+            if (svg) {
+                const svgData = new XMLSerializer().serializeToString(svg);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = function() {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    
+                    const link = document.createElement('a');
+                    link.download = 'WoodenBoardsShop_ER_Diagram.png';
+                    link.href = canvas.toDataURL();
+                    link.click();
+                };
+                
+                img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+            }
+        }
+
+        // Применяем зум после загрузки диаграммы
+        setTimeout(() => {
+            applyZoom();
+        }, 1000);
+    </script>
+</body>
+</html>
