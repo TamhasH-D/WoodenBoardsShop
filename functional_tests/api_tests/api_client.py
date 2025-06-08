@@ -83,7 +83,7 @@ def generate_test_data(entity_type: str) -> Dict[str, Any]:
     elif entity_type == "product":
         return {
             **base_data,
-            "neme": "Тестовый товар",
+
             "descrioption": "Описание тестового товара",
             "price": 2500.00,
             "seller_id": str(uuid4()),  # Будет заменен на реальный ID
@@ -165,12 +165,11 @@ def validate_entity_fields(data: Dict[str, Any], entity_type: str) -> None:
         assert validate_uuid(data["wood_type_id"]), f"Invalid UUID in 'wood_type_id': {data['wood_type_id']}"
     
     elif entity_type == "product":
-        assert "neme" in data, "Missing 'neme' field"
+        assert "title" in data, "Missing 'title' field"
         assert "descrioption" in data, "Missing 'descrioption' field"
         assert "price" in data, "Missing 'price' field"
         assert "seller_id" in data, "Missing 'seller_id' field"
         assert "volume" in data, "Missing 'volume' field"
-        assert "title" in data, "Missing 'title' field"
         assert "pickup_location" in data, "Missing 'pickup_location' field"
         assert "wood_type_id" in data, "Missing 'wood_type_id' field"
         assert isinstance(data["price"], (int, float)), f"'price' should be number: {data['price']}"
