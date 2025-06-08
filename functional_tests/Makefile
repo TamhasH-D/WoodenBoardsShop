@@ -34,9 +34,78 @@ down: ## Остановить тестовое окружение
 	@echo "$(YELLOW)🛑 Остановка тестового окружения...$(NC)"
 	docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) down
 
-test: ## Запустить все тесты
-	@echo "$(YELLOW)🧪 Запуск всех функциональных тестов...$(NC)"
-	TEST_TYPE=all docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) up --build --abort-on-container-exit
+test: ## 🎯 ЕДИНАЯ КОМАНДА - Запустить ВСЕ тесты (Unit + Functional)
+	@echo "$(GREEN)🎯 ЗАПУСК COMPREHENSIVE TEST SUITE$(NC)"
+	@echo "$(YELLOW)📋 Этапы тестирования:$(NC)"
+	@echo "  1️⃣ Unit Tests (API + Integration)"
+	@echo "  2️⃣ Functional Tests (Browser + Frontend)"
+	@echo "  3️⃣ Консолидированные логи"
+	@echo ""
+	@$(MAKE) test-comprehensive
+
+test-comprehensive: clean-logs up selenium-up ## Comprehensive test suite with consolidated logging
+	@echo "$(GREEN)🚀 COMPREHENSIVE TEST SUITE STARTED$(NC)"
+	@mkdir -p logs reports screenshots
+	@TIMESTAMP=$$(date +"%Y-%m-%d_%H-%M-%S"); \
+	echo "$(YELLOW)📊 Starting comprehensive test run at $$TIMESTAMP$(NC)"; \
+	echo "=== COMPREHENSIVE TEST RUN: $$TIMESTAMP ===" > logs/comprehensive_test_$$TIMESTAMP.log; \
+	echo "" >> logs/comprehensive_test_$$TIMESTAMP.log; \
+	echo "$(YELLOW)1️⃣ UNIT TESTS (API + Integration)$(NC)"; \
+	echo "1. UNIT TESTS (API + Integration)" >> logs/comprehensive_test_$$TIMESTAMP.log; \
+	echo "Starting unit tests..." >> logs/comprehensive_test_$$TIMESTAMP.log; \
+	if docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) run --rm functional-tests \
+		python -m pytest test_unit_comprehensive.py -v \
+		--tb=short --maxfail=10 \
+		--html=reports/unit_tests_$$TIMESTAMP.html --self-contained-html \
+		--junitxml=reports/unit_tests_$$TIMESTAMP.xml \
+		2>&1 | tee -a logs/comprehensive_test_$$TIMESTAMP.log; then \
+		echo "✅ Unit tests completed successfully" | tee -a logs/comprehensive_test_$$TIMESTAMP.log; \
+		UNIT_STATUS="PASSED"; \
+	else \
+		echo "❌ Unit tests failed" | tee -a logs/comprehensive_test_$$TIMESTAMP.log; \
+		UNIT_STATUS="FAILED"; \
+	fi; \
+	echo "" >> logs/comprehensive_test_$$TIMESTAMP.log; \
+	echo "$(YELLOW)2️⃣ FUNCTIONAL TESTS (Browser + Frontend)$(NC)"; \
+	echo "2. FUNCTIONAL TESTS (Browser + Frontend)" >> logs/comprehensive_test_$$TIMESTAMP.log; \
+	echo "Starting functional tests..." >> logs/comprehensive_test_$$TIMESTAMP.log; \
+	if docker-compose -f docker-compose.selenium.yml run --rm selenium-tests \
+		python -m pytest test_functional_comprehensive.py -v \
+		--tb=short --maxfail=5 \
+		--html=reports/functional_tests_$$TIMESTAMP.html --self-contained-html \
+		--junitxml=reports/functional_tests_$$TIMESTAMP.xml \
+		2>&1 | tee -a logs/comprehensive_test_$$TIMESTAMP.log; then \
+		echo "✅ Functional tests completed successfully" | tee -a logs/comprehensive_test_$$TIMESTAMP.log; \
+		FUNCTIONAL_STATUS="PASSED"; \
+	else \
+		echo "❌ Functional tests failed" | tee -a logs/comprehensive_test_$$TIMESTAMP.log; \
+		FUNCTIONAL_STATUS="FAILED"; \
+	fi; \
+	echo "" >> logs/comprehensive_test_$$TIMESTAMP.log; \
+	echo "$(YELLOW)3️⃣ GENERATING CONSOLIDATED REPORT$(NC)"; \
+	echo "3. CONSOLIDATED REPORT" >> logs/comprehensive_test_$$TIMESTAMP.log; \
+	echo "=== FINAL TEST RESULTS ===" >> logs/comprehensive_test_$$TIMESTAMP.log; \
+	echo "Unit Tests: $$UNIT_STATUS" >> logs/comprehensive_test_$$TIMESTAMP.log; \
+	echo "Functional Tests: $$FUNCTIONAL_STATUS" >> logs/comprehensive_test_$$TIMESTAMP.log; \
+	echo "Timestamp: $$TIMESTAMP" >> logs/comprehensive_test_$$TIMESTAMP.log; \
+	echo "Reports: reports/*_$$TIMESTAMP.*" >> logs/comprehensive_test_$$TIMESTAMP.log; \
+	echo "Screenshots: screenshots/" >> logs/comprehensive_test_$$TIMESTAMP.log; \
+	echo "" >> logs/comprehensive_test_$$TIMESTAMP.log; \
+	if [ "$$UNIT_STATUS" = "PASSED" ] && [ "$$FUNCTIONAL_STATUS" = "PASSED" ]; then \
+		echo "$(GREEN)🎉 ALL TESTS PASSED! 🎉$(NC)" | tee -a logs/comprehensive_test_$$TIMESTAMP.log; \
+		echo "SUCCESS" > logs/last_test_status.txt; \
+	elif [ "$$UNIT_STATUS" = "PASSED" ] || [ "$$FUNCTIONAL_STATUS" = "PASSED" ]; then \
+		echo "$(YELLOW)⚠️ PARTIAL SUCCESS - Some tests passed$(NC)" | tee -a logs/comprehensive_test_$$TIMESTAMP.log; \
+		echo "PARTIAL" > logs/last_test_status.txt; \
+	else \
+		echo "$(RED)❌ ALL TESTS FAILED$(NC)" | tee -a logs/comprehensive_test_$$TIMESTAMP.log; \
+		echo "FAILED" > logs/last_test_status.txt; \
+	fi; \
+	echo "$$TIMESTAMP" > logs/last_test_timestamp.txt; \
+	echo "$(GREEN)📋 Comprehensive test log: logs/comprehensive_test_$$TIMESTAMP.log$(NC)"; \
+	echo "$(GREEN)📊 Reports available in: reports/$(NC)"; \
+	echo "$(GREEN)📸 Screenshots available in: screenshots/$(NC)"
+	@$(MAKE) selenium-down
 	@$(MAKE) down
 
 test-rebuild: ## Запустить все тесты с полной пересборкой
@@ -533,3 +602,114 @@ browser-test-responsive: selenium-up ## Запустить тесты адапт
 	@echo "$(YELLOW)📱 Запуск тестов адаптивного дизайна...$(NC)"
 	docker-compose -f docker-compose.selenium.yml run --rm selenium-tests \
 		python -m pytest browser_tests/ -m responsive -v
+
+# ========================================
+# COMPREHENSIVE TEST RESULTS
+# ========================================
+
+test-status: ## Показать статус последнего запуска тестов
+	@echo "$(GREEN)📊 СТАТУС ПОСЛЕДНЕГО ТЕСТИРОВАНИЯ$(NC)"
+	@if [ -f "logs/last_test_status.txt" ] && [ -f "logs/last_test_timestamp.txt" ]; then \
+		STATUS=$$(cat logs/last_test_status.txt); \
+		TIMESTAMP=$$(cat logs/last_test_timestamp.txt); \
+		echo "Время: $$TIMESTAMP"; \
+		if [ "$$STATUS" = "SUCCESS" ]; then \
+			echo "$(GREEN)✅ Статус: ВСЕ ТЕСТЫ ПРОШЛИ УСПЕШНО$(NC)"; \
+		elif [ "$$STATUS" = "PARTIAL" ]; then \
+			echo "$(YELLOW)⚠️ Статус: ЧАСТИЧНЫЙ УСПЕХ$(NC)"; \
+		else \
+			echo "$(RED)❌ Статус: ТЕСТЫ НЕ ПРОШЛИ$(NC)"; \
+		fi; \
+		echo "Лог: logs/comprehensive_test_$$TIMESTAMP.log"; \
+		echo "Отчеты: reports/*_$$TIMESTAMP.*"; \
+	else \
+		echo "$(RED)❌ Тесты еще не запускались$(NC)"; \
+	fi
+
+test-results: ## Показать результаты последнего тестирования
+	@echo "$(GREEN)📋 РЕЗУЛЬТАТЫ ПОСЛЕДНЕГО ТЕСТИРОВАНИЯ$(NC)"
+	@if [ -f "logs/last_test_timestamp.txt" ]; then \
+		TIMESTAMP=$$(cat logs/last_test_timestamp.txt); \
+		LOG_FILE="logs/comprehensive_test_$$TIMESTAMP.log"; \
+		if [ -f "$$LOG_FILE" ]; then \
+			echo "$(YELLOW)Показ последних результатов из $$LOG_FILE:$(NC)"; \
+			echo ""; \
+			tail -50 "$$LOG_FILE"; \
+		else \
+			echo "$(RED)❌ Лог файл не найден: $$LOG_FILE$(NC)"; \
+		fi; \
+	else \
+		echo "$(RED)❌ Тесты еще не запускались$(NC)"; \
+	fi
+
+test-summary: ## Краткая сводка по тестам
+	@echo "$(GREEN)📊 КРАТКАЯ СВОДКА ПО ТЕСТАМ$(NC)"
+	@if [ -f "logs/last_test_timestamp.txt" ]; then \
+		TIMESTAMP=$$(cat logs/last_test_timestamp.txt); \
+		LOG_FILE="logs/comprehensive_test_$$TIMESTAMP.log"; \
+		if [ -f "$$LOG_FILE" ]; then \
+			echo "$(YELLOW)Извлечение сводки из $$LOG_FILE:$(NC)"; \
+			echo ""; \
+			grep -A 10 "FINAL TEST RESULTS" "$$LOG_FILE" || echo "Сводка не найдена"; \
+		else \
+			echo "$(RED)❌ Лог файл не найден$(NC)"; \
+		fi; \
+	else \
+		echo "$(RED)❌ Тесты еще не запускались$(NC)"; \
+	fi
+
+test-logs-list: ## Показать список всех логов comprehensive тестов
+	@echo "$(GREEN)📋 СПИСОК COMPREHENSIVE TEST ЛОГОВ$(NC)"
+	@if [ -d "logs" ]; then \
+		echo "$(YELLOW)Comprehensive test логи:$(NC)"; \
+		ls -la logs/comprehensive_test_*.log 2>/dev/null | head -10 || echo "Логи не найдены"; \
+		echo ""; \
+		echo "$(YELLOW)Отчеты:$(NC)"; \
+		ls -la reports/*_20*.html 2>/dev/null | head -5 || echo "Отчеты не найдены"; \
+		echo ""; \
+		echo "$(YELLOW)Скриншоты:$(NC)"; \
+		ls -la screenshots/ 2>/dev/null | head -5 || echo "Скриншоты не найдены"; \
+	else \
+		echo "$(RED)❌ Директория logs не найдена$(NC)"; \
+	fi
+
+test-open-reports: ## Открыть последние отчеты в браузере
+	@echo "$(GREEN)📊 ОТКРЫТИЕ ОТЧЕТОВ$(NC)"
+	@if [ -f "logs/last_test_timestamp.txt" ]; then \
+		TIMESTAMP=$$(cat logs/last_test_timestamp.txt); \
+		UNIT_REPORT="reports/unit_tests_$$TIMESTAMP.html"; \
+		FUNCTIONAL_REPORT="reports/functional_tests_$$TIMESTAMP.html"; \
+		if [ -f "$$UNIT_REPORT" ]; then \
+			echo "$(GREEN)Открытие unit test отчета...$(NC)"; \
+			python3 -c "import webbrowser; webbrowser.open('$$UNIT_REPORT')" 2>/dev/null || echo "Не удалось открыть $$UNIT_REPORT"; \
+		fi; \
+		if [ -f "$$FUNCTIONAL_REPORT" ]; then \
+			echo "$(GREEN)Открытие functional test отчета...$(NC)"; \
+			python3 -c "import webbrowser; webbrowser.open('$$FUNCTIONAL_REPORT')" 2>/dev/null || echo "Не удалось открыть $$FUNCTIONAL_REPORT"; \
+		fi; \
+		if [ ! -f "$$UNIT_REPORT" ] && [ ! -f "$$FUNCTIONAL_REPORT" ]; then \
+			echo "$(RED)❌ Отчеты не найдены для timestamp $$TIMESTAMP$(NC)"; \
+		fi; \
+	else \
+		echo "$(RED)❌ Тесты еще не запускались$(NC)"; \
+	fi
+
+# Quick test commands for development
+test-unit-only: up ## Запустить только unit тесты
+	@echo "$(YELLOW)🔬 Запуск только unit тестов...$(NC)"
+	@TIMESTAMP=$$(date +"%Y-%m-%d_%H-%M-%S"); \
+	docker-compose -f $(COMPOSE_FILE) -p $(PROJECT_NAME) run --rm functional-tests \
+		python -m pytest test_unit_comprehensive.py -v \
+		--tb=short --maxfail=10 \
+		--html=reports/unit_tests_$$TIMESTAMP.html --self-contained-html
+	@$(MAKE) down
+
+test-functional-only: up selenium-up ## Запустить только functional тесты
+	@echo "$(YELLOW)🌐 Запуск только functional тестов...$(NC)"
+	@TIMESTAMP=$$(date +"%Y-%m-%d_%H-%M-%S"); \
+	docker-compose -f docker-compose.selenium.yml run --rm selenium-tests \
+		python -m pytest test_functional_comprehensive.py -v \
+		--tb=short --maxfail=5 \
+		--html=reports/functional_tests_$$TIMESTAMP.html --self-contained-html
+	@$(MAKE) selenium-down
+	@$(MAKE) down
