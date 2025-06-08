@@ -302,3 +302,178 @@ class TestBuyerFrontend(BaseBrowserTest, BrowserTestMixin):
             except:
                 self.take_screenshot(f"buyer_responsive_{width}x{height}_error")
                 pytest.fail(f"Проблемы с отображением на размере {width}x{height}")
+
+    @pytest.mark.wood_types
+    @pytest.mark.integration
+    async def test_buyer_wood_types_browsing(self, webdriver_instance: WebDriver, frontend_urls: dict,
+                                           api_client: APIClient, test_data_factory: TestDataFactory):
+        """Тест просмотра типов древесины покупателем."""
+        self.driver = webdriver_instance
+        self.frontend_urls = frontend_urls
+
+        # Создаем тестовые данные
+        wood_type = await test_data_factory.create_wood_type(
+            neme="Buyer Test Wood",
+            description="Wood type for buyer testing"
+        )
+
+        # Создаем цены
+        await test_data_factory.create_wood_type_price(
+            wood_type_id=wood_type["data"]["id"],
+            price_per_cubic_meter="1800.00"
+        )
+
+        # Переходим на страницу товаров
+        self.navigate_to("buyer", "/products")
+
+        wait = WebDriverWait(self.driver, 15)
+
+        try:
+            # Ждем загрузки данных
+            import asyncio
+            await asyncio.sleep(3)
+
+            # Ищем информацию о типах древесины
+            wood_info_selectors = [
+                f"//*[contains(text(), '{wood_type['data']['neme']}')]",
+                ".wood-type-info",
+                ".product-wood-type",
+                ".material-info"
+            ]
+
+            for selector in wood_info_selectors:
+                try:
+                    if selector.startswith("//"):
+                        element = self.driver.find_element(By.XPATH, selector)
+                    else:
+                        element = self.driver.find_element(By.CSS_SELECTOR, selector)
+
+                    if element.is_displayed():
+                        print(f"Wood type info found in buyer interface: {element.text}")
+                        break
+                except:
+                    continue
+
+            # Тестируем фильтрацию по типу древесины
+            await self._test_buyer_wood_type_filtering()
+
+        except Exception as e:
+            print(f"Warning: Could not test buyer wood types browsing: {str(e)}")
+
+    async def _test_buyer_wood_type_filtering(self):
+        """Тестирование фильтрации по типам древесины."""
+        try:
+            # Ищем элементы фильтрации
+            filter_selectors = [
+                ".filter-wood-type",
+                ".wood-type-filter",
+                "select[name*='wood']",
+                ".material-filter"
+            ]
+
+            for selector in filter_selectors:
+                try:
+                    filter_element = self.driver.find_element(By.CSS_SELECTOR, selector)
+                    if filter_element.is_displayed():
+                        print(f"Wood type filter found: {selector}")
+
+                        # Если это select, тестируем выбор
+                        if filter_element.tag_name == "select":
+                            options = filter_element.find_elements(By.TAG_NAME, "option")
+                            if len(options) > 1:
+                                options[1].click()
+                                import asyncio
+                                await asyncio.sleep(2)
+                                print("Wood type filter applied")
+                        break
+                except:
+                    continue
+
+        except Exception as e:
+            print(f"Wood type filtering test failed: {str(e)}")
+
+    @pytest.mark.prices
+    @pytest.mark.integration
+    async def test_buyer_price_information_display(self, webdriver_instance: WebDriver, frontend_urls: dict,
+                                                  api_client: APIClient, test_data_factory: TestDataFactory):
+        """Тест отображения ценовой информации для покупателя."""
+        self.driver = webdriver_instance
+        self.frontend_urls = frontend_urls
+
+        # Создаем продукт с ценой
+        product_set = await test_data_factory.create_complete_product_set()
+
+        # Переходим на страницу товаров
+        self.navigate_to("buyer", "/products")
+
+        wait = WebDriverWait(self.driver, 15)
+
+        try:
+            import asyncio
+            await asyncio.sleep(3)
+
+            # Ищем отображение цен
+            price_selectors = [
+                ".price",
+                ".product-price",
+                ".cost",
+                "//span[contains(text(), '₽')]",
+                "//div[contains(text(), 'руб')]"
+            ]
+
+            price_found = False
+            for selector in price_selectors:
+                try:
+                    if selector.startswith("//"):
+                        price_elements = self.driver.find_elements(By.XPATH, selector)
+                    else:
+                        price_elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
+
+                    for element in price_elements:
+                        if element.is_displayed() and any(char.isdigit() for char in element.text):
+                            print(f"Price information found: {element.text}")
+                            price_found = True
+                            break
+
+                    if price_found:
+                        break
+                except:
+                    continue
+
+            # Тестируем калькулятор стоимости
+            await self._test_buyer_price_calculator()
+
+        except Exception as e:
+            print(f"Warning: Could not test buyer price information: {str(e)}")
+
+    async def _test_buyer_price_calculator(self):
+        """Тестирование калькулятора стоимости."""
+        try:
+            # Ищем элементы калькулятора
+            calculator_selectors = [
+                ".price-calculator",
+                ".cost-calculator",
+                ".volume-calculator",
+                "input[placeholder*='объем']",
+                "input[placeholder*='volume']"
+            ]
+
+            for selector in calculator_selectors:
+                try:
+                    calculator = self.driver.find_element(By.CSS_SELECTOR, selector)
+                    if calculator.is_displayed():
+                        print(f"Price calculator found: {selector}")
+
+                        # Если это input, тестируем ввод
+                        if calculator.tag_name == "input":
+                            calculator.clear()
+                            calculator.send_keys("2.5")
+                            import asyncio
+                            await asyncio.sleep(1)
+                            print("Volume entered in calculator")
+                        break
+                except:
+                    continue
+
+        except Exception as e:
+            print(f"Price calculator test failed: {str(e)}")

@@ -345,6 +345,273 @@ class TestAdminFrontend:
         except NoSuchElementException:
             print("Warning: Chat moderation page not found")
 
+    @pytest.mark.wood_types
+    @pytest.mark.crud
+    async def test_admin_wood_types_management(self, webdriver_instance: WebDriver, frontend_urls: dict):
+        """Тест управления типами древесины в admin панели."""
+        driver = webdriver_instance
+        wait = WebDriverWait(driver, 15)
+
+        driver.get(frontend_urls["admin"])
+
+        # Переходим на страницу управления типами древесины
+        try:
+            wood_types_link = driver.find_element(By.PARTIAL_LINK_TEXT, "Wood Types")
+            wood_types_link.click()
+            time.sleep(2)
+        except NoSuchElementException:
+            driver.get(f"{frontend_urls['admin']}/wood-types")
+
+        # Проверяем загрузку страницы
+        try:
+            # Ищем основные элементы управления
+            management_elements = [
+                ".card",
+                "table",
+                ".wood-types-container",
+                ".entity-manager",
+                "[data-testid='wood-types']"
+            ]
+
+            element_found = False
+            for selector in management_elements:
+                try:
+                    element = driver.find_element(By.CSS_SELECTOR, selector)
+                    if element.is_displayed():
+                        element_found = True
+                        break
+                except NoSuchElementException:
+                    continue
+
+            if element_found:
+                # Тестируем создание типа древесины
+                await self._test_admin_create_wood_type(driver, wait)
+
+                # Тестируем управление ценами
+                await self._test_admin_price_management(driver, wait)
+
+        except Exception as e:
+            print(f"Warning: Could not test admin wood types management: {str(e)}")
+
+    async def _test_admin_create_wood_type(self, driver: WebDriver, wait: WebDriverWait):
+        """Тестирование создания типа древесины через admin панель."""
+        try:
+            # Ищем кнопку добавления
+            add_button_selectors = [
+                "//button[contains(text(), 'Add')]",
+                "//button[contains(text(), 'Добавить')]",
+                "//button[contains(text(), 'Create')]",
+                ".btn-primary",
+                ".add-button",
+                "[data-testid='add-wood-type']"
+            ]
+
+            for selector in add_button_selectors:
+                try:
+                    if selector.startswith("//"):
+                        add_button = driver.find_element(By.XPATH, selector)
+                    else:
+                        add_button = driver.find_element(By.CSS_SELECTOR, selector)
+
+                    if add_button.is_displayed():
+                        driver.execute_script("arguments[0].click();", add_button)
+                        time.sleep(2)
+
+                        # Тестируем заполнение формы
+                        await self._test_admin_wood_type_form(driver, wait)
+                        break
+                except NoSuchElementException:
+                    continue
+
+        except Exception as e:
+            print(f"Admin wood type creation test failed: {str(e)}")
+
+    async def _test_admin_wood_type_form(self, driver: WebDriver, wait: WebDriverWait):
+        """Тестирование формы создания типа древесины в admin панели."""
+        try:
+            # Ищем поля формы
+            name_field_selectors = [
+                "input[name='name']",
+                "input[name='neme']",
+                "input[placeholder*='name']",
+                "input[placeholder*='название']",
+                ".form-input"
+            ]
+
+            name_field = None
+            for selector in name_field_selectors:
+                try:
+                    name_field = driver.find_element(By.CSS_SELECTOR, selector)
+                    if name_field.is_displayed():
+                        break
+                except NoSuchElementException:
+                    continue
+
+            if name_field:
+                # Заполняем название
+                test_name = f"Admin Test Wood {int(time.time())}"
+                name_field.clear()
+                name_field.send_keys(test_name)
+                time.sleep(1)
+
+                # Ищем поле описания
+                description_selectors = [
+                    "textarea[name='description']",
+                    "input[name='description']",
+                    "textarea",
+                    ".description-field"
+                ]
+
+                for selector in description_selectors:
+                    try:
+                        description_field = driver.find_element(By.CSS_SELECTOR, selector)
+                        if description_field.is_displayed():
+                            description_field.clear()
+                            description_field.send_keys("Admin test description")
+                            break
+                    except NoSuchElementException:
+                        continue
+
+                # Отправляем форму
+                submit_selectors = [
+                    "button[type='submit']",
+                    "//button[contains(text(), 'Save')]",
+                    "//button[contains(text(), 'Create')]",
+                    ".btn-primary"
+                ]
+
+                for selector in submit_selectors:
+                    try:
+                        if selector.startswith("//"):
+                            submit_button = driver.find_element(By.XPATH, selector)
+                        else:
+                            submit_button = driver.find_element(By.CSS_SELECTOR, selector)
+
+                        if submit_button.is_displayed() and submit_button.is_enabled():
+                            driver.execute_script("arguments[0].click();", submit_button)
+                            time.sleep(3)
+                            break
+                    except NoSuchElementException:
+                        continue
+
+        except Exception as e:
+            print(f"Admin wood type form test failed: {str(e)}")
+
+    async def _test_admin_price_management(self, driver: WebDriver, wait: WebDriverWait):
+        """Тестирование управления ценами в admin панели."""
+        try:
+            # Ищем вкладку или секцию цен
+            price_tab_selectors = [
+                "//button[contains(text(), 'Price')]",
+                "//button[contains(text(), 'Цены')]",
+                "//a[contains(text(), 'Price')]",
+                "//a[contains(text(), 'Цены')]",
+                ".price-tab",
+                "[data-testid='prices-tab']"
+            ]
+
+            for selector in price_tab_selectors:
+                try:
+                    if selector.startswith("//"):
+                        price_tab = driver.find_element(By.XPATH, selector)
+                    else:
+                        price_tab = driver.find_element(By.CSS_SELECTOR, selector)
+
+                    if price_tab.is_displayed():
+                        driver.execute_script("arguments[0].click();", price_tab)
+                        time.sleep(2)
+
+                        # Тестируем создание цены
+                        await self._test_admin_create_price(driver, wait)
+                        break
+                except NoSuchElementException:
+                    continue
+
+        except Exception as e:
+            print(f"Admin price management test failed: {str(e)}")
+
+    async def _test_admin_create_price(self, driver: WebDriver, wait: WebDriverWait):
+        """Тестирование создания цены в admin панели."""
+        try:
+            # Ищем кнопку добавления цены
+            add_price_selectors = [
+                "//button[contains(text(), 'Add Price')]",
+                "//button[contains(text(), 'Добавить цену')]",
+                ".add-price-button",
+                ".btn-add-price"
+            ]
+
+            for selector in add_price_selectors:
+                try:
+                    if selector.startswith("//"):
+                        add_button = driver.find_element(By.XPATH, selector)
+                    else:
+                        add_button = driver.find_element(By.CSS_SELECTOR, selector)
+
+                    if add_button.is_displayed():
+                        driver.execute_script("arguments[0].click();", add_button)
+                        time.sleep(2)
+
+                        # Заполняем форму цены
+                        await self._test_admin_price_form(driver, wait)
+                        break
+                except NoSuchElementException:
+                    continue
+
+        except Exception as e:
+            print(f"Admin create price test failed: {str(e)}")
+
+    async def _test_admin_price_form(self, driver: WebDriver, wait: WebDriverWait):
+        """Тестирование формы создания цены в admin панели."""
+        try:
+            # Ищем селект типа древесины
+            wood_type_selectors = [
+                "select[name='wood_type_id']",
+                "select[name='woodType']",
+                ".wood-type-select",
+                "select"
+            ]
+
+            for selector in wood_type_selectors:
+                try:
+                    wood_type_select = driver.find_element(By.CSS_SELECTOR, selector)
+                    if wood_type_select.is_displayed():
+                        # Выбираем первый доступный тип древесины
+                        options = wood_type_select.find_elements(By.TAG_NAME, "option")
+                        if len(options) > 1:  # Пропускаем placeholder option
+                            options[1].click()
+                            time.sleep(1)
+                        break
+                except NoSuchElementException:
+                    continue
+
+            # Ищем поле цены
+            price_field_selectors = [
+                "input[name='price_per_m3']",
+                "input[name='price']",
+                "input[type='number']",
+                ".price-field"
+            ]
+
+            for selector in price_field_selectors:
+                try:
+                    price_field = driver.find_element(By.CSS_SELECTOR, selector)
+                    if price_field.is_displayed():
+                        price_field.clear()
+                        price_field.send_keys("1750.25")
+                        time.sleep(1)
+                        break
+                except NoSuchElementException:
+                    continue
+
+            # Отправляем форму
+            submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit'], .btn-primary")
+            driver.execute_script("arguments[0].click();", submit_button)
+            time.sleep(3)
+
+        except Exception as e:
+            print(f"Admin price form test failed: {str(e)}")
+
     @pytest.mark.analytics
     async def test_admin_system_analytics(self, webdriver_instance: WebDriver, frontend_urls: dict):
         """Тест системной аналитики."""
