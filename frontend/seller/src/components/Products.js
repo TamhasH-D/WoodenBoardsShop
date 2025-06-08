@@ -3,6 +3,7 @@ import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS, formatDateRu } from '../utils/localization';
 import { testWoodenBoardsConnection, testImageAnalysisEndpoint, getWoodenBoardsConfig } from '../utils/testWoodenBoardsConnection';
+import BoardImageAnalyzer from './BoardImageAnalyzer';
 
 // Mock seller ID - in real app this would come from authentication
 const MOCK_SELLER_ID = '3ab0f210-ca78-4312-841b-8b1ae774adac';
@@ -31,16 +32,11 @@ function Products() {
     wood_type_id: ''
   });
 
-  // Image processing state
+  // Image processing state (simplified for BoardImageAnalyzer component)
   const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
   const [boardHeight, setBoardHeight] = useState('50'); // mm
   const [boardLength, setBoardLength] = useState('1000'); // mm
-  const [processingImage, setProcessingImage] = useState(false);
-  const [imageProcessingError, setImageProcessingError] = useState(null);
   const [volumeCalculationResult, setVolumeCalculationResult] = useState(null);
-  const [showVolumeDetails, setShowVolumeDetails] = useState(false);
-  const fileInputRef = useRef(null);
 
   const { data, loading, error, refetch } = useApi(() => apiService.getSellerProducts(MOCK_SELLER_ID, page, 10), [page]);
   const { data: woodTypes, loading: woodTypesLoading, error: woodTypesError } = useApi(() => apiService.getAllWoodTypes(), []); // Fetch all wood types for dropdown
@@ -86,102 +82,10 @@ function Products() {
     return `${price.price_per_m3} ₽/м³`;
   };
 
-  // Image processing functions
-  const handleImageSelect = useCallback((file) => {
-    if (file.size > 10 * 1024 * 1024) {
-      setImageProcessingError(SELLER_TEXTS.FILE_SIZE_ERROR);
-      return;
-    }
-
-    if (!file.type.startsWith('image/')) {
-      setImageProcessingError(SELLER_TEXTS.INVALID_IMAGE_FILE);
-      return;
-    }
-
-    setSelectedImage(file);
-    setImagePreview(URL.createObjectURL(file));
-    setImageProcessingError(null);
-    setVolumeCalculationResult(null);
-  }, []);
-
-  const handleImageChange = useCallback((e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleImageSelect(file);
-    }
-  }, [handleImageSelect]);
-
-  const handleDimensionInput = useCallback((value, setter) => {
-    // Allow empty string for better UX while typing
-    if (value === '') {
-      setter('');
-      return;
-    }
-
-    // Replace comma with dot and remove any non-numeric characters except dot
-    const sanitizedValue = value.replace(',', '.').replace(/[^\d.]/g, '');
-
-    // Ensure only one decimal point
-    const parts = sanitizedValue.split('.');
-    if (parts.length > 2) {
-      return;
-    }
-
-    setter(sanitizedValue);
-  }, []);
-
-  const processImageForVolume = useCallback(async () => {
-    if (!selectedImage) {
-      setImageProcessingError(SELLER_TEXTS.SELECT_IMAGE_FIRST);
-      return;
-    }
-
-    const height = parseFloat(boardHeight);
-    const length = parseFloat(boardLength);
-
-    if (isNaN(height) || height <= 0) {
-      setImageProcessingError(SELLER_TEXTS.ENTER_VALID_HEIGHT);
-      return;
-    }
-
-    if (isNaN(length) || length <= 0) {
-      setImageProcessingError(SELLER_TEXTS.ENTER_VALID_LENGTH);
-      return;
-    }
-
-    try {
-      setProcessingImage(true);
-      setImageProcessingError(null);
-
-      // Call the image processing API
-      const response = await apiService.analyzeBoardImage(selectedImage, height / 1000, length / 1000);
-      const result = await response.json();
-
-      setVolumeCalculationResult(result);
-      setNewProduct(prev => ({
-        ...prev,
-        volume: result.total_volume.toFixed(4)
-      }));
-      setShowVolumeDetails(true);
-    } catch (err) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Image processing failed:', err);
-      }
-      setImageProcessingError(err.message || SELLER_TEXTS.PROCESSING_FAILED);
-    } finally {
-      setProcessingImage(false);
-    }
-  }, [selectedImage, boardHeight, boardLength]);
-
+  // Helper function to clear image data
   const clearImageData = useCallback(() => {
     setSelectedImage(null);
-    setImagePreview(null);
     setVolumeCalculationResult(null);
-    setImageProcessingError(null);
-    setShowVolumeDetails(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   }, []);
 
   const handleAddProduct = async (e) => {
@@ -502,283 +406,27 @@ function Products() {
               </small>
             </div>
 
-            {/* Image Processing Section */}
-            <div className="card mb-4" style={{ backgroundColor: 'var(--color-bg-light)', border: '1px solid var(--color-border)' }}>
-              <div className="card-header">
-                <h3 className="card-title" style={{ fontSize: 'var(--font-size-lg)', marginBottom: 'var(--space-2)' }}>
-                  📸 Automated Volume Calculation
-                </h3>
-                <p style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-sm)', margin: 0 }}>
-                  Upload a photo of your wooden boards to automatically calculate volume using AI image processing
-                </p>
-              </div>
-
-              {/* Image Upload */}
-              <div className="form-group">
-                <label className="form-label">Board Image</label>
-                <div style={{
-                  border: '2px dashed var(--color-border)',
-                  borderRadius: 'var(--border-radius)',
-                  padding: 'var(--space-4)',
-                  textAlign: 'center',
-                  backgroundColor: selectedImage ? 'var(--color-bg)' : 'transparent',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.currentTarget.style.borderColor = 'var(--color-primary)';
-                }}
-                onDragLeave={(e) => {
-                  e.preventDefault();
-                  e.currentTarget.style.borderColor = 'var(--color-border)';
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.currentTarget.style.borderColor = 'var(--color-border)';
-                  const file = e.dataTransfer.files[0];
-                  if (file) handleImageSelect(file);
-                }}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    style={{ display: 'none' }}
-                  />
-
-                  {imagePreview ? (
-                    <div>
-                      <img
-                        src={imagePreview}
-                        alt="Board preview"
-                        style={{
-                          maxWidth: '100%',
-                          maxHeight: '200px',
-                          borderRadius: 'var(--border-radius)',
-                          marginBottom: 'var(--space-2)'
-                        }}
-                      />
-                      <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-light)' }}>
-                        {selectedImage?.name} ({(selectedImage?.size / 1024 / 1024).toFixed(2)} MB)
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          clearImageData();
-                        }}
-                        className="btn btn-secondary"
-                        style={{ fontSize: 'var(--font-size-xs)', padding: '0.25rem 0.5rem', marginTop: 'var(--space-2)' }}
-                      >
-                        Remove Image
-                      </button>
-                    </div>
-                  ) : (
-                    <div>
-                      <div style={{ fontSize: '2rem', marginBottom: 'var(--space-2)' }}>📷</div>
-                      <div style={{ fontSize: 'var(--font-size-base)', marginBottom: 'var(--space-1)' }}>
-                        Click to upload or drag and drop
-                      </div>
-                      <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-light)' }}>
-                        Supports JPG, PNG, WebP (max 10MB)
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Dimension Inputs */}
-              <div className="form-grid form-grid-2">
-                <div className="form-group">
-                  <label className="form-label">Board Height (mm) *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={boardHeight}
-                    onChange={(e) => handleDimensionInput(e.target.value, setBoardHeight)}
-                    placeholder="50"
-                    required
-                  />
-                  <small style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-xs)' }}>
-                    Thickness of the boards in millimeters
-                  </small>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Board Length (mm) *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={boardLength}
-                    onChange={(e) => handleDimensionInput(e.target.value, setBoardLength)}
-                    placeholder="1000"
-                    required
-                  />
-                  <small style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-xs)' }}>
-                    Length of the boards in millimeters
-                  </small>
-                </div>
-              </div>
-
-              {/* Process Button */}
-              <div className="form-group">
-                <button
-                  type="button"
-                  onClick={processImageForVolume}
-                  className="btn btn-primary"
-                  disabled={!selectedImage || !boardHeight || !boardLength || processingImage}
-                  style={{ width: '100%' }}
-                >
-                  {processingImage ? (
-                    <>
-                      <span style={{ marginRight: 'var(--space-2)' }}>🔄</span>
-                      Processing Image...
-                    </>
-                  ) : (
-                    <>
-                      <span style={{ marginRight: 'var(--space-2)' }}>🤖</span>
-                      Calculate Volume with AI
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Error Display */}
-              {imageProcessingError && (
-                <div className="error" style={{ marginTop: 'var(--space-2)' }}>
-                  <strong>Processing Error:</strong> {imageProcessingError}
-                </div>
-              )}
-
-              {/* Volume Calculation Results */}
-              {volumeCalculationResult && (
-                <div className="card" style={{
-                  marginTop: 'var(--space-4)',
-                  backgroundColor: 'var(--color-bg)',
-                  border: '1px solid var(--color-success)',
-                  borderRadius: 'var(--border-radius)'
-                }}>
-                  <div className="card-header">
-                    <h4 className="card-title" style={{
-                      fontSize: 'var(--font-size-base)',
-                      color: 'var(--color-success)',
-                      marginBottom: 'var(--space-2)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 'var(--space-2)'
-                    }}>
-                      ✅ Volume Calculation Complete
-                    </h4>
-                  </div>
-
-                  {/* Summary */}
-                  <div style={{
-                    padding: 'var(--space-4)',
-                    backgroundColor: 'var(--color-bg-light)',
-                    borderRadius: 'var(--border-radius)',
-                    marginBottom: 'var(--space-4)'
-                  }}>
-                    <div className="form-grid form-grid-2">
-                      <div>
-                        <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-light)' }}>
-                          Total Volume
-                        </div>
-                        <div style={{ fontSize: 'var(--font-size-xl)', fontWeight: '600', color: 'var(--color-success)' }}>
-                          {volumeCalculationResult.total_volume.toFixed(4)} m³
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-light)' }}>
-                          Boards Detected
-                        </div>
-                        <div style={{ fontSize: 'var(--font-size-xl)', fontWeight: '600', color: 'var(--color-primary)' }}>
-                          {volumeCalculationResult.total_count} boards
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Individual Board Details */}
-                  {showVolumeDetails && volumeCalculationResult.wooden_boards && volumeCalculationResult.wooden_boards.length > 0 && (
-                    <div>
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: 'var(--space-3)'
-                      }}>
-                        <h5 style={{ fontSize: 'var(--font-size-sm)', fontWeight: '600', margin: 0 }}>
-                          Individual Board Analysis
-                        </h5>
-                        <button
-                          type="button"
-                          onClick={() => setShowVolumeDetails(false)}
-                          className="btn btn-secondary"
-                          style={{ fontSize: 'var(--font-size-xs)', padding: '0.25rem 0.5rem' }}
-                        >
-                          Hide Details
-                        </button>
-                      </div>
-
-                      <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                        {volumeCalculationResult.wooden_boards.map((board, index) => (
-                          <div key={index} style={{
-                            padding: 'var(--space-3)',
-                            border: '1px solid var(--color-border)',
-                            borderRadius: 'var(--border-radius)',
-                            marginBottom: 'var(--space-2)',
-                            backgroundColor: 'var(--color-bg)'
-                          }}>
-                            <div className="form-grid form-grid-3">
-                              <div>
-                                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-light)' }}>
-                                  Volume
-                                </div>
-                                <div style={{ fontWeight: '600' }}>
-                                  {board.volume.toFixed(4)} m³
-                                </div>
-                              </div>
-                              <div>
-                                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-light)' }}>
-                                  Width
-                                </div>
-                                <div style={{ fontWeight: '600' }}>
-                                  {(board.width * 1000).toFixed(1)} mm
-                                </div>
-                              </div>
-                              <div>
-                                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-light)' }}>
-                                  Confidence
-                                </div>
-                                <div style={{ fontWeight: '600', color: board.detection.confidence > 0.8 ? 'var(--color-success)' : 'var(--color-warning)' }}>
-                                  {(board.detection.confidence * 100).toFixed(1)}%
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Toggle Details Button */}
-                  {!showVolumeDetails && volumeCalculationResult.wooden_boards && volumeCalculationResult.wooden_boards.length > 0 && (
-                    <div style={{ textAlign: 'center', marginTop: 'var(--space-3)' }}>
-                      <button
-                        type="button"
-                        onClick={() => setShowVolumeDetails(true)}
-                        className="btn btn-secondary"
-                        style={{ fontSize: 'var(--font-size-sm)' }}
-                      >
-                        Show Individual Board Details
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            {/* Board Image Analyzer Component */}
+            <BoardImageAnalyzer
+              onAnalysisComplete={(result) => {
+                setVolumeCalculationResult(result);
+                setSelectedImage(result.image);
+                setBoardHeight(result.boardHeight.toString());
+                setBoardLength(result.boardLength.toString());
+                setNewProduct(prev => ({
+                  ...prev,
+                  volume: result.total_volume.toFixed(4)
+                }));
+              }}
+              onImageSelect={(file) => {
+                setSelectedImage(file);
+                // Очищаем предыдущие результаты при выборе нового изображения
+                setVolumeCalculationResult(null);
+              }}
+              disabled={mutating}
+              initialHeight={boardHeight}
+              initialLength={boardLength}
+            />
 
             <div className="form-grid form-grid-2">
               <div className="form-group">
