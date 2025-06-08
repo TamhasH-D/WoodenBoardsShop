@@ -214,7 +214,14 @@ def main():
     
     # Определяем, нужно ли ждать frontend сервисы
     test_type = os.getenv("TEST_TYPE", "all")
-    include_frontends = test_type in ["browser", "integration", "all"]
+    include_frontends_env = os.getenv("INCLUDE_FRONTENDS", "").lower()
+
+    if include_frontends_env == "false":
+        include_frontends = False
+    elif include_frontends_env == "true":
+        include_frontends = True
+    else:
+        include_frontends = test_type in ["browser", "integration", "all"]
     
     print(f"🎯 Тип тестов: {test_type}")
     print(f"🌐 Включить frontend сервисы: {include_frontends}")

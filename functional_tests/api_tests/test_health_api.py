@@ -1,6 +1,7 @@
 """Функциональные тесты для Health API."""
 
 import pytest
+import httpx
 from typing import Dict, Any
 from base.test_base import BaseAPITest
 from utils.api_client import APIClient

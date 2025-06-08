@@ -1,6 +1,7 @@
 """Функциональные тесты для Buyer API с поддержкой UUID генерации."""
 
 import pytest
+import httpx
 import uuid
 from typing import Dict, Any
 from base.test_base import BaseAPITest, APITestMixin

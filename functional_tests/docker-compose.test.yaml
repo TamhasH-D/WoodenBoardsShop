@@ -2,13 +2,13 @@ services:
   # Тестовая база данных
   test-postgres:
     image: postgres:16-alpine
-    container_name: test-postgres
+    container_name: functional-test-postgres
     environment:
       POSTGRES_DB: test_diplom
       POSTGRES_USER: test_user
       POSTGRES_PASSWORD: test_password
     ports:
-      - "5433:5432"
+      - "5434:5432"
     volumes:
       - test_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,9 +22,9 @@ services:
   # Тестовый Redis
   test-redis:
     image: redis:7-alpine
-    container_name: test-redis
+    container_name: functional-test-redis
     ports:
-      - "6380:6379"
+      - "6381:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -38,7 +38,7 @@ services:
     build:
       context: ../backend/backend
       dockerfile: Dockerfile
-    container_name: test-backend
+    container_name: functional-test-backend
     environment:
       # Database settings (используем правильные префиксы из settings.py)
       BACKEND_PG_HOST: test-postgres
@@ -59,7 +59,7 @@ services:
       BACKEND_CORS_ALLOW_METHODS: "*"
       BACKEND_CORS_ALLOW_HEADERS: "*"
     ports:
-      - "8001:8000"
+      - "8002:8000"
     depends_on:
       test-postgres:
         condition: service_healthy
@@ -85,9 +85,9 @@ services:
   # Selenium Grid Hub
   selenium-hub:
     image: selenium/hub:4.25.0
-    container_name: selenium-hub
+    container_name: functional-selenium-hub
     ports:
-      - "4444:4444"
+      - "4445:4444"
     environment:
       GRID_MAX_SESSION: 16
       GRID_BROWSER_TIMEOUT: 300
@@ -112,7 +112,7 @@ services:
   # Chrome Node
   selenium-chrome:
     image: selenium/node-chrome:4.25.0
-    container_name: selenium-chrome
+    container_name: functional-selenium-chrome
     depends_on:
       selenium-hub:
         condition: service_healthy
@@ -146,7 +146,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: functional-tests
+    container_name: functional-tests-runner
     environment:
       BACKEND_URL: http://test-backend:8000
       SELENIUM_HUB_URL: http://selenium-hub:4444

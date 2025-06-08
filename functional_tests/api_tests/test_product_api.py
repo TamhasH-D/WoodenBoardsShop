@@ -1,6 +1,7 @@
 """Функциональные тесты для Product API."""
 
 import pytest
+import httpx
 import uuid
 from decimal import Decimal
 from typing import Dict, Any

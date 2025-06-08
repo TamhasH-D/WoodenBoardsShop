@@ -1,6 +1,7 @@
 """Комплексные тесты для валидации UUID во всех API эндпоинтах."""
 
 import pytest
+import httpx
 import uuid
 from typing import Dict, Any
 from base.test_base import BaseAPITest, APITestMixin
