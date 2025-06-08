@@ -22,7 +22,7 @@ class ChatMessage(Base):
     is_read_by_buyer: Mapped[bool] = mapped_column(sa.Boolean, default=False)
     is_read_by_seller: Mapped[bool] = mapped_column(sa.Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(
-        sa.DateTime(timezone=True), default=datetime.now(UTC)
+        sa.DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
     thread_id: Mapped[UUID] = mapped_column(
         sa.UUID(as_uuid=True),

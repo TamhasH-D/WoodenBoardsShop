@@ -22,7 +22,7 @@ class ChatThread(Base):
         sa.UUID(as_uuid=True), primary_key=True, unique=True, index=True
     )
     created_at: Mapped[datetime] = mapped_column(
-        sa.DateTime(timezone=True), default=datetime.now(UTC)
+        sa.DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
     buyer_id: Mapped[UUID] = mapped_column(
         sa.UUID(as_uuid=True), sa.ForeignKey("buyer.id", ondelete="CASCADE"), index=True

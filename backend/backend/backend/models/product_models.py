@@ -30,12 +30,12 @@ class Product(Base):
     )
     pickup_location: Mapped[str | None] = mapped_column(sa.String, index=True)
     created_at: Mapped[datetime] = mapped_column(
-        sa.DateTime(timezone=True), default=datetime.now(UTC)
+        sa.DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
     updated_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
-        default=datetime.now(UTC),
-        onupdate=datetime.now(UTC),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
     seller_id: Mapped[UUID] = mapped_column(
         sa.UUID(as_uuid=True),
