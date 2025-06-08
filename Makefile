@@ -20,24 +20,24 @@ BACKEND_DIR := backend/backend
 
 .PHONY: help
 help: ## Show available commands
-	@echo "$(GREEN)🚀 Diplom Project - Available Commands$(NC)"
-	@echo "$(YELLOW)======================================$(NC)"
-	@echo ""
-	@echo "$(BLUE)📦 Main Commands:$(NC)"
+	@printf "\033[0;32m🚀 Diplom Project - Available Commands\033[0m\n"
+	@printf "\033[1;33m======================================\033[0m\n"
+	@printf "\n"
+	@printf "\033[0;34m📦 Main Commands:\033[0m\n"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -v "^help:" | grep -v "^help-test:" | grep -v "^test-" | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
-	@echo ""
-	@echo "$(BLUE)🧪 Testing Commands:$(NC)"
+	@printf "\n"
+	@printf "\033[0;34m🧪 Testing Commands:\033[0m\n"
 	@grep -E '^test[a-zA-Z_-]*:.*?## .*$$' $(MAKEFILE_LIST) | head -12 | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-25s\033[0m %s\n", $$1, $$2}'
-	@echo "  $(GREEN)help-test$(NC)                Показать полную справку по тестированию"
-	@echo ""
-	@echo "$(BLUE)🌐 Service URLs (accessible from host system):$(NC)"
-	@echo "  Backend API:      http://localhost:$(BACKEND_PORT)"
-	@echo "  API Docs:         http://localhost:$(BACKEND_PORT)/docs"
-	@echo "  Admin Frontend:   http://localhost:$(FRONTEND_ADMIN_PORT)"
-	@echo "  Seller Frontend:  http://localhost:$(FRONTEND_SELLER_PORT)"
-	@echo "  Buyer Frontend:   http://localhost:$(FRONTEND_BUYER_PORT)"
-	@echo "  YOLO Backend:     http://localhost:$(PROSTO_BOARD_PORT)"
-	@echo "  YOLO Detect:      http://localhost:$(DETECT_PORT)"
+	@printf "  \033[0;32mhelp-test\033[0m                Показать полную справку по тестированию\n"
+	@printf "\n"
+	@printf "\033[0;34m🌐 Service URLs (accessible from host system):\033[0m\n"
+	@printf "  Backend API:      http://localhost:$(BACKEND_PORT)\n"
+	@printf "  API Docs:         http://localhost:$(BACKEND_PORT)/docs\n"
+	@printf "  Admin Frontend:   http://localhost:$(FRONTEND_ADMIN_PORT)\n"
+	@printf "  Seller Frontend:  http://localhost:$(FRONTEND_SELLER_PORT)\n"
+	@printf "  Buyer Frontend:   http://localhost:$(FRONTEND_BUYER_PORT)\n"
+	@printf "  YOLO Backend:     http://localhost:$(PROSTO_BOARD_PORT)\n"
+	@printf "  YOLO Detect:      http://localhost:$(DETECT_PORT)\n"
 
 # ============================================================================
 # 🚀 MAIN COMMANDS
@@ -90,12 +90,7 @@ backend-migrate: ## Run database migrations
 # 🧪 FUNCTIONAL TESTS
 # ============================================================================
 
-# Colors for output
-GREEN := \033[0;32m
-YELLOW := \033[1;33m
-RED := \033[0;31m
-BLUE := \033[0;34m
-NC := \033[0m # No Color
+# Colors disabled for compatibility
 
 # Test configuration
 FUNCTIONAL_TESTS_DIR := functional_tests
@@ -105,11 +100,11 @@ TEST_PROJECT_NAME := diplom-functional-tests
 # Check dependencies
 .PHONY: check-test-deps
 check-test-deps:
-	@echo "$(BLUE)🔍 Проверка зависимостей для тестирования...$(NC)"
-	@command -v docker >/dev/null 2>&1 || { echo "$(RED)❌ Docker не установлен$(NC)"; exit 1; }
-	@command -v docker-compose >/dev/null 2>&1 || { echo "$(RED)❌ Docker Compose не установлен$(NC)"; exit 1; }
-	@[ -f "$(TEST_COMPOSE_FILE)" ] || { echo "$(RED)❌ Файл $(TEST_COMPOSE_FILE) не найден$(NC)"; exit 1; }
-	@echo "$(GREEN)✅ Все зависимости установлены$(NC)"
+	@echo "🔍 Проверка зависимостей для тестирования..."
+	@command -v docker >/dev/null 2>&1 || { echo "❌ Docker не установлен"; exit 1; }
+	@command -v docker-compose >/dev/null 2>&1 || { echo "❌ Docker Compose не установлен"; exit 1; }
+	@[ -f "$(TEST_COMPOSE_FILE)" ] || { echo "❌ Файл $(TEST_COMPOSE_FILE) не найден"; exit 1; }
+	@echo "✅ Все зависимости установлены"
 
 .PHONY: help-test
 help-test: ## Показать справку по командам тестирования
@@ -156,7 +151,7 @@ help-test: ## Показать справку по командам тестир
 
 .PHONY: test
 test: check-test-deps ## Запуск всех функциональных тестов (api + browser + integration)
-	@echo "$(YELLOW)🚀 Запуск всех функциональных тестов...$(NC)"
+	@echo "🚀 Запуск всех функциональных тестов..."
 	@TEST_TYPE=all $(MAKE) _run-tests
 	@$(MAKE) _show-test-results
 
@@ -268,18 +263,18 @@ test-build: check-test-deps ## Сборка Docker образов для тес�
 
 .PHONY: test-up
 test-up: check-test-deps ## Запуск тестового окружения без выполнения тестов
-	@echo "$(YELLOW)🚀 Запуск тестового окружения...$(NC)"
+	@echo "🚀 Запуск тестового окружения..."
 	@cd $(FUNCTIONAL_TESTS_DIR) && docker-compose -f docker-compose.test.yaml -p $(TEST_PROJECT_NAME) up -d --remove-orphans
-	@echo "$(BLUE)⏳ Ожидание готовности сервисов...$(NC)"
+	@echo "⏳ Ожидание готовности сервисов..."
 	@sleep 10
 	@$(MAKE) test-status
-	@echo "$(GREEN)✅ Тестовое окружение готово$(NC)"
+	@echo "✅ Тестовое окружение готово"
 
 .PHONY: test-down
 test-down: ## Остановка тестового окружения
-	@echo "$(YELLOW)🛑 Остановка тестового окружения...$(NC)"
+	@echo "🛑 Остановка тестового окружения..."
 	@cd $(FUNCTIONAL_TESTS_DIR) && docker-compose -f docker-compose.test.yaml -p $(TEST_PROJECT_NAME) down --remove-orphans
-	@echo "$(GREEN)✅ Тестовое окружение остановлено$(NC)"
+	@echo "✅ Тестовое окружение остановлено"
 
 .PHONY: test-clean
 test-clean: test-down ## Очистка тестовых данных и контейнеров
@@ -377,10 +372,10 @@ test-reports: ## Открытие HTML отчетов в браузере
 
 .PHONY: test-status
 test-status: ## Проверка статуса тестовых сервисов
-	@echo "$(YELLOW)🔍 Статус тестовых сервисов:$(NC)"
+	@echo "🔍 Статус тестовых сервисов:"
 	@cd $(FUNCTIONAL_TESTS_DIR) && docker-compose -f docker-compose.test.yaml -p $(TEST_PROJECT_NAME) ps
 	@echo ""
-	@echo "$(BLUE)🌐 Проверка доступности сервисов:$(NC)"
+	@echo "🌐 Проверка доступности сервисов:"
 	@$(MAKE) _check-service-health
 
 # ============================================================================
@@ -389,15 +384,15 @@ test-status: ## Проверка статуса тестовых сервисо�
 
 .PHONY: _run-tests
 _run-tests:
-	@echo "$(BLUE)🔧 Подготовка тестового окружения...$(NC)"
+	@echo "🔧 Подготовка тестового окружения..."
 	@$(MAKE) test-down 2>/dev/null || true
 	@$(MAKE) test-up
-	@echo "$(BLUE)🧪 Запуск тестов (TEST_TYPE=$(TEST_TYPE))...$(NC)"
+	@echo "🧪 Запуск тестов (TEST_TYPE=$(TEST_TYPE))..."
 	@cd $(FUNCTIONAL_TESTS_DIR) && \
 		TEST_TYPE=$(TEST_TYPE) \
 		PYTEST_ARGS="$(PYTEST_ARGS)" \
 		docker-compose -f docker-compose.test.yaml -p $(TEST_PROJECT_NAME) run --rm functional-tests || \
-		(echo "$(RED)❌ Тесты завершились с ошибкой$(NC)" && $(MAKE) _cleanup-on-error && exit 1)
+		(echo "❌ Тесты завершились с ошибкой" && $(MAKE) _cleanup-on-error && exit 1)
 	@$(MAKE) test-down
 
 .PHONY: _run-tests-no-build
@@ -439,9 +434,9 @@ _check-service-health:
 		name=$$(echo $$service | cut -d: -f1); \
 		url=$$(echo $$service | cut -d: -f2-); \
 		if curl -s -f "$$url" >/dev/null 2>&1; then \
-			echo "  $(GREEN)✅ $$name$(NC) - доступен"; \
+			echo "  ✅ $$name - доступен"; \
 		else \
-			echo "  $(RED)❌ $$name$(NC) - недоступен ($$url)"; \
+			echo "  ❌ $$name - недоступен ($$url)"; \
 		fi; \
 	done
 

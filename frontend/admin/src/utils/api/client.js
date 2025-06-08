@@ -251,7 +251,7 @@ class ApiClient {
   // Health check
   async healthCheck() {
     try {
-      const response = await this.client.get('/health/');
+      const response = await this.client.get('/health');
       return response.data;
     } catch (error) {
       throw this.normalizeError(error);

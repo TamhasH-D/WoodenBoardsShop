@@ -130,7 +130,7 @@ test:integration:
     - echo "🔍 Проверка здоровья сервисов..."
     - |
       services=(
-        "http://localhost:8000/api/v1/health/"
+        "http://localhost:8000/api/v1/health"
         "http://localhost:8080"
         "http://localhost:8081"
         "http://localhost:8082"
