@@ -9,7 +9,9 @@ const ENTITY_CONFIGS = {
     title: ADMIN_TEXTS.BUYERS,
     icon: '👥',
     fields: [
-      { key: 'id', label: ADMIN_TEXTS.ID, type: 'uuid', readonly: true },
+      { key: 'id', label: ADMIN_TEXTS.ID, type: 'uuid', readonly: true, showInCreate: true, optional: true,
+        placeholder: 'Оставьте пустым для автогенерации',
+        helperText: 'UUID будет сгенерирован автоматически, если не указан' },
       { key: 'keycloak_uuid', label: ADMIN_TEXTS.KEYCLOAK_UUID, type: 'uuid', required: true },
       { key: 'is_online', label: ADMIN_TEXTS.ONLINE_STATUS, type: 'checkbox' },
       { key: 'created_at', label: ADMIN_TEXTS.CREATED_AT, type: 'datetime', readonly: true },
@@ -28,7 +30,9 @@ const ENTITY_CONFIGS = {
     title: ADMIN_TEXTS.SELLERS,
     icon: '🏪',
     fields: [
-      { key: 'id', label: ADMIN_TEXTS.ID, type: 'uuid', readonly: true },
+      { key: 'id', label: ADMIN_TEXTS.ID, type: 'uuid', readonly: true, showInCreate: true, optional: true,
+        placeholder: 'Оставьте пустым для автогенерации',
+        helperText: 'UUID будет сгенерирован автоматически, если не указан' },
       { key: 'keycloak_uuid', label: ADMIN_TEXTS.KEYCLOAK_UUID, type: 'uuid', required: true },
       { key: 'is_online', label: ADMIN_TEXTS.ONLINE_STATUS, type: 'checkbox' },
       { key: 'created_at', label: ADMIN_TEXTS.CREATED_AT, type: 'datetime', readonly: true },
@@ -47,7 +51,9 @@ const ENTITY_CONFIGS = {
     title: ADMIN_TEXTS.PRODUCTS,
     icon: '📦',
     fields: [
-      { key: 'id', label: ADMIN_TEXTS.ID, type: 'uuid', readonly: true },
+      { key: 'id', label: ADMIN_TEXTS.ID, type: 'uuid', readonly: true, showInCreate: true, optional: true,
+        placeholder: 'Оставьте пустым для автогенерации',
+        helperText: 'UUID будет сгенерирован автоматически, если не указан' },
       { key: 'title', label: ADMIN_TEXTS.TITLE, type: 'text', required: true },
       { key: 'volume', label: `${ADMIN_TEXTS.VOLUME} (м³)`, type: 'number', required: true, step: 0.01 },
       { key: 'price', label: `${ADMIN_TEXTS.PRICE} (₽)`, type: 'number', required: true, step: 0.01 },
@@ -74,7 +80,9 @@ const ENTITY_CONFIGS = {
     title: 'Wood Types',
     icon: '🌳',
     fields: [
-      { key: 'id', label: 'ID', type: 'uuid', readonly: true },
+      { key: 'id', label: 'ID', type: 'uuid', readonly: true, showInCreate: true, optional: true,
+        placeholder: 'Оставьте пустым для автогенерации',
+        helperText: 'UUID будет сгенерирован автоматически, если не указан' },
       { key: 'neme', label: 'Name', type: 'text', required: true },
       { key: 'description', label: 'Description', type: 'textarea' }
     ],
@@ -91,7 +99,9 @@ const ENTITY_CONFIGS = {
     title: 'Wood Type Prices',
     icon: '💰',
     fields: [
-      { key: 'id', label: 'ID', type: 'uuid', readonly: true },
+      { key: 'id', label: 'ID', type: 'uuid', readonly: true, showInCreate: true, optional: true,
+        placeholder: 'Оставьте пустым для автогенерации',
+        helperText: 'UUID будет сгенерирован автоматически, если не указан' },
       { key: 'price_per_m3', label: 'Price per m³ ($)', type: 'number', required: true, step: 0.01 },
       { key: 'wood_type_id', label: 'Wood Type', type: 'select', required: true,
         options: 'woodTypes', optionValue: 'id', optionLabel: 'neme' },
@@ -216,8 +226,9 @@ function EntityManager({ entityType }) {
     if (!config) return {};
     const formData = {};
     config.fields.forEach(field => {
-      if (field.key === 'id') {
-        formData[field.key] = generateUUID();
+      if (field.key === 'id' && field.showInCreate) {
+        // Для полей ID с showInCreate оставляем пустыми для ручного ввода
+        formData[field.key] = '';
       } else if (field.type === 'boolean') {
         formData[field.key] = false;
       } else {
@@ -345,14 +356,36 @@ function EntityManager({ entityType }) {
           <h4>{editingItem ? 'Edit' : 'Create'} {config.title.slice(0, -1)}</h4>
           <form onSubmit={handleSubmit}>
             <div className="grid grid-2">
-              {config.fields.map((field) => (
-                <div key={field.key} className="form-group">
-                  <label className="form-label">
-                    {field.label} {field.required && '*'}
-                  </label>
-                  {renderFormField(field)}
-                </div>
-              ))}
+              {config.fields
+                .filter(field => {
+                  // При создании показываем все поля кроме readonly (но включаем showInCreate)
+                  // При редактировании показываем все поля
+                  if (editingItem) {
+                    return true; // Показываем все поля при редактировании
+                  } else {
+                    // При создании: показываем не-readonly поля + поля с showInCreate
+                    return !field.readonly || field.showInCreate;
+                  }
+                })
+                .map((field) => {
+                  // Определяем, должно ли поле быть readonly в текущем контексте
+                  const isFieldReadonly = field.readonly && !(!editingItem && field.showInCreate);
+
+                  return (
+                    <div key={field.key} className="form-group">
+                      <label className="form-label">
+                        {field.label} {field.required && !field.optional && '*'}
+                        {field.optional && <span style={{ color: '#666', fontSize: '0.9em' }}> (необязательно)</span>}
+                      </label>
+                      {renderFormField({ ...field, readonly: isFieldReadonly })}
+                      {field.helperText && !editingItem && field.showInCreate && (
+                        <small style={{ color: '#666', fontSize: '0.8em', marginTop: '0.25rem', display: 'block' }}>
+                          {field.helperText}
+                        </small>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
               <button type="submit" className="btn btn-primary" disabled={mutating}>
@@ -563,7 +596,6 @@ function EntityManager({ entityType }) {
 
     switch (field.type) {
       case 'text':
-      case 'uuid':
       case 'url':
         return (
           <input
@@ -574,6 +606,44 @@ function EntityManager({ entityType }) {
             required={field.required}
             placeholder={field.placeholder}
           />
+        );
+
+      case 'uuid':
+        return (
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => setFormData({...formData, [field.key]: e.target.value})}
+              className="form-input"
+              required={field.required && !field.optional}
+              placeholder={field.placeholder}
+              style={{
+                fontFamily: 'monospace',
+                fontSize: '0.9em',
+                backgroundColor: field.optional ? '#f8f9fa' : undefined,
+                border: field.optional ? '1px dashed #dee2e6' : undefined,
+                flex: 1
+              }}
+            />
+            {field.optional && (
+              <button
+                type="button"
+                onClick={() => setFormData({...formData, [field.key]: generateUUID()})}
+                className="btn btn-secondary"
+                style={{
+                  fontSize: '0.8em',
+                  padding: '0.25rem 0.5rem',
+                  backgroundColor: '#e2e8f0',
+                  color: '#4a5568',
+                  border: '1px solid #cbd5e0'
+                }}
+                title="Сгенерировать UUID"
+              >
+                🎲
+              </button>
+            )}
+          </div>
         );
 
       case 'number':
@@ -649,11 +719,23 @@ function EntityManager({ entityType }) {
   async function handleSubmit(e) {
     e.preventDefault();
     try {
+      // Подготавливаем данные для отправки
+      const submitData = { ...formData };
+
+      // Удаляем пустые UUID поля при создании (они будут автогенерированы)
+      if (!editingItem) {
+        config.fields.forEach(field => {
+          if (field.key === 'id' && field.showInCreate && field.optional && !submitData[field.key]) {
+            delete submitData[field.key];
+          }
+        });
+      }
+
       if (editingItem) {
-        await mutate(config.api.update, editingItem.id, formData);
+        await mutate(config.api.update, editingItem.id, submitData);
         setEditingItem(null);
       } else {
-        await mutate(config.api.create, formData);
+        await mutate(config.api.create, submitData);
         setShowCreateForm(false);
       }
       setFormData(getInitialFormData());
