@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { generateEntityUUID, withUUID, ENTITY_TYPES } from '../utils/uuid';
+import { generateEntityUUID, ENTITY_TYPES } from '../utils/uuid';
 import { API_CONFIG, ERROR_MESSAGES } from '../utils/constants';
 import { fetchAllPages, clearPaginationCache } from '../utils/paginationUtils';
 

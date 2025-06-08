@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import Products from './components/Products';
@@ -9,7 +9,6 @@ import HealthCheck from './components/HealthCheck';
 import ErrorBoundary from './components/ErrorBoundary';
 import RequestMonitor from './components/RequestMonitor';
 import { SELLER_TEXTS } from './utils/localization';
-import { MOCK_SELLER_ID } from './utils/constants';
 import './index.css';
 
 function Navigation() {
@@ -54,7 +53,7 @@ function Navigation() {
 }
 
 function App() {
-  const [onlineStatus, setOnlineStatus] = useState({
+  const [onlineStatus] = useState({
     isOnline: false,
     lastActivity: null,
     error: null

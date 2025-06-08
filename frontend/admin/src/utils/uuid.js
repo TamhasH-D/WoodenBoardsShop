@@ -33,6 +33,7 @@ export const isValidUUID = (uuid) => {
 export const generateEntityUUID = (entityType = 'entity') => {
   const uuid = generateUUID();
   if (process.env.NODE_ENV === 'development') {
+    // eslint-disable-next-line no-console
     console.log(`🆔 Generated UUID for ${entityType}: ${uuid}`);
   }
   return uuid;

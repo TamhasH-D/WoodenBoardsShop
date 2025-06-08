@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SELLER_TEXTS } from '../constants/texts';
 
 const BoardImageAnalyzer = ({ 
   onAnalysisComplete, 
