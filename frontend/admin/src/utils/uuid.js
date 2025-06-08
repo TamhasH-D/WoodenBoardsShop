@@ -66,10 +66,12 @@ export const ENTITY_TYPES = {
   WOOD_TYPE_PRICE: 'wood_type_price'
 };
 
-export default {
+const uuidUtils = {
   generateUUID,
   generateEntityUUID,
   withUUID,
   isValidUUID,
   ENTITY_TYPES
 };
+
+export default uuidUtils;
