@@ -5,7 +5,7 @@ import { SELLER_TEXTS, formatDateRu } from '../utils/localization';
 import { testWoodenBoardsConnection, testImageAnalysisEndpoint, getWoodenBoardsConfig } from '../utils/testWoodenBoardsConnection';
 import BoardImageAnalyzer from './BoardImageAnalyzer';
 import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
-import { MOCK_IDS } from '../../shared/constants';
+import { MOCK_IDS } from '../utils/constants';
 
 // Use shared mock seller ID
 const MOCK_SELLER_ID = MOCK_IDS.SELLER_ID;

@@ -3,7 +3,7 @@ import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { BUYER_TEXTS } from '../utils/localization';
 import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
-import { MOCK_IDS } from '../../shared/constants';
+import { MOCK_IDS } from '../utils/constants';
 
 // Use shared mock buyer ID
 const MOCK_BUYER_ID = MOCK_IDS.BUYER_ID;

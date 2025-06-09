@@ -12,7 +12,7 @@ COPY package*.json ./
 COPY postcss.config.js ./
 
 # Install all dependencies (including devDependencies needed for build)
-RUN npm ci
+RUN npm install
 
 # Copy source code
 COPY . .

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS } from '../utils/localization';
-import { MOCK_IDS } from '../../shared/constants';
+import { MOCK_IDS } from '../utils/constants';
 
 // Use shared mock seller ID
 const MOCK_SELLER_ID = MOCK_IDS.SELLER_ID;

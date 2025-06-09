@@ -60,6 +60,14 @@ export const LOADING_STATES = {
   ERROR: 'error',
 };
 
+// Notification Types
+export const NOTIFICATION_TYPES = {
+  INFO: 'info',
+  SUCCESS: 'success',
+  ERROR: 'error',
+  WARNING: 'warning',
+};
+
 // Local Storage Keys
 export const STORAGE_KEYS = {
   USER_PREFERENCES: 'user_preferences',
@@ -93,6 +101,7 @@ const constants = {
   ERROR_MESSAGES,
   SUCCESS_MESSAGES,
   LOADING_STATES,
+  NOTIFICATION_TYPES,
   STORAGE_KEYS,
   DEV_CONFIG,
   UI_CONFIG,

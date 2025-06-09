@@ -68,21 +68,6 @@ export const NOTIFICATION_TYPES = {
   WARNING: 'warning',
 };
 
-// Validation Rules
-export const VALIDATION_RULES = {
-  EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  UUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-  URL: /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/,
-};
-
-// Date Formats
-export const DATE_FORMATS = {
-  SHORT: 'DD.MM.YYYY',
-  LONG: 'DD.MM.YYYY HH:mm',
-  ISO: 'YYYY-MM-DD',
-  TIME: 'HH:mm',
-};
-
 // Local Storage Keys
 export const STORAGE_KEYS = {
   USER_PREFERENCES: 'user_preferences',
@@ -117,8 +102,6 @@ const constants = {
   SUCCESS_MESSAGES,
   LOADING_STATES,
   NOTIFICATION_TYPES,
-  VALIDATION_RULES,
-  DATE_FORMATS,
   STORAGE_KEYS,
   DEV_CONFIG,
   UI_CONFIG,
