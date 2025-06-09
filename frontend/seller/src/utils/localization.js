@@ -266,6 +266,17 @@ export const SELLER_TEXTS = {
   UPLOAD_IMAGE: 'Загрузить изображение',
   ANALYZE_BOARD: 'Анализировать доску',
   CALCULATED_VOLUME: 'Рассчитанный объем',
+  AI_BOARD_ANALYZER: 'AI Анализатор досок',
+  BOARD_ANALYZER_DESCRIPTION: 'Анализируйте изображения досок с помощью искусственного интеллекта для точного расчета объема древесины',
+  ANALYSIS_HISTORY: 'История анализов',
+  CLEAR_HISTORY: 'Очистить историю',
+  LOAD_FROM_HISTORY: 'Загрузить из истории',
+  BOARDS_DETECTED: 'Обнаружено досок',
+  TOTAL_VOLUME: 'Общий объем',
+  BOARD_DIMENSIONS: 'Размеры досок',
+  ANALYSIS_SUMMARY: 'Сводка анализа',
+  BOARD_DETAILS: 'Детали по доскам',
+  CONFIDENCE_LEVEL: 'Уровень уверенности',
 
   // Enhanced Error Messages
   CONNECTION_ERROR: 'Ошибка подключения',

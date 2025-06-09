@@ -6,6 +6,7 @@ import WoodTypesManager from './components/WoodTypesManager';
 import Chats from './components/Chats';
 import Profile from './components/Profile';
 import HealthCheck from './components/HealthCheck';
+import BoardAnalyzer from './components/BoardAnalyzer';
 import ErrorBoundary from './components/ErrorBoundary';
 import RequestMonitor from './components/RequestMonitor';
 import { SELLER_TEXTS } from './utils/localization';
@@ -31,6 +32,11 @@ function Navigation() {
       <li>
         <Link to="/wood-types" className={`nav-link ${isActive('/wood-types') ? 'active' : ''}`}>
           {SELLER_TEXTS.WOOD_TYPES}
+        </Link>
+      </li>
+      <li>
+        <Link to="/board-analyzer" className={`nav-link ${isActive('/board-analyzer') ? 'active' : ''}`}>
+          🔍 Анализатор досок
         </Link>
       </li>
       <li>
@@ -98,6 +104,7 @@ function App() {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/products" element={<Products />} />
                 <Route path="/wood-types" element={<WoodTypesManager />} />
+                <Route path="/board-analyzer" element={<BoardAnalyzer />} />
                 <Route path="/chats" element={<Chats />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/health" element={<HealthCheck />} />

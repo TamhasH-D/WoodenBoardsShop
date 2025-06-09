@@ -11,15 +11,6 @@ services:
     networks:
       - keycloak-network
 
-  mailhog:
-    image: mailhog/mailhog:latest
-    container_name: mailhog
-    ports:
-      - "1025:1025"   # SMTP порт для Keycloak
-      - "8025:8025"   # Веб-интерфейс MailHog для просмотра писем
-    networks:
-      - keycloak-network
-
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak
