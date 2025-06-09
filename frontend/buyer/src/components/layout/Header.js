@@ -6,8 +6,9 @@ import { useCart } from '../../contexts/CartContext';
 /**
  * Чистый Header для buyer frontend
  * Профессиональный дизайн
+ * Мемоизирован для предотвращения избыточных re-renders
  */
-const Header = () => {
+const Header = React.memo(() => {
   const { backendStatus } = useApp();
   const { totalItems } = useCart();
 
@@ -101,6 +102,8 @@ const Header = () => {
       </div>
     </header>
   );
-};
+});
+
+Header.displayName = 'Header';
 
 export default Header;

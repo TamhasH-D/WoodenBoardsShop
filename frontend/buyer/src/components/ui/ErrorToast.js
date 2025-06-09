@@ -3,8 +3,9 @@ import React, { useState, useEffect } from 'react';
 /**
  * Компактный компонент для отображения ошибок в фиксированной позиции
  * Не сдвигает контент страницы, автоматически исчезает через 5 секунд
+ * Мемоизирован для оптимизации производительности
  */
-const ErrorToast = ({ error, onDismiss, autoHide = true, duration = 5000 }) => {
+const ErrorToast = React.memo(({ error, onDismiss, autoHide = true, duration = 5000 }) => {
   const [isVisible, setIsVisible] = useState(!!error);
 
   useEffect(() => {
@@ -80,7 +81,9 @@ const ErrorToast = ({ error, onDismiss, autoHide = true, duration = 5000 }) => {
       </div>
     </div>
   );
-};
+});
+
+ErrorToast.displayName = 'ErrorToast';
 
 /**
  * Hook для управления ошибками с debouncing
