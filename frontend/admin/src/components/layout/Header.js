@@ -88,7 +88,7 @@ const Header = () => {
               }
             )} />
             <span className="hidden sm:inline">
-              {backendStatus?.online ? 'Online' : 'Offline'}
+              {backendStatus?.online ? ADMIN_TEXTS.ONLINE : ADMIN_TEXTS.OFFLINE}
             </span>
           </div>
 
@@ -117,13 +117,13 @@ const Header = () => {
               <div className="absolute inset-0 bg-brand-500/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
             </div>
 
-            {/* User Info - Hidden on Mobile */}
+            {/* Информация о пользователе - скрыта на мобильных */}
             <div className="hidden sm:flex flex-col min-w-0">
               <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
-                Admin User
+                Пользователь-администратор
               </span>
               <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                Administrator
+                {ADMIN_TEXTS.ADMIN_PANEL}
               </span>
             </div>
 

@@ -2,15 +2,16 @@ import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import EntityManager from '../components/EntityManager';
+import { ADMIN_TEXTS } from '../utils/localization';
 
 /**
- * Communication management page with sub-routes
+ * Страница управления коммуникациями с подмаршрутами
  */
 const CommunicationPage = () => {
   const { setPageTitle } = useApp();
 
   useEffect(() => {
-    setPageTitle('Communication Management');
+    setPageTitle(ADMIN_TEXTS.CHAT_MANAGEMENT);
   }, [setPageTitle]);
 
   return (

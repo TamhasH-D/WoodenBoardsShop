@@ -5,26 +5,27 @@ import DataExport from '../components/DataExport';
 import ApiTester from '../components/ApiTester';
 import EmptyState from '../components/ui/EmptyState';
 import Button from '../components/ui/Button';
+import { ADMIN_TEXTS } from '../utils/localization';
 
 /**
- * Tools page with sub-routes
+ * Страница инструментов с подмаршрутами
  */
 const ToolsPage = () => {
   const { setPageTitle } = useApp();
 
   useEffect(() => {
-    setPageTitle('Tools');
+    setPageTitle(ADMIN_TEXTS.TOOLS);
   }, [setPageTitle]);
 
   const DataImportPlaceholder = () => (
     <div style={{ padding: '2rem' }}>
       <EmptyState
         icon="📥"
-        title="Data Import"
-        description="Import data from CSV, JSON, or Excel files. This feature will include validation, error reporting, and batch processing capabilities."
+        title={ADMIN_TEXTS.DATA_IMPORT}
+        description="Импорт данных из файлов CSV, JSON или Excel. Эта функция будет включать валидацию, отчеты об ошибках и возможности пакетной обработки."
         action={
           <Button variant="primary">
-            Coming Soon
+            Скоро будет доступно
           </Button>
         }
       />

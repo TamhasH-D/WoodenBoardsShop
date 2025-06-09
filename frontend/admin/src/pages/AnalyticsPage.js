@@ -2,26 +2,27 @@ import React, { useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import EmptyState from '../components/ui/EmptyState';
 import Button from '../components/ui/Button';
+import { ADMIN_TEXTS } from '../utils/localization';
 
 /**
- * Analytics page placeholder
+ * Страница аналитики (заглушка)
  */
 const AnalyticsPage = () => {
   const { setPageTitle } = useApp();
 
   useEffect(() => {
-    setPageTitle('Analytics');
+    setPageTitle(ADMIN_TEXTS.ANALYTICS);
   }, [setPageTitle]);
 
   return (
     <div style={{ padding: '2rem' }}>
       <EmptyState
         icon="📈"
-        title="Analytics Dashboard"
-        description="Advanced analytics and reporting features will be available here. This includes user behavior analysis, sales metrics, and performance insights."
+        title="Панель аналитики"
+        description="Расширенные функции аналитики и отчетности будут доступны здесь. Это включает анализ поведения пользователей, метрики продаж и аналитику производительности."
         action={
           <Button variant="primary">
-            Coming Soon
+            Скоро будет доступно
           </Button>
         }
       />

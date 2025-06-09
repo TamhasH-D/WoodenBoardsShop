@@ -2,15 +2,16 @@ import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import EntityManager from '../components/EntityManager';
+import { ADMIN_TEXTS } from '../utils/localization';
 
 /**
- * Media management page with sub-routes
+ * Страница управления медиа с подмаршрутами
  */
 const MediaPage = () => {
   const { setPageTitle } = useApp();
 
   useEffect(() => {
-    setPageTitle('Media Management');
+    setPageTitle(ADMIN_TEXTS.IMAGE_MANAGEMENT);
   }, [setPageTitle]);
 
   return (

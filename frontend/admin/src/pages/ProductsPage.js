@@ -2,15 +2,16 @@ import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import EntityManager from '../components/EntityManager';
+import { ADMIN_TEXTS } from '../utils/localization';
 
 /**
- * Products management page with sub-routes
+ * Страница управления товарами с подмаршрутами
  */
 const ProductsPage = () => {
   const { setPageTitle } = useApp();
 
   useEffect(() => {
-    setPageTitle('Product Management');
+    setPageTitle(ADMIN_TEXTS.PRODUCT_MANAGEMENT);
   }, [setPageTitle]);
 
   return (

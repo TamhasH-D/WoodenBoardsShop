@@ -1,100 +1,64 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import Dashboard from './components/Dashboard';
-import UserManagement from './components/UserManagement';
-import ProductManagement from './components/ProductManagement';
-import WoodTypesManagement from './components/WoodTypesManagement';
-import ChatModeration from './components/ChatModeration';
-import SystemSettings from './components/SystemSettings';
-import Analytics from './components/Analytics';
-import HealthMonitoring from './components/HealthMonitoring';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AppProvider } from './contexts/AppContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import Layout from './components/layout/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
+import Dashboard from './pages/Dashboard';
+import UsersPage from './pages/UsersPage';
+import ProductsPage from './pages/ProductsPage';
+import CommunicationPage from './pages/CommunicationPage';
+import MediaPage from './pages/MediaPage';
+import AnalyticsPage from './pages/AnalyticsPage';
+import ToolsPage from './pages/ToolsPage';
+import SystemPage from './pages/SystemPage';
+import NotificationContainer from './components/ui/NotificationContainer';
 import './index.css';
 
-function Navigation() {
-  const location = useLocation();
-
-  const isActive = (path) => location.pathname === path;
-
-  return (
-    <ul className="nav-links">
-      <li>
-        <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
-          Dashboard
-        </Link>
-      </li>
-      <li>
-        <Link to="/users" className={`nav-link ${isActive('/users') ? 'active' : ''}`}>
-          Users
-        </Link>
-      </li>
-      <li>
-        <Link to="/products" className={`nav-link ${isActive('/products') ? 'active' : ''}`}>
-          Products
-        </Link>
-      </li>
-      <li>
-        <Link to="/wood-types" className={`nav-link ${isActive('/wood-types') ? 'active' : ''}`}>
-          Wood Types
-        </Link>
-      </li>
-      <li>
-        <Link to="/chats" className={`nav-link ${isActive('/chats') ? 'active' : ''}`}>
-          Chats
-        </Link>
-      </li>
-      <li>
-        <Link to="/analytics" className={`nav-link ${isActive('/analytics') ? 'active' : ''}`}>
-          Analytics
-        </Link>
-      </li>
-      <li>
-        <Link to="/settings" className={`nav-link ${isActive('/settings') ? 'active' : ''}`}>
-          Settings
-        </Link>
-      </li>
-      <li>
-        <Link to="/health" className={`nav-link ${isActive('/health') ? 'active' : ''}`}>
-          Health
-        </Link>
-      </li>
-    </ul>
-  );
-}
-
+/**
+ * Главное приложение административной панели
+ * Корпоративная панель управления для системы деревянных досок
+ */
 function App() {
   return (
-    <Router>
-      <div className="app">
-        <header className="header">
-          <div className="container">
-            <nav className="nav">
-              <div className="nav-brand">
-                Admin Dashboard
-              </div>
-              <Navigation />
-            </nav>
-          </div>
-        </header>
-
-        <main className="main">
-          <div className="container">
-            <ErrorBoundary>
+    <ErrorBoundary>
+      <AppProvider>
+        <NotificationProvider>
+          <Router>
+            <Layout>
               <Routes>
+                {/* Главная панель управления */}
                 <Route path="/" element={<Dashboard />} />
-                <Route path="/users" element={<UserManagement />} />
-                <Route path="/products" element={<ProductManagement />} />
-                <Route path="/wood-types" element={<WoodTypesManagement />} />
-                <Route path="/chats" element={<ChatModeration />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/settings" element={<SystemSettings />} />
-                <Route path="/health" element={<HealthMonitoring />} />
+
+                {/* Управление пользователями */}
+                <Route path="/users/*" element={<UsersPage />} />
+
+                {/* Управление товарами */}
+                <Route path="/products/*" element={<ProductsPage />} />
+
+                {/* Коммуникации */}
+                <Route path="/communication/*" element={<CommunicationPage />} />
+
+                {/* Медиа */}
+                <Route path="/media/*" element={<MediaPage />} />
+
+                {/* Аналитика */}
+                <Route path="/analytics" element={<AnalyticsPage />} />
+
+                {/* Инструменты */}
+                <Route path="/tools/*" element={<ToolsPage />} />
+
+                {/* Система */}
+                <Route path="/system/*" element={<SystemPage />} />
               </Routes>
-            </ErrorBoundary>
-          </div>
-        </main>
-      </div>
-    </Router>
+            </Layout>
+
+            {/* Контейнер уведомлений */}
+            <NotificationContainer />
+          </Router>
+        </NotificationProvider>
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
 

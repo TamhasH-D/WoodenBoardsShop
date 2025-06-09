@@ -4,26 +4,27 @@ import { useApp } from '../contexts/AppContext';
 import HealthCheck from '../components/HealthCheck';
 import EmptyState from '../components/ui/EmptyState';
 import Button from '../components/ui/Button';
+import { ADMIN_TEXTS } from '../utils/localization';
 
 /**
- * System management page with sub-routes
+ * Страница управления системой с подмаршрутами
  */
 const SystemPage = () => {
   const { setPageTitle } = useApp();
 
   useEffect(() => {
-    setPageTitle('System Management');
+    setPageTitle(ADMIN_TEXTS.SYSTEM);
   }, [setPageTitle]);
 
   const SystemLogsPlaceholder = () => (
     <div style={{ padding: '2rem' }}>
       <EmptyState
         icon="📝"
-        title="System Logs"
-        description="View and analyze system logs, error reports, and audit trails. This includes real-time log streaming and advanced filtering capabilities."
+        title={ADMIN_TEXTS.SYSTEM_LOGS}
+        description="Просмотр и анализ системных логов, отчетов об ошибках и аудиторских следов. Включает потоковую передачу логов в реальном времени и расширенные возможности фильтрации."
         action={
           <Button variant="primary">
-            Coming Soon
+            Скоро будет доступно
           </Button>
         }
       />
@@ -34,11 +35,11 @@ const SystemPage = () => {
     <div style={{ padding: '2rem' }}>
       <EmptyState
         icon="⚙️"
-        title="System Settings"
-        description="Configure system-wide settings, user preferences, security policies, and application parameters."
+        title={ADMIN_TEXTS.SETTINGS}
+        description="Настройка общесистемных параметров, пользовательских предпочтений, политик безопасности и параметров приложения."
         action={
           <Button variant="primary">
-            Coming Soon
+            Скоро будет доступно
           </Button>
         }
       />
