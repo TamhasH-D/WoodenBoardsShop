@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { BUYER_TEXTS } from '../utils/localization';
+import ErrorMessage from './ui/ErrorMessage';
 
 function BoardAnalyzer() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -22,11 +23,15 @@ function BoardAnalyzer() {
     if (!selectedFile) return;
 
     try {
+      // Конвертируем сантиметры в миллиметры для API
+      const heightInMm = (parseFloat(boardHeight) || 0.0) * 10;
+      const lengthInMm = (parseFloat(boardLength) || 0.0) * 10;
+
       const result = await mutate(
         apiService.analyzeWoodenBoard,
         selectedFile,
-        parseFloat(boardHeight) || 0.0,
-        parseFloat(boardLength) || 0.0
+        heightInMm,
+        lengthInMm
       );
       setAnalysisResult(result);
     } catch (err) {
@@ -102,11 +107,7 @@ function BoardAnalyzer() {
           )}
         </div>
 
-        {error && (
-          <div className="error" style={{ marginTop: '1rem' }}>
-            {BUYER_TEXTS.ANALYSIS_FAILED}: {error}
-          </div>
-        )}
+        <ErrorMessage error={error} />
 
         {success && analysisResult && (
           <div className="success" style={{ marginTop: '1rem' }}>

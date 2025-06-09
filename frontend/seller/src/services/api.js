@@ -604,13 +604,15 @@ export const apiService = {
       const formData = new FormData();
       formData.append('image', file);
 
-      // Use the main backend endpoint which now uses the unified service architecture
-      const url = `/api/v1/wooden_boards_volume_seg/?height=${height}&length=${length}`;
+      // Правильный endpoint с query параметрами (в миллиметрах)
+      const heightInMm = height * 1000; // Конвертируем метры в миллиметры
+      const lengthInMm = length * 1000; // Конвертируем метры в миллиметры
+      const url = `/api/v1/wooden-boards/calculate-volume?board_height=${heightInMm}&board_length=${lengthInMm}`;
 
       if (process.env.NODE_ENV === 'development') {
         console.log(`Sending image analysis request to main backend: ${API_BASE_URL}${url}`);
         console.log(`Image file: ${file.name}, size: ${file.size} bytes`);
-        console.log(`Board dimensions: height=${height}m, length=${length}m`);
+        console.log(`Board dimensions: height=${heightInMm}mm, length=${lengthInMm}mm`);
       }
 
       const response = await api.post(url, formData, {

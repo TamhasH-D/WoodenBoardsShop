@@ -87,10 +87,7 @@ const BoardImageAnalyzer = ({
       const formData = new FormData();
       formData.append('image', selectedFile);
 
-      // Конвертируем мм в метры для API
-      const heightInMeters = height / 1000;
-      const lengthInMeters = length / 1000;
-
+      // Используем значения в миллиметрах напрямую (height и length уже в мм)
       const response = await fetch(
         `/api/v1/wooden-boards/calculate-volume?board_height=${height}&board_length=${length}`,
         {

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { BUYER_TEXTS } from '../utils/localization';
+import BoardAnalyzer from '../components/BoardAnalyzer';
 
 const BoardAnalyzerPage = () => {
   const { setPageTitle } = useApp();
@@ -14,13 +15,11 @@ const BoardAnalyzerPage = () => {
       <div className="page-header">
         <h1 className="page-title">{BUYER_TEXTS.BOARD_ANALYZER}</h1>
         <p className="page-description">
-          Анализ и расчет параметров досок
+          Анализ и расчет параметров досок с помощью ИИ
         </p>
       </div>
-      
-      <div className="card">
-        <p>Анализатор досок в разработке...</p>
-      </div>
+
+      <BoardAnalyzer />
     </div>
   );
 };

@@ -337,14 +337,17 @@ export const apiService = {
     try {
       const formData = new FormData();
       formData.append('image', imageFile);
-      formData.append('board_height', boardHeight.toString());
-      formData.append('board_length', boardLength.toString());
 
-      const response = await api.post('/api/v1/wooden-boards/calculate-volume', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      // Правильный формат запроса с query параметрами
+      const response = await api.post(
+        `/api/v1/wooden-boards/calculate-volume?board_height=${boardHeight}&board_length=${boardLength}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
 
       return response.data;
     } catch (error) {
