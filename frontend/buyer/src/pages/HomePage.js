@@ -74,28 +74,36 @@ const HomePage = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="loading">
+        Загрузка данных...
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div>
       {/* Hero секция */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg p-8 text-white">
-        <div className="max-w-3xl">
-          <h1 className="text-4xl font-bold mb-4">
+      <div className="card" style={{
+        background: 'linear-gradient(135deg, var(--color-primary) 0%, #1e40af 100%)',
+        color: 'white',
+        marginBottom: '2rem'
+      }}>
+        <div style={{ maxWidth: '48rem' }}>
+          <h1 className="page-title" style={{ color: 'white', marginBottom: '1rem' }}>
             Добро пожаловать в WoodMarket
           </h1>
-          <p className="text-xl mb-6 text-primary-100">
+          <p style={{ fontSize: '1.25rem', marginBottom: '1.5rem', opacity: 0.9 }}>
             Профессиональный маркетплейс древесины с проверенными поставщиками
           </p>
           <div className="flex gap-4">
-            <Link to="/products" className="bg-white text-primary-600 px-6 py-3 rounded-md font-medium hover:bg-gray-50 transition-colors">
+            <Link to="/products" className="btn btn-secondary">
               🌲 Каталог древесины
             </Link>
-            <Link to="/analyzer" className="bg-primary-500 text-white px-6 py-3 rounded-md font-medium hover:bg-primary-400 transition-colors">
+            <Link to="/analyzer" className="btn" style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              color: 'white',
+              borderColor: 'rgba(255, 255, 255, 0.3)'
+            }}>
               📐 Анализатор досок
             </Link>
           </div>
@@ -103,73 +111,125 @@ const HomePage = () => {
       </div>
 
       {/* Статистика */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+        gap: '1.5rem',
+        marginBottom: '2rem'
+      }}>
+        <div className="card">
           <div className="flex items-center">
-            <div className="p-3 bg-primary-100 rounded-lg">
-              <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
+            <div style={{
+              padding: '0.75rem',
+              backgroundColor: '#dbeafe',
+              borderRadius: '0.5rem',
+              marginRight: '1rem'
+            }}>
+              <span style={{ fontSize: '1.5rem', color: 'var(--color-primary)' }}>📦</span>
             </div>
-            <div className="ml-4">
-              <p className="text-2xl font-bold text-gray-900">{stats.totalProducts}</p>
-              <p className="text-gray-500">Товаров в каталоге</p>
+            <div>
+              <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827' }}>
+                {stats.totalProducts}
+              </p>
+              <p style={{ color: '#6b7280' }}>Товаров в каталоге</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="card">
           <div className="flex items-center">
-            <div className="p-3 bg-green-100 rounded-lg">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
+            <div style={{
+              padding: '0.75rem',
+              backgroundColor: '#dcfce7',
+              borderRadius: '0.5rem',
+              marginRight: '1rem'
+            }}>
+              <span style={{ fontSize: '1.5rem', color: '#16a34a' }}>🏪</span>
             </div>
-            <div className="ml-4">
-              <p className="text-2xl font-bold text-gray-900">{stats.totalSellers}</p>
-              <p className="text-gray-500">Проверенных продавцов</p>
+            <div>
+              <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827' }}>
+                {stats.totalSellers}
+              </p>
+              <p style={{ color: '#6b7280' }}>Проверенных продавцов</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="card">
           <div className="flex items-center">
-            <div className="p-3 bg-yellow-100 rounded-lg">
-              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-              </svg>
+            <div style={{
+              padding: '0.75rem',
+              backgroundColor: '#fef3c7',
+              borderRadius: '0.5rem',
+              marginRight: '1rem'
+            }}>
+              <span style={{ fontSize: '1.5rem', color: '#ca8a04' }}>🌲</span>
             </div>
-            <div className="ml-4">
-              <p className="text-2xl font-bold text-gray-900">{stats.totalWoodTypes}</p>
-              <p className="text-gray-500">Видов древесины</p>
+            <div>
+              <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827' }}>
+                {stats.totalWoodTypes}
+              </p>
+              <p style={{ color: '#6b7280' }}>Видов древесины</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Рекомендуемые товары */}
-      <div>
+      <div style={{ marginBottom: '2rem' }}>
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Рекомендуемые товары</h2>
-          <Link to="/products" className="text-primary-600 hover:text-primary-700 font-medium">
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827' }}>
+            Рекомендуемые товары
+          </h2>
+          <Link
+            to="/products"
+            style={{
+              color: 'var(--color-primary)',
+              fontWeight: '500',
+              textDecoration: 'none'
+            }}
+          >
             Смотреть все →
           </Link>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '1.5rem'
+        }}>
           {stats.featuredProducts.map(product => (
-            <div key={product.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-              <div className="h-48 bg-gray-100 flex items-center justify-center">
-                <span className="text-4xl">🌲</span>
+            <div key={product.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{
+                height: '12rem',
+                backgroundColor: '#f3f4f6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <span style={{ fontSize: '3rem' }}>🌲</span>
               </div>
-              <div className="p-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
-                <p className="text-gray-600 text-sm mb-3">от {product.seller}</p>
+              <div style={{ padding: '1rem' }}>
+                <h3 style={{
+                  fontSize: '1.125rem',
+                  fontWeight: '600',
+                  color: '#111827',
+                  marginBottom: '0.5rem'
+                }}>
+                  {product.name}
+                </h3>
+                <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+                  от {product.seller}
+                </p>
                 <div className="flex justify-between items-center">
-                  <span className="text-xl font-bold text-primary-600">
+                  <span style={{
+                    fontSize: '1.25rem',
+                    fontWeight: 'bold',
+                    color: 'var(--color-primary)'
+                  }}>
                     {product.price.toLocaleString('ru-RU')} ₽/м³
                   </span>
-                  <button className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm hover:bg-primary-700 transition-colors">
+                  <button className="btn btn-primary">
                     В корзину
                   </button>
                 </div>
@@ -180,29 +240,109 @@ const HomePage = () => {
       </div>
 
       {/* Быстрые действия */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Link to="/products" className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow text-center">
-          <div className="text-3xl mb-3">🛒</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Каталог товаров</h3>
-          <p className="text-gray-600 text-sm">Просмотр всех доступных товаров</p>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '1.5rem'
+      }}>
+        <Link
+          to="/products"
+          className="card"
+          style={{
+            textDecoration: 'none',
+            textAlign: 'center',
+            transition: 'box-shadow 0.2s'
+          }}
+          onMouseEnter={(e) => e.target.style.boxShadow = 'var(--shadow-md)'}
+          onMouseLeave={(e) => e.target.style.boxShadow = 'var(--shadow-sm)'}
+        >
+          <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>🛒</div>
+          <h3 style={{
+            fontSize: '1.125rem',
+            fontWeight: '600',
+            color: '#111827',
+            marginBottom: '0.5rem'
+          }}>
+            Каталог товаров
+          </h3>
+          <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+            Просмотр всех доступных товаров
+          </p>
         </Link>
 
-        <Link to="/sellers" className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow text-center">
-          <div className="text-3xl mb-3">🏪</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Продавцы</h3>
-          <p className="text-gray-600 text-sm">Найти проверенных поставщиков</p>
+        <Link
+          to="/sellers"
+          className="card"
+          style={{
+            textDecoration: 'none',
+            textAlign: 'center',
+            transition: 'box-shadow 0.2s'
+          }}
+          onMouseEnter={(e) => e.target.style.boxShadow = 'var(--shadow-md)'}
+          onMouseLeave={(e) => e.target.style.boxShadow = 'var(--shadow-sm)'}
+        >
+          <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>🏪</div>
+          <h3 style={{
+            fontSize: '1.125rem',
+            fontWeight: '600',
+            color: '#111827',
+            marginBottom: '0.5rem'
+          }}>
+            Продавцы
+          </h3>
+          <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+            Найти проверенных поставщиков
+          </p>
         </Link>
 
-        <Link to="/analyzer" className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow text-center">
-          <div className="text-3xl mb-3">📐</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Анализатор досок</h3>
-          <p className="text-gray-600 text-sm">Расчет объема и количества</p>
+        <Link
+          to="/analyzer"
+          className="card"
+          style={{
+            textDecoration: 'none',
+            textAlign: 'center',
+            transition: 'box-shadow 0.2s'
+          }}
+          onMouseEnter={(e) => e.target.style.boxShadow = 'var(--shadow-md)'}
+          onMouseLeave={(e) => e.target.style.boxShadow = 'var(--shadow-sm)'}
+        >
+          <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>📐</div>
+          <h3 style={{
+            fontSize: '1.125rem',
+            fontWeight: '600',
+            color: '#111827',
+            marginBottom: '0.5rem'
+          }}>
+            Анализатор досок
+          </h3>
+          <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+            Расчет объема и количества
+          </p>
         </Link>
 
-        <Link to="/chats" className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow text-center">
-          <div className="text-3xl mb-3">💬</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Сообщения</h3>
-          <p className="text-gray-600 text-sm">Общение с продавцами</p>
+        <Link
+          to="/chats"
+          className="card"
+          style={{
+            textDecoration: 'none',
+            textAlign: 'center',
+            transition: 'box-shadow 0.2s'
+          }}
+          onMouseEnter={(e) => e.target.style.boxShadow = 'var(--shadow-md)'}
+          onMouseLeave={(e) => e.target.style.boxShadow = 'var(--shadow-sm)'}
+        >
+          <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>💬</div>
+          <h3 style={{
+            fontSize: '1.125rem',
+            fontWeight: '600',
+            color: '#111827',
+            marginBottom: '0.5rem'
+          }}>
+            Сообщения
+          </h3>
+          <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+            Общение с продавцами
+          </p>
         </Link>
       </div>
     </div>
