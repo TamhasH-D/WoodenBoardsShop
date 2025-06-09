@@ -91,6 +91,16 @@ export const ADMIN_TEXTS = {
   THREAD_ID: 'ID потока',
   READ_STATUS: 'Статус прочтения',
 
+  // UUID Field specific texts
+  UUID_AUTO_GENERATE: 'будет сгенерирован автоматически',
+  UUID_CLICK_TO_EDIT: 'Нажмите для ручного ввода',
+  UUID_MANUAL_INPUT: 'Ручной ввод UUID',
+  UUID_GENERATE_NEW: 'Сгенерировать новый',
+  UUID_INVALID_FORMAT: 'Неверный формат UUID',
+  UUID_FIELD_PLACEHOLDER: 'Введите UUID или оставьте пустым для автогенерации',
+  UUID_CANCEL_EDIT: 'Отменить',
+  UUID_CONFIRM_EDIT: 'Подтвердить',
+
   // Status Messages
   ONLINE: 'Онлайн',
   OFFLINE: 'Офлайн',

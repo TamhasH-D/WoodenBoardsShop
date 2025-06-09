@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { ADMIN_TEXTS } from '../utils/localization';
+import UUIDField from './ui/UUIDField';
 
 // Entity configurations
 const ENTITY_CONFIGS = {
@@ -120,7 +121,9 @@ const ENTITY_CONFIGS = {
     title: 'Wooden Boards',
     icon: '🪵',
     fields: [
-      { key: 'id', label: 'ID', type: 'uuid', readonly: true },
+      { key: 'id', label: 'ID', type: 'uuid', readonly: true, showInCreate: true, optional: true,
+        placeholder: 'Оставьте пустым для автогенерации',
+        helperText: 'UUID будет сгенерирован автоматически, если не указан' },
       { key: 'height', label: 'Height (cm)', type: 'number', required: true, step: 0.1 },
       { key: 'width', label: 'Width (cm)', type: 'number', required: true, step: 0.1 },
       { key: 'lenght', label: 'Length (cm)', type: 'number', required: true, step: 0.1 },
@@ -140,7 +143,9 @@ const ENTITY_CONFIGS = {
     title: 'Images',
     icon: '🖼️',
     fields: [
-      { key: 'id', label: 'ID', type: 'uuid', readonly: true },
+      { key: 'id', label: 'ID', type: 'uuid', readonly: true, showInCreate: true, optional: true,
+        placeholder: 'Оставьте пустым для автогенерации',
+        helperText: 'UUID будет сгенерирован автоматически, если не указан' },
       { key: 'image_path', label: 'Image Path', type: 'text', required: true },
       { key: 'product_id', label: 'Product', type: 'select', required: true,
         options: 'products', optionValue: 'id', optionLabel: 'title' }
@@ -158,7 +163,9 @@ const ENTITY_CONFIGS = {
     title: 'Chat Threads',
     icon: '💬',
     fields: [
-      { key: 'id', label: 'ID', type: 'uuid', readonly: true },
+      { key: 'id', label: 'ID', type: 'uuid', readonly: true, showInCreate: true, optional: true,
+        placeholder: 'Оставьте пустым для автогенерации',
+        helperText: 'UUID будет сгенерирован автоматически, если не указан' },
       { key: 'buyer_id', label: 'Buyer', type: 'select', required: true,
         options: 'buyers', optionValue: 'id', optionLabel: 'id' },
       { key: 'seller_id', label: 'Seller', type: 'select', required: true,
@@ -178,7 +185,9 @@ const ENTITY_CONFIGS = {
     title: 'Chat Messages',
     icon: '💭',
     fields: [
-      { key: 'id', label: 'ID', type: 'uuid', readonly: true },
+      { key: 'id', label: 'ID', type: 'uuid', readonly: true, showInCreate: true, optional: true,
+        placeholder: 'Оставьте пустым для автогенерации',
+        helperText: 'UUID будет сгенерирован автоматически, если не указан' },
       { key: 'message', label: 'Message', type: 'textarea', required: true },
       { key: 'is_read_by_buyer', label: 'Read by Buyer', type: 'checkbox' },
       { key: 'is_read_by_seller', label: 'Read by Seller', type: 'checkbox' },
@@ -609,6 +618,21 @@ function EntityManager({ entityType }) {
         );
 
       case 'uuid':
+        // Для полей ID с showInCreate используем новый UUIDField компонент
+        if (field.key === 'id' && field.showInCreate && field.optional) {
+          return (
+            <UUIDField
+              value={value}
+              onChange={(newValue) => setFormData({...formData, [field.key]: newValue})}
+              label="" // Убираем label, так как он уже отображается выше
+              placeholder={field.placeholder}
+              required={field.required && !field.optional}
+              disabled={field.readonly}
+            />
+          );
+        }
+
+        // Для остальных UUID полей используем стандартный input
         return (
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <input
