@@ -1,16 +1,22 @@
 /**
- * Constants for the seller frontend application
+ * Общие константы для всех frontend приложений
+ * Используются для унификации и предотвращения дублирования
  */
 
-// Mock seller ID for development and testing
-// In a real application, this would come from authentication
-export const MOCK_SELLER_ID = '3ab0f210-ca78-4312-841b-8b1ae774adac';
+// Mock IDs для разработки и тестирования
+// В реальном приложении эти значения будут получены из аутентификации
+export const MOCK_IDS = {
+  SELLER_ID: '3ab0f210-ca78-4312-841b-8b1ae774adac',
+  BUYER_ID: '81f81c96-c56e-4b36-aec3-656f3576d09f',
+  ADMIN_ID: 'admin-uuid-placeholder'
+};
 
 // API Configuration
 export const API_CONFIG = {
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,
+  BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:8000'
 };
 
 // Pagination Configuration
@@ -27,38 +33,7 @@ export const UPLOAD_CONFIG = {
   ALLOWED_EXTENSIONS: ['.jpg', '.jpeg', '.png', '.webp'],
 };
 
-// Wood Types Configuration
-export const WOOD_CONFIG = {
-  MIN_PRICE: 0.01,
-  MAX_PRICE: 10000,
-  PRICE_DECIMAL_PLACES: 2,
-  DEFAULT_CURRENCY: 'RUB',
-};
-
-// Product Configuration
-export const PRODUCT_CONFIG = {
-  MIN_DIMENSIONS: 0.1,
-  MAX_DIMENSIONS: 1000,
-  DIMENSION_DECIMAL_PLACES: 2,
-  MIN_VOLUME: 0.001,
-  MAX_VOLUME: 100,
-};
-
-// Chat Configuration
-export const CHAT_CONFIG = {
-  MAX_MESSAGE_LENGTH: 1000,
-  REFRESH_INTERVAL: 30000, // 30 seconds
-  MAX_MESSAGES_PER_PAGE: 50,
-};
-
-// Auto-refresh Configuration
-export const AUTO_REFRESH_CONFIG = {
-  INTERVAL: 5 * 60 * 1000, // 5 minutes
-  RETRY_ATTEMPTS: 3,
-  RETRY_DELAY: 5000, // 5 seconds
-};
-
-// Error Messages
+// Error Messages (Russian)
 export const ERROR_MESSAGES = {
   NETWORK_ERROR: 'Ошибка сети. Проверьте подключение к интернету.',
   SERVER_ERROR: 'Ошибка сервера. Попробуйте позже.',
@@ -67,16 +42,14 @@ export const ERROR_MESSAGES = {
   FORBIDDEN: 'Доступ запрещен.',
   NOT_FOUND: 'Ресурс не найден.',
   TIMEOUT: 'Превышено время ожидания.',
-  UNKNOWN_ERROR: 'Неизвестная ошибка.',
 };
 
-// Success Messages
+// Success Messages (Russian)
 export const SUCCESS_MESSAGES = {
-  SAVE_SUCCESS: 'Данные успешно сохранены.',
-  DELETE_SUCCESS: 'Данные успешно удалены.',
-  UPDATE_SUCCESS: 'Данные успешно обновлены.',
-  UPLOAD_SUCCESS: 'Файл успешно загружен.',
-  SEND_SUCCESS: 'Сообщение отправлено.',
+  CREATED: 'Успешно создано!',
+  UPDATED: 'Успешно обновлено!',
+  DELETED: 'Успешно удалено!',
+  SAVED: 'Изменения сохранены!',
 };
 
 // Loading States
@@ -89,10 +62,11 @@ export const LOADING_STATES = {
 
 // Local Storage Keys
 export const STORAGE_KEYS = {
-  SELLER_PREFERENCES: 'seller_preferences',
+  USER_PREFERENCES: 'user_preferences',
   DRAFT_MESSAGES: 'draft_messages',
   RECENT_SEARCHES: 'recent_searches',
   CACHE_TIMESTAMP: 'cache_timestamp',
+  CART_ITEMS: 'cart_items',
 };
 
 // Development Configuration
@@ -102,20 +76,26 @@ export const DEV_CONFIG = {
   MOCK_DELAYS: process.env.NODE_ENV === 'development',
 };
 
+// UI Configuration
+export const UI_CONFIG = {
+  DEBOUNCE_DELAY: 300,
+  TOAST_DURATION: 5000,
+  ANIMATION_DURATION: 300,
+  SKELETON_LINES: 3,
+};
+
+// Export all as default for convenience
 const constants = {
-  MOCK_SELLER_ID,
+  MOCK_IDS,
   API_CONFIG,
   PAGINATION_CONFIG,
   UPLOAD_CONFIG,
-  WOOD_CONFIG,
-  PRODUCT_CONFIG,
-  CHAT_CONFIG,
-  AUTO_REFRESH_CONFIG,
   ERROR_MESSAGES,
   SUCCESS_MESSAGES,
   LOADING_STATES,
   STORAGE_KEYS,
   DEV_CONFIG,
+  UI_CONFIG,
 };
 
 export default constants;

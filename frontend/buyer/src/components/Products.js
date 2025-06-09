@@ -3,9 +3,10 @@ import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { BUYER_TEXTS } from '../utils/localization';
 import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
+import { MOCK_IDS } from '../../shared/constants';
 
-// Mock buyer ID - in real app this would come from authentication
-const MOCK_BUYER_ID = '81f81c96-c56e-4b36-aec3-656f3576d09f';
+// Use shared mock buyer ID
+const MOCK_BUYER_ID = MOCK_IDS.BUYER_ID;
 
 function Products() {
   const [page, setPage] = useState(0);

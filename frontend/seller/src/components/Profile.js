@@ -2,9 +2,10 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS } from '../utils/localization';
+import { MOCK_IDS } from '../../shared/constants';
 
-// Mock seller ID - in real app this would come from authentication
-const MOCK_SELLER_ID = '3ab0f210-ca78-4312-841b-8b1ae774adac';
+// Use shared mock seller ID
+const MOCK_SELLER_ID = MOCK_IDS.SELLER_ID;
 
 function Profile() {
   const [isEditing, setIsEditing] = useState(false);

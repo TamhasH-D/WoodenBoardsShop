@@ -39,18 +39,10 @@ const SearchBar = ({ onFocus, onBlur, className = '' }) => {
     
     // Показываем предложения если есть текст
     if (value.trim()) {
-      // Здесь можно добавить логику получения предложений с сервера
-      const mockSuggestions = [
-        'Сосна обрезная',
-        'Дуб массив',
-        'Береза фанера',
-        'Лиственница брус'
-      ].filter(item => 
-        item.toLowerCase().includes(value.toLowerCase())
-      );
-      
-      setSuggestions(mockSuggestions);
-      setShowSuggestions(mockSuggestions.length > 0);
+      // TODO: Добавить получение предложений с сервера
+      // Пока отключаем предложения до реализации API
+      setSuggestions([]);
+      setShowSuggestions(false);
     } else {
       setShowSuggestions(false);
     }
