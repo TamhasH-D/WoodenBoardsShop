@@ -1,22 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 
 function Products() {
   const [page, setPage] = useState(0);
-  const { data, loading, error, refetch } = useApi(() => apiService.getProducts(page, 10), [page]);
+
+  // Create stable API function to prevent infinite loops
+  const productsApiFunction = useMemo(() => () => apiService.getProducts(page, 10), [page]);
+  const { data, loading, error, refetch } = useApi(productsApiFunction, [page]);
   const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
 
-  const handleDelete = async (id) => {
+  const handleDelete = useCallback(async (id) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await mutate(apiService.deleteProduct, id);
         refetch(); // Refresh the list
       } catch (err) {
-        console.error('Failed to delete product:', err);
+        // Remove console.error in production
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to delete product:', err);
+        }
       }
     }
-  };
+  }, [mutate, refetch]);
 
   return (
     <div className="card">

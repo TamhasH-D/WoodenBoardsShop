@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS } from '../utils/localization';
@@ -13,19 +13,24 @@ function Profile() {
     is_online: true
   });
 
-  const { data, loading, error, refetch } = useApi(() => apiService.getSellerProfile(MOCK_SELLER_ID));
+  // Create stable API function to prevent infinite loops
+  const profileApiFunction = useMemo(() => () => apiService.getSellerProfile(MOCK_SELLER_ID), []);
+  const { data, loading, error, refetch } = useApi(profileApiFunction, []);
   const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
 
-  const handleSaveProfile = async (e) => {
+  const handleSaveProfile = useCallback(async (e) => {
     e.preventDefault();
     try {
-      await mutate(() => apiService.updateSellerProfile(MOCK_SELLER_ID, profileData));
+      await mutate(apiService.updateSellerProfile, MOCK_SELLER_ID, profileData);
       setIsEditing(false);
       refetch();
     } catch (err) {
-      console.error('Failed to update profile:', err);
+      // Remove console.error in production
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to update profile:', err);
+      }
     }
-  };
+  }, [profileData, mutate, refetch]);
 
   React.useEffect(() => {
     if (data?.data) {

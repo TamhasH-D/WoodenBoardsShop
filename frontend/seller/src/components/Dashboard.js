@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useApi } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS } from '../utils/localization';
@@ -7,10 +7,12 @@ import { SELLER_TEXTS } from '../utils/localization';
 const MOCK_SELLER_ID = '3ab0f210-ca78-4312-841b-8b1ae774adac';
 
 const Dashboard = React.memo(() => {
-  const { data: healthData, loading: healthLoading, error: healthError } = useApi(() => apiService.healthCheck());
-  const { data: products, loading: productsLoading, error: productsError } = useApi(() =>
-    apiService.getSellerProducts(MOCK_SELLER_ID, 0, 5)
-  );
+  // Create stable API functions to prevent infinite loops
+  const healthApiFunction = useMemo(() => () => apiService.healthCheck(), []);
+  const productsApiFunction = useMemo(() => () => apiService.getSellerProducts(MOCK_SELLER_ID, 0, 5), []);
+
+  const { data: healthData, loading: healthLoading, error: healthError } = useApi(healthApiFunction, []);
+  const { data: products, loading: productsLoading, error: productsError } = useApi(productsApiFunction, []);
 
   return (
     <div>

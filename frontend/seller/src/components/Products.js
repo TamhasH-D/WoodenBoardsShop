@@ -1,9 +1,10 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS, formatDateRu } from '../utils/localization';
 import { testWoodenBoardsConnection, testImageAnalysisEndpoint, getWoodenBoardsConfig } from '../utils/testWoodenBoardsConnection';
 import BoardImageAnalyzer from './BoardImageAnalyzer';
+import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
 
 // Mock seller ID - in real app this would come from authentication
 const MOCK_SELLER_ID = '3ab0f210-ca78-4312-841b-8b1ae774adac';
@@ -38,17 +39,22 @@ function Products() {
   const [boardLength, setBoardLength] = useState('1000'); // mm
   const [volumeCalculationResult, setVolumeCalculationResult] = useState(null);
 
-  const { data, loading, error, refetch } = useApi(() => apiService.getSellerProducts(MOCK_SELLER_ID, page, 10), [page]);
-  const { data: woodTypes, loading: woodTypesLoading, error: woodTypesError } = useApi(() => apiService.getAllWoodTypes(), []); // Fetch all wood types for dropdown
-  const { data: woodTypePrices } = useApi(() => apiService.getAllWoodTypePrices(), []); // Fetch all wood type prices
+  // Error handling
+  const { error: toastError, showError, clearError } = useErrorHandler();
+
+  // Create stable API functions to prevent infinite loops
+  const productsApiFunction = useMemo(() => () => apiService.getSellerProducts(MOCK_SELLER_ID, page, 10), [page]);
+  const woodTypesApiFunction = useMemo(() => () => apiService.getAllWoodTypes(), []);
+  const woodTypePricesApiFunction = useMemo(() => () => apiService.getAllWoodTypePrices(), []);
+
+  const { data, loading, error, refetch } = useApi(productsApiFunction, [page]);
+  const { data: woodTypes, loading: woodTypesLoading, error: woodTypesError } = useApi(woodTypesApiFunction, []);
+  const { data: woodTypePrices } = useApi(woodTypePricesApiFunction, []);
   const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
 
   // Listen for auto-refresh events
   useEffect(() => {
     const handleAutoRefresh = () => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[Products] Auto-refresh triggered, refetching data...');
-      }
       refetch();
     };
 
