@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { AppProvider } from './contexts/AppContext';
+import { CartProvider } from './contexts/CartContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import HomePage from './pages/HomePage';
 import ProductsPage from './pages/ProductsPage';
 import SellersPage from './pages/SellersPage';
@@ -9,6 +13,7 @@ import ProfilePage from './pages/ProfilePage';
 import CartPage from './pages/CartPage';
 import OrdersPage from './pages/OrdersPage';
 import HealthPage from './pages/HealthPage';
+import NotificationContainer from './components/ui/NotificationContainer';
 import './index.css';
 
 function Navigation() {
@@ -67,7 +72,7 @@ function Navigation() {
   );
 }
 
-function App() {
+function AppContent() {
   const [onlineStatus] = useState({
     isOnline: true,
     lastActivity: new Date().toLocaleTimeString(),
@@ -75,51 +80,66 @@ function App() {
   });
 
   return (
-    <Router>
-      <div className="app">
-        <header className="header">
-          <div className="container">
-            <nav className="nav">
-              <div className="nav-brand">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  🌲 WoodMarket - Покупатель
-                  <span
-                    style={{
-                      fontSize: '0.75rem',
-                      padding: '0.25rem 0.5rem',
-                      borderRadius: '0.25rem',
-                      backgroundColor: onlineStatus.isOnline ? '#10b981' : '#ef4444',
-                      color: 'white',
-                      fontWeight: '600'
-                    }}
-                    title={onlineStatus.error || `Last activity: ${onlineStatus.lastActivity || 'Never'}`}
-                  >
-                    {onlineStatus.isOnline ? '🟢 Онлайн' : '🔴 Офлайн'}
-                  </span>
-                </div>
+    <div className="app">
+      <header className="header">
+        <div className="container">
+          <nav className="nav">
+            <div className="nav-brand">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                🌲 WoodMarket - Покупатель
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '0.25rem',
+                    backgroundColor: onlineStatus.isOnline ? '#10b981' : '#ef4444',
+                    color: 'white',
+                    fontWeight: '600'
+                  }}
+                  title={onlineStatus.error || `Last activity: ${onlineStatus.lastActivity || 'Never'}`}
+                >
+                  {onlineStatus.isOnline ? '🟢 Онлайн' : '🔴 Офлайн'}
+                </span>
               </div>
-              <Navigation />
-            </nav>
-          </div>
-        </header>
+            </div>
+            <Navigation />
+          </nav>
+        </div>
+      </header>
 
-        <main className="main">
-          <div className="container">
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/products/*" element={<ProductsPage />} />
-              <Route path="/sellers/*" element={<SellersPage />} />
-              <Route path="/analyzer" element={<BoardAnalyzerPage />} />
-              <Route path="/chats/*" element={<ChatsPage />} />
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/orders/*" element={<OrdersPage />} />
-              <Route path="/profile/*" element={<ProfilePage />} />
-              <Route path="/health" element={<HealthPage />} />
-            </Routes>
-          </div>
-        </main>
-      </div>
-    </Router>
+      <main className="main">
+        <div className="container">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/products/*" element={<ProductsPage />} />
+            <Route path="/sellers/*" element={<SellersPage />} />
+            <Route path="/analyzer" element={<BoardAnalyzerPage />} />
+            <Route path="/chats/*" element={<ChatsPage />} />
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="/orders/*" element={<OrdersPage />} />
+            <Route path="/profile/*" element={<ProfilePage />} />
+            <Route path="/health" element={<HealthPage />} />
+          </Routes>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <ErrorBoundary>
+      <AppProvider>
+        <CartProvider>
+          <NotificationProvider>
+            <Router>
+              <AppContent />
+              <NotificationContainer />
+            </Router>
+          </NotificationProvider>
+        </CartProvider>
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
 

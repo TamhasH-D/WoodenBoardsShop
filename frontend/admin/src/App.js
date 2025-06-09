@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { AppProvider } from './contexts/AppContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './pages/Dashboard';
 import UsersPage from './pages/UsersPage';
 import ProductsPage from './pages/ProductsPage';
@@ -8,6 +11,7 @@ import MediaPage from './pages/MediaPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import ToolsPage from './pages/ToolsPage';
 import SystemPage from './pages/SystemPage';
+import NotificationContainer from './components/ui/NotificationContainer';
 import './index.css';
 
 function Navigation() {
@@ -61,7 +65,7 @@ function Navigation() {
   );
 }
 
-function App() {
+function AppContent() {
   const [onlineStatus] = useState({
     isOnline: true,
     lastActivity: new Date().toLocaleTimeString(),
@@ -69,50 +73,63 @@ function App() {
   });
 
   return (
-    <Router>
-      <div className="app">
-        <header className="header">
-          <div className="container">
-            <nav className="nav">
-              <div className="nav-brand">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  🛡️ Админ-панель WoodMarket
-                  <span
-                    style={{
-                      fontSize: '0.75rem',
-                      padding: '0.25rem 0.5rem',
-                      borderRadius: '0.25rem',
-                      backgroundColor: onlineStatus.isOnline ? '#10b981' : '#ef4444',
-                      color: 'white',
-                      fontWeight: '600'
-                    }}
-                    title={onlineStatus.error || `Last activity: ${onlineStatus.lastActivity || 'Never'}`}
-                  >
-                    {onlineStatus.isOnline ? '🟢 Онлайн' : '🔴 Офлайн'}
-                  </span>
-                </div>
+    <div className="app">
+      <header className="header">
+        <div className="container">
+          <nav className="nav">
+            <div className="nav-brand">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                🛡️ Админ-панель WoodMarket
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '0.25rem',
+                    backgroundColor: onlineStatus.isOnline ? '#10b981' : '#ef4444',
+                    color: 'white',
+                    fontWeight: '600'
+                  }}
+                  title={onlineStatus.error || `Last activity: ${onlineStatus.lastActivity || 'Never'}`}
+                >
+                  {onlineStatus.isOnline ? '🟢 Онлайн' : '🔴 Офлайн'}
+                </span>
               </div>
-              <Navigation />
-            </nav>
-          </div>
-        </header>
+            </div>
+            <Navigation />
+          </nav>
+        </div>
+      </header>
 
-        <main className="main">
-          <div className="container">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/users/*" element={<UsersPage />} />
-              <Route path="/products/*" element={<ProductsPage />} />
-              <Route path="/communication/*" element={<CommunicationPage />} />
-              <Route path="/media/*" element={<MediaPage />} />
-              <Route path="/analytics" element={<AnalyticsPage />} />
-              <Route path="/tools/*" element={<ToolsPage />} />
-              <Route path="/system/*" element={<SystemPage />} />
-            </Routes>
-          </div>
-        </main>
-      </div>
-    </Router>
+      <main className="main">
+        <div className="container">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/users/*" element={<UsersPage />} />
+            <Route path="/products/*" element={<ProductsPage />} />
+            <Route path="/communication/*" element={<CommunicationPage />} />
+            <Route path="/media/*" element={<MediaPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/tools/*" element={<ToolsPage />} />
+            <Route path="/system/*" element={<SystemPage />} />
+          </Routes>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <ErrorBoundary>
+      <AppProvider>
+        <NotificationProvider>
+          <Router>
+            <AppContent />
+            <NotificationContainer />
+          </Router>
+        </NotificationProvider>
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
 
