@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { BUYER_TEXTS } from '../utils/localization';
+import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
 
 // Mock buyer ID - in real app this would come from authentication
 const MOCK_BUYER_ID = '81f81c96-c56e-4b36-aec3-656f3576d09f';
@@ -11,6 +12,9 @@ function Products() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+
+  // Error handling
+  const { error: toastError, showError, clearError } = useErrorHandler();
 
   // Debounce search query to prevent excessive API calls
   useEffect(() => {
@@ -43,6 +47,13 @@ function Products() {
   const { data: woodTypes } = useApi(woodTypesApiFunction, []);
 
   const { mutate, loading: contacting } = useApiMutation();
+
+  // Handle errors with toast notifications
+  useEffect(() => {
+    if (error) {
+      showError(error);
+    }
+  }, [error, showError]);
 
   const handleSearch = useCallback((e) => {
     e.preventDefault();
@@ -120,11 +131,7 @@ function Products() {
         )}
       </div>
 
-      {error && (
-        <div className="error">
-          {BUYER_TEXTS.FAILED_TO_LOAD_PRODUCTS}: {error}
-        </div>
-      )}
+
 
       {loading && (
         <div className="loading">
@@ -252,6 +259,9 @@ function Products() {
           )}
         </div>
       )}
+
+      {/* Compact error notifications */}
+      <ErrorToast error={toastError} onDismiss={clearError} />
     </div>
   );
 }

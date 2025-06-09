@@ -65,6 +65,14 @@ function Products() {
     };
   }, [refetch]);
 
+  // Handle errors with toast notifications
+  useEffect(() => {
+    if (error || mutationError || woodTypesError) {
+      const errorMessage = error || mutationError || woodTypesError;
+      showError(errorMessage);
+    }
+  }, [error, mutationError, woodTypesError, showError]);
+
   // Helper function to get wood type name by ID
   const getWoodTypeName = (woodTypeId) => {
     const woodType = woodTypes?.data?.find(type => type.id === woodTypeId);
@@ -323,25 +331,6 @@ function Products() {
         </div>
       </div>
 
-      {error && (
-        <div className="error mb-4">
-          <strong>Products Loading Issue:</strong> {error}
-          <br />
-          <small>This may occur if the seller doesn't exist in the database yet. Try refreshing or creating a product to initialize your seller account.</small>
-          <div style={{ marginTop: '1rem' }}>
-            <button onClick={refetch} className="btn btn-secondary">
-              Retry Loading Products
-            </button>
-          </div>
-        </div>
-      )}
-
-      {mutationError && (
-        <div className="error mb-4">
-          <strong>Operation failed:</strong> {mutationError}
-        </div>
-      )}
-
       {success && (
         <div className="success mb-4">
           <strong>Success:</strong> Operation completed successfully!
@@ -357,31 +346,7 @@ function Products() {
             </p>
           </div>
 
-          {/* Wood Types Loading/Error State */}
-          {woodTypesError && (
-            <div className="error mb-4">
-              <strong>Wood Types Loading Error:</strong> {woodTypesError}
-              <br />
-              <small>
-                Unable to load wood types. This may be due to server validation issues.
-                <button
-                  onClick={() => window.location.reload()}
-                  style={{
-                    marginLeft: '0.5rem',
-                    padding: '0.25rem 0.5rem',
-                    fontSize: 'var(--font-size-xs)',
-                    backgroundColor: 'var(--color-primary)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: 'var(--border-radius)',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Refresh Page
-                </button>
-              </small>
-            </div>
-          )}
+
 
           <form onSubmit={handleAddProduct}>
             <div className="form-group">
@@ -889,6 +854,9 @@ function Products() {
           </div>
         </>
       )}
+
+      {/* Compact error notifications */}
+      <ErrorToast error={toastError} onDismiss={clearError} />
     </div>
   );
 }

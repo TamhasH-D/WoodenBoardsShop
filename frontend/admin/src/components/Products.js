@@ -1,14 +1,26 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
+import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
 
 function Products() {
   const [page, setPage] = useState(0);
+
+  // Error handling
+  const { error: toastError, showError, clearError } = useErrorHandler();
 
   // Create stable API function to prevent infinite loops
   const productsApiFunction = useMemo(() => () => apiService.getProducts(page, 10), [page]);
   const { data, loading, error, refetch } = useApi(productsApiFunction, [page]);
   const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
+
+  // Handle errors with toast notifications
+  useEffect(() => {
+    if (error || mutationError) {
+      const errorMessage = error || mutationError;
+      showError(errorMessage);
+    }
+  }, [error, mutationError, showError]);
 
   const handleDelete = useCallback(async (id) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
@@ -118,6 +130,9 @@ function Products() {
           </div>
         </>
       )}
+
+      {/* Compact error notifications */}
+      <ErrorToast error={toastError} onDismiss={clearError} />
     </div>
   );
 }
