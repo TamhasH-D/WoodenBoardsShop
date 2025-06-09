@@ -87,6 +87,55 @@ backend-migrate: ## Run database migrations
 	cd $(BACKEND_DIR) && docker compose exec api alembic upgrade head
 
 # ============================================================================
+# 💾 DATABASE COMMANDS
+# ============================================================================
+
+.PHONY: db-dump
+db-dump: ## Create database dump (all types)
+	@echo "💾 Создание дампов базы данных..."
+	@./database_dumps/create_dump.sh --all
+
+.PHONY: db-dump-full
+db-dump-full: ## Create full database dump
+	@echo "💾 Создание полного дампа базы данных..."
+	@./database_dumps/create_dump.sh --full
+
+.PHONY: db-dump-schema
+db-dump-schema: ## Create database schema dump
+	@echo "💾 Создание дампа структуры базы данных..."
+	@./database_dumps/create_dump.sh --schema
+
+.PHONY: db-dump-data
+db-dump-data: ## Create database data dump
+	@echo "💾 Создание дампа данных..."
+	@./database_dumps/create_dump.sh --data
+
+.PHONY: db-dump-compressed
+db-dump-compressed: ## Create compressed database dump
+	@echo "💾 Создание сжатого дампа базы данных..."
+	@./database_dumps/create_dump.sh --compress
+
+.PHONY: db-info
+db-info: ## Get database information
+	@echo "ℹ️ Получение информации о базе данных..."
+	@./database_dumps/create_dump.sh --info
+
+.PHONY: db-restore
+db-restore: ## Restore database from dump (interactive)
+	@echo "🔄 Восстановление базы данных из дампа..."
+	@echo "Доступные дампы:"
+	@ls -lt database_dumps/diplom_database_full_*.sql 2>/dev/null | head -5 || echo "Дампы не найдены"
+	@echo ""
+	@read -p "Введите имя файла дампа: " dump_file; \
+	if [ -f "database_dumps/$$dump_file" ]; then \
+		echo "Восстановление из $$dump_file..."; \
+		docker exec -i backend-pg psql -U backend -d postgres < "database_dumps/$$dump_file"; \
+		echo "✅ Восстановление завершено"; \
+	else \
+		echo "❌ Файл не найден: database_dumps/$$dump_file"; \
+	fi
+
+# ============================================================================
 # 🧪 FUNCTIONAL TESTS
 # ============================================================================
 

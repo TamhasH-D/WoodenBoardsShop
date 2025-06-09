@@ -1,0 +1,38 @@
+=== ИНФОРМАЦИЯ О БАЗЕ ДАННЫХ ===
+Дата создания дампа: Пн 09 июн 2025 10:35:06 +04
+Контейнер: backend-pg
+База данных: backend
+Пользователь: backend
+
+=== СПИСОК ТАБЛИЦ ===
+             List of relations
+ Schema |      Name       | Type  |  Owner  
+--------+-----------------+-------+---------
+ public | alembic_version | table | backend
+ public | buyer           | table | backend
+ public | chat_message    | table | backend
+ public | chat_thread     | table | backend
+ public | image           | table | backend
+ public | product         | table | backend
+ public | seller          | table | backend
+ public | wood_type       | table | backend
+ public | wood_type_price | table | backend
+ public | wooden_board    | table | backend
+(10 rows)
+
+
+=== СТАТИСТИКА ТАБЛИЦ ===
+ schemaname |   table_name    | live_rows | dead_rows 
+------------+-----------------+-----------+-----------
+ public     | alembic_version |         1 |         2
+ public     | buyer           |         0 |         0
+ public     | chat_message    |         0 |         0
+ public     | chat_thread     |         0 |         0
+ public     | image           |         0 |         0
+ public     | product         |         0 |         0
+ public     | seller          |         0 |         0
+ public     | wood_type       |         0 |         0
+ public     | wood_type_price |         0 |         0
+ public     | wooden_board    |         0 |         0
+(10 rows)
+
