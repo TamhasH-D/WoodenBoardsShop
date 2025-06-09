@@ -1,74 +1,76 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import Home from './components/Home';
-import Products from './components/Products';
-import Sellers from './components/Sellers';
-import BoardAnalyzer from './components/BoardAnalyzer';
-import Chats from './components/Chats';
-import Profile from './components/Profile';
-import HealthCheck from './components/HealthCheck';
-import { BUYER_TEXTS } from './utils/localization';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AppProvider } from './contexts/AppContext';
+import { CartProvider } from './contexts/CartContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import Layout from './components/layout/Layout';
+import ErrorBoundary from './components/ErrorBoundary';
 
-function Navigation() {
-  const location = useLocation();
+// Страницы
+import HomePage from './pages/HomePage';
+import ProductsPage from './pages/ProductsPage';
+import SellersPage from './pages/SellersPage';
+import BoardAnalyzerPage from './pages/BoardAnalyzerPage';
+import ChatsPage from './pages/ChatsPage';
+import ProfilePage from './pages/ProfilePage';
+import CartPage from './pages/CartPage';
+import OrdersPage from './pages/OrdersPage';
+import HealthPage from './pages/HealthPage';
 
-  const isActive = (path) => location.pathname === path;
+// UI компоненты
+import NotificationContainer from './components/ui/NotificationContainer';
 
-  return (
-    <nav className="nav">
-      <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
-        {BUYER_TEXTS.HOME}
-      </Link>
-      <Link to="/products" className={`nav-link ${isActive('/products') ? 'active' : ''}`}>
-        {BUYER_TEXTS.PRODUCTS}
-      </Link>
-      <Link to="/sellers" className={`nav-link ${isActive('/sellers') ? 'active' : ''}`}>
-        {BUYER_TEXTS.SELLERS}
-      </Link>
-      <Link to="/analyzer" className={`nav-link ${isActive('/analyzer') ? 'active' : ''}`}>
-        {BUYER_TEXTS.BOARD_ANALYZER}
-      </Link>
-      <Link to="/chats" className={`nav-link ${isActive('/chats') ? 'active' : ''}`}>
-        {BUYER_TEXTS.CHATS}
-      </Link>
-      <Link to="/profile" className={`nav-link ${isActive('/profile') ? 'active' : ''}`}>
-        {BUYER_TEXTS.PROFILE}
-      </Link>
-      <Link to="/health" className={`nav-link ${isActive('/health') ? 'active' : ''}`}>
-        {BUYER_TEXTS.HEALTH_CHECK}
-      </Link>
-    </nav>
-  );
-}
+import './index.css';
 
+/**
+ * Главное приложение buyer frontend
+ * Премиум маркетплейс древесины с современной архитектурой
+ */
 function App() {
   return (
-    <Router>
-      <div className="App">
-        <header className="header">
-          <div className="container">
-            <h1>{BUYER_TEXTS.WELCOME_TITLE}</h1>
-            <p>{BUYER_TEXTS.WELCOME_SUBTITLE}</p>
-          </div>
-        </header>
-        
-        <div className="container">
-          <Navigation />
-          
-          <main>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/products" element={<Products />} />
-              <Route path="/sellers" element={<Sellers />} />
-              <Route path="/analyzer" element={<BoardAnalyzer />} />
-              <Route path="/chats" element={<Chats />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/health" element={<HealthCheck />} />
-            </Routes>
-          </main>
-        </div>
-      </div>
-    </Router>
+    <ErrorBoundary>
+      <AppProvider>
+        <CartProvider>
+          <NotificationProvider>
+            <Router>
+              <Layout>
+                <Routes>
+                  {/* Главная страница */}
+                  <Route path="/" element={<HomePage />} />
+
+                  {/* Каталог товаров */}
+                  <Route path="/products/*" element={<ProductsPage />} />
+
+                  {/* Продавцы */}
+                  <Route path="/sellers/*" element={<SellersPage />} />
+
+                  {/* Анализатор досок */}
+                  <Route path="/analyzer" element={<BoardAnalyzerPage />} />
+
+                  {/* Чаты */}
+                  <Route path="/chats/*" element={<ChatsPage />} />
+
+                  {/* Корзина */}
+                  <Route path="/cart" element={<CartPage />} />
+
+                  {/* Заказы */}
+                  <Route path="/orders/*" element={<OrdersPage />} />
+
+                  {/* Профиль */}
+                  <Route path="/profile/*" element={<ProfilePage />} />
+
+                  {/* Проверка здоровья системы */}
+                  <Route path="/health" element={<HealthPage />} />
+                </Routes>
+              </Layout>
+
+              {/* Контейнер уведомлений */}
+              <NotificationContainer />
+            </Router>
+          </NotificationProvider>
+        </CartProvider>
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
 
