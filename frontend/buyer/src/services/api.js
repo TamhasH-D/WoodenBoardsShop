@@ -338,9 +338,16 @@ export const apiService = {
       const formData = new FormData();
       formData.append('image', imageFile);
 
-      // Правильный формат запроса с query параметрами
+      // Конвертируем метры в миллиметры для API
+      const heightInMm = boardHeight * 1000;
+      const lengthInMm = boardLength * 1000;
+
+      console.log(`Buyer Board Analysis: Sending request to ${API_BASE_URL}/api/v1/wooden-boards/calculate-volume`);
+      console.log(`Board dimensions: height=${heightInMm}mm, length=${lengthInMm}mm`);
+
+      // Правильный формат запроса с query параметрами в миллиметрах
       const response = await api.post(
-        `/api/v1/wooden-boards/calculate-volume?board_height=${boardHeight}&board_length=${boardLength}`,
+        `/api/v1/wooden-boards/calculate-volume?board_height=${heightInMm}&board_length=${lengthInMm}`,
         formData,
         {
           headers: {
@@ -349,10 +356,12 @@ export const apiService = {
         }
       );
 
+      console.log('Board analysis response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Failed to analyze wooden board:', error);
-      throw new Error('Board analysis failed');
+      console.error('Error details:', error.response?.data || error.message);
+      throw new Error(`Board analysis failed: ${error.response?.data?.detail || error.message}`);
     }
   },
 };

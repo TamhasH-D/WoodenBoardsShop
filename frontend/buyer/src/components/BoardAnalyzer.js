@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import ImageUpload from './ui/ImageUpload';
 import ResultDisplay from './ui/ResultDisplay';
 import ErrorToast from './ui/ErrorToast';
+import { apiService } from '../services/api';
 
 /**
  * Анализатор досок для buyer frontend
@@ -34,27 +35,8 @@ const BoardAnalyzer = () => {
       const objectUrl = URL.createObjectURL(file);
       setImageUrl(objectUrl);
 
-      // Конвертируем метры обратно в миллиметры для API
-      const heightMm = height * 1000;
-      const lengthMm = length * 1000;
-
-      const formData = new FormData();
-      formData.append('image', file);
-
-      // Используем тот же API endpoint что и seller (wooden-boards API)
-      const response = await fetch(
-        `/api/v1/wooden-boards/calculate-volume?board_height=${heightMm}&board_length=${lengthMm}`,
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Ошибка анализа: ${response.status}`);
-      }
-
-      const data = await response.json();
+      // Используем apiService который правильно настроен с REACT_APP_API_URL
+      const data = await apiService.analyzeWoodenBoard(file, height, length);
       setResult(data);
 
     } catch (err) {
