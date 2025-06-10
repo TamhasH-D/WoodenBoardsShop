@@ -40,6 +40,7 @@ export function useApi(apiFunction, dependencies = []) {
         setLoading(false);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dependencies);
 
   useEffect(() => {
@@ -106,6 +107,7 @@ export function useDebouncedApi(apiFunction, dependencies = [], delay = 300) {
         }
       }
     }, delay);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...dependencies, delay]);
 
   useEffect(() => {

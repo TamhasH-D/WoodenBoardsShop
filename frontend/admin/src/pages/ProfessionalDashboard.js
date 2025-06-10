@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState } from 'react';
 
 const ProfessionalDashboard = () => {
-  const [stats, setStats] = useState({
+  const [stats] = useState({
     buyers: { total: 15, online: 3 },
     sellers: { total: 8, online: 2 },
     products: { total: 42, totalVolume: 125.5, totalValue: 850000 },
@@ -18,7 +18,7 @@ const ProfessionalDashboard = () => {
     // Имитация загрузки
     setTimeout(() => {
       setLoading(false);
-      console.log('Dashboard refreshed');
+      // Dashboard refreshed
     }, 1000);
   };
 
