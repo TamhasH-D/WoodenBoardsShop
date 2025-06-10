@@ -6,7 +6,6 @@ from backend.settings import settings
 
 async def setup_db(app: FastAPI) -> None:
     """Setup database."""
-
     engine = create_async_engine(
         str(settings.db.url),
         echo=settings.db.echo,

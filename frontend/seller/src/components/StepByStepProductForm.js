@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useApi } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { MOCK_IDS } from '../utils/constants';
+import ImagePreviewWithBoards from './ui/ImagePreviewWithBoards';
 
 const MOCK_SELLER_ID = MOCK_IDS.SELLER_ID;
 
@@ -23,6 +24,7 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
 
   // Состояние анализатора досок
   const [imageFile, setImageFile] = useState(null);
+  const [imageUrl, setImageUrl] = useState(null);
   const [boardHeight, setBoardHeight] = useState('50'); // мм
   const [boardLength, setBoardLength] = useState('1000'); // мм
   const [analyzing, setAnalyzing] = useState(false);
@@ -39,9 +41,9 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
   // Определяем какие шаги показывать
   const showWoodTypeStep = formData.title.trim().length > 0;
   const showAnalyzerStep = formData.wood_type_id.length > 0;
-  const showVolumeAndPriceStep = showAnalyzerStep;
-  const showOptionalFieldsStep = formData.volume && formData.price;
-  const canSubmit = formData.title && formData.wood_type_id && formData.volume && formData.price;
+  const showVolumeAndPriceStep = showAnalyzerStep && analysisResult;
+  const showOptionalFieldsStep = formData.volume && formData.price && imageFile;
+  const canSubmit = formData.title && formData.wood_type_id && formData.volume && formData.price && imageFile;
 
   // Автоматический расчет цены при изменении объема или типа досок
   useEffect(() => {
@@ -63,8 +65,31 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
     }
   }, [analysisResult]);
 
+  // Очистка URL при размонтировании компонента
+  useEffect(() => {
+    return () => {
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
+    };
+  }, [imageUrl]);
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageSelect = (file) => {
+    setImageFile(file);
+    setAnalysisResult(null);
+    setAnalysisError(null);
+
+    // Создаем URL для превью
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setImageUrl(url);
+    } else {
+      setImageUrl(null);
+    }
   };
 
   const handleImageAnalysis = async () => {
@@ -79,7 +104,7 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
     try {
       const height = parseFloat(boardHeight) / 1000; // конвертируем мм в метры
       const length = parseFloat(boardLength) / 1000;
-      
+
       const result = await apiService.analyzeWoodenBoard(imageFile, height, length);
       setAnalysisResult(result);
     } catch (error) {
@@ -91,41 +116,31 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!canSubmit) return;
+
+    if (!canSubmit || !imageFile) return;
 
     try {
-      if (imageFile && analysisResult) {
-        // Создание товара с анализом изображения
-        const boardHeightMeters = parseFloat(boardHeight) / 1000;
-        const boardLengthMeters = parseFloat(boardLength) / 1000;
-        
-        await mutate(() => apiService.createProductWithImage({
-          title: formData.title.trim(),
-          description: formData.description?.trim() || null,
-          price: parseFloat(formData.price),
-          delivery_possible: formData.delivery_possible,
-          pickup_location: formData.pickup_location?.trim() || null,
-          seller_id: MOCK_SELLER_ID,
-          wood_type_id: formData.wood_type_id
-        }, imageFile, boardHeightMeters, boardLengthMeters));
-      } else {
-        // Обычное создание товара
-        await mutate(() => apiService.createProduct({
-          title: formData.title.trim(),
-          description: formData.description?.trim() || null,
-          volume: parseFloat(formData.volume),
-          price: parseFloat(formData.price),
-          delivery_possible: formData.delivery_possible,
-          pickup_location: formData.pickup_location?.trim() || null,
-          seller_id: MOCK_SELLER_ID,
-          wood_type_id: formData.wood_type_id
-        }));
-      }
-      
+      // Подготавливаем данные для нового API
+      const productData = {
+        keycloak_id: MOCK_SELLER_ID, // В реальном приложении это будет из Keycloak
+        title: formData.title.trim(),
+        description: formData.description?.trim() || '',
+        wood_type_id: formData.wood_type_id,
+        board_height: parseFloat(boardHeight),
+        board_length: parseFloat(boardLength),
+        volume: parseFloat(formData.volume),
+        price: parseFloat(formData.price),
+        delivery_possible: formData.delivery_possible,
+        pickup_location: formData.pickup_location?.trim() || ''
+      };
+
+      // Используем новый API endpoint
+      await mutate(() => apiService.createProductWithAnalysis(productData, imageFile));
+
       onSuccess();
     } catch (error) {
       console.error('Ошибка создания товара:', error);
+      setAnalysisError(error.message || 'Ошибка создания товара');
     }
   };
 
@@ -212,7 +227,7 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
 
         {/* Шаг 3: Анализатор досок */}
         {showAnalyzerStep && (
-          <div style={{ 
+          <div style={{
             opacity: showAnalyzerStep ? 1 : 0.5,
             transition: 'opacity 0.3s ease',
             marginTop: '2rem',
@@ -222,7 +237,7 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
             <h3 style={{ marginBottom: '1rem', color: 'var(--color-text)' }}>
               Анализ досок по фотографии
             </h3>
-            
+
             <div className="form-grid form-grid-2" style={{ marginBottom: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">Высота доски (мм)</label>
@@ -250,51 +265,38 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
               </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Фотография досок</label>
-              <input
-                type="file"
-                className="form-input"
-                accept="image/*"
-                onChange={(e) => setImageFile(e.target.files[0])}
-              />
-              {imageFile && (
-                <div style={{ marginTop: '1rem' }}>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={handleImageAnalysis}
-                    disabled={analyzing}
-                  >
-                    {analyzing ? 'Анализируем...' : 'Анализировать изображение'}
-                  </button>
-                </div>
-              )}
-            </div>
+            <ImagePreviewWithBoards
+              imageFile={imageFile}
+              imageUrl={imageUrl}
+              analysisResult={analysisResult}
+              onImageSelect={handleImageSelect}
+              loading={analyzing}
+            />
 
-            {analysisError && (
-              <div style={{ 
-                color: 'var(--color-error)', 
-                fontSize: 'var(--font-size-sm)',
-                marginTop: '0.5rem'
-              }}>
-                {analysisError}
+            {imageFile && !analysisResult && !analyzing && (
+              <div style={{ marginTop: '1rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleImageAnalysis}
+                  disabled={!boardHeight || !boardLength}
+                >
+                  Анализировать изображение
+                </button>
               </div>
             )}
 
-            {analysisResult && (
+            {analysisError && (
               <div style={{
-                background: 'var(--color-success-light)',
-                border: '1px solid var(--color-success)',
+                color: 'var(--color-error)',
+                fontSize: 'var(--font-size-sm)',
+                marginTop: '0.5rem',
+                padding: '0.75rem',
+                backgroundColor: 'var(--color-error-light)',
                 borderRadius: 'var(--border-radius)',
-                padding: '1rem',
-                marginTop: '1rem'
+                border: '1px solid var(--color-error)'
               }}>
-                <h4 style={{ color: 'var(--color-success-dark)', marginBottom: '0.5rem' }}>
-                  ✅ Анализ завершен
-                </h4>
-                <p>Обнаружено досок: {analysisResult.total_count}</p>
-                <p>Общий объем: {analysisResult.total_volume?.toFixed(4)} м³</p>
+                ❌ {analysisError}
               </div>
             )}
           </div>

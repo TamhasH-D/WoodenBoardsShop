@@ -647,6 +647,46 @@ export const apiService = {
     }
   },
 
+  // Create product with image analysis using new backend API
+  async createProductWithAnalysis(productData, imageFile) {
+    try {
+      const formData = new FormData();
+
+      // Add all product fields
+      formData.append('keycloak_id', productData.keycloak_id);
+      formData.append('title', productData.title);
+      if (productData.description) {
+        formData.append('description', productData.description);
+      }
+      formData.append('wood_type_id', productData.wood_type_id);
+      formData.append('board_height', productData.board_height);
+      formData.append('board_length', productData.board_length);
+      formData.append('volume', productData.volume);
+      formData.append('price', productData.price);
+      formData.append('delivery_possible', productData.delivery_possible);
+      if (productData.pickup_location) {
+        formData.append('pickup_location', productData.pickup_location);
+      }
+      formData.append('image', imageFile);
+
+      console.log('Creating product with analysis:', productData);
+
+      const response = await api.post('/api/v1/products/with-analysis', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 60000, // Увеличенный timeout для обработки изображений
+      });
+
+      console.log('Product created with analysis:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to create product with analysis:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      throw new Error(`Product creation failed: ${error.response?.data?.detail || error.message}`);
+    }
+  },
+
   // Wooden board analysis (same as buyer frontend for consistency)
   async analyzeWoodenBoard(imageFile, boardHeight = 0.0, boardLength = 0.0) {
     try {

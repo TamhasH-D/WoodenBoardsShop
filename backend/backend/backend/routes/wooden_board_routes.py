@@ -1,6 +1,8 @@
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter
+import aiohttp
+from fastapi import APIRouter, File, UploadFile
 
 from backend.daos import GetDAOs
 from backend.dtos import (
@@ -14,14 +16,13 @@ from backend.dtos.wooden_board_dtos import (
     WoodenBoardInputDTO,
     WoodenBoardUpdateDTO,
 )
-from fastapi import UploadFile, File
-import aiohttp
 
 router = APIRouter(prefix="/wooden-boards")
 
+
 @router.post("/calculate-volume", status_code=200)
 async def calculate_wooden_board_volume(
-    image: UploadFile = File(...),
+    image: Annotated[UploadFile, File()] = ...,
     board_height: float = 0.0,
     board_length: float = 0.0,
 ):
@@ -35,9 +36,14 @@ async def calculate_wooden_board_volume(
         )
 
         from backend.settings import settings
+
         # Конвертируем мм в метры для API микросервиса
-        height_in_meters = board_height / 1000 if board_height > 0 else 0.05  # default 50mm
-        length_in_meters = board_length / 1000 if board_length > 0 else 6.0   # default 6000mm
+        height_in_meters = (
+            board_height / 1000 if board_height > 0 else 0.05
+        )  # default 50mm
+        length_in_meters = (
+            board_length / 1000 if board_length > 0 else 6.0
+        )  # default 6000mm
 
         volume_service_url = f"{settings.prosto_board_volume_seg_url}/wooden_boards_volume_seg/?height={height_in_meters}&length={length_in_meters}"
 

@@ -1,5 +1,4 @@
 import pathlib
-from typing import List
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings as PydanticBaseSettings
@@ -77,21 +76,21 @@ class CORSSettings(BaseSettings):
     allow_headers: str = "*"
 
     @property
-    def origins_list(self) -> List[str]:
+    def origins_list(self) -> list[str]:
         """Convert comma-separated string to list."""
         if self.allow_origins == "*":
             return ["*"]
         return [origin.strip() for origin in self.allow_origins.split(",")]
 
     @property
-    def methods_list(self) -> List[str]:
+    def methods_list(self) -> list[str]:
         """Convert comma-separated string to list."""
         if self.allow_methods == "*":
             return ["*"]
         return [method.strip() for method in self.allow_methods.split(",")]
 
     @property
-    def headers_list(self) -> List[str]:
+    def headers_list(self) -> list[str]:
         """Convert comma-separated string to list."""
         if self.allow_headers == "*":
             return ["*"]
