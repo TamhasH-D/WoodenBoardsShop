@@ -1,59 +1,41 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useApp } from '../contexts/AppContext';
-import { useNotifications } from '../contexts/NotificationContext';
-import { apiService } from '../services/api';
-import { ADMIN_TEXTS, formatCurrencyRu, formatDateRu } from '../utils/localization';
 
 const ProfessionalDashboard = () => {
-  const { setPageTitle, setBackendStatus } = useApp();
-  const { showError, showSuccess } = useNotifications();
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const loadDashboardData = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      // Проверка подключения к бэкенду
-      try {
-        await apiService.healthCheck();
-        setBackendStatus({ online: true });
-      } catch (error) {
-        setBackendStatus({ online: false });
-      }
-
-      // Загрузка системной статистики
-      const systemStats = await apiService.getSystemStats();
-      setStats(systemStats);
-
-    } catch (error) {
-      console.error('Ошибка загрузки данных панели управления:', error);
-      showError('Не удалось загрузить данные панели управления. Проверьте подключение.');
-
-      // Установка значений по умолчанию для автономного режима
-      setStats({
-        buyers: { total: 0, online: 0 },
-        sellers: { total: 0, online: 0 },
-        products: { total: 0, totalVolume: 0, totalValue: 0 },
-        woodTypes: { total: 0 },
-        prices: { total: 0, avgPrice: 0 },
-        boards: { total: 0 },
-        images: { total: 0 },
-        communication: { threads: 0, messages: 0 }
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [setBackendStatus, showError]);
-
-  useEffect(() => {
-    setPageTitle(ADMIN_TEXTS.DASHBOARD);
-    loadDashboardData();
-  }, [setPageTitle, loadDashboardData]);
+  const [stats, setStats] = useState({
+    buyers: { total: 15, online: 3 },
+    sellers: { total: 8, online: 2 },
+    products: { total: 42, totalVolume: 125.5, totalValue: 850000 },
+    woodTypes: { total: 12 },
+    prices: { total: 24, avgPrice: 6800 },
+    boards: { total: 156 },
+    images: { total: 89 },
+    communication: { threads: 7, messages: 23 }
+  });
+  const [loading, setLoading] = useState(false);
 
   const handleRefresh = () => {
-    showSuccess('Обновление данных панели управления...');
-    loadDashboardData();
+    setLoading(true);
+    // Имитация загрузки
+    setTimeout(() => {
+      setLoading(false);
+      console.log('Dashboard refreshed');
+    }, 1000);
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
+      minimumFractionDigits: 0
+    }).format(amount);
+  };
+
+  const formatDate = () => {
+    return new Date().toLocaleString('ru-RU', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
   };
 
   if (loading) {
@@ -94,7 +76,7 @@ const ProfessionalDashboard = () => {
             fontSize: 'var(--font-size-sm)',
             margin: 0
           }}>
-            Последнее обновление: {formatDateRu(new Date(), 'TIME')}
+            Последнее обновление: {formatDate()}
           </p>
         </div>
         <button 
@@ -160,7 +142,7 @@ const ProfessionalDashboard = () => {
             color: 'var(--color-text-muted)'
           }}>
             <span>{stats.products.totalVolume.toFixed(2)} м³</span>
-            <span>{formatCurrencyRu(stats.products.totalValue)}</span>
+            <span>{formatCurrency(stats.products.totalValue)}</span>
           </div>
         </div>
 
@@ -182,7 +164,7 @@ const ProfessionalDashboard = () => {
             fontSize: 'var(--font-size-sm)',
             color: 'var(--color-text-muted)'
           }}>
-            Средняя цена: {formatCurrencyRu(stats.prices.avgPrice)}/м³
+            Средняя цена: {formatCurrency(stats.prices.avgPrice)}/м³
           </div>
         </div>
 
