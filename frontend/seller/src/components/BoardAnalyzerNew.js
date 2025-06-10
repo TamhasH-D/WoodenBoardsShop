@@ -82,7 +82,6 @@ const BoardAnalyzerNew = () => {
           </div>
         )}
       </div>
-      </div>
 
       <style jsx>{`
         .loading-spinner {

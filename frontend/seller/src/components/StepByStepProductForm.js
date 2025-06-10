@@ -129,11 +129,12 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
     }
   };
 
-  const getWoodTypeName = (woodTypeId) => {
-    if (!woodTypes?.data) return woodTypeId;
-    const woodType = woodTypes.data.find(wt => wt.id === woodTypeId);
-    return woodType ? woodType.neme : woodTypeId;
-  };
+  // Функция для получения названия типа древесины (пока не используется)
+  // const getWoodTypeName = (woodTypeId) => {
+  //   if (!woodTypes?.data) return woodTypeId;
+  //   const woodType = woodTypes.data.find(wt => wt.id === woodTypeId);
+  //   return woodType ? woodType.neme : woodTypeId;
+  // };
 
   const getWoodTypePrice = (woodTypeId) => {
     if (!woodTypePrices?.data) return null;
