@@ -98,15 +98,18 @@ async def test_create_product_with_analysis_success(
         "image": ("test.jpg", image_file, "image/jpeg")
     }
     
-    # Mock the image service methods
-    with patch("backend.services.image_service.image_service.analyze_wooden_boards") as mock_analyze, \
-         patch("backend.services.image_service.image_service.save_image") as mock_save:
-        
-        mock_analyze.return_value = mock_analysis_result
-        mock_save.return_value = "/uploads/products/test_image.jpg"
-        
-        # Make request
-        response = await client.post(URI, data=form_data, files=files)
+    # Mock the YOLO backend HTTP call
+    with patch("aiohttp.ClientSession.post") as mock_post:
+        # Mock response
+        mock_response = AsyncMock()
+        mock_response.status = 200
+        mock_response.json.return_value = mock_analysis_result
+        mock_post.return_value.__aenter__.return_value = mock_response
+
+        # Mock file operations
+        with patch("aiofiles.open"), patch("pathlib.Path.mkdir"):
+            # Make request
+            response = await client.post(URI, data=form_data, files=files)
     
     assert response.status_code == 201
     
@@ -212,10 +215,14 @@ async def test_create_product_with_analysis_no_boards_detected(
         "image": ("test.jpg", image_file, "image/jpeg")
     }
     
-    # Mock the image service methods
-    with patch("backend.services.image_service.image_service.analyze_wooden_boards") as mock_analyze:
-        mock_analyze.return_value = mock_analysis_result
-        
+    # Mock the YOLO backend HTTP call
+    with patch("aiohttp.ClientSession.post") as mock_post:
+        # Mock response with no boards
+        mock_response = AsyncMock()
+        mock_response.status = 200
+        mock_response.json.return_value = mock_analysis_result
+        mock_post.return_value.__aenter__.return_value = mock_response
+
         response = await client.post(URI, data=form_data, files=files)
     
     assert response.status_code == 400
