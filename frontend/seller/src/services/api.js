@@ -647,6 +647,40 @@ export const apiService = {
     }
   },
 
+  // Wooden board analysis (same as buyer frontend for consistency)
+  async analyzeWoodenBoard(imageFile, boardHeight = 0.0, boardLength = 0.0) {
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+
+      // Конвертируем метры в миллиметры для API
+      const heightInMm = boardHeight * 1000;
+      const lengthInMm = boardLength * 1000;
+
+      console.log(`Seller Board Analysis: Sending request to ${API_BASE_URL}/api/v1/wooden-boards/calculate-volume`);
+      console.log(`Board dimensions: height=${heightInMm}mm, length=${lengthInMm}mm`);
+
+      // Правильный формат запроса с query параметрами в миллиметрах
+      const response = await api.post(
+        `/api/v1/wooden-boards/calculate-volume?board_height=${heightInMm}&board_length=${lengthInMm}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 60000, // Увеличенный timeout для обработки изображений
+        }
+      );
+
+      console.log('Board analysis response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to analyze wooden board:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      throw new Error(`Board analysis failed: ${error.response?.data?.detail || error.message}`);
+    }
+  },
+
   // Get all seller products (handles pagination automatically)
   async getAllSellerProducts(sellerId, options = {}) {
     const fetchFunction = async (offset, limit) => {

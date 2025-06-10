@@ -1,20 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SELLER_TEXTS } from '../utils/localization';
+import ImageUpload from './ui/ImageUpload';
+import ResultDisplay from './ui/ResultDisplay';
+import ErrorToast from './ui/ErrorToast';
 import { apiService } from '../services/api';
 
+/**
+ * Анализатор досок для seller frontend
+ * Использует тот же красивый UI что и buyer, но с API запросами для seller
+ */
 const BoardAnalyzer = () => {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [boardHeight, setBoardHeight] = useState('');
-  const [boardLength, setBoardLength] = useState('');
-  const [analyzing, setAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState(null);
+  const [imageUrl, setImageUrl] = useState(null);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showDetails, setShowDetails] = useState(false);
   const [analysisHistory, setAnalysisHistory] = useState([]);
-  
-  const fileInputRef = useRef(null);
-  const canvasRef = useRef(null);
+  const resultRef = useRef(null);
 
   // Загрузка истории анализов из localStorage при монтировании
   useEffect(() => {
