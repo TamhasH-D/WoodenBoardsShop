@@ -136,7 +136,7 @@ const Analytics = React.memo(() => {
                     <strong>Price Entries:</strong> {stats.prices?.total || 0}
                   </li>
                   <li style={{ padding: '0.5rem 0' }}>
-                    <strong>Average Price:</strong> €{stats.prices?.avgPrice?.toFixed(2) || 0}/m³
+                    <strong>Average Price:</strong> {stats.prices?.avgPrice?.toFixed(2) || 0} ₽/м³
                   </li>
                 </ul>
               </div>

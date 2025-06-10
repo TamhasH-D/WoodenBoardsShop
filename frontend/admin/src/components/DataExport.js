@@ -4,15 +4,15 @@ import { apiService } from '../services/api';
 import { ADMIN_TEXTS } from '../utils/localization';
 
 const EXPORT_ENTITIES = [
-  { key: 'buyers', label: ADMIN_TEXTS.BUYERS, icon: '👥' },
-  { key: 'sellers', label: ADMIN_TEXTS.SELLERS, icon: '🏪' },
-  { key: 'products', label: ADMIN_TEXTS.PRODUCTS, icon: '📦' },
-  { key: 'woodTypes', label: ADMIN_TEXTS.WOOD_TYPES, icon: '🌳' },
-  { key: 'prices', label: ADMIN_TEXTS.WOOD_TYPE_PRICES, icon: '💰' },
-  { key: 'boards', label: ADMIN_TEXTS.WOODEN_BOARDS, icon: '🪵' },
-  { key: 'images', label: ADMIN_TEXTS.IMAGES, icon: '🖼️' },
-  { key: 'threads', label: ADMIN_TEXTS.CHAT_THREADS, icon: '💬' },
-  { key: 'messages', label: ADMIN_TEXTS.CHAT_MESSAGES, icon: '💭' }
+  { key: 'buyers', label: ADMIN_TEXTS.BUYERS },
+  { key: 'sellers', label: ADMIN_TEXTS.SELLERS },
+  { key: 'products', label: ADMIN_TEXTS.PRODUCTS },
+  { key: 'woodTypes', label: ADMIN_TEXTS.WOOD_TYPES },
+  { key: 'prices', label: ADMIN_TEXTS.WOOD_TYPE_PRICES },
+  { key: 'boards', label: ADMIN_TEXTS.WOODEN_BOARDS },
+  { key: 'images', label: ADMIN_TEXTS.IMAGES },
+  { key: 'threads', label: ADMIN_TEXTS.CHAT_THREADS },
+  { key: 'messages', label: ADMIN_TEXTS.CHAT_MESSAGES }
 ];
 
 const EXPORT_FORMATS = [
@@ -104,11 +104,11 @@ function DataExport() {
     }
   };
 
-  const getProgressIcon = (status) => {
+  const getProgressText = (status) => {
     switch (status) {
-      case 'exporting': return '⏳';
-      case 'completed': return '✅';
-      case 'error': return '❌';
+      case 'exporting': return 'Экспорт...';
+      case 'completed': return 'Завершено';
+      case 'error': return 'Ошибка';
       default: return '';
     }
   };
@@ -124,7 +124,7 @@ function DataExport() {
 
   return (
     <div className="card">
-      <h2>📊 {ADMIN_TEXTS.DATA_EXPORT}</h2>
+      <h2>{ADMIN_TEXTS.DATA_EXPORT}</h2>
       <p style={{ color: '#666', marginBottom: '2rem' }}>
         {ADMIN_TEXTS.EXPORT_DESCRIPTION}
       </p>
@@ -202,7 +202,7 @@ function DataExport() {
                   checked={isSelected}
                   onChange={() => handleEntityToggle(entity.key)}
                 />
-                <span style={{ fontSize: '1.2em' }}>{entity.icon}</span>
+
                 <div style={{ flex: 1 }}>
                   <strong>{entity.label}</strong>
                   {progress && (
@@ -211,12 +211,12 @@ function DataExport() {
                       color: getProgressColor(progress),
                       marginTop: '0.25rem'
                     }}>
-                      {getProgressIcon(progress)} {progress}
+                      {getProgressText(progress)}
                     </div>
                   )}
                   {completed && (
                     <div style={{ fontSize: '0.8em', color: '#10b981', marginTop: '0.25rem' }}>
-                      ✅ {completed.recordCount} {ADMIN_TEXTS.RECORDS_EXPORTED}
+                      Экспортировано: {completed.recordCount} {ADMIN_TEXTS.RECORDS_EXPORTED}
                     </div>
                   )}
                 </div>
@@ -247,7 +247,7 @@ function DataExport() {
           className="btn btn-primary"
           style={{ padding: '0.75rem 2rem' }}
         >
-          {loading ? `⏳ ${ADMIN_TEXTS.EXPORTING}` : `📥 ${ADMIN_TEXTS.EXPORT_DATA}`}
+          {loading ? `${ADMIN_TEXTS.EXPORTING}...` : `${ADMIN_TEXTS.EXPORT_DATA}`}
         </button>
       </div>
 
@@ -261,7 +261,7 @@ function DataExport() {
       {/* Export Results */}
       {Object.keys(completedExports).length > 0 && (
         <div>
-          <h3>✅ {ADMIN_TEXTS.EXPORT_RESULTS}</h3>
+          <h3>{ADMIN_TEXTS.EXPORT_RESULTS}</h3>
           <div style={{ backgroundColor: '#f0fdf4', padding: '1rem', borderRadius: '0.5rem' }}>
             {Object.entries(completedExports).map(([entityKey, result]) => {
               const entity = EXPORT_ENTITIES.find(e => e.key === entityKey);
@@ -274,7 +274,7 @@ function DataExport() {
                   borderBottom: '1px solid #dcfce7'
                 }}>
                   <div>
-                    <span style={{ fontSize: '1.1em' }}>{entity?.icon}</span>
+
                     <strong style={{ marginLeft: '0.5rem' }}>{entity?.label}</strong>
                     <span style={{ marginLeft: '1rem', color: '#666' }}>
                       {result.recordCount} {ADMIN_TEXTS.RECORDS}
@@ -288,14 +288,14 @@ function DataExport() {
             })}
           </div>
           <p style={{ fontSize: '0.9em', color: '#666', marginTop: '1rem' }}>
-            💡 {ADMIN_TEXTS.FILES_DOWNLOADED}
+            {ADMIN_TEXTS.FILES_DOWNLOADED}
           </p>
         </div>
       )}
 
       {/* Usage Instructions */}
       <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem' }}>
-        <h4>📋 {ADMIN_TEXTS.EXPORT_INSTRUCTIONS}</h4>
+        <h4>{ADMIN_TEXTS.EXPORT_INSTRUCTIONS}</h4>
         <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
           <li><strong>JSON {ADMIN_TEXTS.FORMAT}:</strong> {ADMIN_TEXTS.JSON_FORMAT_INFO}</li>
           <li><strong>CSV {ADMIN_TEXTS.FORMAT}:</strong> {ADMIN_TEXTS.CSV_FORMAT_INFO}</li>

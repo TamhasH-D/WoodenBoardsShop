@@ -151,12 +151,9 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Индикатор тренда */}
-          <div className="relative flex items-center gap-2 text-xs text-success-600 dark:text-success-400">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-            </svg>
-            <span>+12% за прошлый месяц</span>
+          {/* Статус пользователей */}
+          <div className="relative flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+            <span>Активных пользователей: {stats.buyers.online + stats.sellers.online}</span>
           </div>
         </div>
 
@@ -196,11 +193,8 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="relative flex items-center gap-2 text-xs text-success-600 dark:text-success-400">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-            </svg>
-            <span>+8% рост запасов</span>
+          <div className="relative flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+            <span>Общая стоимость: {formatCurrencyRu(stats.products.totalValue)}</span>
           </div>
         </div>
 
@@ -240,11 +234,8 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="relative flex items-center gap-2 text-xs text-warning-600 dark:text-warning-400">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-            <span>Стабильные цены</span>
+          <div className="relative flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+            <span>Средняя цена: {formatCurrencyRu(stats.prices.avgPrice)}/м³</span>
           </div>
         </div>
 
@@ -284,11 +275,8 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="relative flex items-center gap-2 text-xs text-success-600 dark:text-success-400">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-            </svg>
-            <span>+24% вовлеченность</span>
+          <div className="relative flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+            <span>Всего потоков: {stats.communication.threads}</span>
           </div>
         </div>
       </div>
@@ -475,7 +463,7 @@ const Dashboard = () => {
                     </span>
                   </div>
                   <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                    Все сервисы работают, подключения к базе данных исправны
+                    Административная панель готова к работе
                   </p>
                 </div>
               </div>
@@ -498,7 +486,7 @@ const Dashboard = () => {
                     </span>
                   </div>
                   <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                    Данные аналитики обновлены и статистика актуализирована
+                    Статистика загружена из базы данных
                   </p>
                 </div>
               </div>
@@ -521,7 +509,7 @@ const Dashboard = () => {
                     </span>
                   </div>
                   <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                    Панель управления будет автоматически обновляться каждые 30 секунд
+                    Данные обновляются при обновлении страницы
                   </p>
                 </div>
               </div>
