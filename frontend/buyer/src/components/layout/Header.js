@@ -19,8 +19,8 @@ const Header = React.memo(() => {
           {/* Левая часть */}
           <div className="flex items-center gap-4">
             <Link to="/" className="nav-brand">
-              🌲 WoodMarket
-              <span style={{ fontSize: '0.875rem', color: '#6b7280', marginLeft: '0.5rem' }}>
+              WoodMarket
+              <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginLeft: '0.5rem' }}>
                 Покупатель
               </span>
             </Link>
