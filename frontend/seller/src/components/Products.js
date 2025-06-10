@@ -4,6 +4,7 @@ import { apiService } from '../services/api';
 import { SELLER_TEXTS, formatDateRu } from '../utils/localization';
 import { testWoodenBoardsConnection, testImageAnalysisEndpoint, getWoodenBoardsConfig } from '../utils/testWoodenBoardsConnection';
 import BoardImageAnalyzer from './BoardImageAnalyzer';
+import StepByStepProductForm from './StepByStepProductForm';
 import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
 import { MOCK_IDS } from '../utils/constants';
 
@@ -339,6 +340,21 @@ function Products() {
       )}
 
       {showAddForm && (
+        <div style={{ marginBottom: '2rem' }}>
+          <StepByStepProductForm
+            onSuccess={() => {
+              setShowAddForm(false);
+              refetch();
+            }}
+            onCancel={() => setShowAddForm(false)}
+            mutating={mutating}
+            mutate={mutate}
+          />
+        </div>
+      )}
+
+      {/* Старая форма (скрыта, но оставлена для справки) */}
+      {false && showAddForm && (
         <div className="card mb-6">
           <div className="card-header">
             <h2 className="card-title">Add New Product</h2>
