@@ -18,6 +18,7 @@ from backend.dtos.image_dtos import ImageInputDTO
 from backend.dtos.product_dtos import ProductDTO, ProductInputDTO, ProductUpdateDTO
 from backend.dtos.product_with_analysis_dtos import ProductWithAnalysisResponseDTO
 from backend.dtos.wooden_board_dtos import WoodenBoardInputDTO
+from backend.settings import settings
 
 router = APIRouter(prefix="/products")
 
