@@ -9,7 +9,7 @@ services:
     ports:
       - "${BACKEND_PORT:-8000}:${BACKEND_PORT:-8000}"
     depends_on:
-      postgres:
+      backend-pg:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -32,9 +32,10 @@ services:
     volumes:
       - ./migrations:/app/migrations
     networks:
-      - backend-network
+      - app_network
+      - diplom_default
 
-  postgres:
+  backend-pg:
     image: postgres:17.4-bookworm
     hostname: backend-pg
     container_name: backend-pg
@@ -46,7 +47,8 @@ services:
       - backend-pg-data:/var/lib/postgresql/data
     restart: always
     networks:
-      - backend-network
+      - app_network
+      - diplom_default
     healthcheck:
       test: pg_isready -U ${BACKEND_PG_USER:-backend}
       interval: 2s
@@ -63,7 +65,8 @@ services:
       ALLOW_EMPTY_PASSWORD: ${BACKEND_REDIS_PASSWORD:+"no"}${BACKEND_REDIS_PASSWORD:-"yes"}
       REDIS_PASSWORD: ${BACKEND_REDIS_PASSWORD:-""}
     networks:
-      - backend-network
+      - app_network
+      - diplom_default
     healthcheck:
       test: redis-cli ping
       interval: 2s
@@ -77,5 +80,8 @@ volumes:
   backend-redis-data:
 
 networks:
-  backend-network:
+  app_network:
     driver: bridge
+  diplom_default:
+    name: diplom_default
+    external: true

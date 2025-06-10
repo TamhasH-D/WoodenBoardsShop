@@ -115,7 +115,7 @@ class Settings(BaseSettings):
     db: DBSettings = DBSettings()
     redis: RedisSettings = RedisSettings()
     cors: CORSSettings = CORSSettings()
-    prosto_board_volume_seg_url: str = "http://yolo_backend:8001/wooden_boards_volume_seg/"
+    prosto_board_volume_seg_url: str = "http://yolo_backend:8001"
 
     model_config = SettingsConfigDict(
         env_file=DOTENV,

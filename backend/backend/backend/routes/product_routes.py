@@ -159,7 +159,7 @@ async def create_product_with_analysis(
             form_data.add_field("length", str(length_m))
 
             # Send request to YOLO backend
-            yolo_url = "http://localhost:8001/wooden_boards_volume_seg/"
+            yolo_url = f"{settings.prosto_board_volume_seg_url}/wooden_boards_volume_seg/"
             async with session.post(yolo_url, data=form_data) as response:
                 if response.status != 200:
                     error_text = await response.text()
