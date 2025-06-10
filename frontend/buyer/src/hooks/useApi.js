@@ -55,8 +55,8 @@ export const useApi = (apiFunction, dependencies = []) => {
   }, []);
 
   useEffect(() => {
-    // Only fetch if dependencies actually changed or it's the first load
-    if (depsChanged || lastDepsRef.current === dependencies) {
+    // Prevent multiple requests with same dependencies
+    if (depsChanged || requestCountRef.current === 0) {
       lastDepsRef.current = dependencies;
       fetchData();
     }
