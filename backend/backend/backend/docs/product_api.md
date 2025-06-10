@@ -149,3 +149,76 @@
     }
   }
   ```
+
+### Создание товара с анализом изображения
+
+- **Метод:** POST
+- **Путь:** `/products/with-analysis`
+- **Описание:** Создает новый товар с анализом изображения досок через YOLO backend.
+
+- **Формат входных данных (multipart/form-data):**
+  - `keycloak_id`: UUID - Keycloak UUID продавца
+  - `title`: string - Название товара (1-200 символов)
+  - `description`: string (optional) - Описание товара (до 1000 символов)
+  - `wood_type_id`: UUID - Тип древесины
+  - `board_height`: float - Высота доски в мм (0-1000)
+  - `board_length`: float - Длина доски в мм (0-10000)
+  - `volume`: float - Объем в м³ (больше 0)
+  - `price`: float - Цена в рублях (больше 0)
+  - `delivery_possible`: boolean (optional) - Возможность доставки
+  - `pickup_location`: string (optional) - Адрес самовывоза (до 500 символов)
+  - `image`: file - Изображение досок для анализа
+
+- **Формат выходных данных (DataResponse[ProductWithAnalysisResponseDTO]):**
+  ```json
+  {
+    "data": {
+      "product_id": "UUID",
+      "seller_id": "UUID",
+      "image_id": "UUID",
+      "analysis_result": {
+        "total_volume": "float",
+        "total_count": "int",
+        "wooden_boards": [
+          {
+            "volume": "float",
+            "height": "float",
+            "width": "float",
+            "length": "float",
+            "detection": {
+              "confidence": "float",
+              "class_name": "string",
+              "points": [{"x": "float", "y": "float"}]
+            }
+          }
+        ]
+      },
+      "wooden_boards_count": "int",
+      "total_volume": "float",
+      "message": "string"
+    }
+  }
+  ```
+
+- **Последовательность обработки:**
+  1. Валидация входных данных
+  2. Поиск продавца по keycloak_id
+  3. Валидация типа древесины
+  4. Отправка изображения в YOLO backend для анализа
+  5. Проверка что доски обнаружены
+  6. Создание товара в транзакции
+  7. Сохранение изображения в файловой системе
+  8. Создание записи изображения в БД
+  9. Создание записей досок в БД
+
+- **Возможные ошибки:**
+  - `400 Bad Request`: Неверные данные или доски не обнаружены
+  - `404 Not Found`: Продавец или тип древесины не найден
+  - `500 Internal Server Error`: Ошибка анализа или сохранения
+  - `503 Service Unavailable`: YOLO backend недоступен
+
+- **Особенности:**
+  - Использует транзакции БД для атомарности
+  - При ошибке откатывает все изменения
+  - Удаляет сохраненное изображение при ошибке
+  - Требует наличия YOLO backend на localhost:8001
