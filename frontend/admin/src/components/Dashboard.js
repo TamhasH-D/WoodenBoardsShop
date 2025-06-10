@@ -64,142 +64,288 @@ const Dashboard = React.memo(() => {
         </div>
       )}
 
-      {/* Quick Stats */}
-      <div className="grid grid-4 mb-6">
+      {/* Quick Stats - Enterprise Style */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+        gap: 'var(--space-6)',
+        marginBottom: 'var(--space-10)'
+      }}>
         <div className="card">
-          <h3>{ADMIN_TEXTS.TOTAL_USERS}</h3>
-          {statsLoading ? (
-            <div className="loading">{ADMIN_TEXTS.LOADING} полного набора данных...</div>
-          ) : statsError ? (
-            <div className="error">{ADMIN_TEXTS.OPERATION_FAILED}</div>
-          ) : (
-            <div>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                {((stats?.buyers?.total || 0) + (stats?.sellers?.total || 0))}
-              </p>
-              <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
-                {stats?.buyers?.total || 0} {ADMIN_TEXTS.BUYERS.toLowerCase()}, {stats?.sellers?.total || 0} {ADMIN_TEXTS.SELLERS.toLowerCase()}
-              </p>
-            </div>
-          )}
+          <div className="card-header">
+            <h3 className="card-title">{ADMIN_TEXTS.TOTAL_USERS}</h3>
+          </div>
+          <div className="card-content">
+            {statsLoading ? (
+              <div style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: 'var(--space-4)' }}>
+                Загрузка данных...
+              </div>
+            ) : statsError ? (
+              <div className="alert-error">Ошибка загрузки данных</div>
+            ) : (
+              <div>
+                <div style={{
+                  fontSize: 'var(--font-size-3xl)',
+                  fontWeight: 'var(--font-weight-bold)',
+                  color: 'var(--color-text-primary)',
+                  marginBottom: 'var(--space-2)'
+                }}>
+                  {((stats?.buyers?.total || 0) + (stats?.sellers?.total || 0))}
+                </div>
+                <div style={{
+                  fontSize: 'var(--font-size-sm)',
+                  color: 'var(--color-text-muted)',
+                  lineHeight: '1.4'
+                }}>
+                  {stats?.buyers?.total || 0} покупателей, {stats?.sellers?.total || 0} продавцов
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="card">
-          <h3>{ADMIN_TEXTS.TOTAL_PRODUCTS}</h3>
-          {statsLoading ? (
-            <div className="loading">{ADMIN_TEXTS.LOADING}...</div>
-          ) : statsError ? (
-            <div className="error">{ADMIN_TEXTS.OPERATION_FAILED}</div>
-          ) : (
-            <div>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                {stats?.products?.total || 0}
-              </p>
-              <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
-                Общий объем: {stats?.products?.totalVolume?.toFixed(2) || 0} м³
-              </p>
-            </div>
-          )}
+          <div className="card-header">
+            <h3 className="card-title">{ADMIN_TEXTS.TOTAL_PRODUCTS}</h3>
+          </div>
+          <div className="card-content">
+            {statsLoading ? (
+              <div style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: 'var(--space-4)' }}>
+                Загрузка...
+              </div>
+            ) : statsError ? (
+              <div className="alert-error">Ошибка загрузки</div>
+            ) : (
+              <div>
+                <div style={{
+                  fontSize: 'var(--font-size-3xl)',
+                  fontWeight: 'var(--font-weight-bold)',
+                  color: 'var(--color-text-primary)',
+                  marginBottom: 'var(--space-2)'
+                }}>
+                  {stats?.products?.total || 0}
+                </div>
+                <div style={{
+                  fontSize: 'var(--font-size-sm)',
+                  color: 'var(--color-text-muted)'
+                }}>
+                  Общий объем: {stats?.products?.totalVolume?.toFixed(2) || 0} м³
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="card">
-          <h3>{ADMIN_TEXTS.WOOD_TYPES}</h3>
-          {statsLoading ? (
-            <div className="loading">{ADMIN_TEXTS.LOADING}...</div>
-          ) : statsError ? (
-            <div className="error">{ADMIN_TEXTS.OPERATION_FAILED}</div>
-          ) : (
-            <div>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                {stats?.woodTypes?.total || 0}
-              </p>
-              <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
-                {stats?.prices?.total || 0} ценовых записей
-              </p>
-            </div>
-          )}
+          <div className="card-header">
+            <h3 className="card-title">{ADMIN_TEXTS.WOOD_TYPES}</h3>
+          </div>
+          <div className="card-content">
+            {statsLoading ? (
+              <div style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: 'var(--space-4)' }}>
+                Загрузка...
+              </div>
+            ) : statsError ? (
+              <div className="alert-error">Ошибка загрузки</div>
+            ) : (
+              <div>
+                <div style={{
+                  fontSize: 'var(--font-size-3xl)',
+                  fontWeight: 'var(--font-weight-bold)',
+                  color: 'var(--color-text-primary)',
+                  marginBottom: 'var(--space-2)'
+                }}>
+                  {stats?.woodTypes?.total || 0}
+                </div>
+                <div style={{
+                  fontSize: 'var(--font-size-sm)',
+                  color: 'var(--color-text-muted)'
+                }}>
+                  {stats?.prices?.total || 0} ценовых записей
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="card">
-          <h3>{ADMIN_TEXTS.CHAT_THREADS}</h3>
-          {statsLoading ? (
-            <div className="loading">{ADMIN_TEXTS.LOADING}...</div>
-          ) : statsError ? (
-            <div className="error">{ADMIN_TEXTS.OPERATION_FAILED}</div>
-          ) : (
-            <div>
-              <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                {stats?.communication?.threads || 0}
-              </p>
-              <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
-                {stats?.communication?.messages || 0} всего сообщений
-              </p>
-            </div>
-          )}
+          <div className="card-header">
+            <h3 className="card-title">{ADMIN_TEXTS.CHAT_THREADS}</h3>
+          </div>
+          <div className="card-content">
+            {statsLoading ? (
+              <div style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: 'var(--space-4)' }}>
+                Загрузка...
+              </div>
+            ) : statsError ? (
+              <div className="alert-error">Ошибка загрузки</div>
+            ) : (
+              <div>
+                <div style={{
+                  fontSize: 'var(--font-size-3xl)',
+                  fontWeight: 'var(--font-weight-bold)',
+                  color: 'var(--color-text-primary)',
+                  marginBottom: 'var(--space-2)'
+                }}>
+                  {stats?.communication?.threads || 0}
+                </div>
+                <div style={{
+                  fontSize: 'var(--font-size-sm)',
+                  color: 'var(--color-text-muted)'
+                }}>
+                  {stats?.communication?.messages || 0} всего сообщений
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="card mb-6">
+      {/* Quick Actions - Enterprise Style */}
+      <div className="card" style={{ marginBottom: 'var(--space-10)' }}>
         <div className="card-header">
           <h2 className="card-title">Быстрые действия</h2>
+          <p className="card-description">Основные операции управления системой</p>
         </div>
 
-        <div className="flex gap-4">
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: 'var(--space-4)'
+        }}>
           <button
             onClick={refetchStats}
             className="btn btn-primary"
             disabled={statsLoading}
           >
-            {statsLoading ? 'Обновление...' : `${ADMIN_TEXTS.REFRESH} ${ADMIN_TEXTS.STATISTICS}`}
+            {statsLoading ? 'Обновление...' : 'Обновить статистику'}
           </button>
           <a href="/users" className="btn btn-secondary">
-            {ADMIN_TEXTS.USER_MANAGEMENT}
+            Управление пользователями
           </a>
           <a href="/products" className="btn btn-secondary">
-            {ADMIN_TEXTS.PRODUCT_MANAGEMENT}
+            Управление товарами
           </a>
           <a href="/wood-types" className="btn btn-secondary">
-            {ADMIN_TEXTS.WOOD_TYPE_MANAGEMENT}
+            Типы древесины
           </a>
         </div>
       </div>
 
-      {/* Platform Overview */}
+      {/* Platform Overview - Enterprise Style */}
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">{ADMIN_TEXTS.OVERVIEW} платформы</h2>
+          <h2 className="card-title">Обзор платформы</h2>
+          <p className="card-description">Детальная статистика и метрики системы</p>
         </div>
 
-        <div className="grid grid-2">
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: 'var(--space-8)'
+        }}>
           <div>
-            <h3>Активность пользователей</h3>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                <strong>{ADMIN_TEXTS.BUYERS} онлайн:</strong> {stats?.buyers?.online || 0}
-              </li>
-              <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                <strong>{ADMIN_TEXTS.SELLERS} онлайн:</strong> {stats?.sellers?.online || 0}
-              </li>
-              <li style={{ padding: '0.5rem 0' }}>
-                <strong>Всего активных пользователей:</strong> {(stats?.buyers?.online || 0) + (stats?.sellers?.online || 0)}
-              </li>
-            </ul>
+            <h3 style={{
+              fontSize: 'var(--font-size-lg)',
+              fontWeight: 'var(--font-weight-semibold)',
+              color: 'var(--color-text-primary)',
+              marginBottom: 'var(--space-4)'
+            }}>
+              Активность пользователей
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: 'var(--space-3) 0',
+                borderBottom: 'var(--border-width) solid var(--color-border-light)'
+              }}>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Покупатели онлайн:</span>
+                <span style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
+                  {stats?.buyers?.online || 0}
+                </span>
+              </div>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: 'var(--space-3) 0',
+                borderBottom: 'var(--border-width) solid var(--color-border-light)'
+              }}>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Продавцы онлайн:</span>
+                <span style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
+                  {stats?.sellers?.online || 0}
+                </span>
+              </div>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: 'var(--space-3) 0'
+              }}>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Всего активных:</span>
+                <span style={{
+                  fontWeight: 'var(--font-weight-bold)',
+                  color: 'var(--color-primary)',
+                  fontSize: 'var(--font-size-lg)'
+                }}>
+                  {(stats?.buyers?.online || 0) + (stats?.sellers?.online || 0)}
+                </span>
+              </div>
+            </div>
           </div>
 
           <div>
-            <h3>Метрики платформы</h3>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                <strong>Средняя цена:</strong> {stats?.prices?.avgPrice?.toFixed(2) || 0} ₽/м³
-              </li>
-              <li style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--border-color)' }}>
-                <strong>Общая стоимость:</strong> {stats?.products?.totalValue?.toFixed(2) || 0} ₽
-              </li>
-              <li style={{ padding: '0.5rem 0' }}>
-                <strong>{ADMIN_TEXTS.WOODEN_BOARDS}:</strong> {stats?.boards?.total || 0}
-              </li>
-            </ul>
+            <h3 style={{
+              fontSize: 'var(--font-size-lg)',
+              fontWeight: 'var(--font-weight-semibold)',
+              color: 'var(--color-text-primary)',
+              marginBottom: 'var(--space-4)'
+            }}>
+              Метрики платформы
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: 'var(--space-3) 0',
+                borderBottom: 'var(--border-width) solid var(--color-border-light)'
+              }}>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Средняя цена:</span>
+                <span style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
+                  {stats?.prices?.avgPrice?.toFixed(2) || 0} ₽/м³
+                </span>
+              </div>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: 'var(--space-3) 0',
+                borderBottom: 'var(--border-width) solid var(--color-border-light)'
+              }}>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Общая стоимость:</span>
+                <span style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
+                  {stats?.products?.totalValue?.toFixed(2) || 0} ₽
+                </span>
+              </div>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: 'var(--space-3) 0'
+              }}>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Досок в системе:</span>
+                <span style={{
+                  fontWeight: 'var(--font-weight-bold)',
+                  color: 'var(--color-primary)',
+                  fontSize: 'var(--font-size-lg)'
+                }}>
+                  {stats?.boards?.total || 0}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
