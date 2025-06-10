@@ -23,10 +23,15 @@ const ProductsPage = () => {
 
   const pageSize = 12;
 
+  // Флаг для предотвращения повторной загрузки
+  const [initialLoaded, setInitialLoaded] = useState(false);
+
   useEffect(() => {
     setPageTitle(BUYER_TEXTS.PRODUCTS);
-    loadInitialData();
-  }, [setPageTitle]);
+    if (!initialLoaded) {
+      loadInitialData();
+    }
+  }, [setPageTitle, initialLoaded]);
 
   const loadInitialData = useCallback(async () => {
     try {
@@ -41,11 +46,12 @@ const ProductsPage = () => {
 
       // Загружаем товары
       await loadProducts();
+      setInitialLoaded(true);
     } catch (error) {
       console.error('Ошибка загрузки данных:', error);
-      showError('Не удалось загрузить данные каталога');
+      // Не показываем ошибки пользователю, только в консоли
     }
-  }, [showError]);
+  }, []);
 
   const loadProducts = useCallback(async () => {
     try {
@@ -62,17 +68,19 @@ const ProductsPage = () => {
       setTotalProducts(result.total || 0);
     } catch (error) {
       console.error('Ошибка загрузки товаров:', error);
-      showError('Не удалось загрузить товары');
+      // Не показываем ошибки пользователю, только в консоли
       setProducts([]);
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, currentPage, showError]);
+  }, [searchQuery, currentPage]);
 
-  // Перезагружаем товары при изменении поиска или страницы
+  // Перезагружаем товары при изменении поиска или страницы (только если уже загружены)
   useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+    if (initialLoaded) {
+      loadProducts();
+    }
+  }, [searchQuery, currentPage, initialLoaded]);
 
   const handleAddToCart = (product) => {
     addToCart(product, 1);

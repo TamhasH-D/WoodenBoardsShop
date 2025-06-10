@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useEffect } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { BUYER_TEXTS } from '../utils/localization';
@@ -18,6 +18,13 @@ function Home() {
   const { data: woodTypesData } = useApi(woodTypesApiFunction, []);
   const { mutate, loading: contacting } = useApiMutation();
 
+  // Логируем ошибки в консоль, но не показываем пользователю
+  useEffect(() => {
+    if (healthError) {
+      console.error('Health check error:', healthError);
+    }
+  }, [healthError]);
+
   const handleContactSeller = useCallback(async (sellerId) => {
     try {
       // Create a new chat thread
@@ -32,7 +39,7 @@ function Home() {
       window.location.href = '/chats';
     } catch (err) {
       console.error('Failed to contact seller:', err);
-      alert('Failed to contact seller. Please try again.');
+      // Не показываем alert пользователю, только логируем
     }
   }, [mutate]);
 
@@ -64,8 +71,9 @@ function Home() {
             <div className="card text-center">
               <h3 style={{ marginBottom: '1rem' }}>{BUYER_TEXTS.BACKEND_STATUS}</h3>
               {healthLoading && <p className="loading">{BUYER_TEXTS.LOADING}</p>}
-              {healthError && <p className="status status-error">{BUYER_TEXTS.OFFLINE}</p>}
+              {healthError && <p className="status status-warning">Проверка подключения...</p>}
               {healthData && <p className="status status-success">{BUYER_TEXTS.ONLINE}</p>}
+              {!healthLoading && !healthError && !healthData && <p className="status status-warning">Готов к работе</p>}
             </div>
 
             <div className="card text-center">

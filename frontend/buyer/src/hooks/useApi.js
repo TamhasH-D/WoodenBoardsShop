@@ -7,11 +7,20 @@ export const useApi = (apiFunction, dependencies = []) => {
   const [error, setError] = useState(null);
   const abortControllerRef = useRef(null);
   const apiRef = useRef(apiFunction);
+  const lastDepsRef = useRef(dependencies);
+  const requestCountRef = useRef(0);
 
   // Update the API function reference without triggering re-renders
   apiRef.current = apiFunction;
 
+  // Check if dependencies actually changed to prevent unnecessary requests
+  const depsChanged = JSON.stringify(dependencies) !== JSON.stringify(lastDepsRef.current);
+
   const fetchData = useCallback(async () => {
+    // Prevent too many requests
+    requestCountRef.current += 1;
+    const currentRequestId = requestCountRef.current;
+
     // Cancel previous request if it exists
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -27,28 +36,30 @@ export const useApi = (apiFunction, dependencies = []) => {
       // Use the current API function reference
       const result = await apiRef.current(abortControllerRef.current.signal);
 
-      // Only update state if request wasn't aborted
-      if (!abortControllerRef.current.signal.aborted) {
+      // Only update state if this is still the latest request and wasn't aborted
+      if (currentRequestId === requestCountRef.current && !abortControllerRef.current.signal.aborted) {
         setData(result);
       }
     } catch (err) {
-      // Only update error state if request wasn't aborted
-      if (!abortControllerRef.current.signal.aborted) {
+      // Only update error state if this is still the latest request and wasn't aborted
+      if (currentRequestId === requestCountRef.current && !abortControllerRef.current.signal.aborted) {
         setError(err.message || 'An error occurred');
         console.error('API Error:', err);
       }
     } finally {
-      // Only update loading state if request wasn't aborted
-      if (!abortControllerRef.current.signal.aborted) {
+      // Only update loading state if this is still the latest request and wasn't aborted
+      if (currentRequestId === requestCountRef.current && !abortControllerRef.current.signal.aborted) {
         setLoading(false);
       }
     }
-  // Only depend on the dependencies array, not the apiFunction
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, dependencies);
+  }, []);
 
   useEffect(() => {
-    fetchData();
+    // Only fetch if dependencies actually changed or it's the first load
+    if (depsChanged || lastDepsRef.current === dependencies) {
+      lastDepsRef.current = dependencies;
+      fetchData();
+    }
 
     // Cleanup function to abort request on unmount
     return () => {
@@ -56,7 +67,8 @@ export const useApi = (apiFunction, dependencies = []) => {
         abortControllerRef.current.abort();
       }
     };
-  }, [fetchData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, dependencies);
 
   const refetch = useCallback(() => {
     fetchData();

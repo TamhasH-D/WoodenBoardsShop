@@ -49,9 +49,24 @@ api.interceptors.response.use(
   }
 );
 
-// Simple cache for client-side filtering performance
+// Enhanced cache for preventing excessive API calls
 const cache = new Map();
-const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const requestCache = new Map(); // Cache for identical requests
+const REQUEST_DEBOUNCE_TIME = 500; // 500ms debounce
+
+// Debounce function to prevent rapid successive calls
+const debounce = (func, wait) => {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
 
 // API service functions for buyers
 export const apiService = {
@@ -65,16 +80,52 @@ export const apiService = {
     }
   },
 
-  // Products browsing
+  // Products browsing with caching
   async getProducts(page = 0, size = 12) {
-    const response = await api.get(`/api/v1/products?offset=${page * size}&limit=${size}`);
-    // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
-    return {
-      data: response.data.data || response.data,
-      total: response.data.pagination?.total || 0,
-      offset: page * size,
-      limit: size
-    };
+    const cacheKey = `products_${page}_${size}`;
+    const now = Date.now();
+
+    // Check cache first
+    if (cache.has(cacheKey)) {
+      const cached = cache.get(cacheKey);
+      if (now - cached.timestamp < CACHE_DURATION) {
+        console.log('Returning cached products for page', page);
+        return cached.data;
+      }
+    }
+
+    // Check if identical request is already in progress
+    if (requestCache.has(cacheKey)) {
+      console.log('Request already in progress, waiting for result...');
+      return requestCache.get(cacheKey);
+    }
+
+    // Make the request
+    const requestPromise = (async () => {
+      try {
+        const response = await api.get(`/api/v1/products?offset=${page * size}&limit=${size}`);
+        const result = {
+          data: response.data.data || response.data,
+          total: response.data.pagination?.total || 0,
+          offset: page * size,
+          limit: size
+        };
+
+        // Cache the result
+        cache.set(cacheKey, { data: result, timestamp: now });
+        console.log('Cached products for page', page);
+
+        return result;
+      } finally {
+        // Remove from request cache when done
+        requestCache.delete(cacheKey);
+      }
+    })();
+
+    // Store the promise to prevent duplicate requests
+    requestCache.set(cacheKey, requestPromise);
+
+    return requestPromise;
   },
 
   async getProduct(productId) {

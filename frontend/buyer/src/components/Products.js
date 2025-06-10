@@ -49,12 +49,12 @@ function Products() {
 
   const { mutate, loading: contacting } = useApiMutation();
 
-  // Handle errors with toast notifications
+  // Handle errors - только логируем в консоль, не показываем пользователю
   useEffect(() => {
     if (error) {
-      showError(error);
+      console.error('Products API Error:', error);
     }
-  }, [error, showError]);
+  }, [error]);
 
   const handleSearch = useCallback((e) => {
     e.preventDefault();
