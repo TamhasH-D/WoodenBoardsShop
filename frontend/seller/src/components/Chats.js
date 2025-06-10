@@ -3,15 +3,19 @@ import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { MOCK_IDS } from '../utils/constants';
 
-// Use shared mock seller ID
-const MOCK_SELLER_ID = MOCK_IDS.SELLER_ID;
+// Use shared mock seller keycloak ID
+const MOCK_SELLER_KEYCLOAK_ID = MOCK_IDS.SELLER_KEYCLOAK_ID;
 
 function Chats() {
   const [page, setPage] = useState(0);
   const [selectedThread, setSelectedThread] = useState(null);
   const [newMessage, setNewMessage] = useState('');
 
-  const { data, loading, error, refetch } = useApi(() => apiService.getSellerChats(MOCK_SELLER_ID, page, 10), [page]);
+  // Get seller profile to get seller_id
+  const { data: sellerProfile } = useApi(() => apiService.getSellerProfileByKeycloakId(MOCK_SELLER_KEYCLOAK_ID), []);
+  const sellerId = sellerProfile?.data?.id;
+
+  const { data, loading, error, refetch } = useApi(() => apiService.getSellerChatsByKeycloakId(MOCK_SELLER_KEYCLOAK_ID, page, 10), [page]);
   const { data: messages, loading: messagesLoading, refetch: refetchMessages } = useApi(
     () => selectedThread ? apiService.getChatMessages(selectedThread.id) : Promise.resolve(null),
     [selectedThread?.id] // Only depend on the ID, not the entire object
@@ -30,7 +34,7 @@ function Chats() {
         is_read_by_seller: true,
         thread_id: selectedThread.id,
         buyer_id: selectedThread.buyer_id,
-        seller_id: MOCK_SELLER_ID
+        seller_id: sellerId
       }));
       setNewMessage('');
       refetchMessages();
@@ -122,11 +126,11 @@ function Chats() {
                               key={message.id}
                               className="card mb-4"
                               style={{
-                                backgroundColor: message.seller_id === MOCK_SELLER_ID ? '#dbeafe' : '#dcfce7'
+                                backgroundColor: message.seller_id === sellerId ? '#dbeafe' : '#dcfce7'
                               }}
                             >
                               <div style={{ fontSize: '0.875rem', fontWeight: 'bold' }}>
-                                {message.seller_id === MOCK_SELLER_ID ? 'You' : 'Buyer'}
+                                {message.seller_id === sellerId ? 'You' : 'Buyer'}
                               </div>
                               <div>{message.message}</div>
                               <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>

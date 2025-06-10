@@ -114,19 +114,19 @@ export const apiService = {
     }
   },
 
-  // Seller profile management with automatic creation
-  async getSellerProfile(sellerId) {
+  // Seller profile management by keycloak_id with automatic creation
+  async getSellerProfileByKeycloakId(keycloakId) {
     try {
-      const response = await api.get(`/api/v1/sellers/${sellerId}`);
+      const response = await api.get(`/api/v1/sellers/by-keycloak/${keycloakId}`);
       return response.data;
     } catch (error) {
-      if (error.response?.status === 404 || error.response?.status === 422 || error.response?.status === 500) {
+      if (error.response?.status === 404) {
         // Seller doesn't exist, try to create it
-        console.warn(`Seller ${sellerId} not found (${error.response?.status}), attempting to create...`);
+        console.warn(`Seller with keycloak_id ${keycloakId} not found, attempting to create...`);
         try {
           const newSeller = await this.createSeller({
-            id: sellerId,
-            keycloak_uuid: 'mock-keycloak-uuid-' + sellerId.substring(0, 8),
+            id: generateEntityUUID(ENTITY_TYPES.SELLER),
+            keycloak_uuid: keycloakId,
             is_online: true
           });
           console.log('Seller created successfully:', newSeller);
@@ -135,8 +135,8 @@ export const apiService = {
           console.warn('Failed to create seller, using mock data:', createError);
           // Return mock data as fallback
           return {
-            id: sellerId,
-            keycloak_uuid: 'mock-keycloak-uuid-' + sellerId.substring(0, 8),
+            id: generateEntityUUID(ENTITY_TYPES.SELLER),
+            keycloak_uuid: keycloakId,
             is_online: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -145,6 +145,12 @@ export const apiService = {
       }
       throw error;
     }
+  },
+
+  // Legacy method for backward compatibility (deprecated)
+  async getSellerProfile(sellerId) {
+    console.warn('getSellerProfile is deprecated, use getSellerProfileByKeycloakId instead');
+    return this.getSellerProfileByKeycloakId(sellerId);
   },
 
   async createSeller(sellerData) {
@@ -162,6 +168,21 @@ export const apiService = {
   async updateSellerProfile(sellerId, sellerData) {
     const response = await api.patch(`/api/v1/sellers/${sellerId}`, sellerData);
     return response.data;
+  },
+
+  // Update seller profile by keycloak_id (gets seller_id first)
+  async updateSellerProfileByKeycloakId(keycloakId, updateData) {
+    try {
+      // First get seller by keycloak_id to get the actual seller_id
+      const sellerResponse = await this.getSellerProfileByKeycloakId(keycloakId);
+      const sellerId = sellerResponse.data.id;
+
+      // Then update using seller_id
+      return await this.updateSellerProfile(sellerId, updateData);
+    } catch (error) {
+      console.error('Failed to update seller profile by keycloak_id:', error);
+      throw error;
+    }
   },
 
   // Products management
@@ -200,6 +221,27 @@ export const apiService = {
       };
     } catch (error) {
       console.error('Failed to get seller products:', error);
+      // Return empty result on error
+      return {
+        data: [],
+        total: 0,
+        offset: page * size,
+        limit: size
+      };
+    }
+  },
+
+  // Get seller products by keycloak_id (gets seller_id first)
+  async getSellerProductsByKeycloakId(keycloakId, page = 0, size = 10) {
+    try {
+      // First get seller by keycloak_id to get the actual seller_id
+      const sellerResponse = await this.getSellerProfileByKeycloakId(keycloakId);
+      const sellerId = sellerResponse.data.id;
+
+      // Then get products using seller_id
+      return await this.getSellerProducts(sellerId, page, size);
+    } catch (error) {
+      console.error('Failed to get seller products by keycloak_id:', error);
       // Return empty result on error
       return {
         data: [],
@@ -529,6 +571,27 @@ export const apiService = {
       };
     } catch (error) {
       console.error('Failed to get seller chats:', error);
+      // Return empty result on error
+      return {
+        data: [],
+        total: 0,
+        offset: page * size,
+        limit: size
+      };
+    }
+  },
+
+  // Get seller chats by keycloak_id (gets seller_id first)
+  async getSellerChatsByKeycloakId(keycloakId, page = 0, size = 10) {
+    try {
+      // First get seller by keycloak_id to get the actual seller_id
+      const sellerResponse = await this.getSellerProfileByKeycloakId(keycloakId);
+      const sellerId = sellerResponse.data.id;
+
+      // Then get chats using seller_id
+      return await this.getSellerChats(sellerId, page, size);
+    } catch (error) {
+      console.error('Failed to get seller chats by keycloak_id:', error);
       // Return empty result on error
       return {
         data: [],

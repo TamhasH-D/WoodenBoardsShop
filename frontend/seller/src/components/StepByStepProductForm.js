@@ -122,7 +122,7 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
     try {
       // Подготавливаем данные для нового API
       const productData = {
-        keycloak_id: MOCK_SELLER_ID, // В реальном приложении это будет из Keycloak
+        keycloak_id: MOCK_IDS.SELLER_KEYCLOAK_ID, // В реальном приложении это будет из Keycloak
         title: formData.title.trim(),
         description: formData.description?.trim() || '',
         wood_type_id: formData.wood_type_id,

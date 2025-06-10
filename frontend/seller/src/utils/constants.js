@@ -6,7 +6,8 @@
 // Mock IDs для разработки и тестирования
 // В реальном приложении эти значения будут получены из аутентификации
 export const MOCK_IDS = {
-  SELLER_ID: '3ab0f210-ca78-4312-841b-8b1ae774adac',
+  // Используем keycloak_id вместо seller_id для соответствия новому API
+  SELLER_KEYCLOAK_ID: '3ab0f210-ca78-4312-841b-8b1ae774adac',
   BUYER_ID: '81f81c96-c56e-4b36-aec3-656f3576d09f',
   ADMIN_ID: 'admin-uuid-placeholder'
 };

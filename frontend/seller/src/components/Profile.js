@@ -4,8 +4,8 @@ import { apiService } from '../services/api';
 import { SELLER_TEXTS } from '../utils/localization';
 import { MOCK_IDS } from '../utils/constants';
 
-// Use shared mock seller ID
-const MOCK_SELLER_ID = MOCK_IDS.SELLER_ID;
+// Use shared mock seller keycloak ID
+const MOCK_SELLER_KEYCLOAK_ID = MOCK_IDS.SELLER_KEYCLOAK_ID;
 
 function Profile() {
   const [isEditing, setIsEditing] = useState(false);
@@ -15,14 +15,14 @@ function Profile() {
   });
 
   // Create stable API function to prevent infinite loops
-  const profileApiFunction = useMemo(() => () => apiService.getSellerProfile(MOCK_SELLER_ID), []);
+  const profileApiFunction = useMemo(() => () => apiService.getSellerProfileByKeycloakId(MOCK_SELLER_KEYCLOAK_ID), []);
   const { data, loading, error, refetch } = useApi(profileApiFunction, []);
   const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
 
   const handleSaveProfile = useCallback(async (e) => {
     e.preventDefault();
     try {
-      await mutate(apiService.updateSellerProfile, MOCK_SELLER_ID, profileData);
+      await mutate(() => apiService.updateSellerProfileByKeycloakId(MOCK_SELLER_KEYCLOAK_ID, profileData));
       setIsEditing(false);
       refetch();
     } catch (err) {
@@ -51,7 +51,7 @@ function Profile() {
 
       <div className="flex justify-between items-center mb-6">
         <div>
-          <p>{SELLER_TEXTS.SELLER_ID}: {MOCK_SELLER_ID.substring(0, 8)}...</p>
+          <p>{SELLER_TEXTS.SELLER_ID}: {MOCK_SELLER_KEYCLOAK_ID.substring(0, 8)}...</p>
         </div>
         <div className="flex gap-4">
           {!isEditing && (
@@ -105,7 +105,7 @@ function Profile() {
                 <input
                   type="text"
                   className="form-input"
-                  value={MOCK_SELLER_ID}
+                  value={MOCK_SELLER_KEYCLOAK_ID}
                   disabled
                   style={{ backgroundColor: '#f7fafc' }}
                 />
@@ -162,7 +162,7 @@ function Profile() {
                     <strong>{SELLER_TEXTS.SELLER_ID}:</strong>
                     <br />
                     <code style={{ backgroundColor: '#f7fafc', padding: '0.25rem', borderRadius: '0.25rem' }}>
-                      {MOCK_SELLER_ID}
+                      {data?.data?.id || MOCK_SELLER_KEYCLOAK_ID}
                     </code>
                   </div>
 

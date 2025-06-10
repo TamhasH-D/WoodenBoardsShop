@@ -8,8 +8,8 @@ import StepByStepProductForm from './StepByStepProductForm';
 import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
 import { MOCK_IDS } from '../utils/constants';
 
-// Use shared mock seller ID
-const MOCK_SELLER_ID = MOCK_IDS.SELLER_ID;
+// Use shared mock seller keycloak ID
+const MOCK_SELLER_KEYCLOAK_ID = MOCK_IDS.SELLER_KEYCLOAK_ID;
 
 function Products() {
   const [page, setPage] = useState(0);
@@ -23,7 +23,7 @@ function Products() {
     delivery_possible: false,
     pickup_location: '',
     wood_type_id: '',
-    seller_id: MOCK_SELLER_ID
+    seller_id: MOCK_SELLER_KEYCLOAK_ID
   });
   const [editProduct, setEditProduct] = useState({
     title: '',
@@ -45,7 +45,7 @@ function Products() {
   const { error: toastError, showError, clearError } = useErrorHandler();
 
   // Create stable API functions to prevent infinite loops
-  const productsApiFunction = useMemo(() => () => apiService.getSellerProducts(MOCK_SELLER_ID, page, 10), [page]);
+  const productsApiFunction = useMemo(() => () => apiService.getSellerProductsByKeycloakId(MOCK_SELLER_KEYCLOAK_ID, page, 10), [page]);
   const woodTypesApiFunction = useMemo(() => () => apiService.getAllWoodTypes(), []);
   const woodTypePricesApiFunction = useMemo(() => () => apiService.getAllWoodTypePrices(), []);
 
@@ -141,7 +141,7 @@ function Products() {
           price: price,
           delivery_possible: newProduct.delivery_possible,
           pickup_location: newProduct.pickup_location?.trim() || null,
-          seller_id: MOCK_SELLER_ID,
+          seller_id: MOCK_SELLER_KEYCLOAK_ID,
           wood_type_id: newProduct.wood_type_id
         }, selectedImage, boardHeightMeters, boardLengthMeters));
 
@@ -164,7 +164,7 @@ function Products() {
           price: price,
           delivery_possible: newProduct.delivery_possible,
           pickup_location: newProduct.pickup_location?.trim() || null,
-          seller_id: MOCK_SELLER_ID,
+          seller_id: MOCK_SELLER_KEYCLOAK_ID,
           wood_type_id: newProduct.wood_type_id
         }));
       }
@@ -178,7 +178,7 @@ function Products() {
         delivery_possible: false,
         pickup_location: '',
         wood_type_id: '',
-        seller_id: MOCK_SELLER_ID
+        seller_id: MOCK_SELLER_KEYCLOAK_ID
       });
       clearImageData();
       setBoardHeight('50');
