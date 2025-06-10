@@ -185,13 +185,7 @@ a:focus {
   padding: 0 var(--space-6);
 }
 
-.header {
-  background: var(--color-bg-card);
-  border-bottom: var(--border-width) solid var(--color-border-light);
-  padding: var(--space-5) 0;
-  box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(8px);
-}
+/* Professional Header Styles - moved to ProfessionalHeader component */
 
 .nav {
   display: flex;
@@ -255,10 +249,10 @@ a:focus {
   border-radius: 1px;
 }
 
-/* Main Content - Spacious & Natural */
+/* Main Content - Clean & Professional */
 .main {
-  padding: var(--space-12) 0 var(--space-20);
-  min-height: calc(100vh - 120px);
+  min-height: calc(100vh - 64px);
+  background: var(--color-bg-secondary);
 }
 
 .page-header {
