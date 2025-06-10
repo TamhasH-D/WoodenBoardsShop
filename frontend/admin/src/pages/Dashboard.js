@@ -75,7 +75,7 @@ const Dashboard = () => {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
         <div className="space-y-2">
           <h1 className="text-4xl font-bold text-gradient-primary">
-            Добро пожаловать! 👋
+            Административная панель
           </h1>
           <p className="text-lg text-slate-600 dark:text-slate-400">
             Мониторинг и управление платформой торговли древесиной с корпоративными инструментами
@@ -85,7 +85,7 @@ const Dashboard = () => {
               <div className="w-2 h-2 bg-success-500 rounded-full animate-pulse" />
               Система онлайн
             </span>
-            <span>•</span>
+            <span>|</span>
             <span>Последнее обновление: {formatDateRu(new Date(), 'TIME')}</span>
           </div>
         </div>
@@ -94,7 +94,6 @@ const Dashboard = () => {
           <Button
             variant="secondary"
             onClick={handleRefresh}
-            icon="🔄"
             className="hover-lift"
           >
             {ADMIN_TEXTS.REFRESH} данные
@@ -102,7 +101,6 @@ const Dashboard = () => {
           <Button
             variant="primary"
             onClick={() => window.location.href = '/tools/export'}
-            icon="📊"
             className="hover-lift"
           >
             Экспорт отчета
@@ -121,7 +119,9 @@ const Dashboard = () => {
           <div className="relative flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center text-white text-xl shadow-soft group-hover:shadow-glow transition-all duration-300">
-                👥
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                </svg>
               </div>
               <div>
                 <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -167,7 +167,9 @@ const Dashboard = () => {
           <div className="relative flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-gradient-to-br from-success-500 to-success-600 rounded-xl flex items-center justify-center text-white text-xl shadow-soft group-hover:shadow-glow transition-all duration-300">
-                📦
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 2L3 7v11a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V7l-7-5z" clipRule="evenodd" />
+                </svg>
               </div>
               <div>
                 <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -209,7 +211,9 @@ const Dashboard = () => {
           <div className="relative flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-gradient-to-br from-warning-500 to-warning-600 rounded-xl flex items-center justify-center text-white text-xl shadow-soft group-hover:shadow-glow transition-all duration-300">
-                🌳
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clipRule="evenodd" />
+                </svg>
               </div>
               <div>
                 <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -251,7 +255,9 @@ const Dashboard = () => {
           <div className="relative flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-xl shadow-soft group-hover:shadow-glow transition-all duration-300">
-                💬
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                </svg>
               </div>
               <div>
                 <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -305,7 +311,9 @@ const Dashboard = () => {
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative">
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-2xl">🛒</span>
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                </svg>
                 <h3 className="text-lg font-semibold">Управление покупателями</h3>
               </div>
               <p className="text-brand-100 text-sm mb-4">
@@ -325,7 +333,9 @@ const Dashboard = () => {
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative">
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-2xl">🏪</span>
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                </svg>
                 <h3 className="text-lg font-semibold">Управление продавцами</h3>
               </div>
               <p className="text-success-100 text-sm mb-4">
@@ -345,7 +355,9 @@ const Dashboard = () => {
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative">
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-2xl">🌳</span>
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clipRule="evenodd" />
+                </svg>
                 <h3 className="text-lg font-semibold">{ADMIN_TEXTS.WOOD_TYPES}</h3>
               </div>
               <p className="text-warning-100 text-sm mb-4">
@@ -365,7 +377,9 @@ const Dashboard = () => {
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative">
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-2xl">📤</span>
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
                 <h3 className="text-lg font-semibold">{ADMIN_TEXTS.DATA_EXPORT}</h3>
               </div>
               <p className="text-purple-100 text-sm mb-4">
@@ -385,7 +399,9 @@ const Dashboard = () => {
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative">
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-2xl">🧪</span>
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
                 <h3 className="text-lg font-semibold">{ADMIN_TEXTS.API_TESTER}</h3>
               </div>
               <p className="text-slate-100 text-sm mb-4">
@@ -405,7 +421,9 @@ const Dashboard = () => {
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative">
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-2xl">🔧</span>
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                </svg>
                 <h3 className="text-lg font-semibold">{ADMIN_TEXTS.HEALTH_CHECK}</h3>
               </div>
               <p className="text-error-100 text-sm mb-4">
@@ -443,7 +461,9 @@ const Dashboard = () => {
             <div className="p-6 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors duration-200">
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-success-500 to-success-600 rounded-xl flex items-center justify-center text-white shadow-soft">
-                  <span className="text-lg">✅</span>
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
@@ -464,7 +484,9 @@ const Dashboard = () => {
             <div className="p-6 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors duration-200">
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center text-white shadow-soft">
-                  <span className="text-lg">📊</span>
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                  </svg>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
@@ -485,7 +507,9 @@ const Dashboard = () => {
             <div className="p-6 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors duration-200">
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-soft">
-                  <span className="text-lg">🔄</span>
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                  </svg>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
