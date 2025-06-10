@@ -1,95 +1,56 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ImageUpload from './ui/ImageUpload';
+import ResultDisplay from './ui/ResultDisplay';
+import ErrorToast from './ui/ErrorToast';
 
-const BoardImageAnalyzer = ({ 
-  onAnalysisComplete, 
-  onImageSelect, 
+/**
+ * Улучшенный анализатор досок с красивым UI
+ * Адаптирован из backend/prosto_board_volume-main/frontend
+ * Использует правильные API запросы seller frontend
+ */
+const BoardImageAnalyzer = ({
+  onAnalysisComplete,
+  onImageSelect,
   disabled = false,
   initialHeight = '',
   initialLength = ''
 }) => {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [boardHeight, setBoardHeight] = useState(initialHeight);
-  const [boardLength, setBoardLength] = useState(initialLength);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState(null);
+  const [imageUrl, setImageUrl] = useState(null);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showDetails, setShowDetails] = useState(false);
-  
-  const fileInputRef = useRef(null);
-  const canvasRef = useRef(null);
+  const resultRef = useRef(null);
 
-  // Очистка preview при размонтировании
+  // Автоскролл к результатам после анализа
   useEffect(() => {
-    return () => {
-      if (preview) {
-        URL.revokeObjectURL(preview);
-      }
-    };
-  }, [preview]);
+    if (result && !loading && resultRef.current) {
+      const yOffset = -window.innerHeight * 0.35; // 35% высоты viewport как отступ
+      const element = resultRef.current;
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Проверка типа файла
-      if (!file.type.startsWith('image/')) {
-        setError('Пожалуйста, выберите файл изображения');
-        return;
-      }
-
-      // Проверка размера файла (максимум 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        setError('Размер файла не должен превышать 10MB');
-        return;
-      }
-
-      setSelectedFile(file);
-      setError(null);
-      setAnalysisResult(null);
-
-      // Создание preview
-      if (preview) {
-        URL.revokeObjectURL(preview);
-      }
-      const newPreview = URL.createObjectURL(file);
-      setPreview(newPreview);
-
-      // Уведомляем родительский компонент о выборе изображения
-      if (onImageSelect) {
-        onImageSelect(file);
-      }
+      window.scrollTo({ top: y, behavior: 'smooth' });
     }
-  };
+  }, [result, loading]);
 
-  const handleAnalyze = async () => {
-    if (!selectedFile) {
-      setError('Пожалуйста, выберите изображение');
-      return;
-    }
-
-    const height = parseFloat(boardHeight);
-    const length = parseFloat(boardLength);
-
-    if (isNaN(height) || height <= 0) {
-      setError('Пожалуйста, введите корректную высоту доски');
-      return;
-    }
-
-    if (isNaN(length) || length <= 0) {
-      setError('Пожалуйста, введите корректную длину доски');
-      return;
-    }
-
-    setAnalyzing(true);
-    setError(null);
-
+  const handleAnalyze = async (file, height, length) => {
     try {
-      const formData = new FormData();
-      formData.append('image', selectedFile);
+      setLoading(true);
+      setError(null);
 
-      // Используем значения в миллиметрах напрямую (height и length уже в мм)
+      // Создаем object URL для предварительного просмотра
+      const objectUrl = URL.createObjectURL(file);
+      setImageUrl(objectUrl);
+
+      // Конвертируем метры обратно в миллиметры для API
+      const heightMm = height * 1000;
+      const lengthMm = length * 1000;
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      // Используем правильный API endpoint seller frontend
       const response = await fetch(
-        `/api/v1/wooden-boards/calculate-volume?board_height=${height}&board_length=${length}`,
+        `/api/v1/wooden-boards/calculate-volume?board_height=${heightMm}&board_length=${lengthMm}`,
         {
           method: 'POST',
           body: formData,
@@ -100,218 +61,168 @@ const BoardImageAnalyzer = ({
         throw new Error(`Ошибка анализа: ${response.status}`);
       }
 
-      const result = await response.json();
-      setAnalysisResult(result);
-      setShowDetails(true);
+      const data = await response.json();
+      setResult(data);
 
       // Уведомляем родительский компонент о завершении анализа
       if (onAnalysisComplete) {
         onAnalysisComplete({
-          ...result,
-          image: selectedFile,
-          boardHeight: height,
-          boardLength: length
+          ...data,
+          image: file,
+          boardHeight: heightMm,
+          boardLength: lengthMm
         });
+      }
+
+      // Уведомляем о выборе изображения
+      if (onImageSelect) {
+        onImageSelect(file);
       }
 
     } catch (err) {
       console.error('Ошибка анализа изображения:', err);
-      setError(err.message || 'Произошла ошибка при анализе изображения');
+      setError(err instanceof Error ? err.message : 'Произошла ошибка при анализе');
     } finally {
-      setAnalyzing(false);
+      setLoading(false);
     }
   };
 
-  const clearAnalysis = () => {
-    setSelectedFile(null);
-    setPreview(null);
-    setBoardHeight('');
-    setBoardLength('');
-    setAnalysisResult(null);
-    setError(null);
-    setShowDetails(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
 
-  // Отрисовка результатов на canvas
-  useEffect(() => {
-    if (analysisResult && preview && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      
-      img.onload = () => {
-        // Устанавливаем размер canvas равным размеру изображения
-        canvas.width = img.width;
-        canvas.height = img.height;
-        
-        // Рисуем изображение
-        ctx.drawImage(img, 0, 0);
-        
-        // Рисуем контуры досок
-        analysisResult.wooden_boards.forEach((board, index) => {
-          const { points } = board.detection;
-          
-          ctx.strokeStyle = '#00ff00';
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          
-          if (points && points.length > 0) {
-            ctx.moveTo(points[0].x, points[0].y);
-            points.forEach((point, i) => {
-              if (i > 0) {
-                ctx.lineTo(point.x, point.y);
-              }
-            });
-            ctx.closePath();
-            ctx.stroke();
-            
-            // Добавляем номер доски
-            const centerX = points.reduce((sum, p) => sum + p.x, 0) / points.length;
-            const centerY = points.reduce((sum, p) => sum + p.y, 0) / points.length;
-            
-            ctx.fillStyle = '#00ff00';
-            ctx.font = '20px Arial';
-            ctx.fillText(`${index + 1}`, centerX - 10, centerY + 5);
-          }
-        });
-      };
-      
-      img.src = preview;
-    }
-  }, [analysisResult, preview]);
 
   return (
-    <div className="board-analyzer">
-      <div className="form-group">
-        <label className="form-label">
-          📸 Изображение досок для анализа
-        </label>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFileSelect}
-          disabled={disabled}
-          className="form-input"
-        />
-        {selectedFile && (
-          <div className="file-info">
-            Выбран файл: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
-          </div>
-        )}
-      </div>
-
-      <div className="dimensions-input">
-        <div className="form-row">
-          <div className="form-group">
-            <label className="form-label">Высота доски (мм) *</label>
-            <input
-              type="number"
-              value={boardHeight}
-              onChange={(e) => setBoardHeight(e.target.value)}
-              placeholder="Например: 50"
-              disabled={disabled}
-              className="form-input"
-              min="1"
-              step="0.1"
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Длина доски (мм) *</label>
-            <input
-              type="number"
-              value={boardLength}
-              onChange={(e) => setBoardLength(e.target.value)}
-              placeholder="Например: 6000"
-              disabled={disabled}
-              className="form-input"
-              min="1"
-              step="0.1"
-            />
-          </div>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(to bottom, #f9fafb, #f3f4f6)',
+      padding: '2rem 1rem',
+      fontFamily: 'Inter, system-ui, sans-serif'
+    }}>
+      <div style={{ maxWidth: '112rem', margin: '0 auto' }}>
+        {/* Заголовок */}
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <h1 style={{
+            fontSize: '2.5rem',
+            fontWeight: '700',
+            color: '#1f2937',
+            marginBottom: '1rem',
+            background: 'linear-gradient(135deg, var(--color-primary), #1e40af)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
+            🪵 Анализатор досок
+          </h1>
+          <p style={{
+            fontSize: '1.125rem',
+            color: '#6b7280',
+            maxWidth: '48rem',
+            margin: '0 auto',
+            lineHeight: '1.6'
+          }}>
+            Загрузите изображение досок и получите точный расчет объема с помощью искусственного интеллекта
+          </p>
         </div>
-      </div>
 
-      <div className="analyzer-actions">
-        <button
-          type="button"
-          onClick={handleAnalyze}
-          disabled={!selectedFile || !boardHeight || !boardLength || analyzing || disabled}
-          className="btn btn-primary"
-        >
-          {analyzing ? '🔄 Анализируем...' : '🔍 Анализировать изображение'}
-        </button>
-        
-        {(selectedFile || analysisResult) && (
-          <button
-            type="button"
-            onClick={clearAnalysis}
-            disabled={analyzing || disabled}
-            className="btn btn-secondary"
-          >
-            🗑️ Очистить
-          </button>
-        )}
-      </div>
-
-      {error && (
-        <div className="error-message">
-          ❌ {error}
-        </div>
-      )}
-
-      {preview && (
-        <div className="image-preview">
-          <h4>Предварительный просмотр:</h4>
-          {!analysisResult ? (
-            <img src={preview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '400px' }} />
-          ) : (
-            <canvas
-              ref={canvasRef}
-              style={{ maxWidth: '100%', maxHeight: '400px', border: '1px solid #ddd' }}
-            />
-          )}
-        </div>
-      )}
-
-      {analysisResult && showDetails && (
-        <div className="analysis-results">
-          <h4>📊 Результаты анализа:</h4>
-          <div className="results-summary">
-            <div className="result-card">
-              <div className="result-value">{analysisResult.total_volume.toFixed(4)} м³</div>
-              <div className="result-label">Общий объем</div>
+        {/* Инструкции */}
+        <div className="card" style={{ marginBottom: '2rem', maxWidth: '48rem', margin: '0 auto 2rem auto' }}>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#374151', marginBottom: '1rem' }}>
+            📋 Инструкции по использованию
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+              <span style={{
+                backgroundColor: 'var(--color-primary)',
+                color: 'white',
+                borderRadius: '50%',
+                width: '1.5rem',
+                height: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: '600',
+                flexShrink: 0
+              }}>1</span>
+              <p style={{ margin: 0, color: '#4b5563' }}>Введите размеры досок (высота и длина в миллиметрах)</p>
             </div>
-            <div className="result-card">
-              <div className="result-value">{analysisResult.total_count}</div>
-              <div className="result-label">Количество досок</div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+              <span style={{
+                backgroundColor: 'var(--color-primary)',
+                color: 'white',
+                borderRadius: '50%',
+                width: '1.5rem',
+                height: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: '600',
+                flexShrink: 0
+              }}>2</span>
+              <p style={{ margin: 0, color: '#4b5563' }}>Загрузите четкое изображение досок (PNG, JPG до 10MB)</p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+              <span style={{
+                backgroundColor: 'var(--color-primary)',
+                color: 'white',
+                borderRadius: '50%',
+                width: '1.5rem',
+                height: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: '600',
+                flexShrink: 0
+              }}>3</span>
+              <p style={{ margin: 0, color: '#4b5563' }}>Нажмите "Начать анализ" и получите результаты с интерактивной визуализацией</p>
             </div>
           </div>
+        </div>
 
-          {analysisResult.wooden_boards && analysisResult.wooden_boards.length > 0 && (
-            <div className="boards-details">
-              <h5>Детали по доскам:</h5>
-              <div className="boards-list">
-                {analysisResult.wooden_boards.map((board, index) => (
-                  <div key={index} className="board-item">
-                    <span className="board-number">#{index + 1}</span>
-                    <span className="board-volume">{board.volume.toFixed(4)} м³</span>
-                    <span className="board-dimensions">
-                      {board.width.toFixed(1)} × {board.height.toFixed(1)} × {board.length.toFixed(1)} мм
-                    </span>
-                    <span className="board-confidence">
-                      {(board.detection.confidence * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                ))}
-              </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <ImageUpload onAnalyze={handleAnalyze} />
+
+          {loading && (
+            <div style={{
+              textAlign: 'center',
+              padding: '2rem',
+              backgroundColor: 'white',
+              borderRadius: '0.75rem',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+            }}>
+              <div style={{
+                display: 'inline-block',
+                width: '2.5rem',
+                height: '2.5rem',
+                border: '4px solid var(--color-primary)',
+                borderTopColor: 'transparent',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }}></div>
+              <p style={{ marginTop: '1rem', color: '#374151', fontWeight: '500', margin: '1rem 0 0 0' }}>
+                Анализируем изображение...
+              </p>
+              <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem', margin: '0.5rem 0 0 0' }}>
+                Это может занять несколько секунд
+              </p>
             </div>
           )}
+
+          <ErrorToast error={error} onDismiss={() => setError(null)} />
+
+          {imageUrl && result && (
+            <div ref={resultRef}>
+              <ResultDisplay imageUrl={imageUrl} result={result} />
+            </div>
+          )}
         </div>
-      )}
+      </div>
+
+      <style jsx>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine AS build
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ ENV REACT_APP_WOODEN_BOARDS_API_URL=$REACT_APP_WOODEN_BOARDS_API_URL
 COPY package*.json ./
 
 # Install all dependencies (including devDependencies needed for build)
-RUN npm install
+RUN npm install --production=false --silent
 
 # Copy source code
 COPY . .

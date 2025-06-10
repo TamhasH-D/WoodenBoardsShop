@@ -12,7 +12,7 @@ COPY package*.json ./
 COPY postcss.config.js ./
 
 # Install all dependencies (including devDependencies needed for build)
-RUN npm install
+RUN npm cache clean --force && npm install --no-optional --legacy-peer-deps
 
 # Copy source code
 COPY . .

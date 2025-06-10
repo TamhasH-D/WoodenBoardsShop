@@ -1,222 +1,207 @@
-import React, { useState } from 'react';
-import { useApiMutation } from '../hooks/useApi';
-import { apiService } from '../services/api';
-import { BUYER_TEXTS } from '../utils/localization';
-import ErrorMessage from './ui/ErrorMessage';
+import React, { useState, useRef, useEffect } from 'react';
+import ImageUpload from './ui/ImageUpload';
+import ResultDisplay from './ui/ResultDisplay';
+import ErrorToast from './ui/ErrorToast';
 
-function BoardAnalyzer() {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [boardHeight, setBoardHeight] = useState('');
-  const [boardLength, setBoardLength] = useState('');
-  const [analysisResult, setAnalysisResult] = useState(null);
-  const { mutate, loading, error, success } = useApiMutation();
+/**
+ * Анализатор досок для buyer frontend
+ * Использует тот же красивый UI что и seller, но с API запросами для buyer
+ */
+const BoardAnalyzer = () => {
+  const [imageUrl, setImageUrl] = useState(null);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const resultRef = useRef(null);
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      setAnalysisResult(null);
+  // Автоскролл к результатам после анализа
+  useEffect(() => {
+    if (result && !loading && resultRef.current) {
+      const yOffset = -window.innerHeight * 0.35; // 35% высоты viewport как отступ
+      const element = resultRef.current;
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+
+      window.scrollTo({ top: y, behavior: 'smooth' });
     }
-  };
+  }, [result, loading]);
 
-  const handleAnalyze = async () => {
-    if (!selectedFile) return;
-
+  const handleAnalyze = async (file, height, length) => {
     try {
-      // Конвертируем сантиметры в миллиметры для API
-      const heightInMm = (parseFloat(boardHeight) || 0.0) * 10;
-      const lengthInMm = (parseFloat(boardLength) || 0.0) * 10;
+      setLoading(true);
+      setError(null);
 
-      const result = await mutate(
-        apiService.analyzeWoodenBoard,
-        selectedFile,
-        heightInMm,
-        lengthInMm
+      // Создаем object URL для предварительного просмотра
+      const objectUrl = URL.createObjectURL(file);
+      setImageUrl(objectUrl);
+
+      // Конвертируем метры обратно в миллиметры для API
+      const heightMm = height * 1000;
+      const lengthMm = length * 1000;
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      // Используем тот же API endpoint что и seller (wooden-boards API)
+      const response = await fetch(
+        `/api/v1/wooden-boards/calculate-volume?board_height=${heightMm}&board_length=${lengthMm}`,
+        {
+          method: 'POST',
+          body: formData,
+        }
       );
-      setAnalysisResult(result);
-    } catch (err) {
-      console.error('Analysis failed:', err);
-    }
-  };
 
-  const clearAnalysis = () => {
-    setSelectedFile(null);
-    setBoardHeight('');
-    setBoardLength('');
-    setAnalysisResult(null);
+      if (!response.ok) {
+        throw new Error(`Ошибка анализа: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setResult(data);
+
+    } catch (err) {
+      console.error('Ошибка анализа изображения:', err);
+      setError(err instanceof Error ? err.message : 'Произошла ошибка при анализе');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div>
-      <div className="card">
-        <h2>🔍 {BUYER_TEXTS.AI_POWERED_BOARD_ANALYZER}</h2>
-        <p>{BUYER_TEXTS.BOARD_ANALYZER_DESCRIPTION}</p>
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(to bottom, #f9fafb, #f3f4f6)',
+      padding: '2rem 1rem',
+      fontFamily: 'Inter, system-ui, sans-serif'
+    }}>
+      <div style={{ maxWidth: '112rem', margin: '0 auto' }}>
+        {/* Заголовок */}
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <h1 style={{
+            fontSize: '2.5rem',
+            fontWeight: '700',
+            color: '#1f2937',
+            marginBottom: '1rem',
+            background: 'linear-gradient(135deg, var(--color-primary), #1e40af)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
+            🪵 Анализатор досок
+          </h1>
+          <p style={{
+            fontSize: '1.125rem',
+            color: '#6b7280',
+            maxWidth: '48rem',
+            margin: '0 auto',
+            lineHeight: '1.6'
+          }}>
+            Загрузите изображение досок и получите точный расчет объема с помощью искусственного интеллекта
+          </p>
+        </div>
 
-        <div className="form-group">
-          <label className="form-label">{BUYER_TEXTS.SELECT_BOARD_IMAGE} *</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileSelect}
-            className="form-input"
-          />
-          {selectedFile && (
-            <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#718096' }}>
-              {BUYER_TEXTS.SELECTED}: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+        {/* Инструкции */}
+        <div className="card" style={{ marginBottom: '2rem', maxWidth: '48rem', margin: '0 auto 2rem auto' }}>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#374151', marginBottom: '1rem' }}>
+            📋 Инструкции по использованию
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+              <span style={{
+                backgroundColor: 'var(--color-primary)',
+                color: 'white',
+                borderRadius: '50%',
+                width: '1.5rem',
+                height: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: '600',
+                flexShrink: 0
+              }}>1</span>
+              <p style={{ margin: 0, color: '#4b5563' }}>Введите размеры досок (высота и длина в миллиметрах)</p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+              <span style={{
+                backgroundColor: 'var(--color-primary)',
+                color: 'white',
+                borderRadius: '50%',
+                width: '1.5rem',
+                height: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: '600',
+                flexShrink: 0
+              }}>2</span>
+              <p style={{ margin: 0, color: '#4b5563' }}>Загрузите четкое изображение досок (PNG, JPG до 10MB)</p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+              <span style={{
+                backgroundColor: 'var(--color-primary)',
+                color: 'white',
+                borderRadius: '50%',
+                width: '1.5rem',
+                height: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: '600',
+                flexShrink: 0
+              }}>3</span>
+              <p style={{ margin: 0, color: '#4b5563' }}>Нажмите "Начать анализ" и получите результаты с интерактивной визуализацией</p>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <ImageUpload onAnalyze={handleAnalyze} />
+
+          {loading && (
+            <div style={{
+              textAlign: 'center',
+              padding: '2rem',
+              backgroundColor: 'white',
+              borderRadius: '0.75rem',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+            }}>
+              <div style={{
+                display: 'inline-block',
+                width: '2.5rem',
+                height: '2.5rem',
+                border: '4px solid var(--color-primary)',
+                borderTopColor: 'transparent',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }}></div>
+              <p style={{ marginTop: '1rem', color: '#374151', fontWeight: '500', margin: '1rem 0 0 0' }}>
+                Анализируем изображение...
+              </p>
+              <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem', margin: '0.5rem 0 0 0' }}>
+                Это может занять несколько секунд
+              </p>
+            </div>
+          )}
+
+          <ErrorToast error={error} onDismiss={() => setError(null)} />
+
+          {imageUrl && result && (
+            <div ref={resultRef}>
+              <ResultDisplay imageUrl={imageUrl} result={result} />
             </div>
           )}
         </div>
-
-        <div className="grid grid-2">
-          <div className="form-group">
-            <label className="form-label">{BUYER_TEXTS.HEIGHT} (см)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={boardHeight}
-              onChange={(e) => setBoardHeight(e.target.value)}
-              placeholder={BUYER_TEXTS.HEIGHT_PLACEHOLDER}
-              className="form-input"
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label">{BUYER_TEXTS.LENGTH} (см)</label>
-            <input
-              type="number"
-              step="0.1"
-              value={boardLength}
-              onChange={(e) => setBoardLength(e.target.value)}
-              placeholder={BUYER_TEXTS.LENGTH_PLACEHOLDER}
-              className="form-input"
-            />
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-          <button
-            onClick={handleAnalyze}
-            disabled={!selectedFile || loading}
-            className="btn btn-primary"
-          >
-            {loading ? BUYER_TEXTS.ANALYZING : BUYER_TEXTS.ANALYZE_BOARD}
-          </button>
-          {selectedFile && (
-            <button onClick={clearAnalysis} className="btn btn-secondary">
-              {BUYER_TEXTS.CLEAR}
-            </button>
-          )}
-        </div>
-
-        <ErrorMessage error={error} />
-
-        {success && analysisResult && (
-          <div className="success" style={{ marginTop: '1rem' }}>
-            {BUYER_TEXTS.ANALYSIS_COMPLETED}
-          </div>
-        )}
       </div>
 
-      {/* Image Preview */}
-      {selectedFile && (
-        <div className="card">
-          <h3>{BUYER_TEXTS.IMAGE_PREVIEW}</h3>
-          <div style={{ textAlign: 'center' }}>
-            <img
-              src={URL.createObjectURL(selectedFile)}
-              alt="Board preview"
-              style={{
-                maxWidth: '100%',
-                maxHeight: '400px',
-                borderRadius: '0.375rem',
-                border: '1px solid #e2e8f0'
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Analysis Results */}
-      {analysisResult && (
-        <div className="card">
-          <h3>📊 {BUYER_TEXTS.ANALYSIS_RESULTS}</h3>
-
-          <div className="grid grid-2">
-            <div className="stats-card" style={{ background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)' }}>
-              <div className="stats-number">
-                {analysisResult.volume?.toFixed(2) || 'N/A'} {BUYER_TEXTS.CUBIC_METERS}
-              </div>
-              <div className="stats-label">{BUYER_TEXTS.ESTIMATED_VOLUME}</div>
-            </div>
-
-            <div className="stats-card" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-              <div className="stats-number">
-                {analysisResult.confidence ? `${(analysisResult.confidence * 100).toFixed(1)}%` : 'N/A'}
-              </div>
-              <div className="stats-label">{BUYER_TEXTS.CONFIDENCE_LEVEL}</div>
-            </div>
-          </div>
-
-          <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#f7fafc', borderRadius: '0.375rem' }}>
-            <h4>Детали анализа</h4>
-            <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
-              <li>Оценка объема: {analysisResult.volume?.toFixed(3) || 'N/A'} кубических метров</li>
-              <li>Достоверность анализа: {analysisResult.confidence ? `${(analysisResult.confidence * 100).toFixed(1)}%` : 'N/A'}</li>
-              <li>Статус: {analysisResult.success ? 'Успешно' : 'Неудачно'}</li>
-              {analysisResult.message && <li>Сообщение: {analysisResult.message}</li>}
-            </ul>
-          </div>
-
-          {analysisResult.volume && (
-            <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#e6fffa', borderRadius: '0.375rem' }}>
-              <h4>💡 Рекомендации</h4>
-              <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
-                <li>Оценочная рыночная стоимость: {(analysisResult.volume * 150).toFixed(2)} ₽ - {(analysisResult.volume * 250).toFixed(2)} ₽</li>
-                <li>Рассмотрите возможность сравнения с аналогичными товарами на нашей торговой площадке</li>
-                <li>Свяжитесь с продавцами аналогичных типов древесины для уточнения цен</li>
-                <li>Используйте эту оценку объема при переговорах с продавцами</li>
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* How It Works */}
-      <div className="card">
-        <h3>Как работает анализ досок</h3>
-        <div className="grid grid-2">
-          <div>
-            <h4>🤖 ИИ технология</h4>
-            <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
-              <li>Передовые алгоритмы компьютерного зрения</li>
-              <li>Модели машинного обучения, обученные на данных древесины</li>
-              <li>Обработка изображений в реальном времени</li>
-              <li>Точные расчеты объема</li>
-            </ul>
-          </div>
-
-          <div>
-            <h4>📏 Что мы анализируем</h4>
-            <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
-              <li>Размеры и геометрия доски</li>
-              <li>Узоры волокон древесины и качество</li>
-              <li>Дефекты поверхности и неровности</li>
-              <li>Оценка объема с показателями достоверности</li>
-            </ul>
-          </div>
-        </div>
-
-        <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#fff5cd', borderRadius: '0.375rem' }}>
-          <h4>⚠️ {BUYER_TEXTS.IMPORTANT_NOTES}</h4>
-          <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
-            <li>{BUYER_TEXTS.RESULTS_ARE_ESTIMATES}</li>
-            <li>{BUYER_TEXTS.ENSURE_GOOD_LIGHTING}</li>
-            <li>{BUYER_TEXTS.INCLUDE_REFERENCE_OBJECTS}</li>
-            <li>{BUYER_TEXTS.ESTIMATION_PURPOSES_ONLY}</li>
-          </ul>
-        </div>
-      </div>
+      <style jsx>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
-}
+
+};
 
 export default BoardAnalyzer;
