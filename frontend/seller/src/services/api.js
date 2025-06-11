@@ -399,6 +399,68 @@ export const apiService = {
     }
   },
 
+  // Update product with image analysis (similar to createProductWithImage)
+  async updateProductWithImage(productId, productData, imageFile, boardHeight, boardLength) {
+    try {
+      // First, analyze the new image to get volume
+      const analysisResult = await this.analyzeBoardImage(imageFile, boardHeight, boardLength);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Image analysis result for update:', analysisResult);
+      }
+
+      // Update product with new volume from image analysis
+      const updatedProductData = {
+        ...productData,
+        volume: analysisResult.data.total_volume
+      };
+
+      // Update the product first
+      const productResponse = await this.updateProduct(productId, updatedProductData);
+
+      // Then upload the new image
+      const formData = new FormData();
+      formData.append('image', imageFile);
+
+      const imageResponse = await api.post(`/api/v1/images`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 60000,
+      });
+
+      // Update the image to associate with the product
+      if (imageResponse.data && imageResponse.data.id) {
+        await api.patch(`/api/v1/images/${imageResponse.data.id}`, {
+          product_id: productId
+        });
+      }
+
+      // Clear products cache to force refresh
+      cache.delete('all_products');
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Product updated successfully with new image:', productResponse);
+      }
+
+      return productResponse;
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to update product with image:', error);
+      }
+
+      // Provide detailed error information
+      let errorMessage = 'Failed to update product with image analysis';
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      throw new Error(errorMessage);
+    }
+  },
+
   async deleteProduct(productId) {
     try {
       const response = await api.delete(`/api/v1/products/${productId}`);
