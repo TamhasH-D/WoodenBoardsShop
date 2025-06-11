@@ -73,7 +73,7 @@ export const useProgressiveData = (fetchFunction, dependencies = []) => {
 
   useEffect(() => {
     loadData();
-  }, dependencies);
+  }, [loadData, ...dependencies]);
 
   const refetch = useCallback(() => {
     loadData();
@@ -202,7 +202,12 @@ export const useProgressiveStats = (apiService) => {
     } finally {
       setLoading(false);
     }
-  }, [apiService]);
+  }, [apiService, entities]);
+
+  // Автоматическая загрузка при монтировании
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
 
   const refetch = useCallback(() => {
     loadStats();

@@ -193,6 +193,74 @@ export const apiService = {
     };
   },
 
+  // Get all wood types (fetch all pages)
+  async getAllWoodTypes() {
+    try {
+      const firstPage = await this.getWoodTypes(0, 20);
+      const total = firstPage.total;
+      let allWoodTypes = [...firstPage.data];
+
+      // If there are more wood types, fetch them
+      if (total > 20) {
+        const remainingPages = Math.ceil((total - 20) / 20);
+        const promises = [];
+
+        for (let page = 1; page <= remainingPages; page++) {
+          promises.push(this.getWoodTypes(page, 20));
+        }
+
+        const additionalPages = await Promise.all(promises);
+        additionalPages.forEach(pageData => {
+          allWoodTypes = allWoodTypes.concat(pageData.data);
+        });
+      }
+
+      return {
+        data: allWoodTypes,
+        total: total,
+        offset: 0,
+        limit: allWoodTypes.length
+      };
+    } catch (error) {
+      console.error('Failed to fetch all wood types:', error);
+      throw error;
+    }
+  },
+
+  // Get all sellers (fetch all pages)
+  async getAllSellers() {
+    try {
+      const firstPage = await this.getSellers(0, 20);
+      const total = firstPage.total;
+      let allSellers = [...firstPage.data];
+
+      // If there are more sellers, fetch them
+      if (total > 20) {
+        const remainingPages = Math.ceil((total - 20) / 20);
+        const promises = [];
+
+        for (let page = 1; page <= remainingPages; page++) {
+          promises.push(this.getSellers(page, 20));
+        }
+
+        const additionalPages = await Promise.all(promises);
+        additionalPages.forEach(pageData => {
+          allSellers = allSellers.concat(pageData.data);
+        });
+      }
+
+      return {
+        data: allSellers,
+        total: total,
+        offset: 0,
+        limit: allSellers.length
+      };
+    } catch (error) {
+      console.error('Failed to fetch all sellers:', error);
+      throw error;
+    }
+  },
+
   // Buyer profile management with automatic creation
   async getBuyerProfile(buyerId) {
     try {
