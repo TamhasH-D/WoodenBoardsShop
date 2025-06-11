@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { useApi } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { ADMIN_TEXTS } from '../utils/localization';
+import ProgressiveStats from './ProgressiveStats';
 
 const Dashboard = React.memo(() => {
   // Create stable function references to prevent infinite loops
@@ -232,123 +233,8 @@ const Dashboard = React.memo(() => {
         </div>
       </div>
 
-      {/* Platform Overview - Enterprise Style */}
-      <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">Обзор платформы</h2>
-          <p className="card-description">Детальная статистика и метрики системы</p>
-        </div>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: 'var(--space-8)'
-        }}>
-          <div>
-            <h3 style={{
-              fontSize: 'var(--font-size-lg)',
-              fontWeight: 'var(--font-weight-semibold)',
-              color: 'var(--color-text-primary)',
-              marginBottom: 'var(--space-4)'
-            }}>
-              Активность пользователей
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: 'var(--space-3) 0',
-                borderBottom: 'var(--border-width) solid var(--color-border-light)'
-              }}>
-                <span style={{ color: 'var(--color-text-secondary)' }}>Покупатели онлайн:</span>
-                <span style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
-                  {stats?.buyers?.online || 0}
-                </span>
-              </div>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: 'var(--space-3) 0',
-                borderBottom: 'var(--border-width) solid var(--color-border-light)'
-              }}>
-                <span style={{ color: 'var(--color-text-secondary)' }}>Продавцы онлайн:</span>
-                <span style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
-                  {stats?.sellers?.online || 0}
-                </span>
-              </div>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: 'var(--space-3) 0'
-              }}>
-                <span style={{ color: 'var(--color-text-secondary)' }}>Всего активных:</span>
-                <span style={{
-                  fontWeight: 'var(--font-weight-bold)',
-                  color: 'var(--color-primary)',
-                  fontSize: 'var(--font-size-lg)'
-                }}>
-                  {(stats?.buyers?.online || 0) + (stats?.sellers?.online || 0)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h3 style={{
-              fontSize: 'var(--font-size-lg)',
-              fontWeight: 'var(--font-weight-semibold)',
-              color: 'var(--color-text-primary)',
-              marginBottom: 'var(--space-4)'
-            }}>
-              Метрики платформы
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: 'var(--space-3) 0',
-                borderBottom: 'var(--border-width) solid var(--color-border-light)'
-              }}>
-                <span style={{ color: 'var(--color-text-secondary)' }}>Средняя цена:</span>
-                <span style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
-                  {stats?.prices?.avgPrice?.toFixed(2) || 0} ₽/м³
-                </span>
-              </div>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: 'var(--space-3) 0',
-                borderBottom: 'var(--border-width) solid var(--color-border-light)'
-              }}>
-                <span style={{ color: 'var(--color-text-secondary)' }}>Общая стоимость:</span>
-                <span style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
-                  {stats?.products?.totalValue?.toFixed(2) || 0} ₽
-                </span>
-              </div>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: 'var(--space-3) 0'
-              }}>
-                <span style={{ color: 'var(--color-text-secondary)' }}>Досок в системе:</span>
-                <span style={{
-                  fontWeight: 'var(--font-weight-bold)',
-                  color: 'var(--color-primary)',
-                  fontSize: 'var(--font-size-lg)'
-                }}>
-                  {stats?.boards?.total || 0}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Progressive Statistics - Real-time data with animations */}
+      <ProgressiveStats />
     </div>
   );
 });

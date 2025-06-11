@@ -260,13 +260,13 @@ function EntityManager({ entityType }) {
   );
   const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
 
-  // Load reference data for select fields - always call hooks
-  const { data: woodTypes } = useApi(() => apiService.getWoodTypes(0, 1000), []);
-  const { data: sellers } = useApi(() => apiService.getSellers(0, 1000), []);
-  const { data: buyers } = useApi(() => apiService.getBuyers(0, 1000), []);
-  const { data: products } = useApi(() => apiService.getProducts(0, 1000), []);
-  const { data: images } = useApi(() => apiService.getImages(0, 1000), []);
-  const { data: threads } = useApi(() => apiService.getChatThreads(0, 1000), []);
+  // Load reference data for select fields - use correct API limits (max 20)
+  const { data: woodTypes } = useApi(() => apiService.getAllWoodTypes(), []);
+  const { data: sellers } = useApi(() => apiService.getAllSellers(), []);
+  const { data: buyers } = useApi(() => apiService.getAllBuyers(), []);
+  const { data: products } = useApi(() => apiService.getAllProducts(), []);
+  const { data: images } = useApi(() => apiService.getAllImages(), []);
+  const { data: threads } = useApi(() => apiService.getAllChatThreads(), []);
 
   const referenceData = {
     woodTypes: woodTypes?.data || [],

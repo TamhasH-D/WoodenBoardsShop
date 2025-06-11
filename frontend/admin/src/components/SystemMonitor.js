@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { apiService } from '../services/api';
+import { useProgressiveStats } from '../hooks/useProgressiveData';
 
 function SystemMonitor() {
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -8,9 +9,12 @@ function SystemMonitor() {
   const [lastUpdate, setLastUpdate] = useState(null);
 
   const { data: healthData, loading, error, refetch } = useApi(
-    () => apiService.getDetailedHealthCheck(),
+    () => apiService.healthCheck(),
     []
   );
+
+  // Use progressive stats for accurate system statistics
+  const { stats: systemStats, loading: statsLoading, progress: statsProgress, loadingEntity } = useProgressiveStats(apiService);
 
   // Auto-refresh functionality
   useEffect(() => {
@@ -170,64 +174,86 @@ function SystemMonitor() {
             ))}
           </div>
 
-          {/* System Statistics */}
-          {healthData.system && (
-            <div className="card" style={{ backgroundColor: '#f8fafc', marginBottom: '1.5rem' }}>
+          {/* Progressive System Statistics */}
+          <div className="card" style={{ backgroundColor: '#f8fafc', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h4>📊 Статистика системы</h4>
-              <div className="grid grid-4" style={{ gap: '1rem' }}>
-                {/* Users */}
-                <div className="card" style={{ backgroundColor: 'white', textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.2rem', color: '#3b82f6' }}>👥</div>
-                  <h5 style={{ margin: '0.5rem 0 0.25rem 0' }}>Пользователи</h5>
-                  <p style={{ margin: 0, fontSize: '1.1em', fontWeight: 'bold' }}>
-                    {formatNumber(healthData.system.buyers?.total || 0)} покупателей
-                  </p>
-                  <p style={{ margin: 0, fontSize: '1.1em', fontWeight: 'bold' }}>
-                    {formatNumber(healthData.system.sellers?.total || 0)} продавцов
-                  </p>
-                  <small style={{ color: '#666' }}>
-                    Онлайн: {formatNumber((healthData.system.buyers?.online || 0) + (healthData.system.sellers?.online || 0))}
-                  </small>
+              {statsLoading && (
+                <div style={{ fontSize: '0.9em', color: '#666' }}>
+                  {loadingEntity && `Загружаем: ${loadingEntity}`}
                 </div>
+              )}
+            </div>
 
-                {/* Products */}
-                <div className="card" style={{ backgroundColor: 'white', textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.2rem', color: '#10b981' }}>📦</div>
-                  <h5 style={{ margin: '0.5rem 0 0.25rem 0' }}>Товары</h5>
-                  <p style={{ margin: 0, fontSize: '1.1em', fontWeight: 'bold' }}>
-                    {formatNumber(healthData.system.products?.total || 0)}
-                  </p>
-                  <small style={{ color: '#666' }}>
-                    Объем: {(healthData.system.products?.totalVolume || 0).toFixed(2)} м³
-                  </small>
+            {/* Progress indicator for stats loading */}
+            {statsLoading && (
+              <div style={{ marginBottom: '1rem' }}>
+                <div className="progress-bar">
+                  <div
+                    className="progress-fill"
+                    style={{ width: `${statsProgress.percentage}%` }}
+                  ></div>
                 </div>
-
-                {/* Wood Types */}
-                <div className="card" style={{ backgroundColor: 'white', textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.2rem', color: '#8b5cf6' }}>🌳</div>
-                  <h5 style={{ margin: '0.5rem 0 0.25rem 0' }}>Типы древесины</h5>
-                  <p style={{ margin: 0, fontSize: '1.1em', fontWeight: 'bold' }}>
-                    {formatNumber(healthData.system.woodTypes?.total || 0)}
-                  </p>
-                  <small style={{ color: '#666' }}>
-                    Цены: {formatNumber(healthData.system.prices?.total || 0)}
-                  </small>
-                </div>
-
-                {/* Communication */}
-                <div className="card" style={{ backgroundColor: 'white', textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.2rem', color: '#f59e0b' }}>💬</div>
-                  <h5 style={{ margin: '0.5rem 0 0.25rem 0' }}>Общение</h5>
-                  <p style={{ margin: 0, fontSize: '1.1em', fontWeight: 'bold' }}>
-                    {formatNumber(healthData.system.communication?.threads || 0)} чатов
-                  </p>
-                  <small style={{ color: '#666' }}>
-                    Сообщений: {formatNumber(healthData.system.communication?.messages || 0)}
-                  </small>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.8em', color: '#666' }}>
+                  <span>{statsProgress.current} из {statsProgress.total} разделов</span>
+                  <span>{Math.round(statsProgress.percentage)}%</span>
                 </div>
               </div>
+            )}
+
+            <div className="grid grid-4" style={{ gap: '1rem' }}>
+              {/* Users */}
+              <div className="card" style={{ backgroundColor: 'white', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.2rem', color: '#3b82f6' }}>👥</div>
+                <h5 style={{ margin: '0.5rem 0 0.25rem 0' }}>Пользователи</h5>
+                <p style={{ margin: 0, fontSize: '1.1em', fontWeight: 'bold' }}>
+                  {formatNumber(systemStats.buyers?.total || 0)} покупателей
+                </p>
+                <p style={{ margin: 0, fontSize: '1.1em', fontWeight: 'bold' }}>
+                  {formatNumber(systemStats.sellers?.total || 0)} продавцов
+                </p>
+                <small style={{ color: '#666' }}>
+                  Онлайн: {formatNumber((systemStats.buyers?.online || 0) + (systemStats.sellers?.online || 0))}
+                </small>
+              </div>
+
+              {/* Products */}
+              <div className="card" style={{ backgroundColor: 'white', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.2rem', color: '#10b981' }}>📦</div>
+                <h5 style={{ margin: '0.5rem 0 0.25rem 0' }}>Товары</h5>
+                <p style={{ margin: 0, fontSize: '1.1em', fontWeight: 'bold' }}>
+                  {formatNumber(systemStats.products?.total || 0)}
+                </p>
+                <small style={{ color: '#666' }}>
+                  Объем: {(systemStats.products?.totalVolume || 0).toFixed(2)} м³
+                </small>
+              </div>
+
+              {/* Wood Types */}
+              <div className="card" style={{ backgroundColor: 'white', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.2rem', color: '#8b5cf6' }}>🌳</div>
+                <h5 style={{ margin: '0.5rem 0 0.25rem 0' }}>Типы древесины</h5>
+                <p style={{ margin: 0, fontSize: '1.1em', fontWeight: 'bold' }}>
+                  {formatNumber(systemStats.woodTypes?.total || 0)}
+                </p>
+                <small style={{ color: '#666' }}>
+                  Цены: {formatNumber(systemStats.prices?.total || 0)}
+                </small>
+              </div>
+
+              {/* Communication */}
+              <div className="card" style={{ backgroundColor: 'white', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.2rem', color: '#f59e0b' }}>💬</div>
+                <h5 style={{ margin: '0.5rem 0 0.25rem 0' }}>Общение</h5>
+                <p style={{ margin: 0, fontSize: '1.1em', fontWeight: 'bold' }}>
+                  {formatNumber(systemStats.threads?.total || 0)} чатов
+                </p>
+                <small style={{ color: '#666' }}>
+                  Сообщений: {formatNumber(systemStats.messages?.total || 0)}
+                </small>
+              </div>
             </div>
-          )}
+          </div>
 
           {/* Error Details */}
           {healthData.error && (
