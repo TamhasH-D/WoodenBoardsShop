@@ -31,14 +31,14 @@ const ProductsPage = () => {
     if (!initialLoaded) {
       loadInitialData();
     }
-  }, [setPageTitle, initialLoaded]);
+  }, [setPageTitle, initialLoaded, loadInitialData]);
 
   const loadInitialData = useCallback(async () => {
     try {
       // Загружаем типы древесины и продавцов для фильтров
       const [woodTypesData, sellersData] = await Promise.all([
-        apiService.getWoodTypes(0, 20),
-        apiService.getSellers(0, 20)
+        apiService.getAllWoodTypes(),
+        apiService.getAllSellers()
       ]);
 
       setWoodTypes(woodTypesData.data || []);
@@ -51,7 +51,7 @@ const ProductsPage = () => {
       console.error('Ошибка загрузки данных:', error);
       // Не показываем ошибки пользователю, только в консоли
     }
-  }, []);
+  }, [loadProducts]);
 
   const loadProducts = useCallback(async () => {
     try {
@@ -73,14 +73,20 @@ const ProductsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, currentPage]);
+  }, [searchQuery, currentPage, pageSize]);
+
+  // Функция для принудительного обновления
+  const handleRefresh = useCallback(async () => {
+    await apiService.clearCache();
+    await loadProducts();
+  }, [loadProducts]);
 
   // Перезагружаем товары при изменении поиска или страницы (только если уже загружены)
   useEffect(() => {
     if (initialLoaded) {
       loadProducts();
     }
-  }, [searchQuery, currentPage, initialLoaded]);
+  }, [searchQuery, currentPage, initialLoaded, loadProducts]);
 
   const handleAddToCart = (product) => {
     addToCart(product, 1);
@@ -108,16 +114,29 @@ const ProductsPage = () => {
     <div className="products-page">
       {/* Заголовок страницы */}
       <div className="page-header">
-        <h1 className="page-title">{BUYER_TEXTS.PRODUCTS}</h1>
-        <p className="page-description">
-          Каталог древесины от проверенных поставщиков
-        </p>
-        <div className="page-stats">
-          {totalProducts > 0 && (
-            <span className="stats-text">
-              Найдено {totalProducts} товаров
-            </span>
-          )}
+        <div className="page-header-content">
+          <div className="page-header-text">
+            <h1 className="page-title">{BUYER_TEXTS.PRODUCTS}</h1>
+            <p className="page-description">
+              Каталог древесины от проверенных поставщиков
+            </p>
+            <div className="page-stats">
+              {totalProducts > 0 && (
+                <span className="stats-text">
+                  Найдено {totalProducts} товаров
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="page-header-actions">
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="btn btn-secondary"
+            >
+              {loading ? 'Обновление...' : '🔄 Обновить'}
+            </button>
+          </div>
         </div>
       </div>
 
