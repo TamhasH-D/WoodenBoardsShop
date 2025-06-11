@@ -383,6 +383,58 @@ export const apiService = {
     return response.data;
   },
 
+  // Images
+  async getImages(page = 0, size = 20) {
+    const response = await api.get(`/api/v1/images?offset=${page * size}&limit=${size}`);
+    return {
+      data: response.data.data || response.data,
+      total: response.data.pagination?.total || 0,
+      offset: page * size,
+      limit: size
+    };
+  },
+
+  async getImage(id) {
+    const response = await api.get(`/api/v1/images/${id}`);
+    return response.data;
+  },
+
+  // Get all images for caching and filtering
+  async getAllImages() {
+    const cacheKey = 'all_images';
+    const now = Date.now();
+
+    // Check cache first
+    if (cache.has(cacheKey)) {
+      const cached = cache.get(cacheKey);
+      if (now - cached.timestamp < CACHE_DURATION) {
+        return cached.data;
+      }
+    }
+
+    // Fetch all images (backend limit is 20 per request)
+    let allImages = [];
+    let page = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await this.getImages(page, 20);
+      allImages = [...allImages, ...response.data];
+      hasMore = response.data.length === 20;
+      page++;
+    }
+
+    // Cache the result
+    cache.set(cacheKey, { data: allImages, timestamp: now });
+    return allImages;
+  },
+
+  // Get images for specific product
+  async getProductImages(productId) {
+    const allImages = await this.getAllImages();
+    return allImages.filter(image => image.product_id === productId);
+  },
+
   // Wooden board analysis (Prosto Board integration)
   async analyzeWoodenBoard(imageFile, boardHeight = 0.0, boardLength = 0.0) {
     try {
