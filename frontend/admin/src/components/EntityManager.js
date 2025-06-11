@@ -219,6 +219,8 @@ function EntityManager({ entityType }) {
   const [sortField, setSortField] = useState('created_at');
   const [sortDirection, setSortDirection] = useState('desc');
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // Generate UUID for new entries
   const generateUUID = () => {
@@ -310,6 +312,18 @@ function EntityManager({ entityType }) {
           </button>
           <button onClick={refetch} className="btn btn-secondary" disabled={loading}>
             {loading ? 'Loading...' : 'Refresh'}
+          </button>
+          <button
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className="btn btn-secondary"
+          >
+            {showAdvancedFilters ? 'Простые фильтры' : 'Расширенные фильтры'}
+          </button>
+          <button
+            onClick={() => setShowExportModal(true)}
+            className="btn btn-secondary"
+          >
+            📤 Экспорт
           </button>
         </div>
       </div>
@@ -584,6 +598,49 @@ function EntityManager({ entityType }) {
           </div>
         </div>
       )}
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div className="card" style={{ maxWidth: '400px', margin: '1rem' }}>
+            <h4>📤 Экспорт {config.title}</h4>
+            <p>Выберите формат для экспорта данных:</p>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+              <button
+                onClick={() => handleExport('json')}
+                className="btn btn-primary"
+                disabled={mutating}
+              >
+                JSON
+              </button>
+              <button
+                onClick={() => handleExport('csv')}
+                className="btn btn-primary"
+                disabled={mutating}
+              >
+                CSV
+              </button>
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="btn btn-secondary"
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -794,6 +851,42 @@ function EntityManager({ entityType }) {
       refetch();
     } catch (err) {
       console.error('Failed to bulk delete:', err);
+    }
+  }
+
+  async function handleExport(format) {
+    try {
+      const entityTypeMap = {
+        buyers: 'buyers',
+        sellers: 'sellers',
+        products: 'products',
+        woodTypes: 'woodTypes',
+        prices: 'prices',
+        boards: 'boards',
+        images: 'images',
+        threads: 'threads',
+        messages: 'messages'
+      };
+
+      const mappedEntityType = entityTypeMap[entityType] || entityType;
+      const exportData = await apiService.exportData(mappedEntityType, format);
+
+      // Create and download file
+      const dataStr = format === 'csv' ? exportData : JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: format === 'csv' ? 'text/csv' : 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${config.title.toLowerCase()}_${new Date().toISOString().split('T')[0]}.${format}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setShowExportModal(false);
+    } catch (err) {
+      console.error('Failed to export data:', err);
     }
   }
 
