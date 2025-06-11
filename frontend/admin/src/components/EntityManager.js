@@ -2,7 +2,20 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { ADMIN_TEXTS } from '../utils/localization';
-import UUIDField from './ui/UUIDField';
+import Card from './ui/Card';
+import Button from './ui/Button';
+import Input from './ui/Input';
+import Table from './ui/Table';
+import Pagination from './ui/Pagination';
+import Modal from './ui/Modal';
+import LoadingSpinner from './ui/LoadingSpinner';
+import toast from 'react-hot-toast';
+import {
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/react/24/outline';
 
 // Entity configurations
 const ENTITY_CONFIGS = {
@@ -210,26 +223,18 @@ const ENTITY_CONFIGS = {
   }
 };
 
+/**
+ * Corporate Entity Manager Component
+ * Professional, minimal design suitable for enterprise admin panels
+ */
 function EntityManager({ entityType }) {
-  const [page, setPage] = useState(0);
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortField, setSortField] = useState('created_at');
-  const [sortDirection, setSortDirection] = useState('desc');
-  const [showBulkActions, setShowBulkActions] = useState(false);
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false);
-
-  // Generate UUID for new entries
-  const generateUUID = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : ((r & 0x3) | 0x8);
-      return v.toString(16);
-    });
-  };
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   // Initialize form data
   const getInitialFormData = useCallback(() => {
@@ -237,10 +242,7 @@ function EntityManager({ entityType }) {
     if (!config) return {};
     const formData = {};
     config.fields.forEach(field => {
-      if (field.key === 'id' && field.showInCreate) {
-        // Для полей ID с showInCreate оставляем пустыми для ручного ввода
-        formData[field.key] = '';
-      } else if (field.type === 'boolean') {
+      if (field.type === 'checkbox') {
         formData[field.key] = false;
       } else {
         formData[field.key] = '';
@@ -255,713 +257,371 @@ function EntityManager({ entityType }) {
 
   // API hooks - always call them
   const { data, loading, error, refetch } = useApi(
-    () => config ? config.api.getAll(page, 20) : Promise.resolve(null),
-    [page, entityType]
+    () => config ? config.api.getAll(currentPage - 1, 20) : Promise.resolve(null),
+    [currentPage, entityType]
   );
-  const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
+  const { mutate, loading: mutating } = useApiMutation();
 
-  // Load reference data for select fields - use correct API limits (max 20)
-  const { data: woodTypes } = useApi(() => apiService.getAllWoodTypes(), []);
-  const { data: sellers } = useApi(() => apiService.getAllSellers(), []);
-  const { data: buyers } = useApi(() => apiService.getAllBuyers(), []);
-  const { data: products } = useApi(() => apiService.getAllProducts(), []);
-  const { data: images } = useApi(() => apiService.getAllImages(), []);
-  const { data: threads } = useApi(() => apiService.getAllChatThreads(), []);
+  // Load reference data for select fields (commented out as not used in current implementation)
+  // const { data: woodTypes } = useApi(() => apiService.getAllWoodTypes(), []);
+  // const { data: sellers } = useApi(() => apiService.getAllSellers(), []);
+  // const { data: buyers } = useApi(() => apiService.getAllBuyers(), []);
+  // const { data: products } = useApi(() => apiService.getAllProducts(), []);
+  // const { data: images } = useApi(() => apiService.getAllImages(), []);
+  // const { data: threads } = useApi(() => apiService.getAllChatThreads(), []);
 
-  const referenceData = {
-    woodTypes: woodTypes?.data || [],
-    sellers: sellers?.data || [],
-    buyers: buyers?.data || [],
-    products: products?.data || [],
-    images: images?.data || [],
-    threads: threads?.data || []
-  };
+  // const referenceData = {
+  //   woodTypes: woodTypes?.data || [],
+  //   sellers: sellers?.data || [],
+  //   buyers: buyers?.data || [],
+  //   products: products?.data || [],
+  //   images: images?.data || [],
+  //   threads: threads?.data || []
+  // };
 
   // Reset form when entity type changes
   useEffect(() => {
     setFormData(getInitialFormData());
     setEditingItem(null);
-    setShowCreateForm(false);
-    setSelectedItems([]);
-    setPage(0);
+    setShowCreateModal(false);
+    setShowEditModal(false);
+    setCurrentPage(1);
   }, [entityType, getInitialFormData]);
 
   // Early return after all hooks
   if (!config) {
-    return <div className="error">Unknown entity type: {entityType}</div>;
-  }
-
-  return (
-    <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h2>{config.icon} {config.title}</h2>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <input
-            type="text"
-            placeholder={`Search ${config.title.toLowerCase()}...`}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="form-input"
-            style={{ width: '200px' }}
-          />
-          <button 
-            onClick={() => setShowCreateForm(!showCreateForm)} 
-            className="btn btn-success"
-          >
-            {showCreateForm ? 'Cancel' : `Add ${config.title.slice(0, -1)}`}
-          </button>
-          <button onClick={refetch} className="btn btn-secondary" disabled={loading}>
-            {loading ? 'Loading...' : 'Refresh'}
-          </button>
-          <button
-            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className="btn btn-secondary"
-          >
-            {showAdvancedFilters ? 'Простые фильтры' : 'Расширенные фильтры'}
-          </button>
-          <button
-            onClick={() => setShowExportModal(true)}
-            className="btn btn-secondary"
-          >
-            📤 Экспорт
-          </button>
-        </div>
+    return (
+      <div className="p-6">
+        <Card className="p-6 text-center">
+          <p className="text-red-600">Unknown entity type: {entityType}</p>
+        </Card>
       </div>
-
-      {/* Error and Success Messages */}
-      {error && (
-        <div className="error" style={{ marginBottom: '1rem' }}>
-          Failed to load {config.title.toLowerCase()}: {error}
-        </div>
-      )}
-
-      {mutationError && (
-        <div className="error" style={{ marginBottom: '1rem' }}>
-          Operation failed: {mutationError}
-        </div>
-      )}
-
-      {success && (
-        <div className="success" style={{ marginBottom: '1rem' }}>
-          Operation completed successfully!
-        </div>
-      )}
-
-      {/* Bulk Actions */}
-      {selectedItems.length > 0 && (
-        <div className="card" style={{ backgroundColor: '#fff3cd', marginBottom: '1rem', padding: '1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span><strong>{selectedItems.length}</strong> items selected</span>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              {config.api.bulkDelete && (
-                <button
-                  onClick={() => setShowBulkActions(true)}
-                  className="btn btn-secondary"
-                  style={{ backgroundColor: '#dc3545', color: 'white' }}
-                >
-                  Delete Selected
-                </button>
-              )}
-              <button
-                onClick={() => setSelectedItems([])}
-                className="btn btn-secondary"
-              >
-                Clear Selection
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Create/Edit Form */}
-      {(showCreateForm || editingItem) && (
-        <div className="card" style={{ backgroundColor: '#f7fafc', marginBottom: '1rem' }}>
-          <h4>{editingItem ? 'Edit' : 'Create'} {config.title.slice(0, -1)}</h4>
-          <form onSubmit={handleSubmit}>
-            <div className="grid grid-2">
-              {config.fields
-                .filter(field => {
-                  // При создании показываем все поля кроме readonly (но включаем showInCreate)
-                  // При редактировании показываем все поля
-                  if (editingItem) {
-                    return true; // Показываем все поля при редактировании
-                  } else {
-                    // При создании: показываем не-readonly поля + поля с showInCreate
-                    return !field.readonly || field.showInCreate;
-                  }
-                })
-                .map((field) => {
-                  // Определяем, должно ли поле быть readonly в текущем контексте
-                  const isFieldReadonly = field.readonly && !(!editingItem && field.showInCreate);
-
-                  return (
-                    <div key={field.key} className="form-group">
-                      <label className="form-label">
-                        {field.label} {field.required && !field.optional && '*'}
-                        {field.optional && <span style={{ color: '#666', fontSize: '0.9em' }}> (необязательно)</span>}
-                      </label>
-                      {renderFormField({ ...field, readonly: isFieldReadonly })}
-                      {field.helperText && !editingItem && field.showInCreate && (
-                        <small style={{ color: '#666', fontSize: '0.8em', marginTop: '0.25rem', display: 'block' }}>
-                          {field.helperText}
-                        </small>
-                      )}
-                    </div>
-                  );
-                })}
-            </div>
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-              <button type="submit" className="btn btn-primary" disabled={mutating}>
-                {mutating ? 'Saving...' : (editingItem ? 'Update' : 'Create')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCreateForm(false);
-                  setEditingItem(null);
-                  setFormData(getInitialFormData());
-                }}
-                className="btn btn-secondary"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Data Table */}
-      {loading && <div className="loading">Loading {config.title.toLowerCase()}...</div>}
-
-      {data && (
-        <>
-          <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <p>Total {config.title.toLowerCase()}: {data.pagination?.total || data.data?.length || 0}</p>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <label>Sort by:</label>
-              <select
-                value={sortField}
-                onChange={(e) => setSortField(e.target.value)}
-                className="form-input"
-                style={{ width: 'auto' }}
-              >
-                {config.fields.map(field => (
-                  <option key={field.key} value={field.key}>{field.label}</option>
-                ))}
-              </select>
-              <button
-                onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
-                className="btn btn-secondary"
-                style={{ padding: '0.25rem 0.5rem' }}
-              >
-                {sortDirection === 'asc' ? '↑' : '↓'}
-              </button>
-            </div>
-          </div>
-
-          {data.data && data.data.length > 0 ? (
-            <div style={{ overflowX: 'auto' }}>
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th style={{ width: '40px' }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedItems.length === data.data.length}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedItems(data.data.map(item => item.id));
-                          } else {
-                            setSelectedItems([]);
-                          }
-                        }}
-                      />
-                    </th>
-                    {config.fields.map((field) => (
-                      <th key={field.key}>{field.label}</th>
-                    ))}
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {getSortedAndFilteredData().map((item) => (
-                    <tr key={item.id}>
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.includes(item.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedItems([...selectedItems, item.id]);
-                            } else {
-                              setSelectedItems(selectedItems.filter(id => id !== item.id));
-                            }
-                          }}
-                        />
-                      </td>
-                      {config.fields.map((field) => (
-                        <td key={field.key}>
-                          {renderTableCell(item, field)}
-                        </td>
-                      ))}
-                      <td>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <button
-                            onClick={() => handleEdit(item)}
-                            className="btn btn-secondary"
-                            style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item.id)}
-                            className="btn btn-secondary"
-                            disabled={mutating}
-                            style={{
-                              fontSize: '0.8em',
-                              padding: '0.25rem 0.5rem',
-                              backgroundColor: '#fed7d7',
-                              color: '#c53030'
-                            }}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
-              <p>No {config.title.toLowerCase()} found.</p>
-              <p>Add your first {config.title.slice(0, -1).toLowerCase()} to get started!</p>
-            </div>
-          )}
-
-          {/* Pagination */}
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: 'center' }}>
-            <button
-              onClick={() => setPage(Math.max(0, page - 1))}
-              disabled={page === 0 || loading}
-              className="btn btn-secondary"
-            >
-              Previous
-            </button>
-            <span>Page {page + 1}</span>
-            <button
-              onClick={() => setPage(page + 1)}
-              disabled={!data?.data || data.data.length < 20 || loading}
-              className="btn btn-secondary"
-            >
-              Next
-            </button>
-          </div>
-        </>
-      )}
-
-      {/* Bulk Delete Confirmation */}
-      {showBulkActions && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div className="card" style={{ maxWidth: '400px', margin: '1rem' }}>
-            <h4>Confirm Bulk Delete</h4>
-            <p>Are you sure you want to delete {selectedItems.length} {config.title.toLowerCase()}?</p>
-            <p style={{ color: '#e53e3e', fontSize: '0.9em' }}>This action cannot be undone.</p>
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-              <button
-                onClick={handleBulkDelete}
-                className="btn btn-secondary"
-                disabled={mutating}
-                style={{ backgroundColor: '#dc3545', color: 'white' }}
-              >
-                {mutating ? 'Deleting...' : 'Delete All'}
-              </button>
-              <button
-                onClick={() => setShowBulkActions(false)}
-                className="btn btn-secondary"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Export Modal */}
-      {showExportModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div className="card" style={{ maxWidth: '400px', margin: '1rem' }}>
-            <h4>📤 Экспорт {config.title}</h4>
-            <p>Выберите формат для экспорта данных:</p>
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-              <button
-                onClick={() => handleExport('json')}
-                className="btn btn-primary"
-                disabled={mutating}
-              >
-                JSON
-              </button>
-              <button
-                onClick={() => handleExport('csv')}
-                className="btn btn-primary"
-                disabled={mutating}
-              >
-                CSV
-              </button>
-              <button
-                onClick={() => setShowExportModal(false)}
-                className="btn btn-secondary"
-              >
-                Отмена
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  // Helper functions
-  function renderFormField(field) {
-    const value = formData[field.key] || '';
-
-    if (field.readonly) {
-      return (
-        <input
-          type="text"
-          value={value}
-          className="form-input"
-          disabled
-          style={{ backgroundColor: '#f7fafc' }}
-        />
-      );
-    }
-
-    switch (field.type) {
-      case 'text':
-      case 'url':
-        return (
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => setFormData({...formData, [field.key]: e.target.value})}
-            className="form-input"
-            required={field.required}
-            placeholder={field.placeholder}
-          />
-        );
-
-      case 'uuid':
-        // Для полей ID с showInCreate используем новый UUIDField компонент
-        if (field.key === 'id' && field.showInCreate && field.optional) {
-          return (
-            <UUIDField
-              value={value}
-              onChange={(newValue) => setFormData({...formData, [field.key]: newValue})}
-              label="" // Убираем label, так как он уже отображается выше
-              placeholder={field.placeholder}
-              required={field.required && !field.optional}
-              disabled={field.readonly}
-            />
-          );
-        }
-
-        // Для остальных UUID полей используем стандартный input
-        return (
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <input
-              type="text"
-              value={value}
-              onChange={(e) => setFormData({...formData, [field.key]: e.target.value})}
-              className="form-input"
-              required={field.required && !field.optional}
-              placeholder={field.placeholder}
-              style={{
-                fontFamily: 'monospace',
-                fontSize: '0.9em',
-                backgroundColor: field.optional ? '#f8f9fa' : undefined,
-                border: field.optional ? '1px dashed #dee2e6' : undefined,
-                flex: 1
-              }}
-            />
-            {field.optional && (
-              <button
-                type="button"
-                onClick={() => setFormData({...formData, [field.key]: generateUUID()})}
-                className="btn btn-secondary"
-                style={{
-                  fontSize: '0.8em',
-                  padding: '0.25rem 0.5rem',
-                  backgroundColor: '#e2e8f0',
-                  color: '#4a5568',
-                  border: '1px solid #cbd5e0'
-                }}
-                title="Сгенерировать UUID"
-              >
-                🎲
-              </button>
-            )}
-          </div>
-        );
-
-      case 'number':
-        return (
-          <input
-            type="number"
-            value={value}
-            onChange={(e) => setFormData({...formData, [field.key]: parseFloat(e.target.value) || ''})}
-            className="form-input"
-            required={field.required}
-            step={field.step || 1}
-            min={field.min}
-            max={field.max}
-          />
-        );
-
-      case 'textarea':
-        return (
-          <textarea
-            value={value}
-            onChange={(e) => setFormData({...formData, [field.key]: e.target.value})}
-            className="form-input"
-            required={field.required}
-            rows={3}
-          />
-        );
-
-      case 'boolean':
-        return (
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <input
-              type="checkbox"
-              checked={value}
-              onChange={(e) => setFormData({...formData, [field.key]: e.target.checked})}
-            />
-            <span>{field.label}</span>
-          </label>
-        );
-
-      case 'select':
-        const options = referenceData[field.options] || [];
-        return (
-          <select
-            value={value}
-            onChange={(e) => setFormData({...formData, [field.key]: e.target.value})}
-            className="form-input"
-            required={field.required}
-          >
-            <option value="">Select {field.label}...</option>
-            {options.map((option) => (
-              <option key={option[field.optionValue]} value={option[field.optionValue]}>
-                {option[field.optionLabel] || option[field.optionValue]}
-              </option>
-            ))}
-          </select>
-        );
-
-      default:
-        return (
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => setFormData({...formData, [field.key]: e.target.value})}
-            className="form-input"
-            required={field.required}
-          />
-        );
-    }
+    );
   }
 
-
-
-  async function handleSubmit(e) {
+  // Handle form submission
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Подготавливаем данные для отправки
-      const submitData = { ...formData };
-
-      // Удаляем пустые UUID поля при создании (они будут автогенерированы)
-      if (!editingItem) {
-        config.fields.forEach(field => {
-          if (field.key === 'id' && field.showInCreate && field.optional && !submitData[field.key]) {
-            delete submitData[field.key];
-          }
-        });
-      }
-
       if (editingItem) {
-        await mutate(config.api.update, editingItem.id, submitData);
-        setEditingItem(null);
+        await mutate(() => config.api.update(editingItem.id, formData));
+        toast.success('Запись обновлена успешно');
+        setShowEditModal(false);
       } else {
-        await mutate(config.api.create, submitData);
-        setShowCreateForm(false);
+        // Generate UUID if not provided
+        const dataToSubmit = { ...formData };
+        if (!dataToSubmit.id) {
+          dataToSubmit.id = crypto.randomUUID();
+        }
+        await mutate(() => config.api.create(dataToSubmit));
+        toast.success('Запись создана успешно');
+        setShowCreateModal(false);
       }
       setFormData(getInitialFormData());
+      setEditingItem(null);
       refetch();
-    } catch (err) {
-      console.error('Failed to save:', err);
+    } catch (error) {
+      toast.error('Ошибка при сохранении');
     }
-  }
+  };
 
-  function handleEdit(item) {
+  // Handle delete
+  const handleDelete = async () => {
+    if (!itemToDelete) return;
+    try {
+      await mutate(() => config.api.delete(itemToDelete.id));
+      toast.success('Запись удалена успешно');
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+      refetch();
+    } catch (error) {
+      toast.error('Ошибка при удалении');
+    }
+  };
+
+  // Handle edit
+  const handleEdit = (item) => {
     setEditingItem(item);
     setFormData(item);
-    setShowCreateForm(false);
-  }
+    setShowEditModal(true);
+  };
 
-  async function handleDelete(id) {
-    if (window.confirm(`Are you sure you want to delete this ${config.title.slice(0, -1).toLowerCase()}?`)) {
-      try {
-        await mutate(config.api.delete, id);
-        refetch();
-      } catch (err) {
-        console.error('Failed to delete:', err);
-      }
-    }
-  }
-
-  async function handleBulkDelete() {
-    try {
-      await mutate(config.api.bulkDelete, selectedItems);
-      setSelectedItems([]);
-      setShowBulkActions(false);
-      refetch();
-    } catch (err) {
-      console.error('Failed to bulk delete:', err);
-    }
-  }
-
-  async function handleExport(format) {
-    try {
-      const entityTypeMap = {
-        buyers: 'buyers',
-        sellers: 'sellers',
-        products: 'products',
-        woodTypes: 'woodTypes',
-        prices: 'prices',
-        boards: 'boards',
-        images: 'images',
-        threads: 'threads',
-        messages: 'messages'
-      };
-
-      const mappedEntityType = entityTypeMap[entityType] || entityType;
-      const exportData = await apiService.exportData(mappedEntityType, format);
-
-      // Create and download file
-      const dataStr = format === 'csv' ? exportData : JSON.stringify(exportData, null, 2);
-      const dataBlob = new Blob([dataStr], { type: format === 'csv' ? 'text/csv' : 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${config.title.toLowerCase()}_${new Date().toISOString().split('T')[0]}.${format}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      setShowExportModal(false);
-    } catch (err) {
-      console.error('Failed to export data:', err);
-    }
-  }
-
-  function getSortedAndFilteredData() {
-    if (!data?.data) return [];
-
-    let filteredData = data.data;
-
-    // Apply search filter
-    if (searchTerm) {
-      filteredData = filteredData.filter(item => {
-        return config.fields.some(field => {
-          const value = item[field.key];
-          if (value && typeof value === 'string') {
-            return value.toLowerCase().includes(searchTerm.toLowerCase());
-          }
-          return false;
-        });
-      });
-    }
-
-    // Apply sorting
-    filteredData.sort((a, b) => {
-      const aValue = a[sortField];
-      const bValue = b[sortField];
-
-      if (aValue === bValue) return 0;
-
-      let comparison = 0;
-      if (aValue > bValue) {
-        comparison = 1;
-      } else if (aValue < bValue) {
-        comparison = -1;
-      }
-
-      return sortDirection === 'desc' ? comparison * -1 : comparison;
-    });
-
-    return filteredData;
-  }
-
-  function renderTableCell(item, field) {
-    const value = item[field.key];
-
-    if (value === null || value === undefined) {
-      return <span style={{ color: '#999' }}>—</span>;
-    }
-
-    switch (field.type) {
-      case 'boolean':
-        return value ? '✅' : '❌';
-      case 'datetime':
-        return new Date(value).toLocaleString();
-      case 'number':
-        return typeof value === 'number' ? value.toLocaleString() : value;
-      case 'url':
-        return (
-          <a href={value} target="_blank" rel="noopener noreferrer" style={{ color: '#3182ce' }}>
-            {value.length > 30 ? `${value.substring(0, 30)}...` : value}
-          </a>
-        );
-      case 'select':
-        // Try to find the display value from reference data
-        if (field.options && referenceData[field.options]) {
-          const option = referenceData[field.options].find(opt => opt[field.optionValue] === value);
-          return option ? option[field.optionLabel] : value;
+  // Prepare table columns
+  const columns = config.fields
+    .filter(field => !field.hideInTable)
+    .slice(0, 5) // Limit columns for better display
+    .map(field => ({
+      key: field.key,
+      header: field.label,
+      render: (value, _row) => {
+        if (field.type === 'datetime' && value) {
+          return new Date(value).toLocaleString('ru-RU');
         }
-        return value;
-      default:
+        if (field.type === 'checkbox') {
+          return value ? 'Да' : 'Нет';
+        }
         if (typeof value === 'string' && value.length > 50) {
-          return `${value.substring(0, 50)}...`;
+          return value.substring(0, 50) + '...';
         }
-        return value;
-    }
-  }
+        return value || '-';
+      }
+    }));
+
+  // Add actions column
+  columns.push({
+    key: 'actions',
+    header: 'Действия',
+    render: (_, row) => (
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleEdit(row)}
+          className="p-1"
+        >
+          <PencilIcon className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setItemToDelete(row);
+            setShowDeleteModal(true);
+          }}
+          className="p-1 text-red-600 hover:text-red-700"
+        >
+          <TrashIcon className="h-4 w-4" />
+        </Button>
+      </div>
+    )
+  });
+
+  // Filter data based on search
+  const filteredData = data?.data?.filter(item => {
+    if (!searchTerm) return true;
+    return Object.values(item).some(value =>
+      String(value).toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }) || [];
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">{config.title}</h1>
+          <p className="mt-1 text-sm text-gray-600">
+            Управление {config.title.toLowerCase()}
+          </p>
+        </div>
+        <Button
+          onClick={() => setShowCreateModal(true)}
+          className="flex items-center gap-2"
+        >
+          <PlusIcon className="h-4 w-4" />
+          Создать
+        </Button>
+      </div>
+
+      {/* Search and filters */}
+      <Card className="p-4">
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-md">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              type="text"
+              placeholder={`Поиск ${config.title.toLowerCase()}...`}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Button
+            variant="outline"
+            onClick={refetch}
+            disabled={loading}
+          >
+            {loading ? 'Загрузка...' : 'Обновить'}
+          </Button>
+        </div>
+      </Card>
+
+      {/* Error message */}
+      {error && (
+        <Card className="p-4 border-red-200 bg-red-50">
+          <p className="text-red-600">
+            Ошибка загрузки {config.title.toLowerCase()}: {error}
+          </p>
+        </Card>
+      )}
+
+      {/* Data table */}
+      <Card>
+        {loading ? (
+          <div className="p-12 text-center">
+            <LoadingSpinner />
+          </div>
+        ) : (
+          <>
+            <Table
+              columns={columns}
+              data={filteredData}
+              loading={loading}
+            />
+
+            {/* Pagination */}
+            {data?.pagination && (
+              <div className="p-4 border-t border-gray-200">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={Math.ceil((data.pagination.total || 0) / 20)}
+                  onPageChange={setCurrentPage}
+                  totalItems={data.pagination.total || 0}
+                  itemsPerPage={20}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </Card>
+
+      {/* Create Modal */}
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => {
+          setShowCreateModal(false);
+          setFormData(getInitialFormData());
+        }}
+        title={`Создать ${config.title.slice(0, -1)}`}
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCreateModal(false);
+                setFormData(getInitialFormData());
+              }}
+            >
+              Отмена
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              loading={mutating}
+            >
+              Создать
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          {config.fields
+            .filter(field => !field.readonly || field.showInCreate)
+            .map((field) => (
+              <div key={field.key}>
+                <Input
+                  label={field.label + (field.required ? ' *' : '')}
+                  type={field.type === 'textarea' ? 'textarea' : field.type || 'text'}
+                  value={formData[field.key] || ''}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    [field.key]: field.type === 'checkbox' ? e.target.checked : e.target.value
+                  }))}
+                  required={field.required}
+                  disabled={field.readonly && !field.showInCreate}
+                  placeholder={field.placeholder}
+                  helperText={field.helperText}
+                />
+              </div>
+            ))}
+        </div>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingItem(null);
+          setFormData(getInitialFormData());
+        }}
+        title={`Редактировать ${config.title.slice(0, -1)}`}
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditModal(false);
+                setEditingItem(null);
+                setFormData(getInitialFormData());
+              }}
+            >
+              Отмена
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              loading={mutating}
+            >
+              Сохранить
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          {config.fields
+            .filter(field => !field.hideInEdit)
+            .map((field) => (
+              <div key={field.key}>
+                <Input
+                  label={field.label + (field.required ? ' *' : '')}
+                  type={field.type === 'textarea' ? 'textarea' : field.type || 'text'}
+                  value={formData[field.key] || ''}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    [field.key]: field.type === 'checkbox' ? e.target.checked : e.target.value
+                  }))}
+                  required={field.required}
+                  disabled={field.readonly}
+                />
+              </div>
+            ))}
+        </div>
+      </Modal>
+
+      {/* Delete Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setItemToDelete(null);
+        }}
+        title="Подтвердить удаление"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setItemToDelete(null);
+              }}
+            >
+              Отмена
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleDelete}
+              loading={mutating}
+            >
+              Удалить
+            </Button>
+          </>
+        }
+      >
+        <p className="text-gray-600">
+          Вы уверены, что хотите удалить эту запись? Это действие нельзя отменить.
+        </p>
+      </Modal>
+    </div>
+  );
 }
 
 export default EntityManager;
