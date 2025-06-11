@@ -51,12 +51,14 @@ function Products() {
 
   const { data, loading, error, refetch } = useApi(productsApiFunction, [page]);
   const { data: woodTypes, loading: woodTypesLoading, error: woodTypesError } = useApi(woodTypesApiFunction, []);
-  const { data: woodTypePrices } = useApi(woodTypePricesApiFunction, []);
+  const { data: woodTypePrices, refetch: refetchWoodTypePrices } = useApi(woodTypePricesApiFunction, []);
   const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
 
   // Listen for auto-refresh events
   useEffect(() => {
-    const handleAutoRefresh = () => {
+    const handleAutoRefresh = async () => {
+      // Принудительно очищаем кэш при автообновлении
+      await apiService.clearCache();
       refetch();
     };
 
@@ -184,7 +186,13 @@ function Products() {
       setBoardHeight('50');
       setBoardLength('1000');
       setShowAddForm(false);
+
+      // Принудительно очищаем кэш и обновляем данные
+      await apiService.clearCache();
       refetch();
+
+      // Также обновляем цены на древесину для следующего создания товара
+      refetchWoodTypePrices();
     } catch (err) {
       if (process.env.NODE_ENV === 'development') {
         console.error('Failed to add product:', err);
@@ -196,6 +204,9 @@ function Products() {
     if (window.confirm(SELLER_TEXTS.CONFIRM_DELETE_PRODUCT)) {
       try {
         await mutate(() => apiService.deleteProduct(productId));
+
+        // Принудительно очищаем кэш и обновляем данные
+        await apiService.clearCache();
         refetch();
       } catch (err) {
         if (process.env.NODE_ENV === 'development') {
@@ -271,6 +282,9 @@ function Products() {
       }));
 
       handleCancelEdit();
+
+      // Принудительно очищаем кэш и обновляем данные
+      await apiService.clearCache();
       refetch();
     } catch (err) {
       if (process.env.NODE_ENV === 'development') {
@@ -292,13 +306,23 @@ function Products() {
         </div>
         <div className="flex gap-4">
           <button
-            onClick={() => setShowAddForm(!showAddForm)}
+            onClick={() => {
+              if (!showAddForm) {
+                // При открытии формы обновляем цены на древесину
+                refetchWoodTypePrices();
+              }
+              setShowAddForm(!showAddForm);
+            }}
             className={`btn ${showAddForm ? 'btn-secondary' : 'btn-primary'}`}
           >
             {showAddForm ? SELLER_TEXTS.CANCEL : SELLER_TEXTS.ADD_PRODUCT}
           </button>
           <button
-            onClick={refetch}
+            onClick={async () => {
+              // Принудительно очищаем кэш перед обновлением
+              await apiService.clearCache();
+              refetch();
+            }}
             className="btn btn-secondary"
             disabled={loading}
           >
@@ -342,8 +366,10 @@ function Products() {
       {showAddForm && (
         <div style={{ marginBottom: '2rem' }}>
           <StepByStepProductForm
-            onSuccess={() => {
+            onSuccess={async () => {
               setShowAddForm(false);
+              // Принудительно очищаем кэш и обновляем данные
+              await apiService.clearCache();
               refetch();
             }}
             onCancel={() => setShowAddForm(false)}

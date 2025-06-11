@@ -104,6 +104,14 @@ const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
 
 // API service functions for sellers
 export const apiService = {
+  // Cache management
+  clearCache() {
+    cache.clear();
+    if (process.env.NODE_ENV === 'development') {
+      console.log('API cache cleared');
+    }
+  },
+
   // Health check
   async healthCheck() {
     try {
