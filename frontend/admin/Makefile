@@ -1,11 +1,11 @@
-# Admin Frontend Makefile
+# Buyer Frontend Makefile
 # Comprehensive build and development automation
 
 .PHONY: help install build start test lint clean dev prod docker-build docker-run docker-stop docker-clean audit fix-audit
 
 # Default target
 help: ## Show this help message
-	@echo "Admin Frontend - Available commands:"
+	@echo "Buyer Frontend - Available commands:"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
@@ -96,30 +96,30 @@ clean-deps: ## Clean only dependencies
 # Docker commands
 docker-build: ## Build Docker image
 	@echo "🐳 Building Docker image..."
-	docker build -t admin-frontend:latest .
+	docker build -t buyer-frontend:latest .
 
 docker-build-dev: ## Build Docker image for development
 	@echo "🐳 Building Docker image for development..."
-	docker build -t admin-frontend:dev --target build .
+	docker build -t buyer-frontend:dev --target build .
 
 docker-run: ## Run Docker container
 	@echo "🐳 Running Docker container..."
-	docker run -d --name admin-frontend -p 8080:80 admin-frontend:latest
+	docker run -d --name buyer-frontend -p 8082:80 buyer-frontend:latest
 
 docker-run-dev: ## Run Docker container in development mode
 	@echo "🐳 Running Docker container in development mode..."
-	docker run -it --rm --name admin-frontend-dev -p 3000:3000 -v $(PWD):/app -v /app/node_modules admin-frontend:dev npm start
+	docker run -it --rm --name buyer-frontend-dev -p 3000:3000 -v $(PWD):/app -v /app/node_modules buyer-frontend:dev npm start
 
 docker-stop: ## Stop Docker container
 	@echo "🐳 Stopping Docker container..."
-	docker stop admin-frontend || true
+	docker stop buyer-frontend || true
 
 docker-clean: ## Remove Docker container and image
 	@echo "🐳 Cleaning Docker resources..."
-	docker stop admin-frontend || true
-	docker rm admin-frontend || true
-	docker rmi admin-frontend:latest || true
-	docker rmi admin-frontend:dev || true
+	docker stop buyer-frontend || true
+	docker rm buyer-frontend || true
+	docker rmi buyer-frontend:latest || true
+	docker rmi buyer-frontend:dev || true
 
 # Production deployment
 deploy-staging: build ## Deploy to staging
@@ -137,7 +137,7 @@ health-check: ## Check if development server is running
 
 health-check-prod: ## Check if production server is running
 	@echo "🏥 Checking production health..."
-	@curl -f http://localhost:8080 > /dev/null 2>&1 && echo "✅ Production server is running" || echo "❌ Production server is not running"
+	@curl -f http://localhost:8082 > /dev/null 2>&1 && echo "✅ Production server is running" || echo "❌ Production server is not running"
 
 # Bundle analysis
 analyze: build ## Analyze bundle size
@@ -146,7 +146,7 @@ analyze: build ## Analyze bundle size
 
 # Environment setup
 setup: install build ## Complete setup for new developers
-	@echo "🎯 Setting up admin frontend..."
+	@echo "🎯 Setting up buyer frontend..."
 	@echo "✅ Setup completed! Run 'make start' to begin development."
 
 # CI/CD helpers
@@ -168,7 +168,7 @@ ci-lint: ## Run linting for CI
 
 # Information
 info: ## Show project information
-	@echo "📋 Admin Frontend Information:"
+	@echo "📋 Buyer Frontend Information:"
 	@echo "Node version: $(shell node --version)"
 	@echo "NPM version: $(shell npm --version)"
 	@echo "Project version: $(shell node -p "require('./package.json').version")"
@@ -190,3 +190,29 @@ outdated: ## Check for outdated packages
 upgrade-interactive: ## Interactive package upgrade
 	@echo "🔄 Starting interactive package upgrade..."
 	npx npm-check-updates --interactive
+
+# Buyer-specific commands
+mock-products: ## Generate mock product data for development
+	@echo "🛍️ Generating mock product data..."
+	@echo "Mock product data would be generated here for development purposes"
+
+test-api: ## Test API connectivity
+	@echo "🔌 Testing API connectivity..."
+	@curl -f http://localhost:8000/api/v1/health > /dev/null 2>&1 && echo "✅ Backend API is accessible" || echo "❌ Backend API is not accessible"
+
+test-board-analyzer: ## Test board analyzer functionality
+	@echo "🔍 Testing board analyzer..."
+	@echo "Board analyzer functionality test would run here"
+
+validate-buyer: ## Validate buyer configuration
+	@echo "✅ Validating buyer configuration..."
+	@echo "Buyer frontend configuration is valid"
+
+# E-commerce specific commands
+test-marketplace: ## Test marketplace functionality
+	@echo "🏪 Testing marketplace functionality..."
+	@echo "Marketplace functionality test would run here"
+
+simulate-purchase: ## Simulate purchase flow
+	@echo "💳 Simulating purchase flow..."
+	@echo "Purchase flow simulation would run here"

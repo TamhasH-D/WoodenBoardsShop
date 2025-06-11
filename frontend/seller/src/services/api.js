@@ -399,51 +399,69 @@ export const apiService = {
     }
   },
 
-  // Update product with image analysis (similar to createProductWithImage)
+  // Update product with image analysis using new layered architecture endpoint
   async updateProductWithImage(productId, productData, imageFile, boardHeight, boardLength) {
     try {
-      // First, analyze the new image to get volume
-      const analysisResult = await this.analyzeBoardImage(imageFile, boardHeight, boardLength);
+      // Prepare form data for multipart request
+      const formData = new FormData();
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Image analysis result for update:', analysisResult);
+      // Add product data (only non-null values)
+      if (productData.title) {
+        formData.append('title', productData.title);
+      }
+      if (productData.description !== undefined) {
+        formData.append('description', productData.description || '');
+      }
+      if (productData.wood_type_id) {
+        formData.append('wood_type_id', productData.wood_type_id);
+      }
+      if (productData.price) {
+        formData.append('price', productData.price.toString());
+      }
+      if (productData.delivery_possible !== undefined) {
+        formData.append('delivery_possible', productData.delivery_possible.toString());
+      }
+      if (productData.pickup_location !== undefined) {
+        formData.append('pickup_location', productData.pickup_location || '');
       }
 
-      // Update product with new volume from image analysis
-      const updatedProductData = {
-        ...productData,
-        volume: analysisResult.data.total_volume
-      };
+      // Add board dimensions if provided
+      if (boardHeight) {
+        formData.append('board_height', boardHeight.toString());
+      }
+      if (boardLength) {
+        formData.append('board_length', boardLength.toString());
+      }
 
-      // Update the product first
-      const productResponse = await this.updateProduct(productId, updatedProductData);
+      // Add image file if provided
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
 
-      // Then upload the new image
-      const formData = new FormData();
-      formData.append('image', imageFile);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Updating product with image analysis...');
+        console.log(`Product ID: ${productId}`);
+        if (imageFile) {
+          console.log(`Image: ${imageFile.name}, size: ${imageFile.size} bytes`);
+          console.log(`Board dimensions: ${boardHeight}m x ${boardLength}m`);
+        }
+      }
 
-      const imageResponse = await api.post(`/api/v1/images`, formData, {
+      const response = await api.patch(`/api/v1/products/${productId}/with-image`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        timeout: 60000,
+        timeout: 120000, // 2 minutes timeout for complete workflow
       });
-
-      // Update the image to associate with the product
-      if (imageResponse.data && imageResponse.data.id) {
-        await api.patch(`/api/v1/images/${imageResponse.data.id}`, {
-          product_id: productId
-        });
-      }
 
       // Clear products cache to force refresh
       cache.delete('all_products');
 
       if (process.env.NODE_ENV === 'development') {
-        console.log('Product updated successfully with new image:', productResponse);
+        console.log('Product updated successfully with image analysis:', response.data);
       }
 
-      return productResponse;
+      return response.data;
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.error('Failed to update product with image:', error);
