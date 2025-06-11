@@ -4,6 +4,7 @@ import { useCart } from '../contexts/CartContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { BUYER_TEXTS, formatCurrencyRu } from '../utils/localization';
 import { apiService } from '../services/api';
+import ProductImage from '../components/ui/ProductImage';
 
 /**
  * Премиум страница каталога товаров
@@ -12,7 +13,7 @@ import { apiService } from '../services/api';
 const ProductsPage = () => {
   const { setPageTitle, searchQuery, setSearchQuery, filters, setFilters, resetFilters } = useApp();
   const { addToCart, isInCart } = useCart();
-  const { showCartSuccess, showError } = useNotifications();
+  const { showCartSuccess } = useNotifications();
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,33 +26,6 @@ const ProductsPage = () => {
 
   // Флаг для предотвращения повторной загрузки
   const [initialLoaded, setInitialLoaded] = useState(false);
-
-  useEffect(() => {
-    setPageTitle(BUYER_TEXTS.PRODUCTS);
-    if (!initialLoaded) {
-      loadInitialData();
-    }
-  }, [setPageTitle, initialLoaded, loadInitialData]);
-
-  const loadInitialData = useCallback(async () => {
-    try {
-      // Загружаем типы древесины и продавцов для фильтров
-      const [woodTypesData, sellersData] = await Promise.all([
-        apiService.getAllWoodTypes(),
-        apiService.getAllSellers()
-      ]);
-
-      setWoodTypes(woodTypesData.data || []);
-      setSellers(sellersData.data || []);
-
-      // Загружаем товары
-      await loadProducts();
-      setInitialLoaded(true);
-    } catch (error) {
-      console.error('Ошибка загрузки данных:', error);
-      // Не показываем ошибки пользователю, только в консоли
-    }
-  }, [loadProducts]);
 
   const loadProducts = useCallback(async () => {
     try {
@@ -75,11 +49,38 @@ const ProductsPage = () => {
     }
   }, [searchQuery, currentPage, pageSize]);
 
+  const loadInitialData = useCallback(async () => {
+    try {
+      // Загружаем типы древесины и продавцов для фильтров
+      const [woodTypesData, sellersData] = await Promise.all([
+        apiService.getAllWoodTypes(),
+        apiService.getAllSellers()
+      ]);
+
+      setWoodTypes(woodTypesData.data || []);
+      setSellers(sellersData.data || []);
+
+      // Загружаем товары
+      await loadProducts();
+      setInitialLoaded(true);
+    } catch (error) {
+      console.error('Ошибка загрузки данных:', error);
+      // Не показываем ошибки пользователю, только в консоли
+    }
+  }, [loadProducts]);
+
   // Функция для принудительного обновления
   const handleRefresh = useCallback(async () => {
     await apiService.clearCache();
     await loadProducts();
   }, [loadProducts]);
+
+  useEffect(() => {
+    setPageTitle(BUYER_TEXTS.PRODUCTS);
+    if (!initialLoaded) {
+      loadInitialData();
+    }
+  }, [setPageTitle, initialLoaded, loadInitialData]);
 
   // Перезагружаем товары при изменении поиска или страницы (только если уже загружены)
   useEffect(() => {
@@ -307,15 +308,20 @@ const ProductsPage = () => {
 };
 
 /**
- * Карточка товара
+ * Карточка товара с изображением из API
  */
 const ProductCard = ({ product, onAddToCart, isInCart }) => {
   return (
     <div className="product-card hover-lift">
+      {/* Изображение товара через новый API */}
       <div className="product-image">
-        <div className="product-placeholder">
-          🌲
-        </div>
+        <ProductImage
+          productId={product.id}
+          alt={product.title || product.neme || 'Товар'}
+          className="product-image-full"
+          placeholder="🌲"
+          showPlaceholder={true}
+        />
         {isInCart && (
           <div className="product-badge">
             В корзине

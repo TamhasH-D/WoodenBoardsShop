@@ -4,6 +4,7 @@ import { apiService } from '../services/api';
 import { BUYER_TEXTS } from '../utils/localization';
 import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
 import { MOCK_IDS } from '../utils/constants';
+import ProductImage from './ui/ProductImage';
 
 // Use shared mock buyer ID
 const MOCK_BUYER_ID = MOCK_IDS.BUYER_ID;
@@ -50,9 +51,6 @@ function Products() {
   const woodTypePricesApiFunction = useMemo(() => () => apiService.getWoodTypePrices(), []);
   const { data: woodTypePrices } = useApi(woodTypePricesApiFunction, []);
 
-  const imagesApiFunction = useMemo(() => () => apiService.getAllImages(), []);
-  const { data: allImages } = useApi(imagesApiFunction, []);
-
   const { mutate, loading: contacting } = useApiMutation();
 
   // Helper functions to get additional product information
@@ -66,16 +64,6 @@ function Products() {
     if (!woodTypePrices?.data) return null;
     return woodTypePrices.data.find(p => p.wood_type_id === woodTypeId);
   }, [woodTypePrices]);
-
-  const getProductImages = useCallback((productId) => {
-    if (!allImages) return [];
-    return allImages.filter(image => image.product_id === productId);
-  }, [allImages]);
-
-  const getProductMainImage = useCallback((productId) => {
-    const images = getProductImages(productId);
-    return images.length > 0 ? images[0] : null;
-  }, [getProductImages]);
 
   // Handle errors - только логируем в консоль, не показываем пользователю
   useEffect(() => {
@@ -184,7 +172,6 @@ function Products() {
                     product={product}
                     woodTypeName={getWoodTypeName(product.wood_type_id)}
                     woodTypePrice={getWoodTypePrice(product.wood_type_id)}
-                    mainImage={getProductMainImage(product.id)}
                     onContact={handleContactSeller}
                     contacting={contacting}
                   />
@@ -253,7 +240,7 @@ function Products() {
 }
 
 // Компонент карточки товара
-const ProductCard = ({ product, woodTypeName, woodTypePrice, mainImage, onContact, contacting }) => {
+const ProductCard = ({ product, woodTypeName, woodTypePrice, onContact, contacting }) => {
   const formatPrice = (price) => {
     return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
@@ -271,21 +258,15 @@ const ProductCard = ({ product, woodTypeName, woodTypePrice, mainImage, onContac
 
   return (
     <div className="product-card">
-      {/* Изображение товара */}
+      {/* Изображение товара через новый API */}
       <div className="product-image">
-        {mainImage ? (
-          <img
-            src={`/uploads/products/${mainImage.image_path.split('/').pop()}`}
-            alt={product.title}
-            onError={(e) => {
-              e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'flex';
-            }}
-          />
-        ) : null}
-        <div className="product-placeholder" style={{ display: mainImage ? 'none' : 'flex' }}>
-          🌲
-        </div>
+        <ProductImage
+          productId={product.id}
+          alt={product.title || BUYER_TEXTS.UNTITLED_PRODUCT}
+          className="product-image-full"
+          placeholder="🌲"
+          showPlaceholder={true}
+        />
       </div>
 
       {/* Информация о товаре */}

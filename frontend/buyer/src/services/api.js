@@ -435,6 +435,53 @@ export const apiService = {
     return allImages.filter(image => image.product_id === productId);
   },
 
+  // Get image file URL
+  getImageFileUrl(imageId) {
+    const baseUrl = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+    return `${baseUrl}/api/v1/images/${imageId}/file`;
+  },
+
+  // Get image metadata
+  async getImageMetadata(imageId) {
+    try {
+      const response = await api.get(`/api/v1/images/${imageId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get image metadata:', error);
+      throw error;
+    }
+  },
+
+  // Upload image file
+  async uploadImage(productId, imageFile) {
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+
+      const response = await api.post(`/api/v1/images/upload?product_id=${productId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Failed to upload image:', error);
+      throw error;
+    }
+  },
+
+  // Delete image (removes both DB record and file)
+  async deleteImage(imageId) {
+    try {
+      const response = await api.delete(`/api/v1/images/${imageId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to delete image:', error);
+      throw error;
+    }
+  },
+
   // Wooden board analysis (Prosto Board integration)
   async analyzeWoodenBoard(imageFile, boardHeight = 0.0, boardLength = 0.0) {
     try {

@@ -1669,3 +1669,123 @@ textarea.form-input {
     order: -1;
   }
 }
+
+/* Product Image Components */
+.product-image-container {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--color-bg-tertiary), var(--color-bg-soft));
+  border-radius: var(--border-radius);
+}
+
+.product-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-normal);
+}
+
+.product-image-container:hover .product-image {
+  transform: scale(1.05);
+}
+
+.product-image-full {
+  height: 200px;
+}
+
+.product-image-full .product-image-container {
+  height: 100%;
+  border-radius: 0;
+}
+
+.product-image-full .product-image {
+  border-radius: 0;
+}
+
+.product-image-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: var(--color-bg-secondary);
+}
+
+.product-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 3rem;
+  color: var(--color-text-light);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border-light);
+  border-top: 3px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Product Gallery */
+.product-gallery-container {
+  width: 100%;
+}
+
+.product-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: var(--space-2);
+  max-height: 200px;
+  overflow: hidden;
+}
+
+.product-gallery-item {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: transform var(--transition-normal);
+}
+
+.product-gallery-item:hover {
+  transform: scale(1.05);
+}
+
+.product-gallery-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-gallery-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius);
+}
+
+.product-gallery-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--border-radius);
+  color: var(--color-text-light);
+  font-size: var(--font-size-sm);
+}
