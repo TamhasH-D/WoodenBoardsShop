@@ -1,9 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
-import { useApp } from '../contexts/AppContext';
 import HealthCheck from '../components/HealthCheck';
 import Card from '../components/ui/Card';
-import { ADMIN_TEXTS } from '../utils/localization';
 import { cn } from '../utils/helpers';
 import {
   HeartIcon,
@@ -16,12 +14,7 @@ import {
  * Professional, minimal design suitable for enterprise admin panels
  */
 const SystemPage = () => {
-  const { setPageTitle } = useApp();
   const location = useLocation();
-
-  useEffect(() => {
-    setPageTitle(ADMIN_TEXTS.SYSTEM);
-  }, [setPageTitle]);
 
   const SystemLogsPlaceholder = () => (
     <Card className="p-8 text-center">

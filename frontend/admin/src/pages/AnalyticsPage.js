@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useApp } from '../contexts/AppContext';
 import { apiService } from '../services/api';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { ADMIN_TEXTS } from '../utils/localization';
 import {
   ChartBarIcon,
   UsersIcon,
@@ -16,14 +14,12 @@ import {
  * Professional, minimal design suitable for enterprise admin panels
  */
 const AnalyticsPage = () => {
-  const { setPageTitle } = useApp();
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setPageTitle(ADMIN_TEXTS.ANALYTICS);
     loadAnalytics();
-  }, [setPageTitle]);
+  }, []);
 
   const loadAnalytics = async () => {
     try {

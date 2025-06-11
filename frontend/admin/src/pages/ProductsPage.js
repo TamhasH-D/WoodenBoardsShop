@@ -1,8 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
-import { useApp } from '../contexts/AppContext';
 import EntityManager from '../components/EntityManager';
-import { ADMIN_TEXTS } from '../utils/localization';
 import Card from '../components/ui/Card';
 import { cn } from '../utils/helpers';
 
@@ -11,12 +9,7 @@ import { cn } from '../utils/helpers';
  * Professional, minimal design suitable for enterprise admin panels
  */
 const ProductsPage = () => {
-  const { setPageTitle } = useApp();
   const location = useLocation();
-
-  useEffect(() => {
-    setPageTitle(ADMIN_TEXTS.PRODUCT_MANAGEMENT);
-  }, [setPageTitle]);
 
   const tabs = [
     { key: 'list', label: 'Товары', path: '/products/list' },
