@@ -3,7 +3,7 @@ import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS, formatDateRu } from '../utils/localization';
 import { testWoodenBoardsConnection, testImageAnalysisEndpoint, getWoodenBoardsConfig } from '../utils/testWoodenBoardsConnection';
-import BoardImageAnalyzer from './BoardImageAnalyzer';
+import CompactBoardAnalyzer from './CompactBoardAnalyzer';
 import StepByStepProductForm from './StepByStepProductForm';
 import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
 import { MOCK_IDS } from '../utils/constants';
@@ -446,8 +446,8 @@ function Products() {
               </small>
             </div>
 
-            {/* Board Image Analyzer Component */}
-            <BoardImageAnalyzer
+            {/* Compact Board Analyzer Component */}
+            <CompactBoardAnalyzer
               onAnalysisComplete={(result) => {
                 setVolumeCalculationResult(result);
                 setSelectedImage(result.image);
@@ -787,7 +787,7 @@ function Products() {
             {/* Image Update Section */}
             <div className="form-group">
               <label className="form-label">Обновить изображение товара (опционально)</label>
-              <BoardImageAnalyzer
+              <CompactBoardAnalyzer
                 onAnalysisComplete={(result) => {
                   setEditVolumeCalculationResult(result);
                   setEditSelectedImage(result.image);
@@ -806,7 +806,6 @@ function Products() {
                 disabled={mutating}
                 initialHeight={editBoardHeight}
                 initialLength={editBoardLength}
-                compact={true}
               />
               <small style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-xs)' }}>
                 {editVolumeCalculationResult
