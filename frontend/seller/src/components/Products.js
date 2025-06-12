@@ -23,6 +23,16 @@ function Products() {
   const [page, setPage] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
+  const [selectedWoodType, setSelectedWoodType] = useState('');
+  const [deliveryFilter, setDeliveryFilter] = useState('');
+  const [sortBy, setSortBy] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [showFilters, setShowFilters] = useState(false);
   const [newProduct, setNewProduct] = useState({
     title: '',
     description: '',
@@ -60,10 +70,33 @@ function Products() {
 
   // Create stable API functions to prevent infinite loops
   const sellerId = getCurrentSellerKeycloakId();
-  const productsApiFunction = useMemo(() =>
-    sellerId ? () => apiService.getSellerProductsByKeycloakId(sellerId, page, 10) : null,
-    [sellerId, page]
-  );
+
+  // Build filters object
+  const filters = useMemo(() => {
+    const filterObj = {};
+    if (searchQuery.trim()) filterObj.search_query = searchQuery.trim();
+    if (priceMin) filterObj.price_min = parseFloat(priceMin);
+    if (priceMax) filterObj.price_max = parseFloat(priceMax);
+    if (selectedWoodType) filterObj.wood_type_ids = [selectedWoodType];
+    if (deliveryFilter === 'true') filterObj.delivery_possible = true;
+    if (deliveryFilter === 'false') filterObj.delivery_possible = false;
+    return filterObj;
+  }, [searchQuery, priceMin, priceMax, selectedWoodType, deliveryFilter]);
+
+  // Check if we have any active filters
+  const hasActiveFilters = Object.keys(filters).length > 0;
+
+  const productsApiFunction = useMemo(() => {
+    if (!sellerId) return null;
+
+    if (hasActiveFilters) {
+      // Use search endpoint with filters
+      return () => apiService.searchSellerProductsByKeycloakId(sellerId, filters, page, 10, sortBy, sortOrder);
+    } else {
+      // Use basic endpoint without filters
+      return () => apiService.getSellerProductsByKeycloakId(sellerId, page, 10, sortBy, sortOrder);
+    }
+  }, [sellerId, page, filters, hasActiveFilters, sortBy, sortOrder]);
   const woodTypesApiFunction = useMemo(() => () => apiService.getAllWoodTypes(), []);
   const woodTypePricesApiFunction = useMemo(() => () => apiService.getAllWoodTypePrices(), []);
 
@@ -123,6 +156,21 @@ function Products() {
     setSelectedImage(null);
     setVolumeCalculationResult(null);
   }, []);
+
+  // Helper function to clear all filters
+  const clearFilters = useCallback(() => {
+    setSearchQuery('');
+    setPriceMin('');
+    setPriceMax('');
+    setSelectedWoodType('');
+    setDeliveryFilter('');
+    setPage(0); // Reset to first page
+  }, []);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery, priceMin, priceMax, selectedWoodType, deliveryFilter, sortBy, sortOrder]);
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
@@ -341,9 +389,137 @@ function Products() {
         <p className="page-description">{SELLER_TEXTS.MANAGE_INVENTORY_DESC}</p>
       </div>
 
+      {/* Search and Filter Section */}
+      <div className="card mb-6">
+        <div className="card-header">
+          <div className="flex justify-between items-center">
+            <h2 className="card-title">🔍 Поиск и фильтрация товаров</h2>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="btn btn-secondary btn-sm"
+            >
+              {showFilters ? 'Скрыть фильтры' : 'Показать фильтры'}
+            </button>
+          </div>
+        </div>
+
+        {/* Basic Search */}
+        <div className="form-group">
+          <label className="form-label">Поиск по названию и описанию</label>
+          <input
+            type="text"
+            className="form-input"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Введите название товара или ключевые слова..."
+          />
+        </div>
+
+        {/* Advanced Filters */}
+        {showFilters && (
+          <div className="form-grid form-grid-3">
+            <div className="form-group">
+              <label className="form-label">Мин. цена (₽)</label>
+              <input
+                type="number"
+                className="form-input"
+                value={priceMin}
+                onChange={(e) => setPriceMin(e.target.value)}
+                placeholder="0"
+                min="0"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Макс. цена (₽)</label>
+              <input
+                type="number"
+                className="form-input"
+                value={priceMax}
+                onChange={(e) => setPriceMax(e.target.value)}
+                placeholder="999999"
+                min="0"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Тип древесины</label>
+              <select
+                className="form-input"
+                value={selectedWoodType}
+                onChange={(e) => setSelectedWoodType(e.target.value)}
+              >
+                <option value="">Все типы</option>
+                {woodTypes?.data?.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.neme || `Type ${type.id?.substring(0, 8)}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Доставка</label>
+              <select
+                className="form-input"
+                value={deliveryFilter}
+                onChange={(e) => setDeliveryFilter(e.target.value)}
+              >
+                <option value="">Все товары</option>
+                <option value="true">С доставкой</option>
+                <option value="false">Только самовывоз</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Сортировка</label>
+              <select
+                className="form-input"
+                value={`${sortBy}-${sortOrder}`}
+                onChange={(e) => {
+                  const [field, order] = e.target.value.split('-');
+                  setSortBy(field);
+                  setSortOrder(order);
+                }}
+              >
+                <option value="created_at-desc">Новые сначала</option>
+                <option value="created_at-asc">Старые сначала</option>
+                <option value="price-asc">Цена: по возрастанию</option>
+                <option value="price-desc">Цена: по убыванию</option>
+                <option value="title-asc">Название: А-Я</option>
+                <option value="title-desc">Название: Я-А</option>
+                <option value="volume-asc">Объем: по возрастанию</option>
+                <option value="volume-desc">Объем: по убыванию</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">&nbsp;</label>
+              <button
+                onClick={clearFilters}
+                className="btn btn-secondary w-full"
+                disabled={!hasActiveFilters}
+              >
+                Очистить фильтры
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Filter Status */}
+        {hasActiveFilters && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+            <p className="text-sm text-blue-700">
+              🔍 Активные фильтры: {Object.keys(filters).length} |
+              Найдено товаров: {data?.total || 0}
+            </p>
+          </div>
+        )}
+      </div>
+
       <div className="flex justify-between items-center mb-6">
         <div>
           <p>{SELLER_TEXTS.TOTAL_PRODUCTS}: {data?.total || data?.data?.length || 0}</p>
+          {hasActiveFilters && (
+            <p className="text-sm text-gray-600">
+              (показаны результаты поиска)
+            </p>
+          )}
         </div>
         <div className="flex gap-4">
           <button
@@ -369,7 +545,6 @@ function Products() {
           >
             {loading ? SELLER_TEXTS.LOADING : SELLER_TEXTS.REFRESH}
           </button>
-
         </div>
       </div>
 

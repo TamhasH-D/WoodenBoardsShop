@@ -156,6 +156,71 @@
   GET /products/search?volume_min=0.5&has_pickup_location=true&sort_by=created_at&sort_order=desc
   ```
 
+### Получение товаров текущего продавца
+
+- **Метод:** GET
+- **Путь:** `/products/my-products`
+- **Описание:** Получает список товаров для текущего продавца с поддержкой пагинации и сортировки.
+
+- **Параметры запроса:**
+  - `keycloak_id`: UUID (обязательный) - Keycloak UUID продавца
+  - `offset`: integer (optional, default=0) - Смещение для пагинации
+  - `limit`: integer (optional, default=20, max=20) - Количество записей на страницу
+  - `sort_by`: string (optional) - Поле для сортировки
+  - `sort_order`: string (optional, "asc"|"desc", default="desc") - Порядок сортировки
+
+- **Ответ:** Пагинированный список товаров продавца
+  ```json
+  {
+    "data": [ProductDTO],
+    "pagination": {
+      "offset": 0,
+      "limit": 20,
+      "total": 100
+    }
+  }
+  ```
+
+- **Коды ответов:**
+  - `200` - Успешно получен список товаров
+  - `404` - Продавец не найден
+  - `422` - Ошибка валидации параметров
+
+### Поиск товаров текущего продавца
+
+- **Метод:** GET
+- **Путь:** `/products/my-products/search`
+- **Описание:** Расширенный поиск и фильтрация товаров для текущего продавца.
+
+- **Параметры запроса:**
+  - `keycloak_id`: UUID (обязательный) - Keycloak UUID продавца
+  - Все параметры пагинации и сортировки из `/products/my-products`
+  - Все фильтры из `/products/search` (кроме `seller_ids` - автоматически устанавливается)
+
+  **Доступные фильтры:**
+  - `search_query`: string (optional) - Текстовый поиск по названию и описанию
+  - `price_min`: float (optional, >=0) - Минимальная цена
+  - `price_max`: float (optional, >=0) - Максимальная цена
+  - `volume_min`: float (optional, >=0) - Минимальный объем
+  - `volume_max`: float (optional, >=0) - Максимальный объем
+  - `wood_type_ids`: array[UUID] (optional) - Фильтр по типам древесины
+  - `delivery_possible`: boolean (optional) - Фильтр по возможности доставки
+  - `has_pickup_location`: boolean (optional) - Фильтр по наличию места самовывоза
+  - `created_after`: datetime (optional) - Товары созданные после указанной даты
+  - `created_before`: datetime (optional) - Товары созданные до указанной даты
+
+- **Примеры запросов:**
+  ```
+  GET /products/my-products?keycloak_id=uuid&sort_by=created_at&sort_order=desc
+  GET /products/my-products/search?keycloak_id=uuid&search_query=дуб&price_min=1000
+  GET /products/my-products/search?keycloak_id=uuid&wood_type_ids=uuid1&delivery_possible=true
+  ```
+
+- **Безопасность:**
+  - Продавец может видеть только свои товары
+  - Параметр `seller_ids` игнорируется и автоматически устанавливается в ID текущего продавца
+  - В будущем `keycloak_id` будет получаться из JWT токена аутентификации
+
 - **Формат выходных данных (OffsetResults[ProductDTO]):**
   ```json
   {
