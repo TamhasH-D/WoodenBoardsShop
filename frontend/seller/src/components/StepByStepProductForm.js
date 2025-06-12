@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApi } from '../hooks/useApi';
+import { useFormValidation } from '../hooks/useFormValidation';
 import { apiService } from '../services/api';
 import { MOCK_IDS } from '../utils/constants';
 import ImagePreviewWithBoards from './ui/ImagePreviewWithBoards';
@@ -10,6 +11,9 @@ const MOCK_SELLER_ID = MOCK_IDS.SELLER_ID;
  * Пошаговая форма создания товара с прогрессивным раскрытием полей
  */
 const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
+  // Хук для валидации форм
+  const { getFieldClassName, handleFieldBlur, handleFieldChange, resetTouchedFields } = useFormValidation();
+
   // Основные поля формы
   const [formData, setFormData] = useState({
     title: '',
@@ -150,6 +154,9 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
       // Обновляем цены на древесину для следующего создания товара
       refetchWoodTypePrices();
 
+      // Сбрасываем состояние валидации
+      resetTouchedFields();
+
       onSuccess();
     } catch (error) {
       console.error('Ошибка создания товара:', error);
@@ -184,9 +191,10 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
           <label className="form-label">Название товара *</label>
           <input
             type="text"
-            className="form-input"
+            className={getFieldClassName('title')}
             value={formData.title}
-            onChange={(e) => handleInputChange('title', e.target.value)}
+            onChange={handleFieldChange('title', (e) => handleInputChange('title', e.target.value))}
+            onBlur={() => handleFieldBlur('title')}
             placeholder="Например: Доски дубовые премиум"
             required
             maxLength={100}
@@ -219,9 +227,10 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
               <div className="loading">Загрузка типов древесины...</div>
             ) : (
               <select
-                className="form-input"
+                className={getFieldClassName('wood_type_id')}
                 value={formData.wood_type_id}
-                onChange={(e) => handleInputChange('wood_type_id', e.target.value)}
+                onChange={handleFieldChange('wood_type_id', (e) => handleInputChange('wood_type_id', e.target.value))}
+                onBlur={() => handleFieldBlur('wood_type_id')}
                 required
               >
                 <option value="">Выберите тип древесины</option>
@@ -382,9 +391,10 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
                   step="0.0001"
                   min="0.0001"
                   max="1000"
-                  className="form-input"
+                  className={getFieldClassName('volume')}
                   value={formData.volume}
-                  onChange={(e) => handleInputChange('volume', e.target.value)}
+                  onChange={handleFieldChange('volume', (e) => handleInputChange('volume', e.target.value))}
+                  onBlur={() => handleFieldBlur('volume')}
                   placeholder="0.0000"
                   required
                   disabled={analysisResult}
@@ -405,9 +415,10 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
                   step="0.01"
                   min="0.01"
                   max="999999"
-                  className="form-input"
+                  className={getFieldClassName('price')}
                   value={formData.price}
-                  onChange={(e) => handleInputChange('price', e.target.value)}
+                  onChange={handleFieldChange('price', (e) => handleInputChange('price', e.target.value))}
+                  onBlur={() => handleFieldBlur('price')}
                   placeholder="0.00"
                   required
                 />

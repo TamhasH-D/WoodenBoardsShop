@@ -352,12 +352,12 @@ textarea.form-input {
   accent-color: var(--color-primary);
 }
 
-/* Form validation states */
-.form-input:invalid {
+/* Form validation states - only show validation after user interaction */
+.form-input.touched:invalid {
   border-color: var(--color-error);
 }
 
-.form-input:valid {
+.form-input.touched:valid {
   border-color: var(--color-success);
 }
 
@@ -519,8 +519,8 @@ textarea.form-input {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Price Input Validation Styles */
-.form-input:invalid {
+/* Price Input Validation Styles - only show validation after user interaction */
+.form-input.touched:invalid {
   border-color: var(--color-error) !important;
   background-color: #fef2f2;
   animation: shake 0.3s ease-in-out;
