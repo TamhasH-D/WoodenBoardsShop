@@ -7,6 +7,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import ProfessionalHeader from './components/layout/ProfessionalHeader';
 import HomePage from './pages/HomePage';
 import ProductsPage from './pages/ProductsPage';
+import ProductDetailPage from './pages/ProductDetailPage';
 import SellersPage from './pages/SellersPage';
 import BoardAnalyzerPage from './pages/BoardAnalyzerPage';
 import ChatsPage from './pages/ChatsPage';
@@ -30,7 +31,8 @@ function AppContent() {
       }}>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/products/*" element={<ProductsPage />} />
+          <Route path="/products" element={<ProductsPage />} />
+          <Route path="/product/:productId" element={<ProductDetailPage />} />
           <Route path="/sellers/*" element={<SellersPage />} />
           <Route path="/analyzer" element={<BoardAnalyzerPage />} />
           <Route path="/chats/*" element={<ChatsPage />} />
