@@ -112,10 +112,27 @@ class Settings(BaseSettings):
     log_level: str = "info"
     reload: bool = False
 
+    # File upload settings
+    uploads_dir: str = "uploads"
+    max_file_size: int = 10 * 1024 * 1024  # 10MB
+
     db: DBSettings = DBSettings()
     redis: RedisSettings = RedisSettings()
     cors: CORSSettings = CORSSettings()
     prosto_board_volume_seg_url: str = "http://yolo_backend:8001"
+
+    @property
+    def uploads_path(self) -> pathlib.Path:
+        """Get absolute path to uploads directory."""
+        if pathlib.Path(self.uploads_dir).is_absolute():
+            return pathlib.Path(self.uploads_dir)
+        # Relative to project root (where backend/backend is located)
+        return pathlib.Path(__file__).parent.parent / self.uploads_dir
+
+    @property
+    def products_uploads_path(self) -> pathlib.Path:
+        """Get absolute path to products uploads directory."""
+        return self.uploads_path / "products"
 
     model_config = SettingsConfigDict(
         env_file=DOTENV,

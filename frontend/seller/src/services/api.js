@@ -313,15 +313,15 @@ export const apiService = {
       // Add image file
       formData.append('image', imageFile);
 
-      // Add product data with UUID
-      formData.append('id', productData.id || generateEntityUUID(ENTITY_TYPES.PRODUCT));
+      // Add product data - backend expects keycloak_id, not seller_id
+      formData.append('keycloak_id', productData.seller_id); // seller_id is actually keycloak_id
       formData.append('title', productData.title);
       formData.append('description', productData.description || '');
       formData.append('price', parseFloat(productData.price));
       formData.append('delivery_possible', productData.delivery_possible || false);
       formData.append('pickup_location', productData.pickup_location || '');
-      formData.append('seller_id', productData.seller_id);
       formData.append('wood_type_id', productData.wood_type_id);
+      formData.append('volume', parseFloat(productData.volume || 0));
 
       // Add board dimensions
       formData.append('board_height', boardHeight);

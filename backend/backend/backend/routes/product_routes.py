@@ -244,7 +244,7 @@ async def create_product_with_analysis(
 
     # Step 8: Save image to filesystem
     try:
-        upload_dir = Path("uploads/products")
+        upload_dir = settings.products_uploads_path
         upload_dir.mkdir(parents=True, exist_ok=True)
 
         # Generate unique filename

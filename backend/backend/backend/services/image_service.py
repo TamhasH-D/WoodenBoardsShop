@@ -15,7 +15,7 @@ class ImageService:
 
     def __init__(self):
         """Initialize image service."""
-        self.upload_dir = Path("uploads/products")
+        self.upload_dir = settings.products_uploads_path
         self.upload_dir.mkdir(parents=True, exist_ok=True)
 
     async def save_image_file(
