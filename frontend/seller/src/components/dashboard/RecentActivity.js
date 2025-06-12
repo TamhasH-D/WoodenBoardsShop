@@ -9,12 +9,14 @@ import {
 import { useApi } from '../../hooks/useApi';
 import { apiService } from '../../services/api';
 import { SELLER_TEXTS, formatDateRu, formatCurrencyRu } from '../../utils/localization';
+import { MOCK_IDS } from '../../utils/constants';
 
 // TODO: Replace with real authentication
 const getCurrentSellerId = () => {
-  // This should be replaced with real authentication system
-  console.error('Using placeholder seller ID - implement real authentication');
-  return null;
+  // Временно используем mock ID для разработки
+  // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
+  console.warn('Using mock seller ID for development - implement real authentication');
+  return MOCK_IDS.SELLER_ID;
 };
 
 const ActivityItem = ({ icon: Icon, title, description, time, action, color }) => {

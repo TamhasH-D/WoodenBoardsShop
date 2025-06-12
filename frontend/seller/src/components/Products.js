@@ -3,15 +3,17 @@ import { useApi, useApiMutation } from '../hooks/useApi';
 import { useFormValidation } from '../hooks/useFormValidation';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS, formatDateRu } from '../utils/localization';
+import { MOCK_IDS } from '../utils/constants';
 import CompactBoardAnalyzer from './CompactBoardAnalyzer';
 import StepByStepProductForm from './StepByStepProductForm';
 import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
 
 // TODO: Replace with real authentication
 const getCurrentSellerKeycloakId = () => {
-  // This should be replaced with real authentication system
-  console.error('Using placeholder seller keycloak ID - implement real authentication');
-  return null;
+  // Временно используем mock ID для разработки
+  // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
+  console.warn('Using mock seller keycloak ID for development - implement real authentication');
+  return MOCK_IDS.SELLER_ID;
 };
 
 function Products() {

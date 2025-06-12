@@ -2,13 +2,15 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useFormValidation } from '../hooks/useFormValidation';
 import { apiService } from '../services/api';
+import { MOCK_IDS } from '../utils/constants';
 import ImagePreviewWithBoards from './ui/ImagePreviewWithBoards';
 
 // TODO: Replace with real authentication
 const getCurrentSellerId = () => {
-  // This should be replaced with real authentication system
-  console.error('Using placeholder seller ID - implement real authentication');
-  return null;
+  // Временно используем mock ID для разработки
+  // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
+  console.warn('Using mock seller ID for development - implement real authentication');
+  return MOCK_IDS.SELLER_ID;
 };
 
 /**

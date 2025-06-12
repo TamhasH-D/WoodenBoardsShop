@@ -2,12 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS } from '../utils/localization';
+import { MOCK_IDS } from '../utils/constants';
 
 // TODO: Replace with real authentication
 const getCurrentSellerKeycloakId = () => {
-  // This should be replaced with real authentication system
-  console.error('Using placeholder seller keycloak ID - implement real authentication');
-  return null;
+  // Временно используем mock ID для разработки
+  // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
+  console.warn('Using mock seller keycloak ID for development - implement real authentication');
+  return MOCK_IDS.SELLER_ID;
 };
 
 function Chats() {
