@@ -96,7 +96,7 @@ async def websocket_chat_endpoint(
     thread_id: str,
     user_id: str,
     user_type: str,  # 'buyer' or 'seller'
-    daos: GetDAOs = Depends(),
+    daos: GetDAOs,
 ):
     """WebSocket endpoint для чата."""
     chat_service = ChatService(daos)
