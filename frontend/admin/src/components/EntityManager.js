@@ -78,7 +78,7 @@ const ENTITY_CONFIGS = {
       { key: 'wood_type_id', label: ADMIN_TEXTS.WOOD_TYPE, type: 'select', required: true,
         options: 'woodTypes', optionValue: 'id', optionLabel: 'neme' },
       { key: 'seller_id', label: ADMIN_TEXTS.SELLER, type: 'select', required: true,
-        options: 'sellers', optionValue: 'id', optionLabel: 'id' },
+        options: 'sellers', optionValue: 'id', optionLabel: 'displayName' },
       { key: 'created_at', label: ADMIN_TEXTS.CREATED_AT, type: 'datetime', readonly: true },
       { key: 'updated_at', label: ADMIN_TEXTS.UPDATED_AT, type: 'datetime', readonly: true }
     ],
@@ -181,9 +181,9 @@ const ENTITY_CONFIGS = {
         placeholder: 'Оставьте пустым для автогенерации',
         helperText: 'UUID будет сгенерирован автоматически, если не указан' },
       { key: 'buyer_id', label: 'Buyer', type: 'select', required: true,
-        options: 'buyers', optionValue: 'id', optionLabel: 'id' },
+        options: 'buyers', optionValue: 'id', optionLabel: 'displayName' },
       { key: 'seller_id', label: 'Seller', type: 'select', required: true,
-        options: 'sellers', optionValue: 'id', optionLabel: 'id' },
+        options: 'sellers', optionValue: 'id', optionLabel: 'displayName' },
       { key: 'created_at', label: 'Created', type: 'datetime', readonly: true }
     ],
     api: {
@@ -208,9 +208,9 @@ const ENTITY_CONFIGS = {
       { key: 'thread_id', label: 'Thread', type: 'select', required: true,
         options: 'threads', optionValue: 'id', optionLabel: 'id' },
       { key: 'buyer_id', label: 'Buyer', type: 'select', required: true,
-        options: 'buyers', optionValue: 'id', optionLabel: 'id' },
+        options: 'buyers', optionValue: 'id', optionLabel: 'displayName' },
       { key: 'seller_id', label: 'Seller', type: 'select', required: true,
-        options: 'sellers', optionValue: 'id', optionLabel: 'id' },
+        options: 'sellers', optionValue: 'id', optionLabel: 'displayName' },
       { key: 'created_at', label: 'Created', type: 'datetime', readonly: true }
     ],
     api: {
@@ -273,8 +273,14 @@ function EntityManager({ entityType }) {
 
   const referenceData = {
     woodTypes: woodTypes?.data || [],
-    sellers: sellers?.data || [],
-    buyers: buyers?.data || [],
+    sellers: (sellers?.data || []).map(seller => ({
+      ...seller,
+      displayName: `${seller.id.substring(0, 8)}... ${seller.is_online ? '🟢 Онлайн' : '🔴 Оффлайн'}`
+    })),
+    buyers: (buyers?.data || []).map(buyer => ({
+      ...buyer,
+      displayName: `${buyer.id.substring(0, 8)}... ${buyer.is_online ? '🟢 Онлайн' : '🔴 Оффлайн'}`
+    })),
     products: products?.data || [],
     images: images?.data || [],
     threads: threads?.data || []
@@ -384,6 +390,18 @@ function EntityManager({ entityType }) {
     setShowEditModal(true);
   };
 
+  // Function to get display value for foreign key fields
+  const getDisplayValue = (field, value) => {
+    if (field.type === 'select' && field.options && value) {
+      const options = referenceData[field.options];
+      const option = options.find(opt => opt[field.optionValue || 'id'] === value);
+      if (option) {
+        return option[field.optionLabel || 'name'] || option.displayName || value;
+      }
+    }
+    return value;
+  };
+
   // Prepare table columns
   const columns = config.fields
     .filter(field => !field.hideInTable)
@@ -397,6 +415,13 @@ function EntityManager({ entityType }) {
         }
         if (field.type === 'checkbox') {
           return value ? 'Да' : 'Нет';
+        }
+        if (field.type === 'select') {
+          const displayValue = getDisplayValue(field, value);
+          if (typeof displayValue === 'string' && displayValue.length > 30) {
+            return displayValue.substring(0, 30) + '...';
+          }
+          return displayValue || '-';
         }
         if (typeof value === 'string' && value.length > 50) {
           return value.substring(0, 50) + '...';
