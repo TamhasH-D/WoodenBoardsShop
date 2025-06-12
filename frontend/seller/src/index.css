@@ -490,17 +490,13 @@ textarea.form-input {
   }
 }
 
-/* Price Update Form Styles */
-.price-update-form {
-  animation: slideIn 0.3s ease-out;
+/* Minimal Price Update Styles */
+.price-cell {
+  transition: all 0.2s ease;
 }
 
-.price-update-form input:focus {
-  animation: pulse 0.3s ease-in-out;
-}
-
-.price-display {
-  animation: fadeIn 0.3s ease-out;
+.price-cell:hover {
+  background-color: #f8fafc !important;
 }
 
 /* Enhanced Button Hover Effects */
@@ -513,34 +509,10 @@ textarea.form-input {
   transform: translateY(0);
 }
 
-/* Price Display Enhancements */
-.price-display:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* Price Input Validation Styles - only show validation after user interaction */
+/* Minimal validation styles */
 .form-input.touched:invalid {
   border-color: var(--color-error) !important;
   background-color: #fef2f2;
-  animation: shake 0.3s ease-in-out;
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-2px); }
-  75% { transform: translateX(2px); }
-}
-
-/* Success Animation */
-@keyframes successPulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
-
-.price-success {
-  animation: successPulse 0.6s ease-in-out;
 }
 
 /* Loading Spinner */

@@ -486,271 +486,140 @@ function WoodTypesManager() {
                       )}
                     </td>
 
-                    {/* Current Price with Update Functionality */}
+                    {/* Current Price with Inline Update */}
                     <td>
                       {isUpdatingPrice ? (
-                        <div
-                          className="price-update-form"
-                          style={{
-                            background: 'var(--color-bg)',
-                            padding: '0.75rem',
-                            borderRadius: 'var(--border-radius)',
-                            border: '1px solid var(--color-border)',
-                            position: 'relative'
-                          }}
-                        >
-                          {/* Previous price indicator */}
-                          {currentPrice && (
-                            <div style={{
-                              fontSize: 'var(--font-size-xs)',
-                              color: 'var(--color-text-light)',
-                              marginBottom: '0.5rem'
-                            }}>
-                              Текущая цена: {currentPrice.price_per_m3.toFixed(2)} ₽/м³
-                            </div>
-                          )}
-
-                          <div className="flex gap-2 items-center">
-                            <div style={{ position: 'relative', flex: 1 }}>
-                              <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                className="form-input"
-                                value={priceInputValues[type.id] || ''}
-                                onChange={(e) => handlePriceInputChange(type.id, e.target.value)}
-                                style={{
-                                  margin: 0,
-                                  width: '100%',
-                                  paddingLeft: '2rem',
-                                  border: `1px solid ${priceValidationErrors[type.id] ? 'var(--color-error)' : 'var(--color-border)'}`,
-                                  borderRadius: 'var(--border-radius)',
-                                  backgroundColor: priceValidationErrors[type.id] ? '#fef2f2' : 'var(--color-bg)'
-                                }}
-                                placeholder="Новая цена"
-                                onKeyPress={(e) => {
-                                  if (e.key === 'Enter' && !priceValidationErrors[type.id]) {
-                                    handleUpdatePrice(type.id, e.target.value);
-                                  }
-                                  if (e.key === 'Escape') {
-                                    setUpdatingPrice(prev => ({...prev, [type.id]: false}));
-                                    setPriceInputValues(prev => ({...prev, [type.id]: ''}));
-                                    setPriceValidationErrors(prev => ({...prev, [type.id]: null}));
-                                  }
-                                }}
-                                onFocus={(e) => {
-                                  if (!priceValidationErrors[type.id]) {
-                                    e.target.style.borderColor = 'var(--color-primary)';
-                                  }
-                                }}
-                                onBlur={(e) => {
-                                  if (!priceValidationErrors[type.id]) {
-                                    e.target.style.borderColor = 'var(--color-border)';
-                                  }
-                                }}
-                                autoFocus
-                              />
-                              <div style={{
-                                position: 'absolute',
-                                left: '0.5rem',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                color: 'var(--color-text-light)',
-                                fontSize: 'var(--font-size-base)'
-                              }}>
-                                ₽
-                              </div>
-
-                              {/* Validation error message */}
-                              {priceValidationErrors[type.id] && (
-                                <div style={{
-                                  position: 'absolute',
-                                  top: '100%',
-                                  left: 0,
-                                  right: 0,
-                                  marginTop: '0.25rem',
-                                  padding: '0.25rem 0.5rem',
-                                  backgroundColor: '#fef2f2',
-                                  border: '1px solid var(--color-error)',
-                                  borderRadius: 'var(--border-radius)',
-                                  fontSize: 'var(--font-size-xs)',
-                                  color: 'var(--color-error)',
-                                  zIndex: 10
-                                }}>
-                                  {priceValidationErrors[type.id]}
-                                </div>
-                              )}
-                            </div>
-
-                            <button
-                              onClick={(e) => {
-                                const inputValue = priceInputValues[type.id];
-                                handleUpdatePrice(type.id, inputValue);
-                              }}
-                              className="btn btn-primary"
-                              style={{
-                                fontSize: 'var(--font-size-sm)',
-                                padding: '0.5rem 0.75rem',
-                                opacity: priceValidationErrors[type.id] || mutating ? 0.6 : 1
-                              }}
-                              disabled={mutating || !!priceValidationErrors[type.id]}
-                            >
-                              {mutating ? 'Сохранение...' : SELLER_TEXTS.SET}
-                            </button>
-
-                            <button
-                              onClick={() => {
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={priceInputValues[type.id] || ''}
+                            onChange={(e) => handlePriceInputChange(type.id, e.target.value)}
+                            style={{
+                              width: '120px',
+                              padding: '6px 8px',
+                              border: `1px solid ${priceValidationErrors[type.id] ? 'var(--color-error)' : 'var(--color-primary)'}`,
+                              borderRadius: '4px',
+                              fontSize: 'var(--font-size-base)',
+                              outline: 'none',
+                              backgroundColor: priceValidationErrors[type.id] ? '#fef2f2' : 'white',
+                              transition: 'border-color 0.2s ease'
+                            }}
+                            placeholder="0.00"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !priceValidationErrors[type.id]) {
+                                handleUpdatePrice(type.id, e.target.value);
+                              }
+                              if (e.key === 'Escape') {
                                 setUpdatingPrice(prev => ({...prev, [type.id]: false}));
                                 setPriceInputValues(prev => ({...prev, [type.id]: ''}));
                                 setPriceValidationErrors(prev => ({...prev, [type.id]: null}));
-                              }}
-                              className="btn btn-secondary"
-                              style={{
-                                fontSize: 'var(--font-size-sm)',
-                                padding: '0.5rem 0.75rem'
-                              }}
-                            >
-                              {SELLER_TEXTS.CANCEL}
-                            </button>
-                          </div>
-
-                          <div style={{
-                            fontSize: 'var(--font-size-xs)',
+                              }
+                            }}
+                            onBlur={(e) => {
+                              // Автосохранение при потере фокуса, если значение изменилось
+                              const newValue = e.target.value;
+                              const currentValue = currentPrice?.price_per_m3?.toString() || '';
+                              if (newValue && newValue !== currentValue && !priceValidationErrors[type.id]) {
+                                handleUpdatePrice(type.id, newValue);
+                              } else {
+                                // Отмена если значение не изменилось
+                                setUpdatingPrice(prev => ({...prev, [type.id]: false}));
+                                setPriceInputValues(prev => ({...prev, [type.id]: ''}));
+                                setPriceValidationErrors(prev => ({...prev, [type.id]: null}));
+                              }
+                            }}
+                            autoFocus
+                          />
+                          <span style={{
+                            position: 'absolute',
+                            right: '8px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
                             color: 'var(--color-text-light)',
-                            marginTop: '0.5rem'
+                            fontSize: 'var(--font-size-sm)',
+                            pointerEvents: 'none'
                           }}>
-                            Нажмите Enter для сохранения, Escape для отмены
-                          </div>
+                            ₽/м³
+                          </span>
+
+                          {/* Компактное сообщение об ошибке */}
+                          {priceValidationErrors[type.id] && (
+                            <div style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: 0,
+                              right: 0,
+                              marginTop: '2px',
+                              padding: '2px 6px',
+                              backgroundColor: 'var(--color-error)',
+                              color: 'white',
+                              borderRadius: '3px',
+                              fontSize: 'var(--font-size-xs)',
+                              zIndex: 10,
+                              whiteSpace: 'nowrap'
+                            }}>
+                              {priceValidationErrors[type.id]}
+                            </div>
+                          )}
                         </div>
                       ) : (
-                        <div className="price-display" style={{
-                          transition: 'all 0.3s ease',
-                          padding: '0.75rem',
-                          borderRadius: '0.5rem',
-                          background: currentPrice ? 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)' : 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)',
-                          border: currentPrice ? '1px solid var(--color-success)' : '1px solid var(--color-border)'
-                        }}>
+                        <div
+                          onClick={() => {
+                            setUpdatingPrice(prev => ({...prev, [type.id]: true}));
+                            // Pre-fill with current price if available
+                            if (currentPrice) {
+                              setPriceInputValues(prev => ({...prev, [type.id]: currentPrice.price_per_m3.toString()}));
+                            } else {
+                              setPriceInputValues(prev => ({...prev, [type.id]: ''}));
+                              setPriceValidationErrors(prev => ({...prev, [type.id]: null}));
+                            }
+                          }}
+                          style={{
+                            padding: '8px 12px',
+                            border: '1px solid transparent',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            minHeight: '36px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            backgroundColor: currentPrice ? '#f8fafc' : '#f9fafb'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.borderColor = '#e5e7eb';
+                            e.target.style.backgroundColor = currentPrice ? '#f1f5f9' : '#f3f4f6';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.borderColor = 'transparent';
+                            e.target.style.backgroundColor = currentPrice ? '#f8fafc' : '#f9fafb';
+                          }}
+                        >
                           {currentPrice ? (
-                            <div>
+                            <div style={{ width: '100%' }}>
                               <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                                marginBottom: '0.5rem'
+                                fontSize: 'var(--font-size-base)',
+                                fontWeight: '600',
+                                color: 'var(--color-text)',
+                                marginBottom: '2px'
                               }}>
-                                <span style={{ fontSize: '1.25rem' }}>💰</span>
-                                <strong style={{
-                                  color: 'var(--color-success-dark)',
-                                  fontSize: '1.125rem',
-                                  fontWeight: '700'
-                                }}>
-                                  {currentPrice.price_per_m3.toFixed(2)} ₽/м³
-                                </strong>
+                                {currentPrice.price_per_m3.toFixed(2)} ₽/м³
                               </div>
-
                               <div style={{
                                 fontSize: 'var(--font-size-xs)',
-                                color: 'var(--color-text-light)',
-                                marginBottom: '0.75rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.25rem'
+                                color: 'var(--color-text-light)'
                               }}>
-                                <span>🕒</span>
-                                <span>Обновлено: {formatDateTime(currentPrice.created_at)}</span>
+                                {formatDateTime(currentPrice.created_at)}
                               </div>
-
-                              <button
-                                onClick={() => {
-                                  setUpdatingPrice(prev => ({...prev, [type.id]: true}));
-                                  // Pre-fill with current price if available
-                                  if (currentPrice) {
-                                    setPriceInputValues(prev => ({...prev, [type.id]: currentPrice.price_per_m3.toString()}));
-                                  }
-                                }}
-                                className="btn"
-                                style={{
-                                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)',
-                                  color: 'white',
-                                  border: 'none',
-                                  borderRadius: '0.375rem',
-                                  padding: '0.375rem 0.75rem',
-                                  fontSize: '0.75rem',
-                                  fontWeight: '600',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.25rem',
-                                  boxShadow: '0 2px 4px rgba(37, 99, 235, 0.3)',
-                                  transition: 'all 0.2s ease',
-                                  cursor: 'pointer'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.target.style.transform = 'translateY(-1px)';
-                                  e.target.style.boxShadow = '0 4px 8px rgba(37, 99, 235, 0.4)';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.target.style.transform = 'translateY(0)';
-                                  e.target.style.boxShadow = '0 2px 4px rgba(37, 99, 235, 0.3)';
-                                }}
-                                disabled={mutating}
-                              >
-                                <span>✏️</span>
-                                {SELLER_TEXTS.UPDATE} {SELLER_TEXTS.PRICE}
-                              </button>
                             </div>
                           ) : (
-                            <div>
-                              <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                                marginBottom: '0.75rem'
-                              }}>
-                                <span style={{ fontSize: '1.25rem' }}>💸</span>
-                                <em style={{
-                                  color: 'var(--color-text-light)',
-                                  fontSize: '0.875rem'
-                                }}>
-                                  {SELLER_TEXTS.PRICE_NOT_SET}
-                                </em>
-                              </div>
-
-                              <button
-                                onClick={() => {
-                                  setUpdatingPrice(prev => ({...prev, [type.id]: true}));
-                                  // Clear any previous input values for new price entry
-                                  setPriceInputValues(prev => ({...prev, [type.id]: ''}));
-                                  setPriceValidationErrors(prev => ({...prev, [type.id]: null}));
-                                }}
-                                className="btn"
-                                style={{
-                                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)',
-                                  color: 'white',
-                                  border: 'none',
-                                  borderRadius: '0.375rem',
-                                  padding: '0.375rem 0.75rem',
-                                  fontSize: '0.75rem',
-                                  fontWeight: '600',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.25rem',
-                                  boxShadow: '0 2px 4px rgba(37, 99, 235, 0.3)',
-                                  transition: 'all 0.2s ease',
-                                  cursor: 'pointer'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.target.style.transform = 'translateY(-1px)';
-                                  e.target.style.boxShadow = '0 4px 8px rgba(37, 99, 235, 0.4)';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.target.style.transform = 'translateY(0)';
-                                  e.target.style.boxShadow = '0 2px 4px rgba(37, 99, 235, 0.3)';
-                                }}
-                                disabled={mutating}
-                              >
-                                <span>💰</span>
-                                {SELLER_TEXTS.SET} {SELLER_TEXTS.PRICE}
-                              </button>
+                            <div style={{
+                              fontSize: 'var(--font-size-base)',
+                              color: 'var(--color-text-light)',
+                              fontStyle: 'italic'
+                            }}>
+                              Нажмите для установки цены
                             </div>
                           )}
                         </div>
