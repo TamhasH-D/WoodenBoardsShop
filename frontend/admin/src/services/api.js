@@ -142,7 +142,12 @@ export const apiService = {
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
-      total: response.data.pagination?.total || 0,
+      pagination: {
+        total: response.data.pagination?.total || 0,
+        offset: page * size,
+        limit: size
+      },
+      total: response.data.pagination?.total || 0, // Keep for backward compatibility
       offset: page * size,
       limit: size
     };
@@ -193,7 +198,12 @@ export const apiService = {
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
-      total: response.data.pagination?.total || 0,
+      pagination: {
+        total: response.data.pagination?.total || 0,
+        offset: page * size,
+        limit: size
+      },
+      total: response.data.pagination?.total || 0, // Keep for backward compatibility
       offset: page * size,
       limit: size
     };
@@ -244,7 +254,12 @@ export const apiService = {
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
-      total: response.data.pagination?.total || 0,
+      pagination: {
+        total: response.data.pagination?.total || 0,
+        offset: page * size,
+        limit: size
+      },
+      total: response.data.pagination?.total || 0, // Keep for backward compatibility
       offset: page * size,
       limit: size
     };
@@ -303,7 +318,12 @@ export const apiService = {
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
-      total: response.data.pagination?.total || 0,
+      pagination: {
+        total: response.data.pagination?.total || 0,
+        offset: page * actualSize,
+        limit: actualSize
+      },
+      total: response.data.pagination?.total || 0, // Keep for backward compatibility
       offset: page * actualSize,
       limit: actualSize
     };
@@ -377,7 +397,12 @@ export const apiService = {
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
-      total: response.data.pagination?.total || 0,
+      pagination: {
+        total: response.data.pagination?.total || 0,
+        offset: page * actualSize,
+        limit: actualSize
+      },
+      total: response.data.pagination?.total || 0, // Keep for backward compatibility
       offset: page * actualSize,
       limit: actualSize
     };
@@ -449,7 +474,12 @@ export const apiService = {
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
-      total: response.data.pagination?.total || 0,
+      pagination: {
+        total: response.data.pagination?.total || 0,
+        offset: page * size,
+        limit: size
+      },
+      total: response.data.pagination?.total || 0, // Keep for backward compatibility
       offset: page * size,
       limit: size
     };
@@ -505,7 +535,12 @@ export const apiService = {
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
-      total: response.data.pagination?.total || 0,
+      pagination: {
+        total: response.data.pagination?.total || 0,
+        offset: page * size,
+        limit: size
+      },
+      total: response.data.pagination?.total || 0, // Keep for backward compatibility
       offset: page * size,
       limit: size
     };
@@ -556,7 +591,12 @@ export const apiService = {
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
-      total: response.data.pagination?.total || 0,
+      pagination: {
+        total: response.data.pagination?.total || 0,
+        offset: page * size,
+        limit: size
+      },
+      total: response.data.pagination?.total || 0, // Keep for backward compatibility
       offset: page * size,
       limit: size
     };
@@ -607,7 +647,12 @@ export const apiService = {
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
-      total: response.data.pagination?.total || 0,
+      pagination: {
+        total: response.data.pagination?.total || 0,
+        offset: page * size,
+        limit: size
+      },
+      total: response.data.pagination?.total || 0, // Keep for backward compatibility
       offset: page * size,
       limit: size
     };

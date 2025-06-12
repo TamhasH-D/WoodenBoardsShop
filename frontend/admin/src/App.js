@@ -10,6 +10,7 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import MediaPage from './pages/MediaPage';
 import ToolsPage from './pages/ToolsPage';
 import SystemPage from './pages/SystemPage';
+import ApiTestPage from './pages/ApiTestPage';
 import { Toaster } from 'react-hot-toast';
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
               <Route path="/media/*" element={<MediaPage />} />
               <Route path="/tools/*" element={<ToolsPage />} />
               <Route path="/system/*" element={<SystemPage />} />
+              <Route path="/api-test" element={<ApiTestPage />} />
             </Routes>
           </AdminLayout>
           <Toaster
