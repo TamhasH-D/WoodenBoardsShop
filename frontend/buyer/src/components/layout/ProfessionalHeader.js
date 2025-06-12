@@ -25,12 +25,8 @@ const ProfessionalHeader = () => {
   const navigationItems = [
     { path: '/', label: 'Главная' },
     { path: '/products', label: 'Каталог' },
-    { path: '/sellers', label: 'Продавцы' },
     { path: '/analyzer', label: 'Анализатор' },
-    { path: '/chats', label: 'Сообщения' },
-    { path: '/cart', label: 'Корзина' },
-    { path: '/orders', label: 'Заказы' },
-    { path: '/profile', label: 'Профиль' }
+    { path: '/chats', label: 'Сообщения' }
   ];
 
   const toggleMobileMenu = () => {

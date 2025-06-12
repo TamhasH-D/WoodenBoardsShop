@@ -104,6 +104,14 @@ const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
 
 // API service functions for sellers
 export const apiService = {
+  // Cache management
+  clearCache() {
+    cache.clear();
+    if (process.env.NODE_ENV === 'development') {
+      console.log('API cache cleared');
+    }
+  },
+
   // Health check
   async healthCheck() {
     try {
@@ -388,6 +396,86 @@ export const apiService = {
     } catch (error) {
       console.error('Failed to update product:', error);
       throw error;
+    }
+  },
+
+  // Update product with image analysis using new layered architecture endpoint
+  async updateProductWithImage(productId, productData, imageFile, boardHeight, boardLength) {
+    try {
+      // Prepare form data for multipart request
+      const formData = new FormData();
+
+      // Add product data (only non-null values)
+      if (productData.title) {
+        formData.append('title', productData.title);
+      }
+      if (productData.description !== undefined) {
+        formData.append('description', productData.description || '');
+      }
+      if (productData.wood_type_id) {
+        formData.append('wood_type_id', productData.wood_type_id);
+      }
+      if (productData.price) {
+        formData.append('price', productData.price.toString());
+      }
+      if (productData.delivery_possible !== undefined) {
+        formData.append('delivery_possible', productData.delivery_possible.toString());
+      }
+      if (productData.pickup_location !== undefined) {
+        formData.append('pickup_location', productData.pickup_location || '');
+      }
+
+      // Add board dimensions if provided
+      if (boardHeight) {
+        formData.append('board_height', boardHeight.toString());
+      }
+      if (boardLength) {
+        formData.append('board_length', boardLength.toString());
+      }
+
+      // Add image file if provided
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Updating product with image analysis...');
+        console.log(`Product ID: ${productId}`);
+        if (imageFile) {
+          console.log(`Image: ${imageFile.name}, size: ${imageFile.size} bytes`);
+          console.log(`Board dimensions: ${boardHeight}m x ${boardLength}m`);
+        }
+      }
+
+      const response = await api.patch(`/api/v1/products/${productId}/with-image`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 120000, // 2 minutes timeout for complete workflow
+      });
+
+      // Clear products cache to force refresh
+      cache.delete('all_products');
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Product updated successfully with image analysis:', response.data);
+      }
+
+      return response.data;
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to update product with image:', error);
+      }
+
+      // Provide detailed error information
+      let errorMessage = 'Failed to update product with image analysis';
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      throw new Error(errorMessage);
     }
   },
 

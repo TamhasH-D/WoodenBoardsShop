@@ -36,7 +36,14 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
   const woodTypePricesApiFunction = useMemo(() => () => apiService.getAllWoodTypePrices(), []);
   
   const { data: woodTypes, loading: woodTypesLoading } = useApi(woodTypesApiFunction, []);
-  const { data: woodTypePrices } = useApi(woodTypePricesApiFunction, []);
+  const { data: woodTypePrices, refetch: refetchWoodTypePrices } = useApi(woodTypePricesApiFunction, []);
+
+  // Обновляем цены при выборе типа древесины
+  useEffect(() => {
+    if (formData.wood_type_id) {
+      refetchWoodTypePrices();
+    }
+  }, [formData.wood_type_id, refetchWoodTypePrices]);
 
   // Определяем какие шаги показывать
   const showWoodTypeStep = formData.title.trim().length > 0;
@@ -136,6 +143,12 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
 
       // Используем новый API endpoint
       await mutate(() => apiService.createProductWithAnalysis(productData, imageFile));
+
+      // Принудительно очищаем кэш для обновления списка товаров
+      await apiService.clearCache();
+
+      // Обновляем цены на древесину для следующего создания товара
+      refetchWoodTypePrices();
 
       onSuccess();
     } catch (error) {

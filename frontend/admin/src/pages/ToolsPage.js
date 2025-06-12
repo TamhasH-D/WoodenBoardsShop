@@ -3,6 +3,9 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import DataExport from '../components/DataExport';
 import ApiTester from '../components/ApiTester';
+import RedisManager from '../components/RedisManager';
+import BoardAnalyzer from '../components/BoardAnalyzer';
+import SystemMonitor from '../components/SystemMonitor';
 import EmptyState from '../components/ui/EmptyState';
 import Button from '../components/ui/Button';
 import { ADMIN_TEXTS } from '../utils/localization';
@@ -38,6 +41,9 @@ const ToolsPage = () => {
       <Route path="/export" element={<DataExport />} />
       <Route path="/import" element={<DataImportPlaceholder />} />
       <Route path="/api-test" element={<ApiTester />} />
+      <Route path="/redis-manager" element={<RedisManager />} />
+      <Route path="/board-analyzer" element={<BoardAnalyzer />} />
+      <Route path="/system-monitor" element={<SystemMonitor />} />
     </Routes>
   );
 };

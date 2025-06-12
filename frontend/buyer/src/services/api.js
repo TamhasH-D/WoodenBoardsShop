@@ -193,6 +193,74 @@ export const apiService = {
     };
   },
 
+  // Get all wood types (fetch all pages)
+  async getAllWoodTypes() {
+    try {
+      const firstPage = await this.getWoodTypes(0, 20);
+      const total = firstPage.total;
+      let allWoodTypes = [...firstPage.data];
+
+      // If there are more wood types, fetch them
+      if (total > 20) {
+        const remainingPages = Math.ceil((total - 20) / 20);
+        const promises = [];
+
+        for (let page = 1; page <= remainingPages; page++) {
+          promises.push(this.getWoodTypes(page, 20));
+        }
+
+        const additionalPages = await Promise.all(promises);
+        additionalPages.forEach(pageData => {
+          allWoodTypes = allWoodTypes.concat(pageData.data);
+        });
+      }
+
+      return {
+        data: allWoodTypes,
+        total: total,
+        offset: 0,
+        limit: allWoodTypes.length
+      };
+    } catch (error) {
+      console.error('Failed to fetch all wood types:', error);
+      throw error;
+    }
+  },
+
+  // Get all sellers (fetch all pages)
+  async getAllSellers() {
+    try {
+      const firstPage = await this.getSellers(0, 20);
+      const total = firstPage.total;
+      let allSellers = [...firstPage.data];
+
+      // If there are more sellers, fetch them
+      if (total > 20) {
+        const remainingPages = Math.ceil((total - 20) / 20);
+        const promises = [];
+
+        for (let page = 1; page <= remainingPages; page++) {
+          promises.push(this.getSellers(page, 20));
+        }
+
+        const additionalPages = await Promise.all(promises);
+        additionalPages.forEach(pageData => {
+          allSellers = allSellers.concat(pageData.data);
+        });
+      }
+
+      return {
+        data: allSellers,
+        total: total,
+        offset: 0,
+        limit: allSellers.length
+      };
+    } catch (error) {
+      console.error('Failed to fetch all sellers:', error);
+      throw error;
+    }
+  },
+
   // Buyer profile management with automatic creation
   async getBuyerProfile(buyerId) {
     try {
@@ -381,6 +449,105 @@ export const apiService = {
   async getWoodTypePrice(id) {
     const response = await api.get(`/api/v1/wood-type-prices/${id}`);
     return response.data;
+  },
+
+  // Images
+  async getImages(page = 0, size = 20) {
+    const response = await api.get(`/api/v1/images?offset=${page * size}&limit=${size}`);
+    return {
+      data: response.data.data || response.data,
+      total: response.data.pagination?.total || 0,
+      offset: page * size,
+      limit: size
+    };
+  },
+
+  async getImage(id) {
+    const response = await api.get(`/api/v1/images/${id}`);
+    return response.data;
+  },
+
+  // Get all images for caching and filtering
+  async getAllImages() {
+    const cacheKey = 'all_images';
+    const now = Date.now();
+
+    // Check cache first
+    if (cache.has(cacheKey)) {
+      const cached = cache.get(cacheKey);
+      if (now - cached.timestamp < CACHE_DURATION) {
+        return cached.data;
+      }
+    }
+
+    // Fetch all images (backend limit is 20 per request)
+    let allImages = [];
+    let page = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await this.getImages(page, 20);
+      allImages = [...allImages, ...response.data];
+      hasMore = response.data.length === 20;
+      page++;
+    }
+
+    // Cache the result
+    cache.set(cacheKey, { data: allImages, timestamp: now });
+    return allImages;
+  },
+
+  // Get images for specific product
+  async getProductImages(productId) {
+    const allImages = await this.getAllImages();
+    return allImages.filter(image => image.product_id === productId);
+  },
+
+  // Get image file URL
+  getImageFileUrl(imageId) {
+    const baseUrl = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+    return `${baseUrl}/api/v1/images/${imageId}/file`;
+  },
+
+  // Get image metadata
+  async getImageMetadata(imageId) {
+    try {
+      const response = await api.get(`/api/v1/images/${imageId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get image metadata:', error);
+      throw error;
+    }
+  },
+
+  // Upload image file
+  async uploadImage(productId, imageFile) {
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+
+      const response = await api.post(`/api/v1/images/upload?product_id=${productId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Failed to upload image:', error);
+      throw error;
+    }
+  },
+
+  // Delete image (removes both DB record and file)
+  async deleteImage(imageId) {
+    try {
+      const response = await api.delete(`/api/v1/images/${imageId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to delete image:', error);
+      throw error;
+    }
   },
 
   // Wooden board analysis (Prosto Board integration)
