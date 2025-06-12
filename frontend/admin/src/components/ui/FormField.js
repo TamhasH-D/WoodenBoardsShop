@@ -1,12 +1,12 @@
-import React, { forwardRef, useState } from 'react';
+import React, { forwardRef } from 'react';
 import PropTypes from 'prop-types';
 import { cn } from '../../utils/helpers';
 
 /**
- * Professional Input Component for Admin Panel
- * Enterprise-grade design with enhanced states and accessibility
+ * Professional FormField Component for Admin Panel
+ * Enterprise-grade form field with proper validation and accessibility
  */
-const Input = forwardRef(({
+const FormField = forwardRef(({
   type = 'text',
   label,
   placeholder,
@@ -21,10 +21,15 @@ const Input = forwardRef(({
   helperText,
   size = 'md',
   className = '',
-  style = {},
+  containerClassName = '',
+  labelClassName = '',
+  inputClassName = '',
+  errorClassName = '',
+  helperClassName = '',
   id,
   name,
   rows = 4,
+  options = [], // For select fields
   loading = false,
   icon,
   iconPosition = 'left',
@@ -33,74 +38,60 @@ const Input = forwardRef(({
   maxLength,
   minLength,
   pattern,
+  step,
+  min,
+  max,
   ...props
 }, ref) => {
-  const [isFocused, setIsFocused] = useState(false); // eslint-disable-line no-unused-vars
-  const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+  const fieldId = id || `field-${Math.random().toString(36).substr(2, 9)}`;
   const isTextarea = type === 'textarea';
+  const isSelect = type === 'select';
   const hasError = Boolean(error);
   const hasIcon = Boolean(icon);
 
-  // Enhanced container styles
-  const containerClasses = cn(
-    'w-full',
-    {
-      'opacity-60': disabled,
-    }
-  );
-
-  // Enhanced label styles
-  const labelClasses = cn(
-    'block text-sm font-medium mb-2 transition-colors',
-    {
-      'text-gray-700': !hasError && !disabled,
-      'text-red-600': hasError,
-      'text-gray-500': disabled,
-    }
-  );
-
-  // Enhanced input styles with professional design
+  // Size variants
   const sizeClasses = {
     sm: 'px-3 py-2 text-sm',
     md: 'px-4 py-3 text-sm',
     lg: 'px-4 py-4 text-base',
   };
 
-  const handleFocus = (e) => {
-    setIsFocused(true);
-    onFocus?.(e);
-  };
+  // Container classes
+  const containerClasses = cn(
+    'w-full',
+    {
+      'opacity-60': disabled,
+    },
+    containerClassName
+  );
 
-  const handleBlur = (e) => {
-    setIsFocused(false);
-    onBlur?.(e);
-  };
+  // Label classes
+  const labelClasses = cn(
+    'block text-sm font-medium mb-2 transition-colors',
+    {
+      'text-gray-700': !hasError && !disabled,
+      'text-red-600': hasError,
+      'text-gray-500': disabled,
+    },
+    labelClassName
+  );
 
-  const inputClasses = cn(
-    // Base styles
-    'w-full border rounded-lg transition-all duration-200',
-    'focus:outline-none focus:ring-2 focus:ring-offset-1',
-    'placeholder-gray-500',
-
-    // Size
+  // Input base classes
+  const inputBaseClasses = cn(
+    'w-full border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1',
     sizeClasses[size],
-
-    // State variants
     {
       // Normal state
-      'border-gray-300 bg-white text-gray-900': !hasError && !disabled,
+      'border-gray-300 bg-white text-gray-900 placeholder-gray-500': !hasError && !disabled,
       'focus:border-blue-500 focus:ring-blue-500': !hasError && !disabled,
-
+      
       // Error state
       'border-red-300 bg-red-50 text-red-900 placeholder-red-400': hasError,
       'focus:border-red-500 focus:ring-red-500': hasError,
-
+      
       // Disabled state
       'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed': disabled,
-
-      // Textarea specific
-      'resize-none': isTextarea,
-
+      
       // Icon padding
       'pl-10': hasIcon && iconPosition === 'left' && size === 'sm',
       'pl-11': hasIcon && iconPosition === 'left' && size === 'md',
@@ -109,10 +100,8 @@ const Input = forwardRef(({
       'pr-11': hasIcon && iconPosition === 'right' && size === 'md',
       'pr-12': hasIcon && iconPosition === 'right' && size === 'lg',
     },
-
-    className
+    inputClassName
   );
-
 
   // Icon classes
   const iconClasses = cn(
@@ -136,38 +125,72 @@ const Input = forwardRef(({
     </div>
   );
 
-  const InputElement = isTextarea ? 'textarea' : 'input';
+  // Render input element
+  const renderInput = () => {
+    const commonProps = {
+      ref,
+      id: fieldId,
+      name: name || fieldId,
+      value,
+      defaultValue,
+      onChange,
+      onBlur,
+      onFocus,
+      disabled: disabled || loading,
+      required,
+      placeholder,
+      className: inputBaseClasses,
+      autoComplete,
+      autoFocus,
+      maxLength,
+      minLength,
+      pattern,
+      step,
+      min,
+      max,
+      'aria-invalid': hasError,
+      'aria-describedby': hasError ? `${fieldId}-error` : helperText ? `${fieldId}-helper` : undefined,
+      ...props,
+    };
 
-  const inputProps = {
-    ref,
-    id: inputId,
-    name,
-    type: isTextarea ? undefined : type,
-    className: inputClasses,
-    value,
-    defaultValue,
-    onChange,
-    onFocus: handleFocus,
-    onBlur: handleBlur,
-    disabled: disabled || loading,
-    required,
-    placeholder,
-    rows: isTextarea ? rows : undefined,
-    autoComplete,
-    autoFocus,
-    maxLength,
-    minLength,
-    pattern,
-    'aria-invalid': !!error,
-    'aria-describedby': error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined,
-    ...props
+    if (isTextarea) {
+      return (
+        <textarea
+          {...commonProps}
+          rows={rows}
+        />
+      );
+    }
+
+    if (isSelect) {
+      return (
+        <select {...commonProps}>
+          {placeholder && (
+            <option value="" disabled>
+              {placeholder}
+            </option>
+          )}
+          {options.map((option) => (
+            <option 
+              key={option.value} 
+              value={option.value}
+              disabled={option.disabled}
+            >
+              {option.label}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    return <input {...commonProps} type={type} />;
   };
 
   return (
-    <div className={containerClasses} style={style}>
-      {/* Enhanced Label */}
+    <div className={containerClasses}>
+      {/* Label */}
       {label && (
-        <label htmlFor={inputId} className={labelClasses}>
+        <label htmlFor={fieldId} className={labelClasses}>
           {label}
           {required && (
             <span className="text-red-500 ml-1" aria-label="обязательное поле">
@@ -177,7 +200,7 @@ const Input = forwardRef(({
         </label>
       )}
 
-      {/* Input Container with Icon Support */}
+      {/* Input container */}
       <div className="relative">
         {/* Left icon */}
         {hasIcon && iconPosition === 'left' && (
@@ -186,8 +209,8 @@ const Input = forwardRef(({
           </div>
         )}
 
-        {/* Input Field */}
-        <InputElement {...inputProps} />
+        {/* Input element */}
+        {renderInput()}
 
         {/* Right icon */}
         {hasIcon && iconPosition === 'right' && !loading && (
@@ -200,22 +223,22 @@ const Input = forwardRef(({
         {loading && <LoadingSpinner />}
       </div>
 
-      {/* Error Message */}
+      {/* Error message */}
       {error && (
         <div
-          id={`${inputId}-error`}
-          className="mt-2 text-sm text-red-600"
+          id={`${fieldId}-error`}
+          className={cn('mt-2 text-sm text-red-600', errorClassName)}
           role="alert"
         >
           {error}
         </div>
       )}
 
-      {/* Helper Text */}
+      {/* Helper text */}
       {helperText && !error && (
         <div
-          id={`${inputId}-helper`}
-          className="mt-2 text-sm text-gray-500"
+          id={`${fieldId}-helper`}
+          className={cn('mt-2 text-sm text-gray-500', helperClassName)}
         >
           {helperText}
         </div>
@@ -224,21 +247,12 @@ const Input = forwardRef(({
   );
 });
 
-Input.displayName = 'Input';
+FormField.displayName = 'FormField';
 
-Input.propTypes = {
+FormField.propTypes = {
   type: PropTypes.oneOf([
-    'text',
-    'email',
-    'password',
-    'number',
-    'tel',
-    'url',
-    'search',
-    'date',
-    'datetime-local',
-    'time',
-    'textarea'
+    'text', 'email', 'password', 'number', 'tel', 'url', 'search',
+    'textarea', 'select', 'date', 'datetime-local', 'time'
   ]),
   label: PropTypes.string,
   placeholder: PropTypes.string,
@@ -252,11 +266,22 @@ Input.propTypes = {
   error: PropTypes.string,
   helperText: PropTypes.string,
   size: PropTypes.oneOf(['sm', 'md', 'lg']),
-  rows: PropTypes.number,
   className: PropTypes.string,
-  style: PropTypes.object,
+  containerClassName: PropTypes.string,
+  labelClassName: PropTypes.string,
+  inputClassName: PropTypes.string,
+  errorClassName: PropTypes.string,
+  helperClassName: PropTypes.string,
   id: PropTypes.string,
   name: PropTypes.string,
+  rows: PropTypes.number,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      label: PropTypes.string.isRequired,
+      disabled: PropTypes.bool,
+    })
+  ),
   loading: PropTypes.bool,
   icon: PropTypes.node,
   iconPosition: PropTypes.oneOf(['left', 'right']),
@@ -265,6 +290,9 @@ Input.propTypes = {
   maxLength: PropTypes.number,
   minLength: PropTypes.number,
   pattern: PropTypes.string,
+  step: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  min: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  max: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
 
-export default Input;
+export default FormField;
