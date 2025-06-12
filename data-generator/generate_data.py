@@ -493,7 +493,8 @@ class DataGenerator:
                 payload = {
                     'id': image_id,
                     'filename': new_filename,
-                    'product_id': product_id
+                    'product_id': product_id,
+                    'image_path': new_filename  # Добавляем недостающее поле
                 }
 
                 response = self.make_request('POST', '/images/', payload)
