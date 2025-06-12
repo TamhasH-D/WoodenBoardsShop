@@ -1,14 +1,13 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Package, 
-  MessageSquare, 
-  TreePine, 
+import {
+  LayoutDashboard,
+  Package,
+  MessageSquare,
+  TreePine,
   Search,
   User,
-  Settings,
-  BarChart3
+  LogOut
 } from 'lucide-react';
 import { SELLER_TEXTS } from '../../utils/localization';
 
@@ -23,49 +22,46 @@ const Sidebar = () => {
   };
 
   const navigationItems = [
-    { 
-      path: '/', 
-      label: SELLER_TEXTS.DASHBOARD, 
+    {
+      path: '/',
+      label: SELLER_TEXTS.DASHBOARD,
       icon: LayoutDashboard,
       description: 'Обзор бизнеса'
     },
-    { 
-      path: '/products', 
-      label: SELLER_TEXTS.PRODUCTS, 
+    {
+      path: '/products',
+      label: SELLER_TEXTS.PRODUCTS,
       icon: Package,
       description: 'Управление товарами'
     },
-    { 
-      path: '/wood-types', 
-      label: SELLER_TEXTS.WOOD_TYPES, 
+    {
+      path: '/wood-types',
+      label: SELLER_TEXTS.WOOD_TYPES,
       icon: TreePine,
       description: 'Типы древесины'
     },
-    { 
-      path: '/board-analyzer', 
-      label: 'Анализатор досок', 
+    {
+      path: '/board-analyzer',
+      label: 'Анализатор досок',
       icon: Search,
       description: 'AI анализ изображений'
     },
-    { 
-      path: '/chats', 
-      label: SELLER_TEXTS.CHATS, 
+    {
+      path: '/chats',
+      label: SELLER_TEXTS.CHATS,
       icon: MessageSquare,
       description: 'Общение с клиентами'
-    },
-    { 
-      path: '/analytics', 
-      label: 'Аналитика', 
-      icon: BarChart3,
-      description: 'Статистика продаж'
-    },
-    { 
-      path: '/profile', 
-      label: SELLER_TEXTS.PROFILE, 
-      icon: User,
-      description: 'Настройки профиля'
     }
   ];
+
+  const handleLogout = () => {
+    // Очистка локального хранилища
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Перенаправление на страницу входа или главную страницу
+    window.location.href = '/';
+  };
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex flex-col">
@@ -131,7 +127,13 @@ const Sidebar = () => {
               seller@woodshop.ru
             </p>
           </div>
-          <Settings className="w-4 h-4 text-gray-400" />
+          <button
+            onClick={handleLogout}
+            className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
+            title="Выйти из системы"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </aside>
