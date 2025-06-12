@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useNotification } from '../contexts/NotificationContext';
+import { useNotifications } from '../contexts/NotificationContext';
 import { BUYER_TEXTS } from '../utils/localization';
 
 // Mock buyer ID - in real app this would come from authentication
@@ -8,7 +8,7 @@ const MOCK_BUYER_ID = '81f81c96-c56e-4b36-aec3-656f3576d09f';
 
 function Chats() {
   const navigate = useNavigate();
-  const { showNotification } = useNotification();
+  const { showError } = useNotifications();
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,7 +30,7 @@ function Chats() {
     } catch (err) {
       console.error('Ошибка загрузки чатов:', err);
       setError(err.message);
-      showNotification('Не удалось загрузить чаты', 'error');
+      showError('Не удалось загрузить чаты');
     } finally {
       setLoading(false);
     }

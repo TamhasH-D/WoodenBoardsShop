@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { useNotification } from '../contexts/NotificationContext';
+import { useNotifications } from '../contexts/NotificationContext';
 import { BUYER_TEXTS } from '../utils/localization';
 import { apiService } from '../services/api';
 import StartChatButton from '../components/chat/StartChatButton';
 
 const SellersPage = () => {
   const { setPageTitle } = useApp();
-  const { showNotification } = useNotification();
+  const { showError } = useNotifications();
   const [sellers, setSellers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,7 +28,7 @@ const SellersPage = () => {
     } catch (err) {
       console.error('Ошибка загрузки продавцов:', err);
       setError(err.message);
-      showNotification('Не удалось загрузить продавцов', 'error');
+      showError('Не удалось загрузить продавцов');
     } finally {
       setLoading(false);
     }
