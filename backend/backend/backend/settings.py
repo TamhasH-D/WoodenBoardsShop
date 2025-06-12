@@ -126,8 +126,15 @@ class Settings(BaseSettings):
         """Get absolute path to uploads directory."""
         if pathlib.Path(self.uploads_dir).is_absolute():
             return pathlib.Path(self.uploads_dir)
-        # Relative to project root (where backend/backend is located)
-        return pathlib.Path(__file__).parent.parent / self.uploads_dir
+
+        # In Docker container, working directory is /app
+        # In local development, we're in backend/backend
+        if pathlib.Path("/app").exists():
+            # Docker environment
+            return pathlib.Path("/app") / self.uploads_dir
+        else:
+            # Local development - relative to project root (where backend/backend is located)
+            return pathlib.Path(__file__).parent.parent / self.uploads_dir
 
     @property
     def products_uploads_path(self) -> pathlib.Path:
