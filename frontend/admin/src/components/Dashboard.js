@@ -222,7 +222,7 @@ const Dashboard = React.memo(() => {
             {statsLoading ? 'Обновление...' : 'Обновить статистику'}
           </button>
           <a href="/users" className="btn btn-secondary">
-            Управление пользователями
+            Управление продавцами и покупателями
           </a>
           <a href="/products" className="btn btn-secondary">
             Управление товарами

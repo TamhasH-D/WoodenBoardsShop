@@ -14,7 +14,7 @@ const ProfessionalLayout = ({ children }) => {
     const path = location.pathname;
     const titles = {
       '/': 'Панель управления',
-      '/users': 'Управление пользователями',
+      '/users': 'Управление продавцами и покупателями',
       '/products': 'Управление товарами',
       '/orders': 'Управление заказами',
       '/sellers': 'Управление продавцами',

@@ -205,7 +205,7 @@ function SystemMonitor() {
               {/* Users */}
               <div className="card" style={{ backgroundColor: 'white', textAlign: 'center' }}>
                 <div style={{ fontSize: '1.2rem', color: '#3b82f6' }}>👥</div>
-                <h5 style={{ margin: '0.5rem 0 0.25rem 0' }}>Пользователи</h5>
+                <h5 style={{ margin: '0.5rem 0 0.25rem 0' }}>Продавцы и Покупатели</h5>
                 <p style={{ margin: 0, fontSize: '1.1em', fontWeight: 'bold' }}>
                   {formatNumber(systemStats.buyers?.total || 0)} покупателей
                 </p>

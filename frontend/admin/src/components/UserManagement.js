@@ -205,13 +205,13 @@ const UserManagement = React.memo(() => {
       {/* Error and Success Messages */}
       {mutationError && (
         <div className="error mb-4">
-          <strong>Operation failed:</strong> {mutationError}
+          <strong>Операция не удалась:</strong> {mutationError}
         </div>
       )}
 
       {success && (
         <div className="success mb-4">
-          <strong>Success:</strong> Operation completed successfully!
+          <strong>Успех:</strong> Операция выполнена успешно!
         </div>
       )}
 
@@ -227,13 +227,13 @@ const UserManagement = React.memo(() => {
           <div className="flex gap-4 items-center">
             <input
               type="text"
-              placeholder={`Search ${activeTab}...`}
+              placeholder={`Поиск ${activeTab === 'buyers' ? 'покупателей' : 'продавцов'}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="form-input"
               style={{ width: '300px' }}
             />
-            <p>Total {activeTab}: {currentData?.total || 0}</p>
+            <p>Всего {activeTab === 'buyers' ? 'покупателей' : 'продавцов'}: {currentData?.total || 0}</p>
           </div>
           <div className="flex gap-4">
             <button
