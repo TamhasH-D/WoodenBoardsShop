@@ -53,20 +53,21 @@ api.interceptors.response.use(
 const cache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const requestCache = new Map(); // Cache for identical requests
-const REQUEST_DEBOUNCE_TIME = 500; // 500ms debounce
+// Request debouncing configuration (unused but kept for future use)
+// const REQUEST_DEBOUNCE_TIME = 500; // 500ms debounce
 
-// Debounce function to prevent rapid successive calls
-const debounce = (func, wait) => {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-};
+// Debounce function to prevent rapid successive calls (unused but kept for future use)
+// const debounce = (func, wait) => {
+//   let timeout;
+//   return function executedFunction(...args) {
+//     const later = () => {
+//       clearTimeout(timeout);
+//       func(...args);
+//     };
+//     clearTimeout(timeout);
+//     timeout = setTimeout(later, wait);
+//   };
+// };
 
 // API service functions for buyers
 export const apiService = {
