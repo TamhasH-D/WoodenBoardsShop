@@ -49,10 +49,12 @@ The pipeline handles all project microservices:
 - **Admin Frontend** (React) - Port 8080
 - **Seller Frontend** (React) - Port 8081
 - **Buyer Frontend** (React) - Port 8082
-- **Prosto Board Backend** - Port 8001
-- **Detection Service** (YOLO) - Port 8002
-- **PostgreSQL Database**
-- **Redis Cache**
+- **AI Микросервис** (анализ досок) - Port 8001
+- **YOLO Detection Service** - Port 8002
+- **PostgreSQL Database** - Port 5432
+- **PostgreSQL Keycloak** - Port 5430
+- **Redis Cache** - Port 6379
+- **Keycloak Authentication** - Port 8030
 
 ## 📋 Detailed Pipeline Jobs
 
@@ -110,40 +112,29 @@ The pipeline handles all project microservices:
 - **Reports**: JUnit XML, coverage reports, code quality
 - **Duration**: ~5-8 minutes
 
-### 🧪 FUNCTIONAL TEST STAGE
+### 🧪 TESTING STAGE
 
-#### `functional-test:api`
-- **Purpose**: Комплексное тестирование всех API эндпоинтов
+#### `test:backend-unit`
+- **Purpose**: Unit тестирование backend API
 - **Features**:
-  - Тестирование всех CRUD операций для каждой сущности
-  - Позитивные и негативные сценарии
-  - Валидация данных и граничные случаи
-  - Проверка бизнес-логики и целостности данных
+  - Pytest тестирование всех API endpoints
+  - Тестирование CRUD операций для всех 9 сущностей
+  - Валидация данных и бизнес-логики
+  - Тестирование AI интеграции для анализа досок
 - **Coverage**: Buyer, Seller, Product, Wood Type, Chat APIs
-- **Duration**: ~10-15 minutes
-- **Dependencies**: build:all-services
+- **Duration**: ~5-10 minutes
+- **Dependencies**: build:backend-api
 
-#### `functional-test:browser`
-- **Purpose**: Автоматизированное тестирование frontend приложений
+#### `test:frontend-unit`
+- **Purpose**: Unit тестирование React приложений
 - **Features**:
-  - Selenium WebDriver автоматизация
-  - Тестирование всех страниц и навигации
-  - Проверка отзывчивого дизайна
-  - Автоматические скриншоты при ошибках
+  - Jest тестирование компонентов
+  - Тестирование всех трех frontend приложений
+  - Проверка UI логики и состояний
+  - Линтинг и проверка типов
 - **Coverage**: Admin, Seller, Buyer frontends
-- **Duration**: ~20-30 minutes
-- **Triggers**: main и dev ветки
-
-#### `functional-test:integration`
-- **Purpose**: End-to-end интеграционные тесты
-- **Features**:
-  - Полные пользовательские сценарии
-  - Тестирование взаимодействия API и UI
-  - Проверка бизнес-процессов
-  - Валидация данных между сервисами
-- **Scenarios**: Создание продуктов, чаты, управление ценами
-- **Duration**: ~15-25 minutes
-- **Triggers**: main и dev ветки
+- **Duration**: ~10-15 minutes
+- **Dependencies**: build:frontend-services
 
 #### `functional-test:full-suite`
 - **Purpose**: Полный набор функциональных тестов с покрытием

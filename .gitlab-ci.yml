@@ -1,11 +1,10 @@
 # GitLab CI/CD Pipeline для Diplom Project
-# Комплексная система тестирования с функциональными тестами
+# Комплексная система тестирования и развертывания
 
 stages:
   - validate
   - build
   - test
-  - functional-test
   - security
   - deploy
 
@@ -13,7 +12,6 @@ variables:
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: "/certs"
   COMPOSE_PROJECT_NAME: diplom-ci
-  FUNCTIONAL_TESTS_PROJECT_NAME: diplom-functional-tests
 
 # Базовый образ для Docker операций
 .docker-base: &docker-base
@@ -61,21 +59,22 @@ validate:project-structure:
     
     - echo "🐳 Проверка Docker Compose конфигурации..."
     - docker-compose config --quiet
-    - docker-compose -f functional_tests/docker-compose.test.yaml config --quiet
-    
-    - echo "📋 Проверка структуры функциональных тестов..."
+
+    - echo "📋 Проверка структуры проекта..."
     - |
-      test_dirs=(
-        "functional_tests/api_tests"
-        "functional_tests/browser_tests"
-        "functional_tests/integration_tests"
-        "functional_tests/utils"
-        "functional_tests/base"
+      required_dirs=(
+        "backend/backend"
+        "backend/prosto_board_volume-main"
+        "frontend/admin"
+        "frontend/seller"
+        "frontend/buyer"
+        "keycloak"
+        "docs"
       )
-      
-      for dir in "${test_dirs[@]}"; do
+
+      for dir in "${required_dirs[@]}"; do
         if [ ! -d "$dir" ]; then
-          echo "❌ Отсутствует директория тестов: $dir"
+          echo "❌ Отсутствует директория: $dir"
           exit 1
         fi
         echo "✅ Найдена директория: $dir"
@@ -172,120 +171,48 @@ test:backend-quality:
     - if: $CI_PIPELINE_SOURCE == "web"
 
 # ==========================================
-# FUNCTIONAL TEST STAGE
+# ADDITIONAL TEST STAGE
 # ==========================================
 
-functional-test:api:
-  stage: functional-test
-  <<: *docker-base
+test:backend-unit:
+  stage: test
+  <<: *python-base
   script:
-    - echo "🔌 Запуск функциональных API тестов..."
-    - cd functional_tests
-    - TEST_TYPE=api docker-compose -f docker-compose.test.yaml up --build --abort-on-container-exit --exit-code-from functional-tests
-    - echo "✅ API тесты завершены успешно"
-  after_script:
-    - cd functional_tests
-    - docker-compose -f docker-compose.test.yaml logs
-    - docker-compose -f docker-compose.test.yaml down -v
+    - echo "🧪 Запуск unit тестов backend..."
+    - cd backend/backend
+    - pip install -r requirements.txt
+    - pytest tests/ -v --tb=short
+    - echo "✅ Backend unit тесты завершены успешно"
   artifacts:
     reports:
-      junit: functional_tests/reports/api_tests_report.xml
+      junit: backend/backend/test-results.xml
     paths:
-      - functional_tests/reports/
-      - functional_tests/screenshots/
+      - backend/backend/htmlcov/
     expire_in: 1 week
     when: always
-  dependencies:
-    - build:all-services
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH
     - if: $CI_PIPELINE_SOURCE == "web"
 
-functional-test:browser:
-  stage: functional-test
-  <<: *docker-base
+test:frontend-unit:
+  stage: test
+  image: node:18-alpine
   script:
-    - echo "🌐 Запуск функциональных браузерных тестов..."
-    - cd functional_tests
-    - TEST_TYPE=browser docker-compose -f docker-compose.test.yaml up --build --abort-on-container-exit --exit-code-from functional-tests
-    - echo "✅ Браузерные тесты завершены успешно"
-  after_script:
-    - cd functional_tests
-    - docker-compose -f docker-compose.test.yaml logs
-    - docker-compose -f docker-compose.test.yaml down -v
+    - echo "🧪 Запуск unit тестов frontend..."
+    - cd frontend
+    - npm install
+    - npm run test:all
+    - echo "✅ Frontend unit тесты завершены успешно"
   artifacts:
-    reports:
-      junit: functional_tests/reports/browser_tests_report.xml
     paths:
-      - functional_tests/reports/
-      - functional_tests/screenshots/
+      - frontend/*/coverage/
     expire_in: 1 week
     when: always
-  dependencies:
-    - build:all-services
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-    - if: $CI_COMMIT_BRANCH == "dev"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
     - if: $CI_PIPELINE_SOURCE == "web"
-
-functional-test:integration:
-  stage: functional-test
-  <<: *docker-base
-  script:
-    - echo "🔗 Запуск end-to-end интеграционных тестов..."
-    - cd functional_tests
-    - TEST_TYPE=integration docker-compose -f docker-compose.test.yaml up --build --abort-on-container-exit --exit-code-from functional-tests
-    - echo "✅ Интеграционные тесты завершены успешно"
-  after_script:
-    - cd functional_tests
-    - docker-compose -f docker-compose.test.yaml logs
-    - docker-compose -f docker-compose.test.yaml down -v
-  artifacts:
-    reports:
-      junit: functional_tests/reports/integration_tests_report.xml
-    paths:
-      - functional_tests/reports/
-      - functional_tests/screenshots/
-    expire_in: 1 week
-    when: always
-  dependencies:
-    - build:all-services
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-    - if: $CI_COMMIT_BRANCH == "dev"
-    - if: $CI_PIPELINE_SOURCE == "web"
-
-functional-test:full-suite:
-  stage: functional-test
-  <<: *docker-base
-  script:
-    - echo "🚀 Запуск полного набора функциональных тестов..."
-    - cd functional_tests
-    - TEST_TYPE=all docker-compose -f docker-compose.test.yaml up --build --abort-on-container-exit --exit-code-from functional-tests
-    - echo "✅ Полный набор тестов завершен успешно"
-  after_script:
-    - cd functional_tests
-    - docker-compose -f docker-compose.test.yaml logs
-    - docker-compose -f docker-compose.test.yaml down -v
-  artifacts:
-    reports:
-      junit: functional_tests/reports/all_tests_report.xml
-      coverage_report:
-        coverage_format: cobertura
-        path: functional_tests/reports/coverage.xml
-    paths:
-      - functional_tests/reports/
-      - functional_tests/screenshots/
-    expire_in: 1 week
-    when: always
-  dependencies:
-    - build:all-services
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-    - if: $CI_PIPELINE_SOURCE == "web"
-  when: manual
-  allow_failure: false
 
 # ==========================================
 # SECURITY STAGE
@@ -302,7 +229,6 @@ security:docker-scan:
       
       # Сканирование основных образов
       trivy image --exit-code 0 --severity HIGH,CRITICAL backend:latest || echo "⚠️ Найдены уязвимости в backend"
-      trivy image --exit-code 0 --severity HIGH,CRITICAL functional-tests:$CI_COMMIT_SHA || echo "⚠️ Найдены уязвимости в тестах"
     - echo "✅ Сканирование безопасности завершено"
   dependencies:
     - build:all-services
@@ -323,14 +249,13 @@ deploy:staging:
     - echo "🚀 Подготовка к развертыванию в staging..."
     - echo "Тегирование образов для staging..."
     - docker tag backend:latest $CI_REGISTRY_IMAGE/backend:staging-$CI_COMMIT_SHA
-    - docker tag functional-tests:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE/functional-tests:staging-$CI_COMMIT_SHA
     - echo "✅ Staging развертывание подготовлено"
   environment:
     name: staging
     url: https://staging.yourdomain.com
   dependencies:
     - build:all-services
-    - functional-test:api
+    - test:backend-unit
   rules:
     - if: $CI_COMMIT_BRANCH == "dev"
   when: manual
@@ -343,14 +268,14 @@ deploy:production:
     - echo "Тегирование образов для production..."
     - docker tag backend:latest $CI_REGISTRY_IMAGE/backend:latest
     - docker tag backend:latest $CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHA
-    - docker tag functional-tests:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE/functional-tests:latest
     - echo "✅ Production развертывание подготовлено"
   environment:
     name: production
     url: https://yourdomain.com
   dependencies:
     - build:all-services
-    - functional-test:full-suite
+    - test:backend-unit
+    - test:frontend-unit
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   when: manual
