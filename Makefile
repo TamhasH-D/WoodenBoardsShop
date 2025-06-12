@@ -107,8 +107,13 @@ dev: backend-up ## Quick start for development (backend only)
 .PHONY: add-data
 add-data: ## Generate synthetic data for database (large profile)
 	@echo "🚀 Generating synthetic data..."
+	cd data-generator && uvx --with requests --with faker --with python-dotenv --with tqdm python generate_data.py
+
+.PHONY: add-data-small
+add-data-small: ## Generate small dataset for testing (957 records)
+	@echo "🧪 Generating small test dataset..."
 	cd data-generator && python -m pip install -r requirements.txt --quiet
-	cd data-generator && python generate_data.py
+	cd data-generator && python demo_small.py
 
 .PHONY: add-data-small
 add-data-small: ## Generate small dataset for testing (957 records)

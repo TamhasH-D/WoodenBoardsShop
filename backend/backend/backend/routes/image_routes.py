@@ -142,8 +142,19 @@ async def get_image_file(
     file_path = image_service.get_image_file_path(image.image_path)
 
     # Return file response
+    file_extension = file_path.suffix.lower()
+    media_type_map = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        # Add other common image types if needed
+    }
+    media_type = media_type_map.get(file_extension, "application/octet-stream")
+
     return FileResponse(
         path=str(file_path),
-        media_type="image/jpeg",  # Default, could be improved to detect actual type
-        filename=f"image_{image_id}.jpg",
+        media_type=media_type,
+        filename=f"image_{image_id}{file_extension}",
     )
