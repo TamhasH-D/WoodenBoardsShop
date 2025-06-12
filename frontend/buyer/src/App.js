@@ -16,6 +16,7 @@ import CartPage from './pages/CartPage';
 import OrdersPage from './pages/OrdersPage';
 import HealthPage from './pages/HealthPage';
 import NotificationContainer from './components/ui/NotificationContainer';
+import APITestPanel from './components/debug/APITestPanel';
 import './index.css';
 
 
@@ -55,6 +56,7 @@ function App() {
             <Router>
               <AppContent />
               <NotificationContainer />
+              <APITestPanel />
             </Router>
           </NotificationProvider>
         </CartProvider>
