@@ -24,7 +24,7 @@ function Chats() {
   );
   const { mutate, loading: sending } = useApiMutation();
 
-  // Загрузка чатов продавца
+  // Мемоизируем функцию загрузки чатов продавца
   const loadChats = useCallback(async () => {
     if (!sellerId) return;
 
@@ -48,11 +48,12 @@ function Chats() {
     }
   }, [sellerId]);
 
+  // Используем useEffect только для первоначальной загрузки
   useEffect(() => {
     if (sellerId) {
       loadChats();
     }
-  }, [sellerId, loadChats]);
+  }, [sellerId]); // Убираем loadChats из зависимостей чтобы избежать циклов
 
   const handleSendMessage = async (e) => {
     e.preventDefault();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../contexts/NotificationContext';
 import { BUYER_TEXTS } from '../utils/localization';
@@ -13,8 +13,8 @@ function Chats() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Загрузка чатов покупателя
-  const loadChats = async () => {
+  // Мемоизируем функцию загрузки чатов
+  const loadChats = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -34,11 +34,11 @@ function Chats() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError]);
 
   useEffect(() => {
     loadChats();
-  }, []);
+  }, [loadChats]);
 
   const handleChatClick = (threadId) => {
     navigate(`/chats/${threadId}`);
