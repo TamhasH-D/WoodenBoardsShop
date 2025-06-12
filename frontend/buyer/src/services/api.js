@@ -81,7 +81,7 @@ export const apiService = {
   },
 
   // Products browsing with caching
-  async getProducts(page = 0, size = 12) {
+  async getProducts(page = 0, size = 20) {
     const cacheKey = `products_${page}_${size}`;
     const now = Date.now();
 
@@ -89,14 +89,12 @@ export const apiService = {
     if (cache.has(cacheKey)) {
       const cached = cache.get(cacheKey);
       if (now - cached.timestamp < CACHE_DURATION) {
-        console.log('Returning cached products for page', page);
         return cached.data;
       }
     }
 
     // Check if identical request is already in progress
     if (requestCache.has(cacheKey)) {
-      console.log('Request already in progress, waiting for result...');
       return requestCache.get(cacheKey);
     }
 
@@ -113,8 +111,6 @@ export const apiService = {
 
         // Cache the result
         cache.set(cacheKey, { data: result, timestamp: now });
-        console.log('Cached products for page', page);
-
         return result;
       } finally {
         // Remove from request cache when done
@@ -124,7 +120,6 @@ export const apiService = {
 
     // Store the promise to prevent duplicate requests
     requestCache.set(cacheKey, requestPromise);
-
     return requestPromise;
   },
 
@@ -133,37 +128,88 @@ export const apiService = {
     return response.data;
   },
 
-  async searchProducts(query, page = 0, size = 12) {
-    // Backend doesn't support search, so we'll get all products and filter client-side
-    const cacheKey = 'all_products';
+  // Search products using backend search API
+  async searchProducts(filters = {}, page = 0, size = 20) {
+    const cacheKey = `search_${JSON.stringify(filters)}_${page}_${size}`;
     const now = Date.now();
 
     // Check cache first
-    let allProducts;
-    if (cache.has(cacheKey) && (now - cache.get(cacheKey).timestamp) < CACHE_DURATION) {
-      allProducts = cache.get(cacheKey).data;
-    } else {
-      const response = await this.getProducts(0, 1000); // Get more products for search
-      allProducts = response.data;
-      cache.set(cacheKey, { data: allProducts, timestamp: now });
+    if (cache.has(cacheKey)) {
+      const cached = cache.get(cacheKey);
+      if (now - cached.timestamp < CACHE_DURATION) {
+        return cached.data;
+      }
     }
 
-    const filteredData = allProducts.filter(product =>
-      product.title?.toLowerCase().includes(query.toLowerCase()) ||
-      product.descrioption?.toLowerCase().includes(query.toLowerCase())
-    );
+    // Check if identical request is already in progress
+    if (requestCache.has(cacheKey)) {
+      return requestCache.get(cacheKey);
+    }
 
-    // Implement client-side pagination
-    const startIndex = page * size;
-    const endIndex = startIndex + size;
-    const paginatedData = filteredData.slice(startIndex, endIndex);
+    // Make the request
+    const requestPromise = (async () => {
+      try {
+        // Build query parameters
+        const params = new URLSearchParams({
+          offset: (page * size).toString(),
+          limit: size.toString()
+        });
 
-    return {
-      data: paginatedData,
-      total: filteredData.length,
-      offset: startIndex,
-      limit: size
-    };
+        // Add filter parameters
+        if (filters.search_query) {
+          params.append('search_query', filters.search_query);
+        }
+        if (filters.price_min !== undefined) {
+          params.append('price_min', filters.price_min.toString());
+        }
+        if (filters.price_max !== undefined) {
+          params.append('price_max', filters.price_max.toString());
+        }
+        if (filters.volume_min !== undefined) {
+          params.append('volume_min', filters.volume_min.toString());
+        }
+        if (filters.volume_max !== undefined) {
+          params.append('volume_max', filters.volume_max.toString());
+        }
+        if (filters.wood_type_ids && filters.wood_type_ids.length > 0) {
+          filters.wood_type_ids.forEach(id => params.append('wood_type_ids', id));
+        }
+        if (filters.seller_ids && filters.seller_ids.length > 0) {
+          filters.seller_ids.forEach(id => params.append('seller_ids', id));
+        }
+        if (filters.delivery_possible !== undefined) {
+          params.append('delivery_possible', filters.delivery_possible.toString());
+        }
+        if (filters.has_pickup_location !== undefined) {
+          params.append('has_pickup_location', filters.has_pickup_location.toString());
+        }
+        if (filters.sort_by) {
+          params.append('sort_by', filters.sort_by);
+        }
+        if (filters.sort_order) {
+          params.append('sort_order', filters.sort_order);
+        }
+
+        const response = await api.get(`/api/v1/products/search?${params.toString()}`);
+        const result = {
+          data: response.data.data || response.data,
+          total: response.data.pagination?.total || 0,
+          offset: page * size,
+          limit: size
+        };
+
+        // Cache the result
+        cache.set(cacheKey, { data: result, timestamp: now });
+        return result;
+      } finally {
+        // Remove from request cache when done
+        requestCache.delete(cacheKey);
+      }
+    })();
+
+    // Store the promise to prevent duplicate requests
+    requestCache.set(cacheKey, requestPromise);
+    return requestPromise;
   },
 
   // Wood types and prices (for buyers to view)
