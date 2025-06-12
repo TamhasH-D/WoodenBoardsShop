@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
+import { useToastContext } from '../hooks/useToast';
 import { apiService } from '../services/api';
+import Button from './ui/Button';
 
 const ProductManagement = React.memo(() => {
   const [page, setPage] = useState(0);
@@ -8,20 +10,32 @@ const ProductManagement = React.memo(() => {
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [filterBy, setFilterBy] = useState('all'); // all, with_delivery, pickup_only
 
+  // Toast notifications
+  const toast = useToastContext();
+
   const { data: products, loading, error, refetch } = useApi(
     () => apiService.getProducts(page, 10),
     [page]
   );
 
-  const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
+  const { mutate, loading: mutating } = useApiMutation();
 
   const handleDeleteProduct = async (id) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
+    if (window.confirm('Вы уверены, что хотите удалить этот товар?')) {
       try {
-        await mutate(() => apiService.deleteProduct(id));
-        refetch();
+        await toast.promise(
+          mutate(async () => {
+            await apiService.deleteProduct(id);
+            refetch();
+          }),
+          {
+            loading: 'Удаление товара...',
+            success: 'Товар успешно удален',
+            error: 'Ошибка при удалении товара',
+          }
+        );
       } catch (error) {
-        console.error('Delete failed:', error);
+        // Error handled by toast.promise
       }
     }
   };
@@ -29,13 +43,22 @@ const ProductManagement = React.memo(() => {
   const handleBulkDelete = async () => {
     if (selectedProducts.length === 0) return;
 
-    if (window.confirm(`Are you sure you want to delete ${selectedProducts.length} products?`)) {
+    if (window.confirm(`Вы уверены, что хотите удалить ${selectedProducts.length} товаров?`)) {
       try {
-        await mutate(() => apiService.bulkDeleteProducts(selectedProducts));
-        setSelectedProducts([]);
-        refetch();
+        await toast.promise(
+          mutate(async () => {
+            await apiService.bulkDeleteProducts(selectedProducts);
+            setSelectedProducts([]);
+            refetch();
+          }),
+          {
+            loading: `Удаление ${selectedProducts.length} товаров...`,
+            success: `${selectedProducts.length} товаров успешно удалены`,
+            error: 'Ошибка при удалении товаров',
+          }
+        );
       } catch (error) {
-        console.error('Bulk delete failed:', error);
+        // Error handled by toast.promise
       }
     }
   };
@@ -72,26 +95,13 @@ const ProductManagement = React.memo(() => {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Product Management</h1>
-        <p className="page-description">View and manage all products across sellers</p>
+        <h1 className="page-title">Управление товарами</h1>
+        <p className="page-description">Просмотр и управление всеми товарами продавцов</p>
       </div>
-
-      {/* Error and Success Messages */}
-      {mutationError && (
-        <div className="error mb-4">
-          <strong>Operation failed:</strong> {mutationError}
-        </div>
-      )}
-
-      {success && (
-        <div className="success mb-4">
-          <strong>Success:</strong> Product deleted successfully!
-        </div>
-      )}
 
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">All Products</h2>
+          <h2 className="card-title">Все товары</h2>
         </div>
 
         {/* Search and Filters */}
@@ -99,7 +109,7 @@ const ProductManagement = React.memo(() => {
           <div className="flex gap-4 items-center">
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder="Поиск товаров..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="form-input"
@@ -111,37 +121,39 @@ const ProductManagement = React.memo(() => {
               className="form-input"
               style={{ width: '150px' }}
             >
-              <option value="all">All Products</option>
-              <option value="with_delivery">With Delivery</option>
-              <option value="pickup_only">Pickup Only</option>
+              <option value="all">Все товары</option>
+              <option value="with_delivery">С доставкой</option>
+              <option value="pickup_only">Только самовывоз</option>
             </select>
-            <p>Total: {products?.total || 0} | Filtered: {filteredProducts.length}</p>
+            <p>Всего: {products?.total || 0} | Отфильтровано: {filteredProducts.length}</p>
           </div>
           <div className="flex gap-4">
             {selectedProducts.length > 0 && (
-              <button
+              <Button
                 onClick={handleBulkDelete}
-                className="btn btn-secondary"
+                variant="secondary"
+                loading={mutating}
                 disabled={mutating}
               >
-                Delete Selected ({selectedProducts.length})
-              </button>
+                Удалить выбранные ({selectedProducts.length})
+              </Button>
             )}
-            <button
+            <Button
               onClick={refetch}
-              className="btn btn-secondary"
+              variant="secondary"
+              loading={loading}
               disabled={loading}
             >
-              {loading ? 'Loading...' : 'Refresh'}
-            </button>
+              Обновить
+            </Button>
           </div>
         </div>
 
-        {loading && <div className="loading">Loading products...</div>}
-        
+        {loading && <div className="loading">Загрузка товаров...</div>}
+
         {error && (
           <div className="error">
-            <strong>Failed to load products:</strong> {error}
+            <strong>Не удалось загрузить товары:</strong> {error}
           </div>
         )}
 
@@ -157,13 +169,13 @@ const ProductManagement = React.memo(() => {
                       onChange={() => handleSelectAll(filteredProducts)}
                     />
                   </th>
-                  <th>Title</th>
-                  <th>Seller</th>
-                  <th>Volume</th>
-                  <th>Price</th>
-                  <th>Delivery</th>
-                  <th>Created</th>
-                  <th>Actions</th>
+                  <th>Название</th>
+                  <th>Продавец</th>
+                  <th>Объем</th>
+                  <th>Цена</th>
+                  <th>Доставка</th>
+                  <th>Создан</th>
+                  <th>Действия</th>
                 </tr>
               </thead>
               <tbody>
@@ -178,12 +190,12 @@ const ProductManagement = React.memo(() => {
                     </td>
                     <td>
                       <div>
-                        <strong>{product.title || 'Untitled'}</strong>
-                        {product.description && (
+                        <strong>{product.title || 'Без названия'}</strong>
+                        {product.descrioption && (
                           <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.25rem' }}>
-                            {product.description.length > 50
-                              ? `${product.description.substring(0, 50)}...`
-                              : product.description}
+                            {product.descrioption.length > 50
+                              ? `${product.descrioption.substring(0, 50)}...`
+                              : product.descrioption}
                           </div>
                         )}
                       </div>
@@ -195,25 +207,25 @@ const ProductManagement = React.memo(() => {
                       {product.volume} m³
                     </td>
                     <td>
-                      €{product.price?.toFixed(2) || 0}
+                      ₽{product.price?.toFixed(2) || 0}
                     </td>
                     <td>
                       <span className={`status ${product.delivery_possible ? 'status-success' : 'status-warning'}`}>
-                        {product.delivery_possible ? 'Available' : 'Pickup Only'}
+                        {product.delivery_possible ? 'Доступна' : 'Только самовывоз'}
                       </span>
                     </td>
                     <td>
                       {new Date(product.created_at).toLocaleDateString()}
                     </td>
                     <td>
-                      <button
+                      <Button
                         onClick={() => handleDeleteProduct(product.id)}
-                        className="btn btn-secondary"
+                        variant="error"
+                        size="sm"
                         disabled={mutating}
-                        style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
                       >
-                        Delete
-                      </button>
+                        Удалить
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -222,26 +234,26 @@ const ProductManagement = React.memo(() => {
 
             {/* Pagination */}
             <div className="flex justify-between items-center mt-6">
-              <button
+              <Button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0 || loading}
-                className="btn btn-secondary"
+                variant="secondary"
               >
-                Previous
-              </button>
-              <span>Page {page + 1}</span>
-              <button
+                Предыдущая
+              </Button>
+              <span className="text-sm text-gray-600">Страница {page + 1}</span>
+              <Button
                 onClick={() => setPage(page + 1)}
                 disabled={!products?.data || products.data.length < 10 || loading}
-                className="btn btn-secondary"
+                variant="secondary"
               >
-                Next
-              </button>
+                Следующая
+              </Button>
             </div>
           </div>
         ) : (
           <div className="text-center">
-            <p>No products found.</p>
+            <p>Товары не найдены.</p>
           </div>
         )}
       </div>
