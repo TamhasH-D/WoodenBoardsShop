@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -22,7 +22,7 @@ class ChatThread(Base):
         sa.UUID(as_uuid=True), primary_key=True, unique=True, index=True
     )
     created_at: Mapped[datetime] = mapped_column(
-        sa.DateTime(timezone=True), default=lambda: datetime.now(UTC)
+        sa.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     buyer_id: Mapped[UUID] = mapped_column(
         sa.UUID(as_uuid=True), sa.ForeignKey("buyer.id", ondelete="CASCADE"), index=True

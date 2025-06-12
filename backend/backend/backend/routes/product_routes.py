@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 
 import aiofiles
 import aiohttp
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from backend.daos import GetDAOs
 from backend.dtos import (
@@ -13,9 +13,10 @@ from backend.dtos import (
     EmptyResponse,
     OffsetResults,
     Pagination,
+    PaginationParamsSortBy,
 )
 from backend.dtos.image_dtos import ImageInputDTO
-from backend.dtos.product_dtos import ProductDTO, ProductInputDTO, ProductUpdateDTO
+from backend.dtos.product_dtos import ProductDTO, ProductFilterDTO, ProductInputDTO, ProductUpdateDTO
 from backend.dtos.product_with_analysis_dtos import ProductWithAnalysisResponseDTO
 from backend.dtos.wooden_board_dtos import WoodenBoardInputDTO
 from backend.settings import settings
@@ -63,6 +64,30 @@ async def get_product_paginated(
     return await daos.product.get_offset_results(
         out_dto=ProductDTO,
         pagination=pagination,
+    )
+
+
+@router.get("/search")
+async def search_products(
+    daos: GetDAOs,
+    pagination: Annotated[PaginationParamsSortBy, Depends()],
+    filters: Annotated[ProductFilterDTO, Depends()],
+) -> OffsetResults[ProductDTO]:
+    """
+    Search and filter products with advanced criteria.
+
+    Supports:
+    - Text search in title and description
+    - Price and volume range filtering
+    - Multiple wood type and seller selection
+    - Boolean filters for delivery and pickup
+    - Date range filtering
+    - Sorting by any product field
+    """
+    return await daos.product.get_filtered_results(
+        out_dto=ProductDTO,
+        pagination=pagination,
+        filters=filters,
     )
 
 

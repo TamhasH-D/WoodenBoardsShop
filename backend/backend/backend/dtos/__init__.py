@@ -1,8 +1,10 @@
-from typing import Annotated
+from typing import Annotated, Generic, TypeVar, Union
 from uuid import UUID
 
 from fastapi import Depends
 from pydantic import BaseModel, ConfigDict, Field
+
+T = TypeVar('T', bound=BaseModel)
 
 #############
 # Base DTOs #
@@ -20,10 +22,10 @@ class BaseOrmModel(BaseModel):
 ######################
 
 
-class DataResponse[T: BaseModel](BaseModel):
+class DataResponse(BaseModel, Generic[T]):
     """Model for response data."""
 
-    data: T | None = None
+    data: Union[T, None] = None
 
 
 class CreatedResponse(BaseModel):
@@ -63,7 +65,7 @@ class OffsetPaginationMetadata(BaseModel):
     total: int
 
 
-class OffsetResults[T: BaseModel](BaseModel):
+class OffsetResults(BaseModel, Generic[T]):
     """DTO for offset paginated response."""
 
     data: list[T]
