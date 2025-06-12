@@ -12,7 +12,7 @@ import { apiService } from '../services/api';
 const ProductsPage = () => {
   const { setPageTitle, searchQuery, setSearchQuery, filters, setFilters, resetFilters } = useApp();
   const { addToCart, isInCart } = useCart();
-  const { showCartSuccess, showError } = useNotifications();
+  const { showCartSuccess } = useNotifications();
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +31,7 @@ const ProductsPage = () => {
     if (!initialLoaded) {
       loadInitialData();
     }
-  }, [setPageTitle, initialLoaded]);
+  }, [setPageTitle, initialLoaded, loadInitialData]);
 
   const loadInitialData = useCallback(async () => {
     try {
@@ -51,7 +51,7 @@ const ProductsPage = () => {
       console.error('Ошибка загрузки данных:', error);
       // Не показываем ошибки пользователю, только в консоли
     }
-  }, []);
+  }, [loadProducts]);
 
   const loadProducts = useCallback(async () => {
     try {
@@ -80,7 +80,7 @@ const ProductsPage = () => {
     if (initialLoaded) {
       loadProducts();
     }
-  }, [searchQuery, currentPage, initialLoaded]);
+  }, [searchQuery, currentPage, initialLoaded, loadProducts]);
 
   const handleAddToCart = (product) => {
     addToCart(product, 1);
@@ -288,15 +288,33 @@ const ProductsPage = () => {
 };
 
 /**
- * Карточка товара
+ * Карточка товара - Улучшенная версия
  */
 const ProductCard = ({ product, onAddToCart, isInCart }) => {
+  // Вычисляем цену за кубический метр
+  const pricePerCubicMeter = product.volume > 0 ? (product.price / product.volume).toFixed(2) : '0.00';
+
+  // Определяем информацию о доставке
+  const deliveryInfo = product.delivery_available
+    ? 'Доставка доступна'
+    : product.pickup_address
+      ? `Самовывоз: ${product.pickup_address}`
+      : 'Уточните у продавца';
+
   return (
     <div className="product-card hover-lift">
       <div className="product-image">
-        <div className="product-placeholder">
-          🌲
-        </div>
+        {product.image_url ? (
+          <img
+            src={product.image_url}
+            alt={product.title || product.neme || 'Товар'}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <div className="product-placeholder">
+            🌲
+          </div>
+        )}
         {isInCart && (
           <div className="product-badge">
             В корзине
@@ -306,25 +324,40 @@ const ProductCard = ({ product, onAddToCart, isInCart }) => {
 
       <div className="product-info">
         <h3 className="product-name">
-          {product.title || product.neme || 'Товар'}
+          {product.title || product.neme || 'Товар без названия'}
         </h3>
 
-        <p className="product-description">
-          {product.descrioption || product.description || 'Описание товара'}
-        </p>
+        {(product.descrioption || product.description) && (
+          <p className="product-description">
+            {product.descrioption || product.description}
+          </p>
+        )}
 
         <div className="product-details">
           <div className="product-volume">
-            Объем: {product.volume || 0} м³
+            <strong>Объем:</strong> {product.volume || 0} м³
           </div>
           <div className="product-wood-type">
-            Тип: {product.wood_type || 'Не указан'}
+            <strong>Древесина:</strong> {product.wood_type || 'Не указан'}
           </div>
+          <div className="product-delivery">
+            <strong>Доставка:</strong> {deliveryInfo}
+          </div>
+          {product.board_count && (
+            <div className="product-volume">
+              <strong>Досок:</strong> {product.board_count} шт.
+            </div>
+          )}
         </div>
 
         <div className="product-footer">
-          <div className="product-price">
-            {formatCurrencyRu(product.price || 0)}
+          <div>
+            <div className="product-price">
+              {formatCurrencyRu(product.price || 0)}
+            </div>
+            <div className="product-price-per-unit">
+              {pricePerCubicMeter} ₽/м³
+            </div>
           </div>
 
           <button
