@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useNotifications } from '../../contexts/NotificationContext';
+import { apiService } from '../../services/api';
+import { getChatWebSocketUrl } from '../../utils/websocket';
 import { BUYER_TEXTS } from '../../utils/localization';
 
 const ChatWindow = () => {
@@ -35,21 +37,19 @@ const ChatWindow = () => {
   const loadChatData = useCallback(async () => {
     try {
       setIsLoading(true);
-      
-      // Загружаем информацию о треде
-      const threadResponse = await fetch(`/api/v1/chat-threads/${threadId}`);
+
+      // Загружаем информацию о треде (пока оставим fetch, так как нет метода в apiService)
+      const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+      const threadResponse = await fetch(`${apiBaseUrl}/api/v1/chat-threads/${threadId}`);
       if (threadResponse.ok) {
         const threadData = await threadResponse.json();
         setThreadInfo(threadData.data);
       }
-      
-      // Загружаем сообщения
-      const messagesResponse = await fetch(`/api/v1/chat-messages/by-thread/${threadId}?limit=50`);
-      if (messagesResponse.ok) {
-        const messagesData = await messagesResponse.json();
-        setMessages(messagesData.data.reverse()); // Реверсируем для правильного порядка
-      }
-      
+
+      // Загружаем сообщения через apiService
+      const messagesResult = await apiService.getChatMessages(threadId, 0, 50);
+      setMessages(messagesResult.data || []);
+
     } catch (error) {
       console.error('Ошибка загрузки данных чата:', error);
       showError('Не удалось загрузить чат');
@@ -69,7 +69,7 @@ const ChatWindow = () => {
     }
 
     isConnectingRef.current = true;
-    const wsUrl = `ws://localhost:8000/ws/chat/${threadId}?user_id=${buyerId}&user_type=buyer`;
+    const wsUrl = getChatWebSocketUrl(threadId, buyerId, 'buyer');
     wsRef.current = new WebSocket(wsUrl);
 
     wsRef.current.onopen = () => {
@@ -156,23 +156,18 @@ const ChatWindow = () => {
     try {
       // Отправляем через REST API
       const messageId = crypto.randomUUID();
-      const response = await fetch('/api/v1/chat-messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: messageId,
-          message: messageText,
-          is_read_by_buyer: true,
-          is_read_by_seller: false,
-          thread_id: threadId,
-          buyer_id: buyerId,
-          seller_id: threadInfo?.seller_id
-        })
-      });
+      const messageData = {
+        id: messageId,
+        message: messageText,
+        is_read_by_buyer: true,
+        is_read_by_seller: false,
+        thread_id: threadId,
+        buyer_id: buyerId,
+        seller_id: threadInfo?.seller_id
+      };
 
-      if (response.ok) {
+      const result = await apiService.sendMessage(messageData);
+      if (result) {
         // Отправляем через WebSocket для real-time обновления
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify({
@@ -181,8 +176,6 @@ const ChatWindow = () => {
             message_id: messageId
           }));
         }
-      } else {
-        throw new Error('Не удалось отправить сообщение');
       }
       
     } catch (error) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNotifications } from '../contexts/NotificationContext';
 import { apiService } from '../services/api';
+import { getChatWebSocketUrl } from '../utils/websocket';
 
 const ProductChat = ({ productId, product, sellerId, buyerId }) => {
   const { showError, showSuccess } = useNotifications();
@@ -46,7 +47,7 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
     }
 
     isConnectingRef.current = true;
-    const wsUrl = `ws://localhost:8000/ws/chat/${threadId}?user_id=${buyerId}&user_type=buyer`;
+    const wsUrl = getChatWebSocketUrl(threadId, buyerId, 'buyer');
     wsRef.current = new WebSocket(wsUrl);
 
     wsRef.current.onopen = () => {
