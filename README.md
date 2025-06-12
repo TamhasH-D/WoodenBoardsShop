@@ -9,7 +9,7 @@ This project is designed to work seamlessly across all operating systems and Doc
 - ✅ **macOS** (Intel and Apple Silicon)
 - ✅ **Windows** (with Docker Desktop or WSL2)
 - ✅ **Cloud environments** (AWS, GCP, Azure)
-- ✅ **CI/CD pipelines** (GitLab CI, GitHub Actions, Jenkins)
+
 
 ## 📁 Структура проекта
 
@@ -111,17 +111,11 @@ make ps             # List running containers
 cd backend/backend
 make test           # Запуск всех тестов
 make test-coverage  # Тесты с покрытием кода
-make test-filter    # Тесты с фильтром: make test-filter filter="test_name"
 
 # Frontend тесты
 cd frontend
 make test-all       # Тесты всех фронтендов
 make lint-all       # Линтинг всех фронтендов
-
-# Быстрый старт тестирования
-# 1. Запустите систему: make up
-# 2. Запустите backend тесты: cd backend/backend && make test
-# 3. Запустите frontend тесты: cd frontend && make test-all
 ```
 
 ### 🔧 Backend команды
