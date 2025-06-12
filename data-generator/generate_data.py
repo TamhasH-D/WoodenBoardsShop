@@ -4,9 +4,11 @@
 """
 
 import json
+import logging
 import os
 import random
 import shutil
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
@@ -18,7 +20,8 @@ from dotenv import load_dotenv
 from data_templates import (
     WOOD_TYPES, WOOD_PRICE_RANGES, PRODUCT_TITLE_TEMPLATES,
     PRODUCT_DESCRIPTIONS, PICKUP_CITIES, STREET_TYPES, STREET_NAMES,
-    CHAT_MESSAGES_BUYER, CHAT_MESSAGES_SELLER, BOARD_DIMENSIONS, BOARD_LENGTHS
+    CHAT_MESSAGES_BUYER, CHAT_MESSAGES_SELLER, BOARD_DIMENSIONS, BOARD_LENGTHS,
+    REGIONAL_WOOD_PREFERENCES
 )
 
 # Загружаем переменные окружения
@@ -28,18 +31,28 @@ class DataGenerator:
     def __init__(self):
         self.fake = Faker('ru_RU')
         self.api_base = os.getenv('API_BASE_URL', 'http://localhost:8000/api/v1')
-        self.timeout = int(os.getenv('REQUEST_TIMEOUT', '30'))
-        
-        # Счетчики записей
-        self.counts = {
-            'wood_types': int(os.getenv('WOOD_TYPES_COUNT', '12')),
-            'wood_type_prices': int(os.getenv('WOOD_TYPE_PRICES_COUNT', '80')),
-            'buyers': int(os.getenv('BUYERS_COUNT', '75')),
-            'sellers': int(os.getenv('SELLERS_COUNT', '25')),
-            'products': int(os.getenv('PRODUCTS_COUNT', '350')),
-            'chat_threads': int(os.getenv('CHAT_THREADS_COUNT', '150')),
-            'chat_messages': int(os.getenv('CHAT_MESSAGES_COUNT', '1200'))
-        }
+        self.timeout = int(os.getenv('REQUEST_TIMEOUT', '60'))
+        self.max_retries = int(os.getenv('MAX_RETRIES', '3'))
+        self.retry_delay = int(os.getenv('RETRY_DELAY', '2'))
+
+        # Настройка логирования
+        log_level = os.getenv('LOG_LEVEL', 'INFO')
+        logging.basicConfig(
+            level=getattr(logging, log_level),
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler('data_generation.log'),
+                logging.StreamHandler()
+            ]
+        )
+        self.logger = logging.getLogger(__name__)
+
+        # Определяем профиль генерации
+        self.profile = os.getenv('GENERATION_PROFILE', 'large').lower()
+        self.logger.info(f"Используется профиль генерации: {self.profile}")
+
+        # Счетчики записей в зависимости от профиля
+        self.counts = self._get_counts_for_profile()
         
         # Хранилище созданных UUID
         self.generated_data = {
@@ -62,30 +75,117 @@ class DataGenerator:
         # Создаем папку для загруженных изображений
         self.images_upload.mkdir(exist_ok=True)
 
+        # Статистика генерации
+        self.stats = {
+            'start_time': None,
+            'end_time': None,
+            'total_requests': 0,
+            'failed_requests': 0,
+            'retries_used': 0
+        }
+
+    def _get_counts_for_profile(self):
+        """Возвращает счетчики записей для выбранного профиля"""
+        profiles = {
+            'small': {
+                'wood_types': int(os.getenv('SMALL_WOOD_TYPES_COUNT', '12')),
+                'wood_type_prices': int(os.getenv('SMALL_WOOD_TYPE_PRICES_COUNT', '80')),
+                'buyers': int(os.getenv('SMALL_BUYERS_COUNT', '50')),
+                'sellers': int(os.getenv('SMALL_SELLERS_COUNT', '15')),
+                'products': int(os.getenv('SMALL_PRODUCTS_COUNT', '200')),
+                'chat_threads': int(os.getenv('SMALL_CHAT_THREADS_COUNT', '80')),
+                'chat_messages': int(os.getenv('SMALL_CHAT_MESSAGES_COUNT', '600'))
+            },
+            'medium': {
+                'wood_types': int(os.getenv('MEDIUM_WOOD_TYPES_COUNT', '20')),
+                'wood_type_prices': int(os.getenv('MEDIUM_WOOD_TYPE_PRICES_COUNT', '300')),
+                'buyers': int(os.getenv('MEDIUM_BUYERS_COUNT', '200')),
+                'sellers': int(os.getenv('MEDIUM_SELLERS_COUNT', '50')),
+                'products': int(os.getenv('MEDIUM_PRODUCTS_COUNT', '800')),
+                'chat_threads': int(os.getenv('MEDIUM_CHAT_THREADS_COUNT', '300')),
+                'chat_messages': int(os.getenv('MEDIUM_CHAT_MESSAGES_COUNT', '2400'))
+            },
+            'large': {
+                'wood_types': int(os.getenv('LARGE_WOOD_TYPES_COUNT', '30')),
+                'wood_type_prices': int(os.getenv('LARGE_WOOD_TYPE_PRICES_COUNT', '600')),
+                'buyers': int(os.getenv('LARGE_BUYERS_COUNT', '500')),
+                'sellers': int(os.getenv('LARGE_SELLERS_COUNT', '150')),
+                'products': int(os.getenv('LARGE_PRODUCTS_COUNT', '2500')),
+                'chat_threads': int(os.getenv('LARGE_CHAT_THREADS_COUNT', '800')),
+                'chat_messages': int(os.getenv('LARGE_CHAT_MESSAGES_COUNT', '8000'))
+            },
+            'enterprise': {
+                'wood_types': int(os.getenv('ENTERPRISE_WOOD_TYPES_COUNT', '50')),
+                'wood_type_prices': int(os.getenv('ENTERPRISE_WOOD_TYPE_PRICES_COUNT', '1500')),
+                'buyers': int(os.getenv('ENTERPRISE_BUYERS_COUNT', '1500')),
+                'sellers': int(os.getenv('ENTERPRISE_SELLERS_COUNT', '400')),
+                'products': int(os.getenv('ENTERPRISE_PRODUCTS_COUNT', '8000')),
+                'chat_threads': int(os.getenv('ENTERPRISE_CHAT_THREADS_COUNT', '2500')),
+                'chat_messages': int(os.getenv('ENTERPRISE_CHAT_MESSAGES_COUNT', '25000'))
+            }
+        }
+
+        return profiles.get(self.profile, profiles['large'])
+
     def save_progress(self):
         """Сохраняет прогресс в JSON файл"""
         with open('generated_uuids.json', 'w', encoding='utf-8') as f:
             json.dump(self.generated_data, f, ensure_ascii=False, indent=2, default=str)
 
-    def make_request(self, method, endpoint, data=None, files=None):
-        """Выполняет HTTP запрос к API"""
-        url = f"{self.api_base}{endpoint}"
+    def check_api_health(self):
+        """Проверяет доступность API"""
         try:
-            if method.upper() == 'POST':
-                if files:
-                    response = requests.post(url, data=data, files=files, timeout=self.timeout)
+            response = requests.get(f"{self.api_base.replace('/api/v1', '')}/health", timeout=10)
+            if response.status_code == 200:
+                self.logger.info("✅ API доступен и работает")
+                return True
+        except:
+            pass
+
+        # Пробуем альтернативный способ проверки
+        try:
+            response = requests.get(f"{self.api_base}/wood-types/", timeout=10)
+            if response.status_code in [200, 404]:  # 404 тоже означает, что API работает
+                self.logger.info("✅ API доступен")
+                return True
+        except:
+            pass
+
+        self.logger.error("❌ API недоступен")
+        return False
+
+    def make_request(self, method, endpoint, data=None, files=None):
+        """Выполняет HTTP запрос к API с retry логикой"""
+        url = f"{self.api_base}{endpoint}"
+
+        for attempt in range(self.max_retries + 1):
+            try:
+                self.stats['total_requests'] += 1
+
+                if method.upper() == 'POST':
+                    if files:
+                        response = requests.post(url, data=data, files=files, timeout=self.timeout)
+                    else:
+                        response = requests.post(url, json=data, timeout=self.timeout)
                 else:
-                    response = requests.post(url, json=data, timeout=self.timeout)
-            else:
-                response = requests.request(method, url, json=data, timeout=self.timeout)
-            
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            print(f"Ошибка запроса к {url}: {e}")
-            if hasattr(e, 'response') and e.response is not None:
-                print(f"Ответ сервера: {e.response.text}")
-            raise
+                    response = requests.request(method, url, json=data, timeout=self.timeout)
+
+                response.raise_for_status()
+                return response.json()
+
+            except requests.exceptions.RequestException as e:
+                self.stats['failed_requests'] += 1
+
+                if attempt < self.max_retries:
+                    self.stats['retries_used'] += 1
+                    self.logger.warning(f"Попытка {attempt + 1} неудачна для {url}: {e}")
+                    time.sleep(self.retry_delay * (attempt + 1))  # Экспоненциальная задержка
+                    continue
+                else:
+                    self.logger.error(f"Все попытки исчерпаны для {url}: {e}")
+                    if hasattr(e, 'response') and e.response is not None:
+                        self.logger.error(f"Ответ сервера: {e.response.text}")
+                    raise
 
     def generate_wood_types(self):
         """Генерирует типы древесины"""
@@ -437,14 +537,67 @@ class DataGenerator:
         self.save_progress()
         print(f"✅ Создано {len(self.generated_data['chat_messages'])} сообщений")
 
+    def print_generation_stats(self):
+        """Выводит статистику генерации"""
+        if self.stats['start_time'] and self.stats['end_time']:
+            duration = self.stats['end_time'] - self.stats['start_time']
+            duration_str = str(duration).split('.')[0]  # Убираем микросекунды
+
+            print(f"\n📊 Статистика генерации:")
+            print(f"  ⏱️  Время выполнения: {duration_str}")
+            print(f"  📡 Всего запросов: {self.stats['total_requests']}")
+            print(f"  ❌ Неудачных запросов: {self.stats['failed_requests']}")
+            print(f"  🔄 Повторных попыток: {self.stats['retries_used']}")
+
+            success_rate = ((self.stats['total_requests'] - self.stats['failed_requests']) /
+                          self.stats['total_requests'] * 100) if self.stats['total_requests'] > 0 else 0
+            print(f"  ✅ Успешность: {success_rate:.1f}%")
+
+            total_records = sum(len(data) if isinstance(data, list) else 0
+                              for data in self.generated_data.values())
+            print(f"  📝 Всего записей создано: {total_records}")
+
+    def save_generation_report(self):
+        """Сохраняет отчет о генерации"""
+        if not os.getenv('SAVE_GENERATION_REPORT', 'true').lower() == 'true':
+            return
+
+        report = {
+            'profile': self.profile,
+            'planned_counts': self.counts,
+            'actual_counts': {k: len(v) if isinstance(v, list) else 0
+                            for k, v in self.generated_data.items()},
+            'stats': self.stats,
+            'api_base': self.api_base,
+            'timestamp': datetime.now().isoformat()
+        }
+
+        report_file = f"generation_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        with open(report_file, 'w', encoding='utf-8') as f:
+            json.dump(report, f, ensure_ascii=False, indent=2, default=str)
+
+        self.logger.info(f"Отчет сохранен в {report_file}")
+
     def run_generation(self):
         """Запускает полную генерацию данных"""
+        self.stats['start_time'] = datetime.now()
+
         print("🚀 Начинаем генерацию синтетических данных...")
-        print(f"API: {self.api_base}")
-        print(f"Планируется создать:")
+        print(f"📋 Профиль: {self.profile}")
+        print(f"🌐 API: {self.api_base}")
+        print(f"📊 Планируется создать:")
+
+        total_planned = 0
         for entity, count in self.counts.items():
-            print(f"  - {entity}: {count}")
+            print(f"  - {entity}: {count:,}")
+            total_planned += count
+        print(f"  📝 Всего записей: {total_planned:,}")
         print()
+
+        # Проверяем доступность API
+        if not self.check_api_health():
+            print("❌ API недоступен. Проверьте, что backend запущен.")
+            return
 
         try:
             # Создаем данные в правильном порядке (учитывая зависимости)
@@ -458,17 +611,33 @@ class DataGenerator:
             self.generate_chat_threads()
             self.generate_chat_messages()
 
+            self.stats['end_time'] = datetime.now()
+
             print("\n🎉 Генерация данных завершена успешно!")
-            print(f"Создано записей:")
+            print(f"📋 Создано записей:")
+            total_created = 0
             for entity, data in self.generated_data.items():
-                print(f"  - {entity}: {len(data)}")
+                count = len(data) if isinstance(data, list) else 0
+                print(f"  - {entity}: {count:,}")
+                total_created += count
+            print(f"  📝 Всего создано: {total_created:,}")
+
+            self.print_generation_stats()
+            self.save_generation_report()
 
         except KeyboardInterrupt:
+            self.stats['end_time'] = datetime.now()
             print("\n⚠️ Генерация прервана пользователем")
             print("Прогресс сохранен в generated_uuids.json")
+            self.print_generation_stats()
+            self.save_generation_report()
         except Exception as e:
+            self.stats['end_time'] = datetime.now()
+            self.logger.error(f"Ошибка генерации: {e}")
             print(f"\n❌ Ошибка генерации: {e}")
             print("Прогресс сохранен в generated_uuids.json")
+            self.print_generation_stats()
+            self.save_generation_report()
             raise
 
 
