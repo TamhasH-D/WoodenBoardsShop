@@ -15,7 +15,7 @@ FRONTEND_BUYER_PORT ?= 8082
 BACKEND_HOST ?= localhost
 
 # Docker compose commands with environment variables
-COMPOSE := docker compose --env-file .env
+COMPOSE := docker compose
 BACKEND_DIR := backend/backend
 
 .PHONY: help
@@ -68,7 +68,7 @@ ps: ## List running containers
 
 .PHONY: backend-up
 backend-up: ## Start only backend services
-	cd $(BACKEND_DIR) && docker compose --env-file ../../.env up -d
+	cd $(BACKEND_DIR) && docker compose up -d
 
 .PHONY: backend-down
 backend-down: ## Stop backend services
@@ -99,3 +99,18 @@ clean-all: down ## Clean all Docker resources including networks
 .PHONY: dev
 dev: backend-up ## Quick start for development (backend only)
 	@echo "🎯 Backend ready at http://localhost:$(BACKEND_PORT)/docs"
+
+# ============================================================================
+# 📊 DATA GENERATION
+# ============================================================================
+
+.PHONY: add-data
+add-data: ## Generate synthetic data for database
+	@echo "🚀 Generating synthetic data..."
+	cd data-generator && python -m pip install -r requirements.txt --quiet
+	cd data-generator && python generate_data.py
+
+.PHONY: rm-data
+rm-data: ## Remove all synthetic data from database
+	@echo "🗑️ Removing synthetic data..."
+	cd data-generator && python remove_data.py
