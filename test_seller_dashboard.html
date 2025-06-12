@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест панели продавца</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Тест панели продавца</h1>
+        <p>Этот тест проверяет API endpoints, которые используются в панели продавца для отображения статистики.</p>
+        
+        <div class="test-section">
+            <h3>1. Проверка продавца</h3>
+            <p>Проверяем, существует ли продавец с ID: <code>3ab0f210-ca78-4312-841b-8b1ae774adac</code></p>
+            <button onclick="testSeller()">Проверить продавца</button>
+            <div id="seller-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Проверка товаров продавца</h3>
+            <p>Получаем товары для данного продавца</p>
+            <button onclick="testProducts()">Проверить товары</button>
+            <div id="products-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Проверка типов древесины</h3>
+            <p>Получаем доступные типы древесины</p>
+            <button onclick="testWoodTypes()">Проверить типы древесины</button>
+            <div id="woodtypes-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Создание тестовых данных</h3>
+            <p>Создаем тестовые данные для проверки панели</p>
+            <button onclick="createTestData()">Создать тестовые данные</button>
+            <div id="testdata-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>5. Проверка структуры данных</h3>
+            <p>Проверяем, что API возвращает правильную структуру данных</p>
+            <button onclick="testDataStructure()">Проверить структуру</button>
+            <div id="structure-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        const SELLER_ID = '3ab0f210-ca78-4312-841b-8b1ae774adac';
+
+        function showResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.textContent = JSON.stringify(data, null, 2);
+            element.className = `result ${isError ? 'error' : 'success'}`;
+        }
+
+        async function testSeller() {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/sellers/${SELLER_ID}`);
+                const data = await response.json();
+                showResult('seller-result', {
+                    status: response.status,
+                    data: data
+                });
+            } catch (error) {
+                showResult('seller-result', {
+                    error: error.message,
+                    note: 'Backend может быть недоступен'
+                }, true);
+            }
+        }
+
+        async function testProducts() {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/products?offset=0&limit=20`);
+                const data = await response.json();
+                
+                // Фильтруем товары по seller_id (как это делает frontend)
+                const allProducts = data.data || data;
+                const sellerProducts = allProducts.filter(product => product.seller_id === SELLER_ID);
+                
+                showResult('products-result', {
+                    status: response.status,
+                    total_products: allProducts.length,
+                    seller_products: sellerProducts.length,
+                    structure: {
+                        has_data_field: !!data.data,
+                        has_items_field: !!data.items,
+                        actual_structure: Object.keys(data)
+                    },
+                    sample_products: sellerProducts.slice(0, 2)
+                });
+            } catch (error) {
+                showResult('products-result', {
+                    error: error.message
+                }, true);
+            }
+        }
+
+        async function testWoodTypes() {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/wood-types?offset=0&limit=20`);
+                const data = await response.json();
+                
+                showResult('woodtypes-result', {
+                    status: response.status,
+                    total: data.pagination?.total || data.total || 0,
+                    count: data.data?.length || 0,
+                    structure: {
+                        has_data_field: !!data.data,
+                        has_items_field: !!data.items,
+                        actual_structure: Object.keys(data)
+                    },
+                    sample: data.data?.slice(0, 2) || []
+                });
+            } catch (error) {
+                showResult('woodtypes-result', {
+                    error: error.message
+                }, true);
+            }
+        }
+
+        async function createTestData() {
+            try {
+                // Создаем продавца если не существует
+                let sellerExists = false;
+                try {
+                    const sellerResponse = await fetch(`${API_BASE}/api/v1/sellers/${SELLER_ID}`);
+                    sellerExists = sellerResponse.ok;
+                } catch (e) {
+                    // Продавец не существует
+                }
+
+                let results = [];
+
+                if (!sellerExists) {
+                    // Создаем продавца
+                    const sellerData = {
+                        id: SELLER_ID,
+                        keycloak_uuid: SELLER_ID,
+                        is_online: true
+                    };
+                    
+                    const sellerResponse = await fetch(`${API_BASE}/api/v1/sellers`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(sellerData)
+                    });
+                    
+                    results.push({
+                        action: 'create_seller',
+                        status: sellerResponse.status,
+                        success: sellerResponse.ok
+                    });
+                }
+
+                showResult('testdata-result', {
+                    results: results,
+                    note: 'Для полного тестирования нужен запущенный backend'
+                });
+            } catch (error) {
+                showResult('testdata-result', {
+                    error: error.message
+                }, true);
+            }
+        }
+
+        async function testDataStructure() {
+            try {
+                const tests = [
+                    { name: 'products', url: `${API_BASE}/api/v1/products?offset=0&limit=5` },
+                    { name: 'wood-types', url: `${API_BASE}/api/v1/wood-types?offset=0&limit=5` },
+                    { name: 'sellers', url: `${API_BASE}/api/v1/sellers?offset=0&limit=5` }
+                ];
+
+                const results = {};
+
+                for (const test of tests) {
+                    try {
+                        const response = await fetch(test.url);
+                        const data = await response.json();
+                        
+                        results[test.name] = {
+                            status: response.status,
+                            has_data_field: !!data.data,
+                            has_items_field: !!data.items,
+                            structure: Object.keys(data),
+                            data_type: Array.isArray(data.data) ? 'array' : typeof data.data,
+                            count: data.data?.length || 0
+                        };
+                    } catch (error) {
+                        results[test.name] = {
+                            error: error.message
+                        };
+                    }
+                }
+
+                showResult('structure-result', results);
+            } catch (error) {
+                showResult('structure-result', {
+                    error: error.message
+                }, true);
+            }
+        }
+
+        // Автоматически запускаем тесты при загрузке страницы
+        window.onload = function() {
+            console.log('Тестовая страница загружена. Нажмите кнопки для запуска тестов.');
+        };
+    </script>
+</body>
+</html>
