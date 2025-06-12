@@ -8,6 +8,7 @@ from backend.routes.health_routes import router as health_router
 from backend.routes.image_routes import router as image_router
 from backend.routes.product_routes import router as product_router
 from backend.routes.seller_routes import router as seller_router
+from backend.routes.websocket_routes import router as websocket_router
 from backend.routes.wood_type_price_routes import router as wood_type_price_router
 from backend.routes.wood_type_routes import router as wood_type_router
 from backend.routes.wooden_board_routes import router as wooden_board_router
@@ -25,3 +26,4 @@ base_router.include_router(wooden_board_router, tags=["wooden_board"])
 base_router.include_router(image_router, tags=["image"])
 base_router.include_router(chat_thread_router, tags=["chat_thread"])
 base_router.include_router(chat_message_router, tags=["chat_message"])
+base_router.include_router(websocket_router, tags=["websocket"])

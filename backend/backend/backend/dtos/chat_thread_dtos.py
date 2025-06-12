@@ -28,3 +28,15 @@ class ChatThreadUpdateDTO(BaseModel):
 
     buyer_id: UUID | None = None
     seller_id: UUID | None = None
+
+
+class ChatThreadWithLastMessageDTO(BaseOrmModel):
+    """ChatThread with last message DTO."""
+
+    id: UUID
+    created_at: datetime
+    buyer_id: UUID
+    seller_id: UUID
+    last_message: str | None = None
+    last_message_time: datetime | None = None
+    unread_count: int = 0
