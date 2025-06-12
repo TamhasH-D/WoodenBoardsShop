@@ -131,3 +131,29 @@
     }
   }
   ```
+
+### Получение покупателя по Keycloak UUID
+
+- **Метод:** GET
+- **Путь:** `/buyers/by-keycloak/{keycloak_uuid}`
+- **Описание:** Возвращает информацию о покупателе по его Keycloak UUID.
+
+- **Параметры пути:**
+  - `keycloak_uuid`: UUID - Уникальный идентификатор Keycloak покупателя.
+
+- **Формат выходных данных (DataResponse[BuyerDTO]):**
+  ```json
+  {
+    "data": {
+      "id": "UUID",
+      "keycloak_uuid": "UUID",
+      "is_online": "boolean",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    }
+  }
+  ```
+
+- **Возможные ошибки:**
+  - `404 Not Found`: Покупатель с указанным keycloak_uuid не найден
+  - `422 Unprocessable Entity`: Неверный формат UUID
