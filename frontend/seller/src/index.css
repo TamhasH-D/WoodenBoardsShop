@@ -98,6 +98,94 @@ body {
   list-style: none;
 }
 
+/* Mobile Navigation */
+.desktop-nav {
+  display: flex;
+}
+
+.mobile-menu-button {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-2);
+  border-radius: var(--border-radius);
+  transition: background-color 0.2s;
+}
+
+.mobile-menu-button:hover {
+  background-color: var(--color-bg-light);
+}
+
+.hamburger {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background-color: var(--color-text);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.hamburger::before,
+.hamburger::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 2px;
+  background-color: var(--color-text);
+  transition: all 0.3s ease;
+}
+
+.hamburger::before {
+  top: -8px;
+}
+
+.hamburger::after {
+  top: 8px;
+}
+
+.hamburger.open {
+  background-color: transparent;
+}
+
+.hamburger.open::before {
+  transform: rotate(45deg);
+  top: 0;
+}
+
+.hamburger.open::after {
+  transform: rotate(-45deg);
+  top: 0;
+}
+
+.mobile-nav-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.mobile-nav {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 280px;
+  background-color: var(--color-bg);
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.1);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  list-style: none;
+  transform: translateX(0);
+  transition: transform 0.3s ease;
+}
+
 .nav-link {
   color: var(--color-text-light);
   text-decoration: none;
@@ -374,9 +462,25 @@ textarea.form-input {
     padding: 0 var(--space-3);
   }
 
-  .nav-links {
-    flex-direction: column;
-    gap: var(--space-2);
+  /* Mobile Navigation */
+  .desktop-nav {
+    display: none;
+  }
+
+  .mobile-menu-button {
+    display: block;
+  }
+
+  .mobile-nav-overlay {
+    display: block;
+  }
+
+  .nav {
+    position: relative;
+  }
+
+  .nav-brand {
+    font-size: var(--font-size-lg);
   }
 
   .page-title {
@@ -394,11 +498,108 @@ textarea.form-input {
 
   .table {
     font-size: var(--font-size-xs);
+    overflow-x: auto;
+    display: block;
+    white-space: nowrap;
   }
 
   .table th,
   .table td {
     padding: var(--space-2);
+    min-width: 100px;
+  }
+
+  /* Board Analyzer Mobile Styles */
+  .board-analyzer {
+    padding: var(--space-4);
+  }
+
+  .analyzer-actions {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .analyzer-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .dimensions-input {
+    margin: var(--space-3) 0;
+  }
+
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  /* Mobile-specific improvements */
+  .page-header {
+    margin-bottom: var(--space-6);
+    text-align: center;
+  }
+
+  .page-description {
+    font-size: var(--font-size-base);
+  }
+
+  /* Button improvements for mobile */
+  .btn {
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--font-size-base);
+    min-height: 44px; /* Touch-friendly size */
+  }
+
+  /* Form improvements for mobile */
+  .form-input {
+    padding: var(--space-4);
+    font-size: var(--font-size-base);
+    min-height: 44px;
+  }
+
+  /* Card improvements for mobile */
+  .card {
+    margin-bottom: var(--space-4);
+    border-radius: var(--space-3);
+  }
+
+  .card-title {
+    font-size: var(--font-size-base);
+  }
+}
+
+/* Extra small devices (phones in portrait) */
+@media (max-width: 480px) {
+  .container {
+    padding: 0 var(--space-2);
+  }
+
+  .header {
+    padding: var(--space-3) 0;
+  }
+
+  .main {
+    padding: var(--space-6) 0;
+  }
+
+  .page-title {
+    font-size: var(--font-size-xl);
+  }
+
+  .mobile-nav {
+    width: 100vw;
+    padding: var(--space-4);
+  }
+
+  /* Board analyzer extra small screens */
+  .board-analyzer {
+    padding: var(--space-3);
+    margin: var(--space-3) 0;
+  }
+
+  .analyzer-actions .btn {
+    padding: var(--space-3);
+    font-size: var(--font-size-sm);
   }
 }
 
