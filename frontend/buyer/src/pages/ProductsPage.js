@@ -4,6 +4,7 @@ import { useCart } from '../contexts/CartContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { BUYER_TEXTS, formatCurrencyRu } from '../utils/localization';
 import { apiService } from '../services/api';
+import StartChatButton from '../components/chat/StartChatButton';
 
 /**
  * Премиум страница каталога товаров
@@ -360,13 +361,24 @@ const ProductCard = ({ product, onAddToCart, isInCart }) => {
             </div>
           </div>
 
-          <button
-            onClick={() => onAddToCart(product)}
-            disabled={isInCart}
-            className={`btn btn-small ${isInCart ? 'btn-ghost' : 'btn-primary'}`}
-          >
-            {isInCart ? 'В корзине' : 'В корзину'}
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <button
+              onClick={() => onAddToCart(product)}
+              disabled={isInCart}
+              className={`btn btn-small ${isInCart ? 'btn-ghost' : 'btn-primary'}`}
+            >
+              {isInCart ? 'В корзине' : 'В корзину'}
+            </button>
+
+            {product.seller_id && (
+              <StartChatButton
+                sellerId={product.seller_id}
+                sellerName={`Продавец товара "${product.title || product.neme || 'Товар'}"`}
+                size="small"
+                className="btn btn-secondary btn-small"
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

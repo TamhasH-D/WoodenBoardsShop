@@ -1,6 +1,9 @@
 import React, { useEffect } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { BUYER_TEXTS } from '../utils/localization';
+import Chats from '../components/Chats';
+import ChatWindow from '../components/chat/ChatWindow';
 
 const ChatsPage = () => {
   const { setPageTitle } = useApp();
@@ -10,17 +13,14 @@ const ChatsPage = () => {
   }, [setPageTitle]);
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1 className="page-title">{BUYER_TEXTS.CHATS}</h1>
-        <p className="page-description">
-          Общение с продавцами
-        </p>
-      </div>
-      
-      <div className="card">
-        <p>Система чатов в разработке...</p>
-      </div>
+    <div style={{
+      backgroundColor: '#FAF7F0',
+      minHeight: 'calc(100vh - 64px)'
+    }}>
+      <Routes>
+        <Route path="/" element={<Chats />} />
+        <Route path="/:threadId" element={<ChatWindow />} />
+      </Routes>
     </div>
   );
 };

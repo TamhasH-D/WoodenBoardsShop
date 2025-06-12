@@ -238,7 +238,9 @@ export const BUYER_TEXTS = {
   // Additional UI Elements
   DELIVERY_AVAILABLE: 'Доставка доступна',
   PICKUP_ONLY: 'Только самовывоз',
-  FAILED_CONTACT_SELLER: 'Не удалось связаться с продавцом. Попробуйте снова.'
+  FAILED_CONTACT_SELLER: 'Не удалось связаться с продавцом. Попробуйте снова.',
+  START_CHAT: 'Написать продавцу',
+  CHAT_WITH_SELLER: 'Чат с продавцом'
 };
 
 // Date formatting for Russian locale
