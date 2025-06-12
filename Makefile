@@ -99,3 +99,18 @@ clean-all: down ## Clean all Docker resources including networks
 .PHONY: dev
 dev: backend-up ## Quick start for development (backend only)
 	@echo "🎯 Backend ready at http://localhost:$(BACKEND_PORT)/docs"
+
+# ============================================================================
+# 📊 DATA GENERATION
+# ============================================================================
+
+.PHONY: add-data
+add-data: ## Generate synthetic data for database
+	@echo "🚀 Generating synthetic data..."
+	cd data-generator && python -m pip install -r requirements.txt --quiet
+	cd data-generator && python generate_data.py
+
+.PHONY: rm-data
+rm-data: ## Remove all synthetic data from database
+	@echo "🗑️ Removing synthetic data..."
+	cd data-generator && python remove_data.py
