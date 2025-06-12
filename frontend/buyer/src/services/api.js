@@ -387,21 +387,18 @@ export const apiService = {
       // First ensure the buyer exists
       await this.ensureBuyerExists(buyerId);
 
-      // Backend doesn't support buyer_id filtering, so we'll get all threads and filter client-side
-      const response = await api.get(`/api/v1/chat-threads?offset=0&limit=20`);
-      const allThreads = response.data.data || response.data;
+      // Use the dedicated backend endpoint for buyer chats
+      const response = await api.get(`/api/v1/chat-threads/by-buyer/${buyerId}`);
+      const threads = response.data.data || response.data || [];
 
-      // Filter threads by buyer_id client-side
-      const buyerThreads = allThreads.filter(thread => thread.buyer_id === buyerId);
-
-      // Implement client-side pagination
+      // Implement client-side pagination if needed
       const startIndex = page * size;
       const endIndex = startIndex + size;
-      const paginatedData = buyerThreads.slice(startIndex, endIndex);
+      const paginatedData = threads.slice(startIndex, endIndex);
 
       return {
         data: paginatedData,
-        total: buyerThreads.length,
+        total: threads.length,
         offset: startIndex,
         limit: size
       };
@@ -424,28 +421,49 @@ export const apiService = {
     return response.data;
   },
 
+  async startChatWithSeller(buyerId, sellerId) {
+    try {
+      const response = await api.post('/api/v1/chat-threads/start-with-seller', {
+        buyer_id: buyerId,
+        seller_id: sellerId
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to start chat with seller:', error);
+      throw error;
+    }
+  },
+
   async getChatMessages(threadId, page = 0, size = 20) {
-    // Backend doesn't support thread_id filtering, so we'll get all messages and filter client-side
-    const response = await api.get(`/api/v1/chat-messages?offset=0&limit=20`);
-    const allMessages = response.data.data || response.data;
+    try {
+      // Use the dedicated backend endpoint for thread messages
+      const response = await api.get(`/api/v1/chat-messages/by-thread/${threadId}?limit=${size}`);
+      const messages = response.data.data || response.data || [];
 
-    // Filter messages by thread_id client-side
-    const threadMessages = allMessages.filter(message => message.thread_id === threadId);
+      // Sort by created_at (oldest first for chat display)
+      messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
-    // Sort by created_at (newest first)
-    threadMessages.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      // Implement client-side pagination if needed
+      const startIndex = page * size;
+      const endIndex = startIndex + size;
+      const paginatedData = messages.slice(startIndex, endIndex);
 
-    // Implement client-side pagination
-    const startIndex = page * size;
-    const endIndex = startIndex + size;
-    const paginatedData = threadMessages.slice(startIndex, endIndex);
-
-    return {
-      data: paginatedData,
-      total: threadMessages.length,
-      offset: startIndex,
-      limit: size
-    };
+      return {
+        data: paginatedData,
+        total: messages.length,
+        offset: startIndex,
+        limit: size
+      };
+    } catch (error) {
+      console.error('Failed to get chat messages:', error);
+      // Return empty result on error
+      return {
+        data: [],
+        total: 0,
+        offset: page * size,
+        limit: size
+      };
+    }
   },
 
   async sendMessage(messageData) {
