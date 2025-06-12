@@ -1,6 +1,7 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter
+from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 
 from backend.daos import GetDAOs
 from backend.dtos import (
@@ -10,6 +11,7 @@ from backend.dtos import (
     Pagination,
 )
 from backend.dtos.image_dtos import ImageDTO, ImageInputDTO, ImageUpdateDTO
+from backend.services.image_service import image_service
 
 router = APIRouter(prefix="/images")
 
@@ -19,9 +21,56 @@ async def create_image(
     input_dto: ImageInputDTO,
     daos: GetDAOs,
 ) -> DataResponse[ImageDTO]:
-    """Create a new Image."""
+    """Create a new Image record (metadata only)."""
     created_obj = await daos.image.create(input_dto)
     return DataResponse(data=ImageDTO.model_validate(created_obj))
+
+
+@router.post("/upload", status_code=201)
+async def upload_image(
+    product_id: UUID,
+    daos: GetDAOs,
+    image: UploadFile = File(...),
+) -> DataResponse[ImageDTO]:
+    """Upload image file and create database record."""
+    # Validate uploaded file
+    image_service.validate_image_file(image)
+
+    # Generate image ID
+    image_id = uuid4()
+
+    try:
+        # Save file to filesystem
+        image_path = await image_service.save_image_file(
+            image=image,
+            product_id=product_id,
+            image_id=image_id,
+        )
+
+        # Create database record
+        image_dto = ImageInputDTO(
+            id=image_id,
+            image_path=image_path,
+            product_id=product_id,
+        )
+
+        created_obj = await daos.image.create(image_dto)
+        return DataResponse(data=ImageDTO.model_validate(created_obj))
+
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        # Clean up file if database operation fails
+        try:
+            image_service.delete_image_file(image_path)
+        except Exception:
+            pass  # Ignore cleanup errors
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка создания изображения: {e!s}",
+        ) from e
 
 
 @router.patch("/{image_id}")
@@ -40,7 +89,16 @@ async def delete_image(
     image_id: UUID,
     daos: GetDAOs,
 ) -> EmptyResponse:
-    """Delete a Image by id."""
+    """Delete a Image by id and remove file from filesystem."""
+    # Get image record first to get file path
+    image = await daos.image.filter_first(id=image_id)
+    if not image:
+        raise HTTPException(status_code=404, detail="Изображение не найдено")
+
+    # Delete file from filesystem
+    image_service.delete_image_file(image.image_path)
+
+    # Delete record from database
     await daos.image.delete(id=image_id)
     return EmptyResponse()
 
@@ -62,6 +120,30 @@ async def get_image(
     image_id: UUID,
     daos: GetDAOs,
 ) -> DataResponse[ImageDTO]:
-    """Get a Image by id."""
+    """Get a Image metadata by id."""
     image = await daos.image.filter_first(id=image_id)
+    if not image:
+        raise HTTPException(status_code=404, detail="Изображение не найдено")
     return DataResponse(data=ImageDTO.model_validate(image))
+
+
+@router.get("/{image_id}/file")
+async def get_image_file(
+    image_id: UUID,
+    daos: GetDAOs,
+) -> FileResponse:
+    """Get image file by id."""
+    # Get image record to get file path
+    image = await daos.image.filter_first(id=image_id)
+    if not image:
+        raise HTTPException(status_code=404, detail="Изображение не найдено")
+
+    # Get file path and validate it exists
+    file_path = image_service.get_image_file_path(image.image_path)
+
+    # Return file response
+    return FileResponse(
+        path=str(file_path),
+        media_type="image/jpeg",  # Default, could be improved to detect actual type
+        filename=f"image_{image_id}.jpg",
+    )

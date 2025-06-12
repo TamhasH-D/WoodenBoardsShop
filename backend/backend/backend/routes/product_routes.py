@@ -17,7 +17,13 @@ from backend.dtos import (
 from backend.dtos.image_dtos import ImageInputDTO
 from backend.dtos.product_dtos import ProductDTO, ProductInputDTO, ProductUpdateDTO
 from backend.dtos.product_with_analysis_dtos import ProductWithAnalysisResponseDTO
+from backend.dtos.product_with_image_dtos import (
+    ProductWithImageInputDTO,
+    ProductWithImageUpdateDTO,
+    ProductWithImageResponseDTO,
+)
 from backend.dtos.wooden_board_dtos import WoodenBoardInputDTO
+from backend.services.product_image_service import product_image_service
 from backend.settings import settings
 
 router = APIRouter(prefix="/products")
@@ -290,3 +296,109 @@ async def create_product_with_analysis(
             message="Товар успешно создан с анализом изображения",
         )
     )
+
+
+@router.post("/with-image", status_code=201)
+async def create_product_with_image(
+    daos: GetDAOs,
+    keycloak_id: Annotated[UUID, Form()] = ...,
+    title: Annotated[str, Form()] = ...,
+    wood_type_id: Annotated[UUID, Form()] = ...,
+    board_height: Annotated[float, Form()] = ...,
+    board_length: Annotated[float, Form()] = ...,
+    volume: Annotated[float, Form()] = ...,
+    price: Annotated[float, Form()] = ...,
+    image: Annotated[UploadFile, File()] = ...,
+    description: Annotated[str | None, Form()] = None,
+    delivery_possible: Annotated[bool, Form()] = False,
+    pickup_location: Annotated[str | None, Form()] = None,
+) -> DataResponse[ProductWithImageResponseDTO]:
+    """
+    Create a new Product with image analysis using proper layered architecture.
+
+    This endpoint uses Pydantic DTOs and service layer for better structure.
+    """
+    # Create DTO from form data
+    product_data = ProductWithImageInputDTO(
+        keycloak_id=keycloak_id,
+        title=title,
+        description=description,
+        wood_type_id=wood_type_id,
+        board_height=board_height,
+        board_length=board_length,
+        volume=volume,
+        price=price,
+        delivery_possible=delivery_possible,
+        pickup_location=pickup_location,
+    )
+
+    # Use service layer
+    result = await product_image_service.create_product_with_image(
+        daos=daos,
+        product_data=product_data,
+        image=image,
+    )
+
+    return DataResponse(data=result)
+
+
+@router.patch("/{product_id}/with-image")
+async def update_product_with_image(
+    product_id: UUID,
+    daos: GetDAOs,
+    title: Annotated[str | None, Form()] = None,
+    description: Annotated[str | None, Form()] = None,
+    wood_type_id: Annotated[UUID | None, Form()] = None,
+    board_height: Annotated[float | None, Form()] = None,
+    board_length: Annotated[float | None, Form()] = None,
+    volume: Annotated[float | None, Form()] = None,
+    price: Annotated[float | None, Form()] = None,
+    delivery_possible: Annotated[bool | None, Form()] = None,
+    pickup_location: Annotated[str | None, Form()] = None,
+    image: Annotated[UploadFile | None, File()] = None,
+) -> DataResponse[ProductWithImageResponseDTO]:
+    """
+    Update an existing Product with optional image analysis.
+
+    This endpoint uses Pydantic DTOs and service layer for better structure.
+    """
+    # Create DTO from form data
+    product_data = ProductWithImageUpdateDTO(
+        title=title,
+        description=description,
+        wood_type_id=wood_type_id,
+        board_height=board_height,
+        board_length=board_length,
+        volume=volume,
+        price=price,
+        delivery_possible=delivery_possible,
+        pickup_location=pickup_location,
+    )
+
+    # Use service layer
+    result = await product_image_service.update_product_with_image(
+        daos=daos,
+        product_id=product_id,
+        product_data=product_data,
+        image=image,
+    )
+
+    return DataResponse(data=result)
+
+
+@router.delete("/{product_id}/with-images")
+async def delete_product_with_images(
+    product_id: UUID,
+    daos: GetDAOs,
+) -> EmptyResponse:
+    """
+    Delete Product and all associated images and wooden boards.
+
+    This endpoint uses service layer for proper cleanup.
+    """
+    await product_image_service.delete_product_with_images(
+        daos=daos,
+        product_id=product_id,
+    )
+
+    return EmptyResponse()

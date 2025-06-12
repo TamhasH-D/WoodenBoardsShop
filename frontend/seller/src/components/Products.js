@@ -3,7 +3,7 @@ import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS, formatDateRu } from '../utils/localization';
 import { testWoodenBoardsConnection, testImageAnalysisEndpoint, getWoodenBoardsConfig } from '../utils/testWoodenBoardsConnection';
-import BoardImageAnalyzer from './BoardImageAnalyzer';
+import CompactBoardAnalyzer from './CompactBoardAnalyzer';
 import StepByStepProductForm from './StepByStepProductForm';
 import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
 import { MOCK_IDS } from '../utils/constants';
@@ -41,6 +41,12 @@ function Products() {
   const [boardLength, setBoardLength] = useState('1000'); // mm
   const [volumeCalculationResult, setVolumeCalculationResult] = useState(null);
 
+  // Edit image state
+  const [editSelectedImage, setEditSelectedImage] = useState(null);
+  const [editBoardHeight, setEditBoardHeight] = useState('50');
+  const [editBoardLength, setEditBoardLength] = useState('1000');
+  const [editVolumeCalculationResult, setEditVolumeCalculationResult] = useState(null);
+
   // Error handling
   const { error: toastError, showError, clearError } = useErrorHandler();
 
@@ -51,12 +57,14 @@ function Products() {
 
   const { data, loading, error, refetch } = useApi(productsApiFunction, [page]);
   const { data: woodTypes, loading: woodTypesLoading, error: woodTypesError } = useApi(woodTypesApiFunction, []);
-  const { data: woodTypePrices } = useApi(woodTypePricesApiFunction, []);
+  const { data: woodTypePrices, refetch: refetchWoodTypePrices } = useApi(woodTypePricesApiFunction, []);
   const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
 
   // Listen for auto-refresh events
   useEffect(() => {
-    const handleAutoRefresh = () => {
+    const handleAutoRefresh = async () => {
+      // Принудительно очищаем кэш при автообновлении
+      await apiService.clearCache();
       refetch();
     };
 
@@ -125,48 +133,32 @@ function Products() {
       return;
     }
 
+    // Require image analysis for volume calculation
+    if (!selectedImage || !volumeCalculationResult) {
+      alert('Пожалуйста, загрузите изображение для автоматического расчета объема товара');
+      return;
+    }
+
     try {
-      // Check if we have image and volume calculation
-      if (selectedImage && volumeCalculationResult) {
-        // Use the new atomic transaction endpoint with image analysis
-        const boardHeightMeters = parseFloat(boardHeight) / 1000; // Convert mm to meters
-        const boardLengthMeters = parseFloat(boardLength) / 1000; // Convert mm to meters
+      const boardHeightMeters = parseFloat(boardHeight) / 1000; // Convert mm to meters
+      const boardLengthMeters = parseFloat(boardLength) / 1000; // Convert mm to meters
 
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Creating product with image analysis...');
-        }
-        const result = await mutate(() => apiService.createProductWithImage({
-          title: newProduct.title.trim(),
-          description: newProduct.description?.trim() || null,
-          price: price,
-          delivery_possible: newProduct.delivery_possible,
-          pickup_location: newProduct.pickup_location?.trim() || null,
-          seller_id: MOCK_SELLER_KEYCLOAK_ID,
-          wood_type_id: newProduct.wood_type_id
-        }, selectedImage, boardHeightMeters, boardLengthMeters));
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Creating product with image analysis...');
+      }
 
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Product created with image analysis:', result);
-        }
-      } else {
-        // Fallback to traditional product creation
-        const volume = parseFloat(newProduct.volume);
+      const result = await mutate(() => apiService.createProductWithImage({
+        title: newProduct.title.trim(),
+        description: newProduct.description?.trim() || null,
+        price: price,
+        delivery_possible: newProduct.delivery_possible,
+        pickup_location: newProduct.pickup_location?.trim() || null,
+        seller_id: MOCK_SELLER_KEYCLOAK_ID,
+        wood_type_id: newProduct.wood_type_id
+      }, selectedImage, boardHeightMeters, boardLengthMeters));
 
-        if (isNaN(volume) || volume <= 0) {
-          alert(SELLER_TEXTS.ENTER_VALID_VOLUME);
-          return;
-        }
-
-        await mutate(() => apiService.createProduct({
-          title: newProduct.title.trim(),
-          description: newProduct.description?.trim() || null,
-          volume: volume,
-          price: price,
-          delivery_possible: newProduct.delivery_possible,
-          pickup_location: newProduct.pickup_location?.trim() || null,
-          seller_id: MOCK_SELLER_KEYCLOAK_ID,
-          wood_type_id: newProduct.wood_type_id
-        }));
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Product created with image analysis:', result);
       }
 
       // Reset form
@@ -184,7 +176,13 @@ function Products() {
       setBoardHeight('50');
       setBoardLength('1000');
       setShowAddForm(false);
+
+      // Принудительно очищаем кэш и обновляем данные
+      await apiService.clearCache();
       refetch();
+
+      // Также обновляем цены на древесину для следующего создания товара
+      refetchWoodTypePrices();
     } catch (err) {
       if (process.env.NODE_ENV === 'development') {
         console.error('Failed to add product:', err);
@@ -196,6 +194,9 @@ function Products() {
     if (window.confirm(SELLER_TEXTS.CONFIRM_DELETE_PRODUCT)) {
       try {
         await mutate(() => apiService.deleteProduct(productId));
+
+        // Принудительно очищаем кэш и обновляем данные
+        await apiService.clearCache();
         refetch();
       } catch (err) {
         if (process.env.NODE_ENV === 'development') {
@@ -207,15 +208,27 @@ function Products() {
 
   const handleEditProduct = (product) => {
     setEditingProduct(product.id);
+
+    // Get suggested price for the wood type
+    const currentPrice = getCurrentPrice(product.wood_type_id);
+    const suggestedPrice = currentPrice ? (currentPrice.price_per_m3 * product.volume).toFixed(2) : product.price?.toString() || '';
+
     setEditProduct({
       title: product.title || '',
       description: product.descrioption || product.description || '',
       volume: product.volume?.toString() || '',
-      price: product.price?.toString() || '',
+      price: suggestedPrice,
       delivery_possible: product.delivery_possible || false,
       pickup_location: product.pickup_location || '',
       wood_type_id: product.wood_type_id || ''
     });
+
+    // Clear edit image state
+    setEditSelectedImage(null);
+    setEditVolumeCalculationResult(null);
+    setEditBoardHeight('50');
+    setEditBoardLength('1000');
+
     setShowAddForm(false); // Close add form if open
   };
 
@@ -230,6 +243,12 @@ function Products() {
       pickup_location: '',
       wood_type_id: ''
     });
+
+    // Clear edit image state
+    setEditSelectedImage(null);
+    setEditVolumeCalculationResult(null);
+    setEditBoardHeight('50');
+    setEditBoardLength('1000');
   };
 
   const handleUpdateProduct = async (e) => {
@@ -246,13 +265,7 @@ function Products() {
       return;
     }
 
-    const volume = parseFloat(editProduct.volume);
     const price = parseFloat(editProduct.price);
-
-    if (isNaN(volume) || volume <= 0) {
-      alert(SELLER_TEXTS.ENTER_VALID_VOLUME);
-      return;
-    }
 
     if (isNaN(price) || price <= 0) {
       alert(SELLER_TEXTS.ENTER_VALID_PRICE);
@@ -260,17 +273,44 @@ function Products() {
     }
 
     try {
-      await mutate(() => apiService.updateProduct(editingProduct, {
-        title: editProduct.title.trim(),
-        description: editProduct.description?.trim() || null,
-        volume: volume,
-        price: price,
-        delivery_possible: editProduct.delivery_possible,
-        pickup_location: editProduct.pickup_location?.trim() || null,
-        wood_type_id: editProduct.wood_type_id
-      }));
+      // Check if we have new image for volume recalculation
+      if (editSelectedImage && editVolumeCalculationResult) {
+        // Update product with new image analysis
+        const boardHeightMeters = parseFloat(editBoardHeight) / 1000;
+        const boardLengthMeters = parseFloat(editBoardLength) / 1000;
+
+        await mutate(() => apiService.updateProductWithImage(editingProduct, {
+          title: editProduct.title.trim(),
+          description: editProduct.description?.trim() || null,
+          price: price,
+          delivery_possible: editProduct.delivery_possible,
+          pickup_location: editProduct.pickup_location?.trim() || null,
+          wood_type_id: editProduct.wood_type_id
+        }, editSelectedImage, boardHeightMeters, boardLengthMeters));
+      } else {
+        // Update product without changing image/volume
+        const volume = parseFloat(editProduct.volume);
+
+        if (isNaN(volume) || volume <= 0) {
+          alert('Объем товара должен быть больше 0');
+          return;
+        }
+
+        await mutate(() => apiService.updateProduct(editingProduct, {
+          title: editProduct.title.trim(),
+          description: editProduct.description?.trim() || null,
+          volume: volume,
+          price: price,
+          delivery_possible: editProduct.delivery_possible,
+          pickup_location: editProduct.pickup_location?.trim() || null,
+          wood_type_id: editProduct.wood_type_id
+        }));
+      }
 
       handleCancelEdit();
+
+      // Принудительно очищаем кэш и обновляем данные
+      await apiService.clearCache();
       refetch();
     } catch (err) {
       if (process.env.NODE_ENV === 'development') {
@@ -292,13 +332,23 @@ function Products() {
         </div>
         <div className="flex gap-4">
           <button
-            onClick={() => setShowAddForm(!showAddForm)}
+            onClick={() => {
+              if (!showAddForm) {
+                // При открытии формы обновляем цены на древесину
+                refetchWoodTypePrices();
+              }
+              setShowAddForm(!showAddForm);
+            }}
             className={`btn ${showAddForm ? 'btn-secondary' : 'btn-primary'}`}
           >
             {showAddForm ? SELLER_TEXTS.CANCEL : SELLER_TEXTS.ADD_PRODUCT}
           </button>
           <button
-            onClick={refetch}
+            onClick={async () => {
+              // Принудительно очищаем кэш перед обновлением
+              await apiService.clearCache();
+              refetch();
+            }}
             className="btn btn-secondary"
             disabled={loading}
           >
@@ -342,8 +392,10 @@ function Products() {
       {showAddForm && (
         <div style={{ marginBottom: '2rem' }}>
           <StepByStepProductForm
-            onSuccess={() => {
+            onSuccess={async () => {
               setShowAddForm(false);
+              // Принудительно очищаем кэш и обновляем данные
+              await apiService.clearCache();
               refetch();
             }}
             onCancel={() => setShowAddForm(false)}
@@ -394,8 +446,8 @@ function Products() {
               </small>
             </div>
 
-            {/* Board Image Analyzer Component */}
-            <BoardImageAnalyzer
+            {/* Compact Board Analyzer Component */}
+            <CompactBoardAnalyzer
               onAnalysisComplete={(result) => {
                 setVolumeCalculationResult(result);
                 setSelectedImage(result.image);
@@ -418,30 +470,25 @@ function Products() {
 
             <div className="form-grid form-grid-2">
               <div className="form-group">
-                <label className="form-label">
-                  Volume (m³) {volumeCalculationResult ? '' : '*'}
-                </label>
+                <label className="form-label">Объем (м³)</label>
                 <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  max="1000"
+                  type="text"
                   className="form-input"
-                  value={volumeCalculationResult ? volumeCalculationResult.total_volume.toFixed(4) : newProduct.volume}
-                  onChange={(e) => setNewProduct({...newProduct, volume: e.target.value})}
-                  placeholder="0.00"
-                  required={!volumeCalculationResult}
-                  disabled={volumeCalculationResult}
+                  value={volumeCalculationResult
+                    ? `${volumeCalculationResult.total_volume.toFixed(4)} м³ (автоматически)`
+                    : 'Загрузите изображение для расчета объема'
+                  }
+                  disabled
                   style={{
-                    backgroundColor: volumeCalculationResult ? 'var(--color-bg-light)' : 'var(--color-bg)',
-                    borderColor: volumeCalculationResult ? 'var(--color-success)' : 'var(--color-border)',
-                    cursor: volumeCalculationResult ? 'not-allowed' : 'text'
+                    backgroundColor: 'var(--color-bg-light)',
+                    color: volumeCalculationResult ? 'var(--color-success)' : 'var(--color-text-light)',
+                    cursor: 'not-allowed'
                   }}
                 />
                 <small style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-xs)' }}>
                   {volumeCalculationResult
-                    ? '✅ Volume calculated automatically from image processing'
-                    : 'Total volume in cubic meters (can be calculated automatically with image upload)'}
+                    ? '✅ Объем рассчитан автоматически на основе анализа изображения'
+                    : 'Объем будет рассчитан автоматически после загрузки и анализа изображения'}
                 </small>
               </div>
               <div className="form-group">
@@ -634,18 +681,21 @@ function Products() {
 
             <div className="form-grid form-grid-2">
               <div className="form-group">
-                <label className="form-label">{SELLER_TEXTS.VOLUME} (м³) *</label>
+                <label className="form-label">{SELLER_TEXTS.VOLUME} (м³)</label>
                 <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  max="1000"
+                  type="text"
                   className="form-input"
-                  value={editProduct.volume}
-                  onChange={(e) => setEditProduct({...editProduct, volume: e.target.value})}
-                  placeholder="0.00"
-                  required
+                  value={`${parseFloat(editProduct.volume || 0).toFixed(4)} м³`}
+                  disabled
+                  style={{
+                    backgroundColor: 'var(--color-bg-light)',
+                    color: 'var(--color-text-light)',
+                    cursor: 'not-allowed'
+                  }}
                 />
+                <small style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-xs)' }}>
+                  Объем рассчитывается автоматически на основе анализа изображения
+                </small>
               </div>
               <div className="form-group">
                 <label className="form-label">{SELLER_TEXTS.PRICE} (₽) *</label>
@@ -680,7 +730,19 @@ function Products() {
                 <select
                   className="form-input"
                   value={editProduct.wood_type_id}
-                  onChange={(e) => setEditProduct({...editProduct, wood_type_id: e.target.value})}
+                  onChange={(e) => {
+                    const newWoodTypeId = e.target.value;
+                    const currentPrice = getCurrentPrice(newWoodTypeId);
+                    const suggestedPrice = currentPrice && editProduct.volume
+                      ? (currentPrice.price_per_m3 * parseFloat(editProduct.volume)).toFixed(2)
+                      : editProduct.price;
+
+                    setEditProduct({
+                      ...editProduct,
+                      wood_type_id: newWoodTypeId,
+                      price: suggestedPrice
+                    });
+                  }}
                   required
                   disabled={woodTypesError || !woodTypes?.data}
                 >
@@ -720,6 +782,37 @@ function Products() {
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Image Update Section */}
+            <div className="form-group">
+              <label className="form-label">Обновить изображение товара (опционально)</label>
+              <CompactBoardAnalyzer
+                onAnalysisComplete={(result) => {
+                  setEditVolumeCalculationResult(result);
+                  setEditSelectedImage(result.image);
+                  setEditBoardHeight(result.boardHeight.toString());
+                  setEditBoardLength(result.boardLength.toString());
+                  setEditProduct(prev => ({
+                    ...prev,
+                    volume: result.total_volume.toFixed(4)
+                  }));
+                }}
+                onImageSelect={(file) => {
+                  setEditSelectedImage(file);
+                  // Очищаем предыдущие результаты при выборе нового изображения
+                  setEditVolumeCalculationResult(null);
+                }}
+                disabled={mutating}
+                initialHeight={editBoardHeight}
+                initialLength={editBoardLength}
+              />
+              <small style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-xs)' }}>
+                {editVolumeCalculationResult
+                  ? '✅ Новое изображение загружено. Объем будет пересчитан при сохранении.'
+                  : 'Загрузите новое изображение, если хотите пересчитать объем товара'
+                }
+              </small>
             </div>
 
             <div className="form-group">

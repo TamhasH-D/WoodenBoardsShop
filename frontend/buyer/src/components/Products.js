@@ -1,9 +1,10 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { BUYER_TEXTS } from '../utils/localization';
 import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
 import { MOCK_IDS } from '../utils/constants';
+import ProductImage from './ui/ProductImage';
 
 // Use shared mock buyer ID
 const MOCK_BUYER_ID = MOCK_IDS.BUYER_ID;
@@ -43,11 +44,26 @@ function Products() {
 
   const { data, loading, error, refetch } = useApi(productsApiFunction, [page, isSearching, debouncedSearchQuery]);
 
-  // Separate API call for wood types (stable function, no dependencies)
+  // Separate API calls for reference data
   const woodTypesApiFunction = useMemo(() => () => apiService.getWoodTypes(), []);
   const { data: woodTypes } = useApi(woodTypesApiFunction, []);
 
+  const woodTypePricesApiFunction = useMemo(() => () => apiService.getWoodTypePrices(), []);
+  const { data: woodTypePrices } = useApi(woodTypePricesApiFunction, []);
+
   const { mutate, loading: contacting } = useApiMutation();
+
+  // Helper functions to get additional product information
+  const getWoodTypeName = useCallback((woodTypeId) => {
+    if (!woodTypes?.data) return 'Не указан';
+    const woodType = woodTypes.data.find(wt => wt.id === woodTypeId);
+    return woodType ? woodType.neme : 'Не указан';
+  }, [woodTypes]);
+
+  const getWoodTypePrice = useCallback((woodTypeId) => {
+    if (!woodTypePrices?.data) return null;
+    return woodTypePrices.data.find(p => p.wood_type_id === woodTypeId);
+  }, [woodTypePrices]);
 
   // Handle errors - только логируем в консоль, не показываем пользователю
   useEffect(() => {
@@ -149,60 +165,16 @@ function Products() {
             </div>
 
             {data.data && data.data.length > 0 ? (
-              <div className="grid grid-auto">
+              <div className="products-grid">
                 {data.data.map((product) => (
-                  <div key={product.id} className="product-card">
-                    <h4 className="product-title">
-                      {product.title || BUYER_TEXTS.UNTITLED_PRODUCT}
-                    </h4>
-
-                    {product.descrioption && (
-                      <p className="product-description">
-                        {product.descrioption}
-                      </p>
-                    )}
-
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="product-price">{product.price} {BUYER_TEXTS.RUBLES}</div>
-                      <div style={{ color: 'var(--color-text-light)' }}>{product.volume} {BUYER_TEXTS.CUBIC_METERS}</div>
-                    </div>
-
-                    <div className="text-center mb-4" style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-sm)' }}>
-                      {(product.price / product.volume).toFixed(2)} ₽ за м³
-                    </div>
-
-                    <div className="mb-4">
-                      <div className={`status ${product.delivery_possible ? 'status-success' : 'status-error'} mb-4`}>
-                        {product.delivery_possible ? BUYER_TEXTS.DELIVERY_AVAILABLE : BUYER_TEXTS.PICKUP_ONLY}
-                      </div>
-                      {product.pickup_location && (
-                        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-light)' }}>
-                          {BUYER_TEXTS.LOCATION}: {product.pickup_location}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mb-4" style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-light)' }}>
-                      <div>{BUYER_TEXTS.WOOD_TYPE}: {product.wood_type_id?.substring(0, 8)}...</div>
-                      <div>{BUYER_TEXTS.SELLER}: {product.seller_id?.substring(0, 8)}...</div>
-                      <div>{BUYER_TEXTS.LISTED}: {new Date(product.created_at).toLocaleDateString('ru-RU')}</div>
-                    </div>
-
-                    <div className="flex gap-4">
-                      <button
-                        className="btn btn-primary"
-                        style={{ flex: 1 }}
-                        onClick={() => handleContactSeller(product.seller_id)}
-                        disabled={contacting}
-                      >
-                        {contacting ? BUYER_TEXTS.CONTACTING : BUYER_TEXTS.CONTACT_SELLER}
-                      </button>
-                      <button className="btn btn-secondary">
-                        {BUYER_TEXTS.DETAILS}
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    woodTypeName={getWoodTypeName(product.wood_type_id)}
+                    woodTypePrice={getWoodTypePrice(product.wood_type_id)}
+                    onContact={handleContactSeller}
+                    contacting={contacting}
+                  />
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: '3rem' }}>
@@ -266,5 +238,111 @@ function Products() {
     </div>
   );
 }
+
+// Компонент карточки товара
+const ProductCard = ({ product, woodTypeName, woodTypePrice, onContact, contacting }) => {
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(price);
+  };
+
+  const formatVolume = (volume) => {
+    return parseFloat(volume).toFixed(4);
+  };
+
+  const pricePerCubicMeter = product.price / product.volume;
+
+  return (
+    <div className="product-card">
+      {/* Изображение товара через новый API */}
+      <div className="product-image">
+        <ProductImage
+          productId={product.id}
+          alt={product.title || BUYER_TEXTS.UNTITLED_PRODUCT}
+          className="product-image-full"
+          placeholder="🌲"
+          showPlaceholder={true}
+        />
+      </div>
+
+      {/* Информация о товаре */}
+      <div className="product-info">
+        <h3 className="product-title">
+          {product.title || BUYER_TEXTS.UNTITLED_PRODUCT}
+        </h3>
+
+        {product.descrioption && (
+          <p className="product-description">
+            {product.descrioption.length > 100
+              ? `${product.descrioption.substring(0, 100)}...`
+              : product.descrioption
+            }
+          </p>
+        )}
+
+        {/* Основная информация */}
+        <div className="product-details">
+          <div className="product-price-section">
+            <div className="product-price">{formatPrice(product.price)}</div>
+            <div className="product-volume">{formatVolume(product.volume)} м³</div>
+          </div>
+
+          <div className="price-per-cubic">
+            {formatPrice(pricePerCubicMeter)} за м³
+            {woodTypePrice && (
+              <span className="price-comparison">
+                (рын. цена: {formatPrice(woodTypePrice.price_per_m3)})
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Тип древесины */}
+        <div className="wood-type-info">
+          <span className="wood-type-label">Древесина:</span>
+          <span className="wood-type-name">{woodTypeName}</span>
+        </div>
+
+        {/* Доставка */}
+        <div className="delivery-info">
+          {product.delivery_possible ? (
+            <div className="delivery-available">
+              ✅ Доставка возможна
+            </div>
+          ) : (
+            <div className="pickup-only">
+              📍 Только самовывоз
+              {product.pickup_location && (
+                <div className="pickup-location">
+                  {product.pickup_location}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Кнопки действий */}
+        <div className="product-actions">
+          <button
+            className="btn btn-primary"
+            onClick={() => onContact(product.seller_id)}
+            disabled={contacting}
+          >
+            {contacting ? 'Связываемся...' : 'Связаться с продавцом'}
+          </button>
+        </div>
+
+        {/* Дата создания */}
+        <div className="product-meta">
+          Размещено: {new Date(product.created_at).toLocaleDateString('ru-RU')}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default Products;

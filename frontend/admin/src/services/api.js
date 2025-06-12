@@ -820,6 +820,71 @@ export const apiService = {
     }
   },
 
+  // Demo/Redis operations for testing and debugging
+  async setRedisValue(key, value) {
+    const response = await api.post('/api/v1/demo/set-redis', null, {
+      params: { key, value }
+    });
+    return response.data;
+  },
+
+  async getRedisValue(key) {
+    const response = await api.get('/api/v1/demo/get-redis', {
+      params: { key }
+    });
+    return response.data;
+  },
+
+  // Board Volume Calculator - special endpoint for board analysis
+  async calculateBoardVolume(imageFile, boardHeight = 0.0, boardLength = 0.0) {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+
+    const response = await api.post(
+      `/api/v1/wooden-boards/calculate-volume?board_height=${boardHeight}&board_length=${boardLength}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  },
+
+  // Enhanced health check with detailed system information
+  async getDetailedHealthCheck() {
+    try {
+      const [healthCheck, systemStats] = await Promise.all([
+        this.healthCheck(),
+        this.getSystemStats()
+      ]);
+
+      return {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        backend: healthCheck,
+        system: systemStats,
+        services: {
+          database: 'connected',
+          redis: 'connected',
+          api: 'operational'
+        }
+      };
+    } catch (error) {
+      return {
+        status: 'unhealthy',
+        timestamp: new Date().toISOString(),
+        error: error.message,
+        services: {
+          database: 'unknown',
+          redis: 'unknown',
+          api: 'error'
+        }
+      };
+    }
+  },
+
   // Data export functionality - exports complete datasets
   async exportData(entityType, format = 'json') {
     let data;
