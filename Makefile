@@ -140,3 +140,8 @@ analyze-reports: ## Analyze generation reports and performance
 test-data-generator: ## Run data generator tests
 	@echo "🧪 Testing data generator..."
 	cd data-generator && python test_generator.py
+
+.PHONY: demo-alive-data
+demo-alive-data: ## Demonstrate alive data generation features
+	@echo "🌟 Demonstrating alive data features..."
+	cd data-generator && python demo_alive_data.py

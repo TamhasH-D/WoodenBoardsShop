@@ -21,7 +21,8 @@ from data_templates import (
     WOOD_TYPES, WOOD_PRICE_RANGES, PRODUCT_TITLE_TEMPLATES,
     PRODUCT_DESCRIPTIONS, PICKUP_CITIES, STREET_TYPES, STREET_NAMES,
     CHAT_MESSAGES_BUYER, CHAT_MESSAGES_SELLER, BOARD_DIMENSIONS, BOARD_LENGTHS,
-    REGIONAL_WOOD_PREFERENCES
+    REGIONAL_WOOD_PREFERENCES, PRODUCT_STORIES, WOOD_EMOTIONS,
+    SEASONAL_MOODS, SELLER_PERSONALITIES
 )
 
 # Загружаем переменные окружения
@@ -127,6 +128,42 @@ class DataGenerator:
 
         return profiles.get(self.profile, profiles['large'])
 
+    def generate_realistic_timestamp(self, days_back_max=90):
+        """Генерирует реалистичную временную метку с учетом рабочих часов"""
+        # Выбираем случайный день за последние N дней
+        days_ago = random.randint(1, days_back_max)
+        base_date = datetime.now() - timedelta(days=days_ago)
+
+        # Рабочие часы: 8:00-20:00 с большей вероятностью
+        if random.random() < 0.8:  # 80% сообщений в рабочее время
+            hour = random.randint(8, 20)
+        else:  # 20% в нерабочее время
+            hour = random.choice(list(range(0, 8)) + list(range(21, 24)))
+
+        minute = random.randint(0, 59)
+        second = random.randint(0, 59)
+
+        return base_date.replace(hour=hour, minute=minute, second=second)
+
+    def add_seasonal_price_variation(self, base_price, wood_type):
+        """Добавляет сезонные колебания цен"""
+        current_month = datetime.now().month
+
+        # Зимние месяцы (декабрь-февраль) - цены выше
+        if current_month in [12, 1, 2]:
+            variation = random.uniform(1.05, 1.15)  # +5-15%
+        # Весенние месяцы (март-май) - пик строительного сезона
+        elif current_month in [3, 4, 5]:
+            variation = random.uniform(1.10, 1.25)  # +10-25%
+        # Летние месяцы (июнь-август) - высокий спрос
+        elif current_month in [6, 7, 8]:
+            variation = random.uniform(1.08, 1.20)  # +8-20%
+        # Осенние месяцы (сентябрь-ноябрь) - снижение спроса
+        else:
+            variation = random.uniform(0.90, 1.05)  # -10% до +5%
+
+        return base_price * variation
+
     def save_progress(self):
         """Сохраняет прогресс в JSON файл"""
         with open('generated_uuids.json', 'w', encoding='utf-8') as f:
@@ -231,9 +268,13 @@ class DataGenerator:
                 days_ago = random.randint(1, 730)
                 created_date = datetime.now() - timedelta(days=days_ago)
                 
+                # Генерируем базовую цену с сезонными колебаниями
+                base_price = random.uniform(*price_range)
+                final_price = self.add_seasonal_price_variation(base_price, wood_name)
+
                 payload = {
                     'id': price_id,
-                    'price_per_m3': round(random.uniform(*price_range), 2),
+                    'price_per_m3': round(final_price, 2),
                     'wood_type_id': wood_type['id']
                 }
                 
@@ -293,13 +334,31 @@ class DataGenerator:
         print(f"✅ Создано {len(self.generated_data['sellers'])} продавцов")
 
     def generate_pickup_address(self):
-        """Генерирует адрес самовывоза"""
+        """Генерирует живой адрес самовывоза с деталями"""
         city = random.choice(PICKUP_CITIES)
         street_type = random.choice(STREET_TYPES)
         street_name = random.choice(STREET_NAMES)
         house_num = random.randint(1, 200)
 
-        return f"г. {city}, {street_type} {street_name}, д. {house_num}"
+        base_address = f"г. {city}, {street_type} {street_name}, д. {house_num}"
+
+        # Добавляем живые детали с вероятностью 30%
+        if random.random() < 0.3:
+            details = [
+                " (склад за зданием)",
+                " (вход со двора)",
+                " (звонить заранее)",
+                " (работаем до 18:00)",
+                " (парковка есть)",
+                " (рядом с рынком)",
+                " (напротив школы)",
+                " (красное здание)",
+                " (большие ворота)",
+                " (семейный бизнес)"
+            ]
+            base_address += random.choice(details)
+
+        return base_address
 
     def generate_products(self):
         """Генерирует товары"""
@@ -327,7 +386,7 @@ class DataGenerator:
             price_per_m3 = random.uniform(*price_range)
             total_price = round(volume * price_per_m3, 2)
 
-            # Генерируем название товара
+            # Генерируем живое название товара
             title_template = random.choice(PRODUCT_TITLE_TEMPLATES)
             title = title_template.format(
                 wood_type=wood_name,
@@ -336,9 +395,40 @@ class DataGenerator:
                 length=length
             )
 
-            # Генерируем описание
+            # Добавляем живые детали к названию с вероятностью 25%
+            if random.random() < 0.25:
+                title_additions = [
+                    " [СВЕЖИЙ ЗАВОЗ]",
+                    " [АКЦИЯ]",
+                    " [ХИТ ПРОДАЖ]",
+                    " [ЭКСКЛЮЗИВ]",
+                    " [МАСТЕР ВЫБОР]",
+                    " [СЕМЕЙНАЯ ЦЕНА]",
+                    " [СЕВЕРНОЕ КАЧЕСТВО]",
+                    " [ПРОВЕРЕНО ВРЕМЕНЕМ]"
+                ]
+                title += random.choice(title_additions)
+
+            # Генерируем живое описание
             description_template = random.choice(PRODUCT_DESCRIPTIONS)
             description = description_template.format(wood_type=wood_name)
+
+            # Добавляем живые детали с вероятностью 40%
+            if random.random() < 0.4:
+                # Добавляем историю
+                if random.random() < 0.5:
+                    story = random.choice(PRODUCT_STORIES)
+                    description += f" {story}"
+
+                # Добавляем эмоциональную характеристику
+                if wood_name in WOOD_EMOTIONS and random.random() < 0.6:
+                    emotion = random.choice(WOOD_EMOTIONS[wood_name])
+                    description += f" Древесина особенно {emotion}."
+
+                # Добавляем сезонное настроение
+                if random.random() < 0.3:
+                    mood = random.choice(SEASONAL_MOODS)
+                    description += f" {mood}"
 
             # Определяем доставку и самовывоз
             delivery_possible = random.choice([True, False])
@@ -509,10 +599,28 @@ class DataGenerator:
                     message_text = random.choice(CHAT_MESSAGES_BUYER)
                     is_read_by_buyer = True  # Отправитель всегда видит свое сообщение
                     is_read_by_seller = random.choice([True, False])
+
+                    # Добавляем персонализацию для покупателей
+                    if random.random() < 0.2:  # 20% сообщений более персональные
+                        personal_touches = [
+                            " (строю дом для семьи)",
+                            " (делаю мебель своими руками)",
+                            " (ремонт в квартире)",
+                            " (дачный проект)",
+                            " (баня для друзей)",
+                            " (мастерская в гараже)"
+                        ]
+                        message_text += random.choice(personal_touches)
+
                 else:
                     message_text = random.choice(CHAT_MESSAGES_SELLER)
                     is_read_by_buyer = random.choice([True, False])
                     is_read_by_seller = True  # Отправитель всегда видит свое сообщение
+
+                    # Добавляем личность продавца
+                    if random.random() < 0.15:  # 15% сообщений с личностью
+                        personality = random.choice(SELLER_PERSONALITIES)
+                        message_text += f" {personality}"
 
                 # Добавляем случайные города в сообщения
                 if '{city}' in message_text:
