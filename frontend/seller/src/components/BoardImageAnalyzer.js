@@ -49,8 +49,9 @@ const BoardImageAnalyzer = ({
       formData.append('image', file);
 
       // Используем правильный API endpoint seller frontend
+      const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
       const response = await fetch(
-        `/api/v1/wooden-boards/calculate-volume?board_height=${heightMm}&board_length=${lengthMm}`,
+        `${apiBaseUrl}/api/v1/wooden-boards/calculate-volume?board_height=${heightMm}&board_length=${lengthMm}`,
         {
           method: 'POST',
           body: formData,

@@ -896,6 +896,40 @@ export const apiService = {
     });
   },
 
+  // Image management
+  async getAllImages() {
+    try {
+      const response = await api.get('/api/v1/images');
+      return response.data.data || response.data || [];
+    } catch (error) {
+      console.error('Failed to get all images:', error);
+      return [];
+    }
+  },
+
+  // Get images for specific product
+  async getProductImages(productId) {
+    const allImages = await this.getAllImages();
+    return allImages.filter(image => image.product_id === productId);
+  },
+
+  // Get image file URL
+  getImageFileUrl(imageId) {
+    const baseUrl = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+    return `${baseUrl}/api/v1/images/${imageId}/file`;
+  },
+
+  // Get image metadata
+  async getImageMetadata(imageId) {
+    try {
+      const response = await api.get(`/api/v1/images/${imageId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get image metadata:', error);
+      throw error;
+    }
+  },
+
   // Analytics - now uses proper pagination
   async getSellerStats(sellerId) {
     try {
