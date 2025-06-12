@@ -9,13 +9,10 @@ import {
 import { useApi } from '../../hooks/useApi';
 import { apiService } from '../../services/api';
 import { SELLER_TEXTS, formatDateRu, formatCurrencyRu } from '../../utils/localization';
+import { MOCK_IDS } from '../../utils/constants';
 
-// TODO: Replace with real authentication
-const getCurrentSellerId = () => {
-  // This should be replaced with real authentication system
-  console.error('Using placeholder seller ID - implement real authentication');
-  return null;
-};
+// Use shared mock seller ID
+const MOCK_SELLER_ID = MOCK_IDS.SELLER_ID;
 
 const ActivityItem = ({ icon: Icon, title, description, time, action, color }) => {
   return (
@@ -41,10 +38,10 @@ const ActivityItem = ({ icon: Icon, title, description, time, action, color }) =
 };
 
 const RecentProducts = () => {
-  const sellerId = getCurrentSellerId();
+  const sellerId = MOCK_SELLER_ID;
 
   const productsApiFunction = useMemo(() =>
-    sellerId ? () => apiService.getSellerProducts(sellerId, 0, 5) : null,
+    () => apiService.getSellerProducts(sellerId, 0, 5),
     [sellerId]
   );
   const { data: products, loading: productsLoading } = useApi(productsApiFunction, [sellerId]);

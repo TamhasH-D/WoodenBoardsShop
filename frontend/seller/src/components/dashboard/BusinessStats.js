@@ -9,13 +9,10 @@ import {
 import { useApi } from '../../hooks/useApi';
 import { apiService } from '../../services/api';
 import { formatCurrencyRu, formatNumberRu } from '../../utils/localization';
+import { MOCK_IDS } from '../../utils/constants';
 
-// TODO: Replace with real authentication
-const getCurrentSellerId = () => {
-  // This should be replaced with real authentication system
-  console.error('Using placeholder seller ID - implement real authentication');
-  return null;
-};
+// Use shared mock seller ID
+const MOCK_SELLER_ID = MOCK_IDS.SELLER_ID;
 
 const StatCard = ({ title, value, change, icon: Icon, color, loading, description }) => {
   return (
@@ -54,11 +51,11 @@ const StatCard = ({ title, value, change, icon: Icon, color, loading, descriptio
 };
 
 const BusinessStats = () => {
-  const sellerId = getCurrentSellerId();
+  const sellerId = MOCK_SELLER_ID;
 
-  // API calls for real data - only if we have seller ID
+  // API calls for real data
   const productsApiFunction = useMemo(() =>
-    sellerId ? () => apiService.getSellerProducts(sellerId, 0, 100) : null,
+    () => apiService.getSellerProducts(sellerId, 0, 100),
     [sellerId]
   );
   const woodTypesApiFunction = useMemo(() => () => apiService.getWoodTypes(), []);

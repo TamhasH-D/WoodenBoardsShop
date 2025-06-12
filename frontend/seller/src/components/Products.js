@@ -3,16 +3,13 @@ import { useApi, useApiMutation } from '../hooks/useApi';
 import { useFormValidation } from '../hooks/useFormValidation';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS, formatDateRu } from '../utils/localization';
+import { MOCK_IDS } from '../utils/constants';
 import CompactBoardAnalyzer from './CompactBoardAnalyzer';
 import StepByStepProductForm from './StepByStepProductForm';
 import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
 
-// TODO: Replace with real authentication
-const getCurrentSellerKeycloakId = () => {
-  // This should be replaced with real authentication system
-  console.error('Using placeholder seller keycloak ID - implement real authentication');
-  return null;
-};
+// Use shared mock seller ID
+const MOCK_SELLER_ID = MOCK_IDS.SELLER_ID;
 
 function Products() {
   // Хук для валидации форм
@@ -29,7 +26,7 @@ function Products() {
     delivery_possible: false,
     pickup_location: '',
     wood_type_id: '',
-    seller_id: getCurrentSellerKeycloakId()
+    seller_id: MOCK_SELLER_ID
   });
   const [editProduct, setEditProduct] = useState({
     title: '',
@@ -57,9 +54,9 @@ function Products() {
   const { error: toastError, showError, clearError } = useErrorHandler();
 
   // Create stable API functions to prevent infinite loops
-  const sellerId = getCurrentSellerKeycloakId();
+  const sellerId = MOCK_SELLER_ID;
   const productsApiFunction = useMemo(() =>
-    sellerId ? () => apiService.getSellerProductsByKeycloakId(sellerId, page, 10) : null,
+    () => apiService.getSellerProductsByKeycloakId(sellerId, page, 10),
     [sellerId, page]
   );
   const woodTypesApiFunction = useMemo(() => () => apiService.getAllWoodTypes(), []);
@@ -163,7 +160,7 @@ function Products() {
         price: price,
         delivery_possible: newProduct.delivery_possible,
         pickup_location: newProduct.pickup_location?.trim() || null,
-        seller_id: getCurrentSellerKeycloakId(),
+        seller_id: MOCK_SELLER_ID,
         wood_type_id: newProduct.wood_type_id
       }, selectedImage, boardHeightMeters, boardLengthMeters));
 
@@ -180,7 +177,7 @@ function Products() {
         delivery_possible: false,
         pickup_location: '',
         wood_type_id: '',
-        seller_id: getCurrentSellerKeycloakId()
+        seller_id: MOCK_SELLER_ID
       });
       clearImageData();
       setBoardHeight('50');

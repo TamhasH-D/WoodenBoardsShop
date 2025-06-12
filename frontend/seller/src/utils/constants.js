@@ -3,8 +3,12 @@
  * Используются для унификации и предотвращения дублирования
  */
 
-// Authentication will be handled by real auth system
-// No mock IDs - use proper authentication
+// Mock IDs для разработки и тестирования
+// В реальном приложении эти значения будут получены из аутентификации
+export const MOCK_IDS = {
+  SELLER_ID: '3ab0f210-ca78-4312-841b-8b1ae774adac',
+  SELLER_KEYCLOAK_ID: 'seller-keycloak-uuid-placeholder'
+};
 
 // API Configuration
 export const API_CONFIG = {
@@ -87,6 +91,7 @@ export const UI_CONFIG = {
 
 // Export all as default for convenience
 const constants = {
+  MOCK_IDS,
   API_CONFIG,
   PAGINATION_CONFIG,
   UPLOAD_CONFIG,

@@ -2,13 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS } from '../utils/localization';
+import { MOCK_IDS } from '../utils/constants';
 
-// TODO: Replace with real authentication
-const getCurrentSellerKeycloakId = () => {
-  // This should be replaced with real authentication system
-  console.error('Using placeholder seller keycloak ID - implement real authentication');
-  return null;
-};
+// Use shared mock seller ID
+const MOCK_SELLER_ID = MOCK_IDS.SELLER_ID;
 
 function Chats() {
   const [selectedThread, setSelectedThread] = useState(null);
@@ -17,13 +14,8 @@ function Chats() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Get seller profile to get seller_id
-  const keycloakId = getCurrentSellerKeycloakId();
-  const { data: sellerProfile } = useApi(
-    keycloakId ? () => apiService.getSellerProfileByKeycloakId(keycloakId) : null,
-    [keycloakId]
-  );
-  const sellerId = sellerProfile?.data?.id;
+  // Use mock seller ID directly
+  const sellerId = MOCK_SELLER_ID;
 
   const { data: messages, loading: messagesLoading, refetch: refetchMessages } = useApi(
     () => selectedThread ? apiService.getChatMessages(selectedThread.id) : Promise.resolve(null),
@@ -33,8 +25,6 @@ function Chats() {
 
   // Мемоизируем функцию загрузки чатов продавца
   const loadChats = useCallback(async () => {
-    if (!sellerId) return;
-
     try {
       setLoading(true);
       setError(null);
@@ -52,10 +42,8 @@ function Chats() {
 
   // Используем useEffect только для первоначальной загрузки
   useEffect(() => {
-    if (sellerId) {
-      loadChats();
-    }
-  }, [sellerId]); // Убираем loadChats из зависимостей чтобы избежать циклов
+    loadChats();
+  }, [loadChats]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
