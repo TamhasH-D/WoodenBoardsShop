@@ -3,7 +3,6 @@ import {
   Package,
   DollarSign,
   TrendingUp,
-  MessageSquare,
   TreePine
 } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
@@ -70,7 +69,13 @@ const BusinessStats = () => {
 
   // Calculate statistics
   const stats = useMemo(() => {
-    if (!products?.items) {
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('BusinessStats - products data:', products);
+    }
+
+    // Fix: API returns 'data' field, not 'items'
+    if (!products?.data || !Array.isArray(products.data)) {
       return {
         totalProducts: 0,
         totalValue: 0,
@@ -79,11 +84,21 @@ const BusinessStats = () => {
       };
     }
 
-    const items = products.items;
+    const items = products.data;
     const totalProducts = items.length;
     const totalValue = items.reduce((sum, product) => sum + (product.price || 0), 0);
     const totalVolume = items.reduce((sum, product) => sum + (product.volume || 0), 0);
     const avgPrice = totalProducts > 0 ? totalValue / totalProducts : 0;
+
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('BusinessStats - calculated stats:', {
+        totalProducts,
+        totalValue,
+        avgPrice,
+        totalVolume
+      });
+    }
 
     return {
       totalProducts,
@@ -132,7 +147,7 @@ const BusinessStats = () => {
     },
     {
       title: 'Типы древесины',
-      value: formatNumberRu(woodTypes?.items?.length || 0, 0),
+      value: formatNumberRu(woodTypes?.data?.length || 0, 0),
       change: null,
       icon: TreePine,
       color: 'bg-emerald-500',
