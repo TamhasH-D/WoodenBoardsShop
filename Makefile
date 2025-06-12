@@ -105,12 +105,38 @@ dev: backend-up ## Quick start for development (backend only)
 # ============================================================================
 
 .PHONY: add-data
-add-data: ## Generate synthetic data for database
+add-data: ## Generate synthetic data for database (large profile)
 	@echo "🚀 Generating synthetic data..."
 	cd data-generator && python -m pip install -r requirements.txt --quiet
 	cd data-generator && python generate_data.py
+
+.PHONY: add-data-small
+add-data-small: ## Generate small dataset for testing (957 records)
+	@echo "🧪 Generating small test dataset..."
+	cd data-generator && python -m pip install -r requirements.txt --quiet
+	cd data-generator && python demo_small.py
 
 .PHONY: rm-data
 rm-data: ## Remove all synthetic data from database
 	@echo "🗑️ Removing synthetic data..."
 	cd data-generator && python remove_data.py
+
+.PHONY: check-data-generator
+check-data-generator: ## Check data generator status and configuration
+	@echo "🔍 Checking data generator status..."
+	cd data-generator && python check_status.py
+
+.PHONY: compare-profiles
+compare-profiles: ## Compare data generation profiles
+	@echo "📊 Comparing generation profiles..."
+	cd data-generator && python profile_comparison.py
+
+.PHONY: analyze-reports
+analyze-reports: ## Analyze generation reports and performance
+	@echo "📈 Analyzing generation reports..."
+	cd data-generator && python analyze_reports.py
+
+.PHONY: test-data-generator
+test-data-generator: ## Run data generator tests
+	@echo "🧪 Testing data generator..."
+	cd data-generator && python test_generator.py
