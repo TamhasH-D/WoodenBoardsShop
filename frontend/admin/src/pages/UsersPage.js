@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import EntityManager from '../components/EntityManager';
 
 /**
- * Страница управления пользователями с подмаршрутами
+ * Страница управления продавцами и покупателями с подмаршрутами
  */
 const UsersPage = () => {
 

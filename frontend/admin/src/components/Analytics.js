@@ -12,7 +12,7 @@ const Analytics = React.memo(() => {
     <div>
       <div className="page-header">
         <h1 className="page-title">Analytics</h1>
-        <p className="page-description">Basic reporting on users, products, and platform activity</p>
+        <p className="page-description">Базовая отчетность по продавцам, покупателям, товарам и активности платформы</p>
       </div>
 
       <div className="flex justify-between items-center mb-6">
@@ -41,27 +41,27 @@ const Analytics = React.memo(() => {
           {/* User Analytics */}
           <div className="card mb-6">
             <div className="card-header">
-              <h2 className="card-title">User Analytics</h2>
+              <h2 className="card-title">Аналитика продавцов и покупателей</h2>
             </div>
             
             <div className="grid grid-3">
               <div>
-                <h3>Total Users</h3>
+                <h3>Всего пользователей</h3>
                 <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
                   {(stats.buyers?.total || 0) + (stats.sellers?.total || 0)}
                 </p>
                 <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
-                  {stats.buyers?.total || 0} buyers, {stats.sellers?.total || 0} sellers
+                  {stats.buyers?.total || 0} покупателей, {stats.sellers?.total || 0} продавцов
                 </p>
               </div>
               
               <div>
-                <h3>Active Users</h3>
+                <h3>Активные пользователи</h3>
                 <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--color-success)' }}>
                   {(stats.buyers?.online || 0) + (stats.sellers?.online || 0)}
                 </p>
                 <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
-                  {stats.buyers?.online || 0} buyers, {stats.sellers?.online || 0} sellers online
+                  {stats.buyers?.online || 0} покупателей, {stats.sellers?.online || 0} продавцов онлайн
                 </p>
               </div>
               
@@ -74,7 +74,7 @@ const Analytics = React.memo(() => {
                     : 0}%
                 </p>
                 <p style={{ fontSize: '0.875rem', color: 'var(--color-gray-600)' }}>
-                  Users currently online
+                  Пользователей сейчас онлайн
                 </p>
               </div>
             </div>

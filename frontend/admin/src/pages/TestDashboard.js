@@ -94,7 +94,7 @@ const TestDashboard = () => {
             fontSize: '14px',
             fontWeight: '500'
           }}>
-            Управление пользователями
+            Управление продавцами и покупателями
           </button>
           <button style={{
             padding: '15px',

@@ -87,7 +87,7 @@ const ProgressiveStats = () => {
           <div className="stat-card stat-card-users">
             <div className="stat-icon">👥</div>
             <div className="stat-content">
-              <h3>Пользователи</h3>
+              <h3>Продавцы и Покупатели</h3>
               <div className="stat-numbers">
                 <div className="stat-primary">
                   {formatNumber(stats.buyers?.total || 0)} покупателей

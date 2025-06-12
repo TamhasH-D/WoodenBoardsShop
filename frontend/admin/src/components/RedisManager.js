@@ -43,7 +43,7 @@ function RedisManager() {
 
   const predefinedKeys = [
     'system:status',
-    'cache:users',
+    'cache:buyers_sellers',
     'session:active',
     'config:settings',
     'analytics:daily'
