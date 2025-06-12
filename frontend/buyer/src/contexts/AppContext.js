@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useMemo } from 'react';
 
 /**
  * Контекст приложения для buyer frontend
@@ -141,7 +141,7 @@ export const AppProvider = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
   // Действия
-  const actions = {
+  const actions = useMemo(() => ({
     setTheme: (theme) => {
       dispatch({ type: actionTypes.SET_THEME, payload: theme });
       localStorage.setItem('buyer-theme', theme);
@@ -183,7 +183,7 @@ export const AppProvider = ({ children }) => {
     setCartCount: (count) => {
       dispatch({ type: actionTypes.SET_CART_COUNT, payload: count });
     }
-  };
+  }), []);
 
   // Инициализация при загрузке
   useEffect(() => {

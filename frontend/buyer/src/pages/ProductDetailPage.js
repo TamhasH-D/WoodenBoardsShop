@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { useCart } from '../contexts/CartContext';
 import { useNotifications } from '../contexts/NotificationContext';
-import { BUYER_TEXTS, formatCurrencyRu } from '../utils/localization';
+import { formatCurrencyRu } from '../utils/localization';
 import { apiService } from '../services/api';
 import ProductImageWithBoards from '../components/ProductImageWithBoards';
 import ProductChat from '../components/ProductChat';
@@ -26,9 +26,10 @@ const ProductDetailPage = () => {
 
   useEffect(() => {
     loadProductData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId]);
 
-  const loadProductData = async () => {
+  const loadProductData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -66,7 +67,8 @@ const ProductDetailPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productId]);
 
   const handleAddToCart = () => {
     if (product) {

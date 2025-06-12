@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { BUYER_TEXTS } from '../../utils/localization';
 
 const ChatWindow = () => {
   const { threadId } = useParams();
@@ -116,6 +115,9 @@ const ChatWindow = () => {
             if (data.sender_id !== buyerId) {
               showInfo('Продавец покинул чат');
             }
+            break;
+
+          default:
             break;
         }
       } catch (error) {

@@ -73,6 +73,7 @@ export const useProgressiveData = (fetchFunction, dependencies = []) => {
 
   useEffect(() => {
     loadData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadData, ...dependencies]);
 
   const refetch = useCallback(() => {
@@ -202,7 +203,8 @@ export const useProgressiveStats = (apiService) => {
     } finally {
       setLoading(false);
     }
-  }, [apiService, entities]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiService]);
 
   // Автоматическая загрузка при монтировании
   useEffect(() => {

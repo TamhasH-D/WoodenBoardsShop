@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { BUYER_TEXTS } from '../utils/localization';
@@ -15,9 +15,10 @@ const SellersPage = () => {
   useEffect(() => {
     setPageTitle(BUYER_TEXTS.SELLERS);
     loadSellers();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setPageTitle]);
 
-  const loadSellers = async () => {
+  const loadSellers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -32,7 +33,8 @@ const SellersPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div style={{

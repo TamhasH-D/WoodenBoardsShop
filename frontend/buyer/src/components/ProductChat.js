@@ -25,7 +25,6 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
   // Мемоизируем функцию загрузки сообщений
   const loadMessages = useCallback(async (threadId) => {
     if (!threadId) return;
-
     try {
       const response = await fetch(`/api/v1/chat-messages/by-thread/${threadId}?limit=50`);
       if (response.ok) {

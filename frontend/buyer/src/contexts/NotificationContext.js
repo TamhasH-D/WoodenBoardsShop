@@ -64,6 +64,14 @@ const NotificationContext = createContext();
 export const NotificationProvider = ({ children }) => {
   const [state, dispatch] = useReducer(notificationReducer, initialState);
 
+  // Удаление уведомления
+  const removeNotification = useCallback((id) => {
+    dispatch({
+      type: actionTypes.REMOVE_NOTIFICATION,
+      payload: id
+    });
+  }, []);
+
   // Добавление уведомления
   const addNotification = useCallback((notification) => {
     const id = generateId();
@@ -88,15 +96,7 @@ export const NotificationProvider = ({ children }) => {
     }
 
     return id;
-  }, []);
-
-  // Удаление уведомления
-  const removeNotification = useCallback((id) => {
-    dispatch({
-      type: actionTypes.REMOVE_NOTIFICATION,
-      payload: id
-    });
-  }, []);
+  }, [removeNotification]);
 
   // Очистка всех уведомлений
   const clearAll = useCallback(() => {

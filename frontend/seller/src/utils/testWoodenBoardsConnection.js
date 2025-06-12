@@ -1,165 +1,156 @@
-// Утилиты для тестирования соединения с Wooden Boards API
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-const WOODEN_BOARDS_API_URL = process.env.REACT_APP_WOODEN_BOARDS_API_URL || 'http://localhost:8001';
-
 /**
- * Получить конфигурацию Wooden Boards API
+ * Утилиты для тестирования соединения с микросервисом wooden-boards
+ * Используется для диагностики и отладки в режиме разработки
  */
+
+// Получение конфигурации wooden-boards микросервиса
 export const getWoodenBoardsConfig = () => {
-  return {
-    mainApiUrl: API_BASE_URL,
-    woodenBoardsApiUrl: WOODEN_BOARDS_API_URL,
-    environment: process.env.NODE_ENV,
-    timeout: 60000
+  const config = {
+    baseUrl: process.env.REACT_APP_WOODEN_BOARDS_API_URL || 'http://localhost:8001',
+    timeout: 60000,
+    endpoints: {
+      health: '/health',
+      calculateVolume: '/api/v1/wooden-boards/calculate-volume'
+    }
   };
+
+  return config;
 };
 
 /**
- * Тестировать соединение с основным API
+ * Тестирование health endpoint микросервиса wooden-boards
  */
 export const testWoodenBoardsConnection = async () => {
+  const config = getWoodenBoardsConfig();
+  const healthUrl = `${config.baseUrl}${config.endpoints.health}`;
+
   try {
-    const response = await fetch(`${API_BASE_URL}/health`, {
+    const response = await fetch(healthUrl, {
       method: 'GET',
-      timeout: 5000
+      timeout: 10000,
+      headers: {
+        'Accept': 'application/json',
+      },
     });
-    
     if (response.ok) {
       const data = await response.json();
       return {
         success: true,
         status: response.status,
         data: data,
-        message: 'Соединение с основным API успешно'
+        url: healthUrl,
+        message: 'Wooden boards service is healthy'
       };
     } else {
       return {
         success: false,
         status: response.status,
-        message: `Ошибка соединения: ${response.status}`
+        error: `HTTP ${response.status}`,
+        url: healthUrl,
+        message: 'Wooden boards service returned error status'
       };
     }
   } catch (error) {
     return {
       success: false,
       error: error.message,
-      message: 'Не удалось подключиться к основному API'
+      url: healthUrl,
+      message: 'Failed to connect to wooden boards service'
     };
   }
 };
 
 /**
- * Тестировать эндпоинт анализа изображений
+ * Тестирование endpoint для анализа изображений
  */
 export const testImageAnalysisEndpoint = async () => {
+  const config = getWoodenBoardsConfig();
+
+  // Создаем тестовое изображение (1x1 пиксель PNG)
+  const testImageData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+
   try {
-    // Создаем тестовое изображение (1x1 пиксель PNG)
-    const canvas = document.createElement('canvas');
-    canvas.width = 1;
-    canvas.height = 1;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, 1, 1);
-    
-    // Конвертируем в blob
-    const blob = await new Promise(resolve => {
-      canvas.toBlob(resolve, 'image/png');
-    });
-    
+    // Конвертируем base64 в blob
+    const response = await fetch(testImageData);
+    const blob = await response.blob();
+
+    // Создаем FormData
     const formData = new FormData();
     formData.append('image', blob, 'test.png');
-    
-    const response = await fetch(
-      `${API_BASE_URL}/api/v1/wooden-boards/calculate-volume?board_height=100&board_length=100`,
-      {
-        method: 'POST',
-        body: formData,
-        timeout: 30000
-      }
-    );
-    
-    if (response.ok) {
-      const data = await response.json();
-      return {
-        success: true,
-        status: response.status,
-        data: data,
-        message: 'Эндпоинт анализа изображений работает'
-      };
-    } else {
-      const errorText = await response.text();
-      return {
-        success: false,
-        status: response.status,
-        error: errorText,
-        message: `Ошибка эндпоинта анализа: ${response.status}`
-      };
-    }
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message,
-      message: 'Не удалось протестировать эндпоинт анализа изображений'
-    };
-  }
-};
 
-/**
- * Тестировать Wooden Boards микросервис напрямую
- */
-export const testWoodenBoardsMicroservice = async () => {
-  try {
-    const response = await fetch(`${WOODEN_BOARDS_API_URL}/health`, {
-      method: 'GET',
-      timeout: 5000
+    // Тестовые параметры
+    const testHeight = 50; // mm
+    const testLength = 1000; // mm
+
+    const analysisUrl = `${config.baseUrl}${config.endpoints.calculateVolume}?board_height=${testHeight}&board_length=${testLength}`;
+
+    const analysisResponse = await fetch(analysisUrl, {
+      method: 'POST',
+      body: formData,
+      timeout: 30000,
     });
-    
-    if (response.ok) {
-      const data = await response.json();
+
+    if (analysisResponse.ok) {
+      const data = await analysisResponse.json();
       return {
         success: true,
-        status: response.status,
+        status: analysisResponse.status,
         data: data,
-        message: 'Wooden Boards микросервис доступен'
+        url: analysisUrl,
+        message: 'Image analysis endpoint is working'
       };
     } else {
+      const errorText = await analysisResponse.text();
       return {
         success: false,
-        status: response.status,
-        message: `Ошибка Wooden Boards микросервиса: ${response.status}`
+        status: analysisResponse.status,
+        error: errorText,
+        url: analysisUrl,
+        message: 'Image analysis endpoint returned error'
       };
     }
   } catch (error) {
     return {
       success: false,
       error: error.message,
-      message: 'Wooden Boards микросервис недоступен'
+      url: `${config.baseUrl}${config.endpoints.calculateVolume}`,
+      message: 'Failed to test image analysis endpoint'
     };
   }
 };
 
 /**
- * Полный тест всех соединений
+ * Комплексное тестирование всех endpoints
  */
 export const runFullConnectionTest = async () => {
-  console.log('=== Запуск полного теста соединений ===');
-  
+  console.log('🔧 Starting full wooden boards connection test...');
+
+  const config = getWoodenBoardsConfig();
+  console.log('Configuration:', config);
+
+  const healthTest = await testWoodenBoardsConnection();
+  console.log('Health test result:', healthTest);
+
+  const endpointTest = await testImageAnalysisEndpoint();
+  console.log('Endpoint test result:', endpointTest);
+
   const results = {
-    config: getWoodenBoardsConfig(),
-    mainApi: await testWoodenBoardsConnection(),
-    imageAnalysis: await testImageAnalysisEndpoint(),
-    microservice: await testWoodenBoardsMicroservice()
+    config,
+    health: healthTest,
+    imageAnalysis: endpointTest,
+    overall: healthTest.success && endpointTest.success
   };
-  
-  console.log('Результаты тестирования:', results);
+
+  console.log('Full test results:', results);
   return results;
 };
 
-export default {
+// Экспорт по умолчанию
+const testUtils = {
   getWoodenBoardsConfig,
   testWoodenBoardsConnection,
   testImageAnalysisEndpoint,
-  testWoodenBoardsMicroservice,
   runFullConnectionTest
 };
+
+export default testUtils;
