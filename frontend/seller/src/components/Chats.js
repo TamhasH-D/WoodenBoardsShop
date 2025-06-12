@@ -57,6 +57,7 @@ function Chats() {
     if (sellerId) {
       loadChats();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sellerId]); // Убираем loadChats из зависимостей чтобы избежать циклов
 
   const handleSendMessage = async (e) => {

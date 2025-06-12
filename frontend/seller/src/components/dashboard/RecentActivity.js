@@ -68,13 +68,19 @@ const RecentProducts = () => {
     );
   }
 
-  if (!products?.items?.length) {
+  // Debug logging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('RecentActivity - products data:', products);
+  }
+
+  // Fix: API returns 'data' field, not 'items'
+  if (!products?.data?.length) {
     return (
       <div className="text-center py-8">
         <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
         <p className="text-sm text-gray-500">{SELLER_TEXTS.NO_PRODUCTS_FOUND}</p>
-        <Link 
-          to="/products" 
+        <Link
+          to="/products"
           className="inline-flex items-center mt-2 text-sm text-primary-600 hover:text-primary-700"
         >
           {SELLER_TEXTS.ADD_FIRST_PRODUCT}
@@ -86,7 +92,7 @@ const RecentProducts = () => {
 
   return (
     <div className="space-y-2">
-      {products.items.slice(0, 5).map((product, index) => (
+      {products.data.slice(0, 5).map((product, index) => (
         <ActivityItem
           key={product.product_uuid || index}
           icon={Package}
@@ -106,7 +112,7 @@ const RecentProducts = () => {
         />
       ))}
       
-      {products.items.length > 5 && (
+      {products.data.length > 5 && (
         <div className="pt-4 border-t border-gray-200">
           <Link 
             to="/products" 
