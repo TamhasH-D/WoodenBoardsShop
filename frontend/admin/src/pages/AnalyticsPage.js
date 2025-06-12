@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import Button from '../components/ui/Button';
 import {
   ChartBarIcon,
   UsersIcon,
   CubeIcon,
   CurrencyDollarIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
 /**
@@ -16,6 +18,7 @@ import {
 const AnalyticsPage = () => {
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   useEffect(() => {
     loadAnalytics();
@@ -25,25 +28,37 @@ const AnalyticsPage = () => {
     try {
       setLoading(true);
 
-      // Load basic statistics
+      // Load basic statistics with proper error handling
       const [
         buyersResponse,
         sellersResponse,
         productsResponse,
         woodTypesResponse,
+        pricesResponse,
+        boardsResponse,
+        imagesResponse,
       ] = await Promise.allSettled([
         apiService.getBuyers(0, 1),
         apiService.getSellers(0, 1),
         apiService.getProducts(0, 1),
         apiService.getWoodTypes(0, 1),
+        apiService.getWoodTypePrices(0, 1),
+        apiService.getWoodenBoards(0, 1),
+        apiService.getImages(0, 1),
       ]);
 
-      setStats({
+      const newStats = {
         totalBuyers: buyersResponse.status === 'fulfilled' ? buyersResponse.value.total : 0,
         totalSellers: sellersResponse.status === 'fulfilled' ? sellersResponse.value.total : 0,
         totalProducts: productsResponse.status === 'fulfilled' ? productsResponse.value.total : 0,
         totalWoodTypes: woodTypesResponse.status === 'fulfilled' ? woodTypesResponse.value.total : 0,
-      });
+        totalPrices: pricesResponse.status === 'fulfilled' ? pricesResponse.value.total : 0,
+        totalBoards: boardsResponse.status === 'fulfilled' ? boardsResponse.value.total : 0,
+        totalImages: imagesResponse.status === 'fulfilled' ? imagesResponse.value.total : 0,
+      };
+
+      setStats(newStats);
+      setLastUpdated(new Date());
     } catch (error) {
       console.error('Ошибка загрузки аналитики:', error);
     } finally {
@@ -62,11 +77,26 @@ const AnalyticsPage = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Аналитика</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Обзор ключевых метрик и статистики системы
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Аналитика</h1>
+          <p className="mt-1 text-sm text-gray-600">
+            Обзор ключевых метрик и статистики системы
+          </p>
+          {lastUpdated && (
+            <p className="mt-1 text-xs text-gray-500">
+              Последнее обновление: {lastUpdated.toLocaleString('ru-RU')}
+            </p>
+          )}
+        </div>
+        <Button
+          onClick={loadAnalytics}
+          disabled={loading}
+          className="flex items-center gap-2"
+        >
+          <ArrowPathIcon className="h-4 w-4" />
+          {loading ? 'Обновление...' : 'Обновить'}
+        </Button>
       </div>
 
       {/* Key Metrics */}
@@ -77,7 +107,7 @@ const AnalyticsPage = () => {
               <UsersIcon className="h-8 w-8 text-accent-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Всего покупателей</p>
+              <p className="text-sm font-medium text-gray-600">Покупатели</p>
               <p className="text-2xl font-semibold text-gray-900">{stats.totalBuyers || 0}</p>
             </div>
           </div>
@@ -89,7 +119,7 @@ const AnalyticsPage = () => {
               <UsersIcon className="h-8 w-8 text-success-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Всего продавцов</p>
+              <p className="text-sm font-medium text-gray-600">Продавцы</p>
               <p className="text-2xl font-semibold text-gray-900">{stats.totalSellers || 0}</p>
             </div>
           </div>
@@ -101,7 +131,7 @@ const AnalyticsPage = () => {
               <CubeIcon className="h-8 w-8 text-warning-500" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Всего товаров</p>
+              <p className="text-sm font-medium text-gray-600">Товары</p>
               <p className="text-2xl font-semibold text-gray-900">{stats.totalProducts || 0}</p>
             </div>
           </div>
@@ -115,6 +145,45 @@ const AnalyticsPage = () => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Типы древесины</p>
               <p className="text-2xl font-semibold text-gray-900">{stats.totalWoodTypes || 0}</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Additional Metrics */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <Card className="p-6">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <CurrencyDollarIcon className="h-8 w-8 text-green-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Цены на древесину</p>
+              <p className="text-2xl font-semibold text-gray-900">{stats.totalPrices || 0}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <CubeIcon className="h-8 w-8 text-amber-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Деревянные доски</p>
+              <p className="text-2xl font-semibold text-gray-900">{stats.totalBoards || 0}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <ChartBarIcon className="h-8 w-8 text-purple-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Изображения</p>
+              <p className="text-2xl font-semibold text-gray-900">{stats.totalImages || 0}</p>
             </div>
           </div>
         </Card>
