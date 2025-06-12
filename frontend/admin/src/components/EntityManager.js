@@ -5,6 +5,7 @@ import { ADMIN_TEXTS } from '../utils/localization';
 import Card from './ui/Card';
 import Button from './ui/Button';
 import Input from './ui/Input';
+import Select from './ui/Select';
 import Table from './ui/Table';
 import Pagination from './ui/Pagination';
 import Modal from './ui/Modal';
@@ -262,22 +263,22 @@ function EntityManager({ entityType }) {
   );
   const { mutate, loading: mutating } = useApiMutation();
 
-  // Load reference data for select fields (commented out as not used in current implementation)
-  // const { data: woodTypes } = useApi(() => apiService.getAllWoodTypes(), []);
-  // const { data: sellers } = useApi(() => apiService.getAllSellers(), []);
-  // const { data: buyers } = useApi(() => apiService.getAllBuyers(), []);
-  // const { data: products } = useApi(() => apiService.getAllProducts(), []);
-  // const { data: images } = useApi(() => apiService.getAllImages(), []);
-  // const { data: threads } = useApi(() => apiService.getAllChatThreads(), []);
+  // Load reference data for select fields
+  const { data: woodTypes } = useApi(() => apiService.getAllWoodTypes(), []);
+  const { data: sellers } = useApi(() => apiService.getAllSellers(), []);
+  const { data: buyers } = useApi(() => apiService.getAllBuyers(), []);
+  const { data: products } = useApi(() => apiService.getAllProducts(), []);
+  const { data: images } = useApi(() => apiService.getAllImages(), []);
+  const { data: threads } = useApi(() => apiService.getAllChatThreads(), []);
 
-  // const referenceData = {
-  //   woodTypes: woodTypes?.data || [],
-  //   sellers: sellers?.data || [],
-  //   buyers: buyers?.data || [],
-  //   products: products?.data || [],
-  //   images: images?.data || [],
-  //   threads: threads?.data || []
-  // };
+  const referenceData = {
+    woodTypes: woodTypes?.data || [],
+    sellers: sellers?.data || [],
+    buyers: buyers?.data || [],
+    products: products?.data || [],
+    images: images?.data || [],
+    threads: threads?.data || []
+  };
 
   // Reset form when entity type changes
   useEffect(() => {
@@ -298,6 +299,43 @@ function EntityManager({ entityType }) {
       </div>
     );
   }
+
+  // Render field component based on field type
+  const renderField = (field, isCreate = false) => {
+    const fieldProps = {
+      label: field.label + (field.required ? ' *' : ''),
+      value: formData[field.key] || '',
+      onChange: (e) => setFormData(prev => ({
+        ...prev,
+        [field.key]: field.type === 'checkbox' ? e.target.checked : e.target.value
+      })),
+      required: field.required,
+      disabled: field.readonly && (!isCreate || !field.showInCreate),
+      placeholder: field.placeholder,
+      helperText: field.helperText
+    };
+
+    // Select field for foreign keys
+    if (field.type === 'select' && field.options && referenceData[field.options]) {
+      return (
+        <Select
+          {...fieldProps}
+          options={referenceData[field.options]}
+          optionValue={field.optionValue || 'id'}
+          optionLabel={field.optionLabel || 'name'}
+          placeholder={`Выберите ${field.label.toLowerCase()}...`}
+        />
+      );
+    }
+
+    // Regular input field
+    return (
+      <Input
+        {...fieldProps}
+        type={field.type === 'textarea' ? 'textarea' : field.type || 'text'}
+      />
+    );
+  };
 
   // Handle form submission
   const handleSubmit = async (e) => {
@@ -518,19 +556,7 @@ function EntityManager({ entityType }) {
             .filter(field => !field.readonly || field.showInCreate)
             .map((field) => (
               <div key={field.key}>
-                <Input
-                  label={field.label + (field.required ? ' *' : '')}
-                  type={field.type === 'textarea' ? 'textarea' : field.type || 'text'}
-                  value={formData[field.key] || ''}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    [field.key]: field.type === 'checkbox' ? e.target.checked : e.target.value
-                  }))}
-                  required={field.required}
-                  disabled={field.readonly && !field.showInCreate}
-                  placeholder={field.placeholder}
-                  helperText={field.helperText}
-                />
+                {renderField(field, true)}
               </div>
             ))}
         </div>
@@ -571,17 +597,7 @@ function EntityManager({ entityType }) {
             .filter(field => !field.hideInEdit)
             .map((field) => (
               <div key={field.key}>
-                <Input
-                  label={field.label + (field.required ? ' *' : '')}
-                  type={field.type === 'textarea' ? 'textarea' : field.type || 'text'}
-                  value={formData[field.key] || ''}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    [field.key]: field.type === 'checkbox' ? e.target.checked : e.target.value
-                  }))}
-                  required={field.required}
-                  disabled={field.readonly}
-                />
+                {renderField(field, false)}
               </div>
             ))}
         </div>
