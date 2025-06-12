@@ -6,7 +6,6 @@ import WoodTypesManager from './components/WoodTypesManager';
 import Chats from './components/Chats';
 import BoardAnalyzerNew from './components/BoardAnalyzerNew';
 import ErrorBoundary from './components/ErrorBoundary';
-import RequestMonitor from './components/RequestMonitor';
 import Sidebar from './components/layout/Sidebar';
 // import { SELLER_TEXTS } from './utils/localization'; // Removed - not used in new layout
 import './index.css';
@@ -32,7 +31,7 @@ function App() {
               </Routes>
             </ErrorBoundary>
           </div>
-          {process.env.NODE_ENV === 'development' && <RequestMonitor />}
+
         </main>
       </div>
     </Router>

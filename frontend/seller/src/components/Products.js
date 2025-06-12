@@ -367,32 +367,7 @@ function Products() {
           >
             {loading ? SELLER_TEXTS.LOADING : SELLER_TEXTS.REFRESH}
           </button>
-          {process.env.NODE_ENV === 'development' && (
-            <button
-              onClick={async () => {
-                if (process.env.NODE_ENV === 'development') {
-                  console.log('=== Wooden Boards Connection Test ===');
-                  console.log('Configuration:', getWoodenBoardsConfig());
-                }
 
-                const healthTest = await testWoodenBoardsConnection();
-                if (process.env.NODE_ENV === 'development') {
-                  console.log('Health Test Result:', healthTest);
-                }
-
-                const endpointTest = await testImageAnalysisEndpoint();
-                if (process.env.NODE_ENV === 'development') {
-                  console.log('Endpoint Test Result:', endpointTest);
-                }
-
-                alert(`Health: ${healthTest.success ? '✅' : '❌'}\nEndpoint: ${endpointTest.success ? '✅' : '❌'}\nCheck console for details`);
-              }}
-              className="btn btn-secondary"
-              style={{ fontSize: '0.75rem', padding: '0.5rem' }}
-            >
-              🔧 Test AI Service
-            </button>
-          )}
         </div>
       </div>
 
