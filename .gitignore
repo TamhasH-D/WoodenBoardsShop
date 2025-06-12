@@ -168,5 +168,6 @@ user_content/
 user_media/
 
 # Data generator uploaded images
-data-generator/uploaded_images/
-**/uploaded_images/
+data-generator/uploaded_images/*
+**/uploaded_images/*
+!**/uploaded_images/.gitkeep
