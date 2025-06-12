@@ -200,18 +200,7 @@ export const apiService = {
     return response.data;
   },
 
-  // Get all buyers (handles pagination automatically)
-  async getAllBuyers(options = {}) {
-    const fetchFunction = async (offset, limit) => {
-      return await this.getBuyers(Math.floor(offset / limit), limit);
-    };
 
-    return await fetchAllPages(fetchFunction, {
-      cacheKey: 'all_buyers',
-      debug: process.env.NODE_ENV === 'development',
-      ...options
-    });
-  },
 
   // Sellers
   async getSellers(page = 0, size = 20) {
@@ -277,18 +266,7 @@ export const apiService = {
     return response.data;
   },
 
-  // Get all sellers (handles pagination automatically)
-  async getAllSellers(options = {}) {
-    const fetchFunction = async (offset, limit) => {
-      return await this.getSellers(Math.floor(offset / limit), limit);
-    };
 
-    return await fetchAllPages(fetchFunction, {
-      cacheKey: 'all_sellers',
-      debug: process.env.NODE_ENV === 'development',
-      ...options
-    });
-  },
 
   // Products
   async getProducts(page = 0, size = 10) {
