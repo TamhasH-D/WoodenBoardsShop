@@ -257,7 +257,7 @@ export const SELLER_TEXTS = {
   ACCOUNT_DETAILS: 'Детали аккаунта',
   PROFILE_TIPS_KEYCLOAK: 'Убедитесь, что ваш Keycloak UUID настроен правильно',
   PROFILE_TIPS_UPDATE: 'Регулярно обновляйте информацию профиля',
-  DEVELOPMENT_MODE_NOTE: 'Режим разработки с тестовыми данными. В продакшне потребуется настоящая аутентификация.',
+  AUTHENTICATION_REQUIRED: 'Требуется настройка системы аутентификации.',
 
   // Board Analysis
   BOARD_HEIGHT: 'Высота доски',

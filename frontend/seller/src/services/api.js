@@ -140,15 +140,8 @@ export const apiService = {
           console.log('Seller created successfully:', newSeller);
           return newSeller;
         } catch (createError) {
-          console.warn('Failed to create seller, using mock data:', createError);
-          // Return mock data as fallback
-          return {
-            id: generateEntityUUID(ENTITY_TYPES.SELLER),
-            keycloak_uuid: keycloakId,
-            is_online: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
+          console.error('Failed to create seller:', createError);
+          throw createError; // Don't return fake data, let the error propagate
         }
       }
       throw error;
@@ -267,11 +260,9 @@ export const apiService = {
     } catch (error) {
       if (error.response?.status === 404 || error.response?.status === 422) {
         console.log(`Seller ${sellerId} doesn't exist, creating...`);
-        await this.createSeller({
-          id: sellerId,
-          keycloak_uuid: 'mock-keycloak-uuid-' + sellerId.substring(0, 8),
-          is_online: true
-        });
+        // Don't create sellers with fake keycloak_uuid
+        console.error('Cannot create seller without real keycloak_uuid');
+        throw new Error('Real authentication required');
       }
     }
   },

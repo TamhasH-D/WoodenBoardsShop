@@ -2,10 +2,14 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useFormValidation } from '../hooks/useFormValidation';
 import { apiService } from '../services/api';
-import { MOCK_IDS } from '../utils/constants';
 import ImagePreviewWithBoards from './ui/ImagePreviewWithBoards';
 
-const MOCK_SELLER_ID = MOCK_IDS.SELLER_ID;
+// TODO: Replace with real authentication
+const getCurrentSellerId = () => {
+  // This should be replaced with real authentication system
+  console.error('Using placeholder seller ID - implement real authentication');
+  return null;
+};
 
 /**
  * Пошаговая форма создания товара с прогрессивным раскрытием полей
@@ -23,7 +27,7 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
     price: '',
     delivery_possible: false,
     pickup_location: '',
-    seller_id: MOCK_SELLER_ID
+    seller_id: getCurrentSellerId()
   });
 
   // Состояние анализатора досок
@@ -133,7 +137,7 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
     try {
       // Подготавливаем данные для нового API
       const productData = {
-        keycloak_id: MOCK_IDS.SELLER_KEYCLOAK_ID, // В реальном приложении это будет из Keycloak
+        keycloak_id: getCurrentSellerId(), // TODO: Replace with real Keycloak authentication
         title: formData.title.trim(),
         description: formData.description?.trim() || '',
         wood_type_id: formData.wood_type_id,

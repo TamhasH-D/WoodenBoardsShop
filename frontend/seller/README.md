@@ -163,7 +163,6 @@ make docker-run      # Run Docker container
 make docker-stop     # Stop Docker container
 
 # Business Tools
-make mock-data       # Generate mock seller data
 make test-api        # Test API connectivity
 make validate-seller # Validate seller configuration
 
@@ -232,12 +231,10 @@ REACT_APP_API_URL=http://localhost:8000  # Backend API URL
 NODE_ENV=development                      # Environment mode
 ```
 
-### Mock Data Configuration
+### Authentication Configuration
 
-The application uses a mock seller ID for development:
-```javascript
-const MOCK_SELLER_ID = '3ab0f210-ca78-4312-841b-8b1ae774adac';
-```
+The application requires real authentication system integration.
+All mock IDs have been removed - implement proper Keycloak authentication.
 
 ## 🚀 Deployment
 
