@@ -137,7 +137,7 @@ export const apiService = {
   },
 
   // Buyers
-  async getBuyers(page = 0, size = 10) {
+  async getBuyers(page = 0, size = 20) {
     const response = await api.get(`/api/v1/buyers?offset=${page * size}&limit=${size}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
@@ -150,6 +150,27 @@ export const apiService = {
       total: response.data.pagination?.total || 0, // Keep for backward compatibility
       offset: page * size,
       limit: size
+    };
+  },
+
+  // Get all buyers with progressive loading
+  async getAllBuyers() {
+    let allBuyers = [];
+    let page = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await this.getBuyers(page, 20);
+      allBuyers = [...allBuyers, ...response.data];
+
+      // Check if we have more data
+      hasMore = response.data.length === 20 && allBuyers.length < response.total;
+      page++;
+    }
+
+    return {
+      data: allBuyers,
+      total: allBuyers.length
     };
   },
 
@@ -193,7 +214,7 @@ export const apiService = {
   },
 
   // Sellers
-  async getSellers(page = 0, size = 10) {
+  async getSellers(page = 0, size = 20) {
     const response = await api.get(`/api/v1/sellers?offset=${page * size}&limit=${size}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
@@ -206,6 +227,27 @@ export const apiService = {
       total: response.data.pagination?.total || 0, // Keep for backward compatibility
       offset: page * size,
       limit: size
+    };
+  },
+
+  // Get all sellers with progressive loading
+  async getAllSellers() {
+    let allSellers = [];
+    let page = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await this.getSellers(page, 20);
+      allSellers = [...allSellers, ...response.data];
+
+      // Check if we have more data
+      hasMore = response.data.length === 20 && allSellers.length < response.total;
+      page++;
+    }
+
+    return {
+      data: allSellers,
+      total: allSellers.length
     };
   },
 
