@@ -56,7 +56,7 @@ class PaginationParamsSortBy(PaginationParams):
     """DTO for offset pagination with sorting."""
 
     sort_by: str = Field(..., description="Field to sort by")
-    sort_order: str = Field("asc", regex="^(asc|desc)$", description="Sort order: asc or desc")
+    sort_order: str = Field("asc", pattern="^(asc|desc)$", description="Sort order: asc or desc")
 
 
 class OffsetPaginationMetadata(BaseModel):
