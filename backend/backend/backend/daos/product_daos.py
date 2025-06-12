@@ -85,15 +85,15 @@ class ProductDAO(
         # Apply advanced filters
         query = self._apply_advanced_filters(query, filters)
 
+        # Apply sorting BEFORE pagination if provided
+        if hasattr(pagination, 'sort_by') and hasattr(pagination, 'sort_order'):
+            query = self._apply_sort(query, pagination.sort_by, pagination.sort_order)
+
         # Compute pagination metadata before applying pagination
         computed_pagination = await self._compute_offset_pagination(query)
 
-        # Apply pagination
+        # Apply pagination AFTER sorting
         query = query.offset(pagination.offset).limit(pagination.limit)
-
-        # Apply sorting if provided
-        if hasattr(pagination, 'sort_by') and hasattr(pagination, 'sort_order'):
-            query = self._apply_sort(query, pagination.sort_by, pagination.sort_order)
 
         # Execute query
         result = await self.session.execute(query)
