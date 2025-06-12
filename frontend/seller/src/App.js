@@ -8,7 +8,7 @@ import BoardAnalyzerNew from './components/BoardAnalyzerNew';
 import ErrorBoundary from './components/ErrorBoundary';
 import RequestMonitor from './components/RequestMonitor';
 import Sidebar from './components/layout/Sidebar';
-import { SELLER_TEXTS } from './utils/localization';
+// import { SELLER_TEXTS } from './utils/localization'; // Removed - not used in new layout
 import './index.css';
 
 function App() {
