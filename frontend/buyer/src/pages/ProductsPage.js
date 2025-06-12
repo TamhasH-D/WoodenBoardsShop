@@ -23,6 +23,7 @@ const ProductsPage = () => {
 
   // Фильтры и поиск
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchTimeout, setSearchTimeout] = useState(null);
   const [filters, setFilters] = useState({
     price_min: '',
     price_max: '',
@@ -43,9 +44,32 @@ const ProductsPage = () => {
     loadReferenceData();
   }, []);
 
-  // Загрузка товаров при изменении параметров
+  // Загрузка товаров при изменении параметров (с debouncing для поиска)
   useEffect(() => {
-    loadProducts();
+    // Очищаем предыдущий таймер
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    // Если изменились только фильтры или страница - загружаем сразу
+    // Если изменился поиск - ждем 500ms
+    const isSearchChange = searchQuery !== '';
+
+    if (isSearchChange) {
+      const timeout = setTimeout(() => {
+        loadProducts();
+      }, 500);
+      setSearchTimeout(timeout);
+    } else {
+      loadProducts();
+    }
+
+    // Cleanup function
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
   }, [currentPage, searchQuery, filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadReferenceData = async () => {
@@ -257,8 +281,8 @@ const ProductsPage = () => {
           }}>
             {/* Фильтр по типу древесины */}
             <div>
-              <label style={{ 
-                display: 'block', 
+              <label style={{
+                display: 'block',
                 marginBottom: '8px',
                 fontWeight: '600',
                 color: '#2D3748'
@@ -267,8 +291,8 @@ const ProductsPage = () => {
               </label>
               <select
                 value={filters.wood_type_ids[0] || ''}
-                onChange={(e) => handleFilterChange({ 
-                  wood_type_ids: e.target.value ? [e.target.value] : [] 
+                onChange={(e) => handleFilterChange({
+                  wood_type_ids: e.target.value ? [e.target.value] : []
                 })}
                 style={{
                   width: '100%',
@@ -290,8 +314,8 @@ const ProductsPage = () => {
 
             {/* Фильтр по продавцу */}
             <div>
-              <label style={{ 
-                display: 'block', 
+              <label style={{
+                display: 'block',
                 marginBottom: '8px',
                 fontWeight: '600',
                 color: '#2D3748'
@@ -300,8 +324,8 @@ const ProductsPage = () => {
               </label>
               <select
                 value={filters.seller_ids[0] || ''}
-                onChange={(e) => handleFilterChange({ 
-                  seller_ids: e.target.value ? [e.target.value] : [] 
+                onChange={(e) => handleFilterChange({
+                  seller_ids: e.target.value ? [e.target.value] : []
                 })}
                 style={{
                   width: '100%',
@@ -319,6 +343,192 @@ const ProductsPage = () => {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Сортировка */}
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: '600',
+                color: '#2D3748'
+              }}>
+                Сортировка
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <select
+                  value={filters.sort_by}
+                  onChange={(e) => handleFilterChange({ sort_by: e.target.value })}
+                  style={{
+                    flex: 2,
+                    padding: '12px 16px',
+                    border: '2px solid #E2E8F0',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    backgroundColor: 'white'
+                  }}
+                >
+                  <option value="created_at">По дате</option>
+                  <option value="price">По цене</option>
+                  <option value="volume">По объему</option>
+                  <option value="title">По названию</option>
+                </select>
+                <select
+                  value={filters.sort_order}
+                  onChange={(e) => handleFilterChange({ sort_order: e.target.value })}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    border: '2px solid #E2E8F0',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    backgroundColor: 'white'
+                  }}
+                >
+                  <option value="desc">↓</option>
+                  <option value="asc">↑</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Дополнительные фильтры */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '20px',
+            marginBottom: '25px'
+          }}>
+            {/* Фильтр по цене */}
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: '600',
+                color: '#2D3748'
+              }}>
+                Цена, ₽
+              </label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="number"
+                  placeholder="От"
+                  value={filters.price_min}
+                  onChange={(e) => handleFilterChange({ price_min: e.target.value })}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    border: '2px solid #E2E8F0',
+                    borderRadius: '8px',
+                    fontSize: '1rem'
+                  }}
+                />
+                <span style={{ color: '#718096', fontWeight: '500' }}>—</span>
+                <input
+                  type="number"
+                  placeholder="До"
+                  value={filters.price_max}
+                  onChange={(e) => handleFilterChange({ price_max: e.target.value })}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    border: '2px solid #E2E8F0',
+                    borderRadius: '8px',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Фильтр по объему */}
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: '600',
+                color: '#2D3748'
+              }}>
+                Объем, м³
+              </label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="number"
+                  placeholder="От"
+                  value={filters.volume_min}
+                  onChange={(e) => handleFilterChange({ volume_min: e.target.value })}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    border: '2px solid #E2E8F0',
+                    borderRadius: '8px',
+                    fontSize: '1rem'
+                  }}
+                />
+                <span style={{ color: '#718096', fontWeight: '500' }}>—</span>
+                <input
+                  type="number"
+                  placeholder="До"
+                  value={filters.volume_max}
+                  onChange={(e) => handleFilterChange({ volume_max: e.target.value })}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    border: '2px solid #E2E8F0',
+                    borderRadius: '8px',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Фильтры по доставке */}
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: '600',
+                color: '#2D3748'
+              }}>
+                Доставка
+              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '0.9rem',
+                  color: '#4A5568',
+                  cursor: 'pointer'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={filters.delivery_possible === true}
+                    onChange={(e) => handleFilterChange({
+                      delivery_possible: e.target.checked ? true : null
+                    })}
+                    style={{ transform: 'scale(1.2)' }}
+                  />
+                  Доставка возможна
+                </label>
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '0.9rem',
+                  color: '#4A5568',
+                  cursor: 'pointer'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={filters.has_pickup_location === true}
+                    onChange={(e) => handleFilterChange({
+                      has_pickup_location: e.target.checked ? true : null
+                    })}
+                    style={{ transform: 'scale(1.2)' }}
+                  />
+                  Есть самовывоз
+                </label>
+              </div>
             </div>
           </div>
 
