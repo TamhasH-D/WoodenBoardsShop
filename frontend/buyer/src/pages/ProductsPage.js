@@ -75,9 +75,9 @@ const ProductsPage = () => {
   const loadReferenceData = async () => {
     try {
       const [woodTypesRes, woodTypePricesRes, sellersRes] = await Promise.all([
-        apiService.getAllWoodTypes(),
+        apiService.getWoodTypes(0, 100),
         apiService.getWoodTypePrices(0, 100),
-        apiService.getAllSellers()
+        apiService.getSellers(0, 100)
       ]);
 
       setWoodTypes(woodTypesRes.data || []);
