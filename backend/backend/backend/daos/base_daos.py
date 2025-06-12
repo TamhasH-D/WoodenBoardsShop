@@ -92,9 +92,17 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO]):
         """Apply sorting to query."""
         if hasattr(self.model, sort_by) is False:
             raise ValueError(f"Invalid sort parameter: {sort_by}")
-        return query.order_by(
-            getattr(sa, sort_order)(getattr(self.model, sort_by)),
-        )
+
+        # Normalize sort_order and apply correct SQLAlchemy function
+        sort_order = sort_order.lower()
+        if sort_order not in ['asc', 'desc']:
+            raise ValueError(f"Invalid sort order: {sort_order}. Must be 'asc' or 'desc'")
+
+        column = getattr(self.model, sort_by)
+        if sort_order == 'desc':
+            return query.order_by(sa.desc(column))
+        else:
+            return query.order_by(sa.asc(column))
 
     async def _compute_offset_pagination(
         self,
@@ -180,15 +188,16 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO]):
         if query is None:
             query = sa.select(self.model)
 
-        computed_pagination = await self._compute_offset_pagination(query)
-        query = query.offset(pagination.offset).limit(pagination.limit)
-
+        # Apply sorting BEFORE pagination if provided
         if isinstance(pagination, PaginationParamsSortBy):
             query = self._apply_sort(
                 query,
                 pagination.sort_by,
                 pagination.sort_order,
             )
+
+        computed_pagination = await self._compute_offset_pagination(query)
+        query = query.offset(pagination.offset).limit(pagination.limit)
 
         results = await self.session.execute(query)
 
