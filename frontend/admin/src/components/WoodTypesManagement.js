@@ -1,14 +1,64 @@
 import React, { useState, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
 import { useApi, useApiMutation } from '../hooks/useApi';
+import { useToastContext } from '../hooks/useToast';
 import { apiService } from '../services/api';
+import FormField from './ui/FormField';
+import Button from './ui/Button';
+
+// Validation schemas
+const woodTypeSchema = yup.object({
+  name: yup
+    .string()
+    .required('Название типа древесины обязательно')
+    .min(2, 'Название должно содержать минимум 2 символа')
+    .max(100, 'Название не должно превышать 100 символов'),
+  description: yup
+    .string()
+    .max(500, 'Описание не должно превышать 500 символов')
+    .nullable(),
+});
+
+const priceSchema = yup.object({
+  wood_type_id: yup
+    .string()
+    .required('Выберите тип древесины'),
+  price_per_m3: yup
+    .number()
+    .required('Цена за м³ обязательна')
+    .positive('Цена должна быть положительным числом')
+    .min(0.01, 'Минимальная цена 0.01 ₽')
+    .max(1000000, 'Максимальная цена 1,000,000 ₽'),
+});
 
 const WoodTypesManagement = React.memo(() => {
   const [activeTab, setActiveTab] = useState('types');
   const [page, setPage] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showAddPriceForm, setShowAddPriceForm] = useState(false);
-  const [formData, setFormData] = useState({ name: '', description: '' });
-  const [priceFormData, setPriceFormData] = useState({ wood_type_id: '', price_per_m3: '' });
+
+  // Toast notifications
+  const toast = useToastContext();
+
+  // Wood type form
+  const woodTypeForm = useForm({
+    resolver: yupResolver(woodTypeSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+    },
+  });
+
+  // Price form
+  const priceForm = useForm({
+    resolver: yupResolver(priceSchema),
+    defaultValues: {
+      wood_type_id: '',
+      price_per_m3: '',
+    },
+  });
 
   // API hooks for wood types (paginated for display)
   const woodTypesApiFunction = useMemo(() => () => apiService.getWoodTypes(page, 10), [page]);
@@ -31,31 +81,49 @@ const WoodTypesManagement = React.memo(() => {
     [page]
   );
 
-  const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
+  const { mutate, loading: mutating } = useApiMutation();
 
-  const handleAddWoodType = async (e) => {
-    e.preventDefault();
+  // Wood type form handlers
+  const handleAddWoodType = async (data) => {
     try {
-      await mutate(() => apiService.createWoodType(formData));
-      setFormData({ name: '', description: '' });
+      await toast.promise(
+        mutate(() => apiService.createWoodType(data)),
+        {
+          loading: 'Создание типа древесины...',
+          success: 'Тип древесины успешно создан',
+          error: 'Ошибка при создании типа древесины',
+        }
+      );
+
+      woodTypeForm.reset();
       setShowAddForm(false);
       refetchTypes();
-      // Also refetch all wood types for dropdown
-      window.location.reload(); // Simple way to refresh all data
+      // Refresh all wood types for dropdown
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error) {
-      console.error('Add failed:', error);
+      // Error handled by toast.promise
     }
   };
 
-  const handleAddPrice = async (e) => {
-    e.preventDefault();
+  // Price form handlers
+  const handleAddPrice = async (data) => {
     try {
-      await mutate(() => apiService.createWoodTypePrice(priceFormData));
-      setPriceFormData({ wood_type_id: '', price_per_m3: '' });
+      await toast.promise(
+        mutate(() => apiService.createWoodTypePrice(data)),
+        {
+          loading: 'Добавление цены...',
+          success: 'Цена успешно добавлена',
+          error: 'Ошибка при добавлении цены',
+        }
+      );
+
+      priceForm.reset();
       setShowAddPriceForm(false);
       refetchPrices();
     } catch (error) {
-      console.error('Add price failed:', error);
+      // Error handled by toast.promise
     }
   };
 
@@ -143,59 +211,66 @@ const WoodTypesManagement = React.memo(() => {
               <p>Total wood types: {woodTypes?.total || 0}</p>
             </div>
             <div className="flex gap-4">
-              <button 
+              <Button
                 onClick={() => setShowAddForm(!showAddForm)}
-                className={`btn ${showAddForm ? 'btn-secondary' : 'btn-primary'}`}
+                variant={showAddForm ? 'secondary' : 'primary'}
               >
-                {showAddForm ? 'Cancel' : 'Add Wood Type'}
-              </button>
-              <button 
+                {showAddForm ? 'Отмена' : 'Добавить тип древесины'}
+              </Button>
+              <Button
                 onClick={refetchTypes}
-                className="btn btn-secondary" 
+                variant="secondary"
+                loading={typesLoading}
                 disabled={typesLoading}
               >
-                {typesLoading ? 'Loading...' : 'Refresh'}
-              </button>
+                Обновить
+              </Button>
             </div>
           </div>
 
-          {/* Add Form */}
+          {/* Professional Add Form */}
           {showAddForm && (
             <div className="card mb-4">
               <div className="card-header">
-                <h3 className="card-title">Add New Wood Type</h3>
+                <h3 className="card-title">Добавить новый тип древесины</h3>
               </div>
-              <form onSubmit={handleAddWoodType}>
-                <div className="form-group">
-                  <label className="form-label">Name</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="form-input"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Description</label>
-                  <input
-                    type="text"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="form-input"
-                  />
-                </div>
-                <div className="flex gap-4">
-                  <button type="submit" className="btn btn-primary" disabled={mutating}>
-                    {mutating ? 'Adding...' : 'Add Wood Type'}
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => setShowAddForm(false)}
-                    className="btn btn-secondary"
+              <form onSubmit={woodTypeForm.handleSubmit(handleAddWoodType)} className="space-y-4">
+                <FormField
+                  label="Название типа древесины"
+                  placeholder="Например: Дуб, Сосна, Береза"
+                  required
+                  error={woodTypeForm.formState.errors.name?.message}
+                  {...woodTypeForm.register('name')}
+                />
+
+                <FormField
+                  label="Описание"
+                  type="textarea"
+                  placeholder="Дополнительная информация о типе древесины"
+                  rows={3}
+                  error={woodTypeForm.formState.errors.description?.message}
+                  {...woodTypeForm.register('description')}
+                />
+
+                <div className="flex gap-4 pt-4">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    loading={mutating}
+                    disabled={!woodTypeForm.formState.isValid}
                   >
-                    Cancel
-                  </button>
+                    {mutating ? 'Создание...' : 'Создать тип древесины'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      setShowAddForm(false);
+                      woodTypeForm.reset();
+                    }}
+                  >
+                    Отмена
+                  </Button>
                 </div>
               </form>
             </div>
@@ -291,83 +366,89 @@ const WoodTypesManagement = React.memo(() => {
               <p>Total prices: {prices?.total || 0}</p>
             </div>
             <div className="flex gap-4">
-              <button
+              <Button
                 onClick={() => setShowAddPriceForm(!showAddPriceForm)}
-                className={`btn ${showAddPriceForm ? 'btn-secondary' : 'btn-primary'}`}
+                variant={showAddPriceForm ? 'secondary' : 'primary'}
               >
-                {showAddPriceForm ? 'Cancel' : 'Add Price'}
-              </button>
-              <button
+                {showAddPriceForm ? 'Отмена' : 'Добавить цену'}
+              </Button>
+              <Button
                 onClick={refetchPrices}
-                className="btn btn-secondary"
+                variant="secondary"
+                loading={pricesLoading}
                 disabled={pricesLoading}
               >
-                {pricesLoading ? 'Loading...' : 'Refresh'}
-              </button>
+                Обновить
+              </Button>
             </div>
           </div>
 
-          {/* Add Price Form */}
+          {/* Professional Add Price Form */}
           {showAddPriceForm && (
             <div className="card mb-4">
               <div className="card-header">
-                <h3 className="card-title">Add New Price</h3>
+                <h3 className="card-title">Добавить новую цену</h3>
               </div>
-              <form onSubmit={handleAddPrice}>
-                <div className="form-group">
-                  <label className="form-label">Wood Type</label>
-                  {allWoodTypesLoading ? (
-                    <div className="form-input" style={{ color: 'var(--color-text-light)' }}>
-                      Loading wood types...
-                    </div>
-                  ) : allWoodTypesError ? (
-                    <div className="error">
-                      Failed to load wood types: {allWoodTypesError}
-                    </div>
-                  ) : (
-                    <select
-                      value={priceFormData.wood_type_id}
-                      onChange={(e) => setPriceFormData({ ...priceFormData, wood_type_id: e.target.value })}
-                      className="form-input"
-                      required
-                    >
-                      <option value="">Select Wood Type</option>
-                      {allWoodTypes?.data?.map((type) => (
-                        <option key={type.id} value={type.id}>
-                          {type.neme || type.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                  {allWoodTypes?.data?.length > 0 && (
-                    <small style={{ color: 'var(--color-success)', fontSize: '0.8em' }}>
-                      ✅ {allWoodTypes.data.length} wood types available
-                    </small>
-                  )}
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Price per m³ (€)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={priceFormData.price_per_m3}
-                    onChange={(e) => setPriceFormData({ ...priceFormData, price_per_m3: e.target.value })}
-                    className="form-input"
-                    required
-                  />
-                </div>
-                <div className="flex gap-4">
-                  <button type="submit" className="btn btn-primary" disabled={mutating}>
-                    {mutating ? 'Adding...' : 'Add Price'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddPriceForm(false)}
-                    className="btn btn-secondary"
+              <form onSubmit={priceForm.handleSubmit(handleAddPrice)} className="space-y-4">
+                <FormField
+                  label="Тип древесины"
+                  type="select"
+                  placeholder="Выберите тип древесины"
+                  required
+                  loading={allWoodTypesLoading}
+                  error={priceForm.formState.errors.wood_type_id?.message}
+                  options={[
+                    ...(allWoodTypes?.data?.map((type) => ({
+                      value: type.id,
+                      label: type.neme || type.name,
+                    })) || [])
+                  ]}
+                  {...priceForm.register('wood_type_id')}
+                />
+
+                {allWoodTypesError && (
+                  <div className="text-sm text-red-600">
+                    Ошибка загрузки типов древесины: {allWoodTypesError}
+                  </div>
+                )}
+
+                {allWoodTypes?.data?.length > 0 && (
+                  <div className="text-sm text-green-600">
+                    ✅ Доступно {allWoodTypes.data.length} типов древесины
+                  </div>
+                )}
+
+                <FormField
+                  label="Цена за м³ (₽)"
+                  type="number"
+                  placeholder="Введите цену"
+                  step="0.01"
+                  min="0.01"
+                  max="1000000"
+                  required
+                  error={priceForm.formState.errors.price_per_m3?.message}
+                  {...priceForm.register('price_per_m3', { valueAsNumber: true })}
+                />
+
+                <div className="flex gap-4 pt-4">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    loading={mutating}
+                    disabled={!priceForm.formState.isValid}
                   >
-                    Cancel
-                  </button>
+                    {mutating ? 'Добавление...' : 'Добавить цену'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      setShowAddPriceForm(false);
+                      priceForm.reset();
+                    }}
+                  >
+                    Отмена
+                  </Button>
                 </div>
               </form>
             </div>

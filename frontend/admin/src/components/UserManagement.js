@@ -1,6 +1,52 @@
 import React, { useState, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
 import { useApi, useApiMutation } from '../hooks/useApi';
+import { useToastContext } from '../hooks/useToast';
 import { apiService } from '../services/api';
+import FormField from './ui/FormField';
+import Button from './ui/Button';
+
+// Validation schemas
+const buyerSchema = yup.object({
+  keycloak_uuid: yup
+    .string()
+    .required('Keycloak UUID обязателен')
+    .min(10, 'UUID должен содержать минимум 10 символов')
+    .max(100, 'UUID не должен превышать 100 символов'),
+  is_online: yup.boolean().default(true),
+});
+
+const sellerSchema = yup.object({
+  keycloak_uuid: yup
+    .string()
+    .required('Keycloak UUID обязателен')
+    .min(10, 'UUID должен содержать минимум 10 символов')
+    .max(100, 'UUID не должен превышать 100 символов'),
+  is_online: yup.boolean().default(true),
+  company_name: yup
+    .string()
+    .max(200, 'Название компании не должно превышать 200 символов')
+    .nullable(),
+  contact_email: yup
+    .string()
+    .email('Введите корректный email адрес')
+    .max(100, 'Email не должен превышать 100 символов')
+    .nullable(),
+  contact_phone: yup
+    .string()
+    .max(20, 'Номер телефона не должен превышать 20 символов')
+    .nullable(),
+  business_address: yup
+    .string()
+    .max(300, 'Адрес не должен превышать 300 символов')
+    .nullable(),
+  business_description: yup
+    .string()
+    .max(500, 'Описание не должно превышать 500 символов')
+    .nullable(),
+});
 
 const UserManagement = React.memo(() => {
   const [activeTab, setActiveTab] = useState('buyers');
@@ -9,15 +55,24 @@ const UserManagement = React.memo(() => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [formData, setFormData] = useState({
-    keycloak_uuid: '',
-    is_online: true,
-    // Seller-specific fields
-    company_name: '',
-    contact_email: '',
-    contact_phone: '',
-    business_address: '',
-    business_description: ''
+
+  // Toast notifications
+  const toast = useToastContext();
+
+  // Form setup with dynamic schema based on active tab
+  const currentSchema = activeTab === 'buyers' ? buyerSchema : sellerSchema;
+
+  const form = useForm({
+    resolver: yupResolver(currentSchema),
+    defaultValues: {
+      keycloak_uuid: '',
+      is_online: true,
+      company_name: '',
+      contact_email: '',
+      contact_phone: '',
+      business_address: '',
+      business_description: '',
+    },
   });
 
   // API hooks for buyers
@@ -32,22 +87,14 @@ const UserManagement = React.memo(() => {
     [page]
   );
 
-  const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
+  const { mutate, loading: mutating } = useApiMutation();
 
   // Form handling functions
   const resetForm = useCallback(() => {
-    setFormData({
-      keycloak_uuid: '',
-      is_online: true,
-      company_name: '',
-      contact_email: '',
-      contact_phone: '',
-      business_address: '',
-      business_description: ''
-    });
+    form.reset();
     setEditingUser(null);
     setShowAddForm(false);
-  }, []);
+  }, [form]);
 
   const handleAddUser = useCallback(() => {
     resetForm();
@@ -55,7 +102,7 @@ const UserManagement = React.memo(() => {
   }, [resetForm]);
 
   const handleEditUser = useCallback((user) => {
-    setFormData({
+    form.reset({
       keycloak_uuid: user.keycloak_uuid || '',
       is_online: user.is_online || false,
       company_name: user.company_name || '',
@@ -66,77 +113,85 @@ const UserManagement = React.memo(() => {
     });
     setEditingUser(user);
     setShowAddForm(true);
-  }, []);
+  }, [form]);
 
-  const handleFormSubmit = useCallback(async (e) => {
-    e.preventDefault();
-
-    // Basic validation
-    if (!formData.keycloak_uuid.trim()) {
-      alert('Keycloak UUID is required');
-      return;
-    }
-
-    // Email validation for sellers
-    if (activeTab === 'sellers' && formData.contact_email &&
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contact_email)) {
-      alert('Please enter a valid email address');
-      return;
-    }
-
+  const handleFormSubmit = useCallback(async (data) => {
     try {
       const userData = {
-        keycloak_uuid: formData.keycloak_uuid.trim(),
-        is_online: formData.is_online
+        keycloak_uuid: data.keycloak_uuid.trim(),
+        is_online: data.is_online
       };
 
       // Add seller-specific fields
       if (activeTab === 'sellers') {
-        if (formData.company_name.trim()) userData.company_name = formData.company_name.trim();
-        if (formData.contact_email.trim()) userData.contact_email = formData.contact_email.trim();
-        if (formData.contact_phone.trim()) userData.contact_phone = formData.contact_phone.trim();
-        if (formData.business_address.trim()) userData.business_address = formData.business_address.trim();
-        if (formData.business_description.trim()) userData.business_description = formData.business_description.trim();
+        if (data.company_name?.trim()) userData.company_name = data.company_name.trim();
+        if (data.contact_email?.trim()) userData.contact_email = data.contact_email.trim();
+        if (data.contact_phone?.trim()) userData.contact_phone = data.contact_phone.trim();
+        if (data.business_address?.trim()) userData.business_address = data.business_address.trim();
+        if (data.business_description?.trim()) userData.business_description = data.business_description.trim();
       }
 
-      if (editingUser) {
-        // Update existing user
-        if (activeTab === 'buyers') {
-          await mutate(() => apiService.updateBuyer(editingUser.id, userData));
-          refetchBuyers();
-        } else {
-          await mutate(() => apiService.updateSeller(editingUser.id, userData));
-          refetchSellers();
+      const operation = editingUser ? 'обновление' : 'создание';
+      const userType = activeTab === 'buyers' ? 'покупателя' : 'продавца';
+
+      await toast.promise(
+        mutate(async () => {
+          if (editingUser) {
+            // Update existing user
+            if (activeTab === 'buyers') {
+              await apiService.updateBuyer(editingUser.id, userData);
+              refetchBuyers();
+            } else {
+              await apiService.updateSeller(editingUser.id, userData);
+              refetchSellers();
+            }
+          } else {
+            // Create new user
+            if (activeTab === 'buyers') {
+              await apiService.createBuyer(userData);
+              refetchBuyers();
+            } else {
+              await apiService.createSeller(userData);
+              refetchSellers();
+            }
+          }
+        }),
+        {
+          loading: `${operation.charAt(0).toUpperCase() + operation.slice(1)} ${userType}...`,
+          success: `${userType.charAt(0).toUpperCase() + userType.slice(1)} успешно ${editingUser ? 'обновлен' : 'создан'}`,
+          error: `Ошибка при ${operation} ${userType}`,
         }
-      } else {
-        // Create new user
-        if (activeTab === 'buyers') {
-          await mutate(() => apiService.createBuyer(userData));
-          refetchBuyers();
-        } else {
-          await mutate(() => apiService.createSeller(userData));
-          refetchSellers();
-        }
-      }
+      );
 
       resetForm();
     } catch (error) {
-      console.error('Form submission failed:', error);
+      // Error handled by toast.promise
     }
-  }, [formData, activeTab, editingUser, mutate, refetchBuyers, refetchSellers, resetForm]);
+  }, [activeTab, editingUser, mutate, refetchBuyers, refetchSellers, resetForm, toast]);
 
   const handleDeleteUser = async (id, type) => {
     if (window.confirm('Вы уверены, что хотите удалить этого пользователя?')) {
       try {
-        if (type === 'buyer') {
-          await mutate(() => apiService.deleteBuyer(id));
-          refetchBuyers();
-        } else {
-          await mutate(() => apiService.deleteSeller(id));
-          refetchSellers();
-        }
+        const userType = type === 'buyer' ? 'покупателя' : 'продавца';
+
+        await toast.promise(
+          mutate(async () => {
+            if (type === 'buyer') {
+              await apiService.deleteBuyer(id);
+              refetchBuyers();
+            } else {
+              await apiService.deleteSeller(id);
+              refetchSellers();
+            }
+          }),
+          {
+            loading: `Удаление ${userType}...`,
+            success: `${userType.charAt(0).toUpperCase() + userType.slice(1)} успешно удален`,
+            error: `Ошибка при удалении ${userType}`,
+          }
+        );
       } catch (error) {
-        console.error('Delete failed:', error);
+        // Error handled by toast.promise
       }
     }
   };
@@ -146,16 +201,28 @@ const UserManagement = React.memo(() => {
 
     if (window.confirm(`Вы уверены, что хотите удалить ${selectedUsers.length} пользователей?`)) {
       try {
-        if (activeTab === 'buyers') {
-          await mutate(() => apiService.bulkDeleteBuyers(selectedUsers));
-          refetchBuyers();
-        } else {
-          await mutate(() => apiService.bulkDeleteSellers(selectedUsers));
-          refetchSellers();
-        }
+        const userType = activeTab === 'buyers' ? 'покупателей' : 'продавцов';
+
+        await toast.promise(
+          mutate(async () => {
+            if (activeTab === 'buyers') {
+              await apiService.bulkDeleteBuyers(selectedUsers);
+              refetchBuyers();
+            } else {
+              await apiService.bulkDeleteSellers(selectedUsers);
+              refetchSellers();
+            }
+          }),
+          {
+            loading: `Удаление ${selectedUsers.length} ${userType}...`,
+            success: `${selectedUsers.length} ${userType} успешно удалены`,
+            error: `Ошибка при удалении ${userType}`,
+          }
+        );
+
         setSelectedUsers([]);
       } catch (error) {
-        console.error('Bulk delete failed:', error);
+        // Error handled by toast.promise
       }
     }
   };
@@ -236,166 +303,141 @@ const UserManagement = React.memo(() => {
             <p>Всего {activeTab === 'buyers' ? 'покупателей' : 'продавцов'}: {currentData?.total || 0}</p>
           </div>
           <div className="flex gap-4">
-            <button
+            <Button
               onClick={handleAddUser}
-              className="btn btn-primary"
+              variant="primary"
               disabled={mutating}
             >
               Добавить {activeTab === 'buyers' ? 'покупателя' : 'продавца'}
-            </button>
+            </Button>
             {selectedUsers.length > 0 && (
-              <button
+              <Button
                 onClick={handleBulkDelete}
-                className="btn btn-secondary"
+                variant="secondary"
+                loading={mutating}
                 disabled={mutating}
               >
                 Удалить выбранные ({selectedUsers.length})
-              </button>
+              </Button>
             )}
-            <button
+            <Button
               onClick={() => activeTab === 'buyers' ? refetchBuyers() : refetchSellers()}
-              className="btn btn-secondary"
+              variant="secondary"
+              loading={currentLoading}
               disabled={currentLoading}
             >
-              {currentLoading ? 'Загрузка...' : 'Обновить'}
-            </button>
+              Обновить
+            </Button>
           </div>
         </div>
 
-        {/* Add/Edit Form */}
+        {/* Professional Add/Edit Form */}
         {showAddForm && (
           <div className="card mb-6">
             <div className="card-header">
               <h2 className="card-title">
                 {editingUser ? `Редактировать ${activeTab === 'buyers' ? 'покупателя' : 'продавца'}` : `Добавить нового ${activeTab === 'buyers' ? 'покупателя' : 'продавца'}`}
               </h2>
-              <p style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-2)' }}>
+              <p className="text-sm text-gray-500 mt-2">
                 {editingUser ? 'Обновите информацию ниже' : `Заполните данные для создания нового ${activeTab === 'buyers' ? 'покупателя' : 'продавца'}`}
               </p>
             </div>
 
-            <form onSubmit={handleFormSubmit}>
-              <div className="form-group">
-                <label className="form-label">Keycloak UUID *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={formData.keycloak_uuid}
-                  onChange={(e) => setFormData({...formData, keycloak_uuid: e.target.value})}
-                  placeholder="e.g., 3ab0f210-ca78-4312-841b-8b1ae774adac"
-                  required
-                  maxLength={100}
-                />
-                <small style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-xs)' }}>
-                  Уникальный идентификатор из системы аутентификации Keycloak
-                </small>
-              </div>
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+              <FormField
+                label="Keycloak UUID"
+                placeholder="Например: 3ab0f210-ca78-4312-841b-8b1ae774adac"
+                required
+                maxLength={100}
+                helperText="Уникальный идентификатор из системы аутентификации Keycloak"
+                error={form.formState.errors.keycloak_uuid?.message}
+                {...form.register('keycloak_uuid')}
+              />
 
-              <div className="form-group">
-                <label className="form-label" style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--space-2)',
-                  cursor: 'pointer'
-                }}>
-                  <input
-                    type="checkbox"
-                    className="form-checkbox"
-                    checked={formData.is_online}
-                    onChange={(e) => setFormData({...formData, is_online: e.target.checked})}
-                  />
-                  <span>Пользователь онлайн</span>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="is_online"
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                  {...form.register('is_online')}
+                />
+                <label htmlFor="is_online" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  Пользователь онлайн
                 </label>
-                <small style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-xs)', marginLeft: '1.5rem' }}>
-                  Установить начальный статус онлайн для этого пользователя
-                </small>
               </div>
+              <p className="text-xs text-gray-500 ml-7">
+                Установить начальный статус онлайн для этого пользователя
+              </p>
 
               {/* Seller-specific fields */}
               {activeTab === 'sellers' && (
                 <>
-                  <div className="form-group">
-                    <label className="form-label">Название компании</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.company_name}
-                      onChange={(e) => setFormData({...formData, company_name: e.target.value})}
-                      placeholder="e.g., ABC Wood Products Inc."
-                      maxLength={200}
+                  <FormField
+                    label="Название компании"
+                    placeholder="Например: ООО 'Деревообработка'"
+                    maxLength={200}
+                    error={form.formState.errors.company_name?.message}
+                    {...form.register('company_name')}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      label="Контактный email"
+                      type="email"
+                      placeholder="contact@company.com"
+                      maxLength={100}
+                      error={form.formState.errors.contact_email?.message}
+                      {...form.register('contact_email')}
+                    />
+
+                    <FormField
+                      label="Контактный телефон"
+                      type="tel"
+                      placeholder="+7 (999) 123-45-67"
+                      maxLength={20}
+                      error={form.formState.errors.contact_phone?.message}
+                      {...form.register('contact_phone')}
                     />
                   </div>
 
-                  <div className="form-grid form-grid-2">
-                    <div className="form-group">
-                      <label className="form-label">Контактный email</label>
-                      <input
-                        type="email"
-                        className="form-input"
-                        value={formData.contact_email}
-                        onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
-                        placeholder="contact@company.com"
-                        maxLength={100}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Контактный телефон</label>
-                      <input
-                        type="tel"
-                        className="form-input"
-                        value={formData.contact_phone}
-                        onChange={(e) => setFormData({...formData, contact_phone: e.target.value})}
-                        placeholder="+1 (555) 123-4567"
-                        maxLength={20}
-                      />
-                    </div>
-                  </div>
+                  <FormField
+                    label="Адрес предприятия"
+                    placeholder="ул. Промышленная, 123, г. Москва"
+                    maxLength={300}
+                    error={form.formState.errors.business_address?.message}
+                    {...form.register('business_address')}
+                  />
 
-                  <div className="form-group">
-                    <label className="form-label">Адрес предприятия</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.business_address}
-                      onChange={(e) => setFormData({...formData, business_address: e.target.value})}
-                      placeholder="123 Business St, City, State, ZIP"
-                      maxLength={300}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Описание предприятия</label>
-                    <textarea
-                      className="form-input"
-                      value={formData.business_description}
-                      onChange={(e) => setFormData({...formData, business_description: e.target.value})}
-                      placeholder="Опишите предприятие, специализацию и предлагаемые услуги..."
-                      rows="3"
-                      maxLength={500}
-                    />
-                    <small style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-xs)' }}>
-                      {formData.business_description.length}/500 символов
-                    </small>
-                  </div>
+                  <FormField
+                    label="Описание предприятия"
+                    type="textarea"
+                    placeholder="Опишите предприятие, специализацию и предлагаемые услуги..."
+                    rows={3}
+                    maxLength={500}
+                    helperText={`${form.watch('business_description')?.length || 0}/500 символов`}
+                    error={form.formState.errors.business_description?.message}
+                    {...form.register('business_description')}
+                  />
                 </>
               )}
 
-              <div className="flex gap-4" style={{ marginTop: 'var(--space-6)' }}>
-                <button
+              <div className="flex gap-4 pt-6">
+                <Button
                   type="submit"
-                  className="btn btn-primary"
-                  disabled={mutating}
+                  variant="primary"
+                  loading={mutating}
+                  disabled={!form.formState.isValid}
                 >
-                  {mutating ? (editingUser ? 'Обновление...' : 'Создание...') : (editingUser ? 'Обновить' : 'Создать')} {activeTab === 'buyers' ? 'покупателя' : 'продавца'}
-                </button>
-                <button
+                  {editingUser ? 'Обновить' : 'Создать'} {activeTab === 'buyers' ? 'покупателя' : 'продавца'}
+                </Button>
+                <Button
                   type="button"
-                  className="btn btn-secondary"
+                  variant="secondary"
                   onClick={resetForm}
                   disabled={mutating}
                 >
                   Отменить
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -512,22 +554,22 @@ const UserManagement = React.memo(() => {
                     </td>
                     <td>
                       <div className="flex gap-2">
-                        <button
+                        <Button
                           onClick={() => handleEditUser(user)}
-                          className="btn btn-secondary"
+                          variant="secondary"
+                          size="sm"
                           disabled={mutating}
-                          style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
                         >
                           Редактировать
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => handleDeleteUser(user.id, activeTab.slice(0, -1))}
-                          className="btn btn-secondary"
+                          variant="error"
+                          size="sm"
                           disabled={mutating}
-                          style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
                         >
                           Удалить
-                        </button>
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -537,21 +579,21 @@ const UserManagement = React.memo(() => {
 
             {/* Pagination */}
             <div className="flex justify-between items-center mt-6">
-              <button
+              <Button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0 || currentLoading}
-                className="btn btn-secondary"
+                variant="secondary"
               >
                 Предыдущая
-              </button>
-              <span>Страница {page + 1}</span>
-              <button
+              </Button>
+              <span className="text-sm text-gray-600">Страница {page + 1}</span>
+              <Button
                 onClick={() => setPage(page + 1)}
                 disabled={!currentData?.data || currentData.data.length < 10 || currentLoading}
-                className="btn btn-secondary"
+                variant="secondary"
               >
                 Следующая
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
