@@ -3,8 +3,13 @@ import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { MOCK_IDS } from '../utils/constants';
 
-// Use shared mock buyer ID
-const MOCK_BUYER_ID = MOCK_IDS.BUYER_ID;
+// TODO: Replace with real authentication when ready for production
+const getCurrentBuyerKeycloakId = () => {
+  // Используем mock ID для разработки и тестирования
+  // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
+  console.warn('Using mock buyer keycloak ID for development/testing - implement real authentication when ready');
+  return MOCK_IDS.BUYER_ID;
+};
 
 function Profile() {
   const [isEditing, setIsEditing] = useState(false);
@@ -14,20 +19,28 @@ function Profile() {
   });
 
   // Create stable API function to prevent infinite loops
-  const profileApiFunction = useMemo(() => () => apiService.getBuyerProfile(MOCK_BUYER_ID), []);
+  const profileApiFunction = useMemo(() => () => {
+    const keycloakId = getCurrentBuyerKeycloakId();
+    return apiService.getBuyerProfileByKeycloakId(keycloakId);
+  }, []);
   const { data, loading, error, refetch } = useApi(profileApiFunction, []);
   const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
 
   const handleSaveProfile = useCallback(async (e) => {
     e.preventDefault();
     try {
-      await mutate(apiService.updateBuyerProfile, MOCK_BUYER_ID, profileData);
+      // Get buyer_id from current profile data
+      const buyerId = data?.data?.id;
+      if (!buyerId) {
+        throw new Error('Buyer ID not found');
+      }
+      await mutate(apiService.updateBuyerProfile, buyerId, profileData);
       setIsEditing(false);
       refetch();
     } catch (err) {
       console.error('Failed to update profile:', err);
     }
-  }, [profileData, mutate, refetch]);
+  }, [profileData, mutate, refetch, data?.data?.id]);
 
   // Use useEffect with proper dependency to prevent infinite loops
   useEffect(() => {
@@ -94,7 +107,7 @@ function Profile() {
                 <input
                   type="text"
                   className="form-input"
-                  value={MOCK_BUYER_ID}
+                  value={data?.data?.id || 'Loading...'}
                   disabled
                   style={{ backgroundColor: '#f7fafc' }}
                 />
@@ -146,7 +159,7 @@ function Profile() {
                     <strong>Buyer ID:</strong>
                     <br />
                     <code style={{ backgroundColor: '#f7fafc', padding: '0.25rem', borderRadius: '0.25rem' }}>
-                      {MOCK_BUYER_ID}
+                      {data?.data?.id || 'Loading...'}
                     </code>
                   </div>
                   

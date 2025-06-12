@@ -97,6 +97,92 @@ async def search_products(
     )
 
 
+@router.get("/my-products")
+async def get_my_products(
+    keycloak_id: UUID,  # TODO: Replace with authentication dependency when Keycloak integration is ready
+    daos: GetDAOs,
+    pagination: Annotated[PaginationParamsSortBy, Depends()],
+) -> OffsetResults[ProductDTO]:
+    """
+    Get products for the current seller.
+
+    This endpoint returns only products that belong to the seller identified by keycloak_id.
+    Supports pagination and sorting.
+
+    Args:
+        keycloak_id: Keycloak UUID of the seller (temporary parameter, will be replaced with auth)
+        daos: Database access objects
+        pagination: Pagination and sorting parameters
+
+    Returns:
+        Paginated list of products belonging to the seller
+
+    Raises:
+        HTTPException: 404 if seller not found
+    """
+    # Find seller by keycloak_uuid
+    seller = await daos.seller.get_by_keycloak_uuid(keycloak_id)
+    if seller is None:
+        raise HTTPException(status_code=404, detail="Seller not found")
+
+    # Create filter to show only this seller's products
+    filters = ProductFilterDTO(seller_ids=[seller.id])
+
+    return await daos.product.get_filtered_results(
+        out_dto=ProductDTO,
+        pagination=pagination,
+        filters=filters,
+    )
+
+
+@router.get("/my-products/search")
+async def search_my_products(
+    keycloak_id: UUID,  # TODO: Replace with authentication dependency when Keycloak integration is ready
+    daos: GetDAOs,
+    pagination: Annotated[PaginationParamsSortBy, Depends()],
+    filters: Annotated[ProductFilterDTO, Depends()],
+) -> OffsetResults[ProductDTO]:
+    """
+    Search and filter products for the current seller with advanced criteria.
+
+    This endpoint allows sellers to search through their own products using all available filters.
+    The seller_ids filter is automatically set to the current seller and cannot be overridden.
+
+    Supports:
+    - Text search in title and description
+    - Price and volume range filtering
+    - Wood type filtering
+    - Boolean filters for delivery and pickup
+    - Date range filtering
+    - Sorting by any product field
+
+    Args:
+        keycloak_id: Keycloak UUID of the seller (temporary parameter, will be replaced with auth)
+        daos: Database access objects
+        pagination: Pagination and sorting parameters
+        filters: Search and filter criteria
+
+    Returns:
+        Filtered and paginated list of products belonging to the seller
+
+    Raises:
+        HTTPException: 404 if seller not found
+    """
+    # Find seller by keycloak_uuid
+    seller = await daos.seller.get_by_keycloak_uuid(keycloak_id)
+    if seller is None:
+        raise HTTPException(status_code=404, detail="Seller not found")
+
+    # Override seller_ids filter to ensure security - seller can only see their own products
+    filters.seller_ids = [seller.id]
+
+    return await daos.product.get_filtered_results(
+        out_dto=ProductDTO,
+        pagination=pagination,
+        filters=filters,
+    )
+
+
 @router.get("/{product_id}")
 async def get_product(
     product_id: UUID,

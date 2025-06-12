@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from backend.daos import GetDAOs
 from backend.dtos import (
@@ -64,4 +64,16 @@ async def get_buyer(
 ) -> DataResponse[BuyerDTO]:
     """Get a Buyer by id."""
     buyer = await daos.buyer.filter_first(id=buyer_id)
+    return DataResponse(data=BuyerDTO.model_validate(buyer))
+
+
+@router.get("/by-keycloak/{keycloak_uuid}")
+async def get_buyer_by_keycloak_uuid(
+    keycloak_uuid: UUID,
+    daos: GetDAOs,
+) -> DataResponse[BuyerDTO]:
+    """Get a Buyer by keycloak_uuid."""
+    buyer = await daos.buyer.get_by_keycloak_uuid(keycloak_uuid)
+    if buyer is None:
+        raise HTTPException(status_code=404, detail="Buyer not found")
     return DataResponse(data=BuyerDTO.model_validate(buyer))
