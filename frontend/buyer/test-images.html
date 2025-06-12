@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест загрузки изображений</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        img {
+            max-width: 200px;
+            max-height: 200px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Тест загрузки изображений - Frontend Buyer</h1>
+        
+        <div class="test-section">
+            <h3>1. Проверка API URL</h3>
+            <button onclick="testApiUrl()">Проверить API URL</button>
+            <div id="api-url-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Проверка доступности backend</h3>
+            <button onclick="testBackendHealth()">Проверить backend</button>
+            <div id="backend-health-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Получение списка изображений</h3>
+            <button onclick="testGetImages()">Получить изображения</button>
+            <div id="images-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Тест загрузки конкретного изображения</h3>
+            <input type="text" id="image-id" placeholder="UUID изображения" style="width: 300px; padding: 5px;">
+            <button onclick="testImageLoad()">Загрузить изображение</button>
+            <div id="image-load-result" class="result"></div>
+            <div id="image-display"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>5. Получение изображений для товара</h3>
+            <input type="text" id="product-id" placeholder="UUID товара" style="width: 300px; padding: 5px;">
+            <button onclick="testProductImages()">Получить изображения товара</button>
+            <div id="product-images-result" class="result"></div>
+            <div id="product-images-display"></div>
+        </div>
+    </div>
+
+    <script>
+        // Конфигурация API
+        const API_BASE_URL = 'http://localhost:8000';
+        
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.className = `result ${type}`;
+            element.textContent = message;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function testApiUrl() {
+            const apiUrl = API_BASE_URL;
+            log('api-url-result', `API URL: ${apiUrl}\nREACT_APP_API_URL: ${window.location.origin}`, 'info');
+        }
+
+        async function testBackendHealth() {
+            try {
+                log('backend-health-result', 'Проверяем доступность backend...', 'info');
+                
+                const response = await fetch(`${API_BASE_URL}/api/v1/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('backend-health-result', `✅ Backend доступен!\nСтатус: ${response.status}\nОтвет: ${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    log('backend-health-result', `❌ Backend недоступен!\nСтатус: ${response.status}\nОшибка: ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                log('backend-health-result', `❌ Ошибка подключения к backend:\n${error.message}\n\nВозможные причины:\n- Backend не запущен\n- Неправильный URL\n- CORS проблемы\n- Сетевые проблемы`, 'error');
+            }
+        }
+
+        async function testGetImages() {
+            try {
+                log('images-result', 'Получаем список изображений...', 'info');
+                
+                const response = await fetch(`${API_BASE_URL}/api/v1/images?offset=0&limit=10`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('images-result', `✅ Изображения получены!\nКоличество: ${data.data?.length || 0}\nОтвет: ${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    log('images-result', `❌ Ошибка получения изображений!\nСтатус: ${response.status}\nОшибка: ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                log('images-result', `❌ Ошибка запроса изображений:\n${error.message}`, 'error');
+            }
+        }
+
+        async function testImageLoad() {
+            const imageId = document.getElementById('image-id').value.trim();
+            if (!imageId) {
+                log('image-load-result', '❌ Введите UUID изображения', 'error');
+                return;
+            }
+
+            try {
+                log('image-load-result', `Загружаем изображение ${imageId}...`, 'info');
+                
+                // Сначала получаем метаданные
+                const metaResponse = await fetch(`${API_BASE_URL}/api/v1/images/${imageId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                if (metaResponse.ok) {
+                    const metaData = await metaResponse.json();
+                    log('image-load-result', `✅ Метаданные получены!\n${JSON.stringify(metaData, null, 2)}`, 'success');
+                    
+                    // Теперь пробуем загрузить файл
+                    const imageUrl = `${API_BASE_URL}/api/v1/images/${imageId}/file`;
+                    const img = new Image();
+                    
+                    img.onload = () => {
+                        log('image-load-result', `✅ Изображение загружено успешно!\nURL: ${imageUrl}`, 'success');
+                        document.getElementById('image-display').innerHTML = `<img src="${imageUrl}" alt="Изображение ${imageId}">`;
+                    };
+                    
+                    img.onerror = () => {
+                        log('image-load-result', `❌ Ошибка загрузки файла изображения!\nURL: ${imageUrl}`, 'error');
+                    };
+                    
+                    img.src = imageUrl;
+                } else {
+                    log('image-load-result', `❌ Ошибка получения метаданных!\nСтатус: ${metaResponse.status}\nОшибка: ${metaResponse.statusText}`, 'error');
+                }
+            } catch (error) {
+                log('image-load-result', `❌ Ошибка загрузки изображения:\n${error.message}`, 'error');
+            }
+        }
+
+        async function testProductImages() {
+            const productId = document.getElementById('product-id').value.trim();
+            if (!productId) {
+                log('product-images-result', '❌ Введите UUID товара', 'error');
+                return;
+            }
+
+            try {
+                log('product-images-result', `Получаем изображения для товара ${productId}...`, 'info');
+                
+                // Получаем все изображения и фильтруем по product_id
+                const response = await fetch(`${API_BASE_URL}/api/v1/images?offset=0&limit=100`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const allImages = data.data || [];
+                    const productImages = allImages.filter(img => img.product_id === productId);
+                    
+                    log('product-images-result', `✅ Найдено ${productImages.length} изображений для товара!\nИзображения: ${JSON.stringify(productImages, null, 2)}`, 'success');
+                    
+                    // Отображаем изображения
+                    const displayDiv = document.getElementById('product-images-display');
+                    displayDiv.innerHTML = '';
+                    
+                    productImages.forEach(img => {
+                        const imageUrl = `${API_BASE_URL}/api/v1/images/${img.id}/file`;
+                        const imgElement = document.createElement('img');
+                        imgElement.src = imageUrl;
+                        imgElement.alt = `Изображение товара ${productId}`;
+                        imgElement.onerror = () => {
+                            console.error(`Ошибка загрузки изображения ${img.id}`);
+                        };
+                        displayDiv.appendChild(imgElement);
+                    });
+                } else {
+                    log('product-images-result', `❌ Ошибка получения изображений!\nСтатус: ${response.status}\nОшибка: ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                log('product-images-result', `❌ Ошибка запроса изображений товара:\n${error.message}`, 'error');
+            }
+        }
+
+        // Автоматически проверяем API URL при загрузке страницы
+        window.onload = () => {
+            testApiUrl();
+        };
+    </script>
+</body>
+</html>
