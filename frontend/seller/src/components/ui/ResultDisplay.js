@@ -10,7 +10,6 @@ const ResultDisplay = ({ imageUrl, result }) => {
   const [hoveredBoard, setHoveredBoard] = useState(null);
   const [hoverPosition, setHoverPosition] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState('bottom');
-  const [tooltipAlign, setTooltipAlign] = useState('center');
 
   // Вычисление расстояния между точкой и отрезком линии
   const distToSegment = (p, v, w) => {
@@ -148,17 +147,8 @@ const ResultDisplay = ({ imageUrl, result }) => {
     if (board !== hoveredBoard) {
       if (board) {
         const mouseY = e.clientY - containerRect.top;
-        const mouseX = e.clientX - containerRect.left;
-        
+
         setTooltipPosition(mouseY > containerRect.height / 2 ? 'top' : 'bottom');
-        
-        if (mouseX < containerRect.width * 0.3) {
-          setTooltipAlign('left');
-        } else if (mouseX > containerRect.width * 0.7) {
-          setTooltipAlign('right');
-        } else {
-          setTooltipAlign('center');
-        }
         
         setHoveredBoard(board);
         setHoverPosition({ x: e.clientX - containerRect.left, y: e.clientY - containerRect.top });
@@ -179,26 +169,47 @@ const ResultDisplay = ({ imageUrl, result }) => {
   if (!result) return null;
 
   const getTooltipStyle = () => {
-    if (!hoverPosition) return {};
-    
+    if (!hoverPosition || !containerRef.current) return {};
+
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const isMobile = window.innerWidth <= 768;
+
     const style = {
       position: 'absolute',
       zIndex: 10,
       pointerEvents: 'none',
     };
 
+    // На мобильных устройствах показываем tooltip по центру снизу
+    if (isMobile) {
+      style.bottom = '16px';
+      style.left = '50%';
+      style.transform = 'translateX(-50%)';
+      style.position = 'fixed';
+      style.zIndex = 1000;
+      return style;
+    }
+
+    // Проверяем границы экрана для desktop
+    const tooltipWidth = 280; // минимальная ширина tooltip
+    const margin = 16;
+
     if (tooltipPosition === 'top') {
-      style.top = hoverPosition.y - 16;
+      style.top = Math.max(margin, hoverPosition.y - 16);
       style.transform = 'translateY(-100%)';
     } else {
       style.top = hoverPosition.y + 16;
     }
 
-    if (tooltipAlign === 'left') {
-      style.left = 16;
-    } else if (tooltipAlign === 'right') {
-      style.right = 16;
+    // Умное позиционирование по горизонтали
+    if (hoverPosition.x + tooltipWidth / 2 > containerRect.width - margin) {
+      // Tooltip выходит за правую границу
+      style.right = margin;
+    } else if (hoverPosition.x - tooltipWidth / 2 < margin) {
+      // Tooltip выходит за левую границу
+      style.left = margin;
     } else {
+      // Центрируем tooltip
       style.left = hoverPosition.x;
       style.transform = `${style.transform || ''} translateX(-50%)`;
     }
@@ -206,67 +217,73 @@ const ResultDisplay = ({ imageUrl, result }) => {
     return style;
   };
 
+  const isMobile = window.innerWidth <= 768;
+
   return (
     <div style={{ width: '100%', maxWidth: '64rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div style={{ position: 'relative' }} ref={containerRef}>
+      <div style={{ position: 'relative', overflow: 'hidden', borderRadius: '0.5rem' }} ref={containerRef}>
         <canvas
           ref={canvasRef}
-          style={{ 
-            width: '100%', 
-            height: 'auto', 
-            borderRadius: '0.5rem', 
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)', 
-            cursor: 'pointer' 
+          style={{
+            width: '100%',
+            height: 'auto',
+            borderRadius: '0.5rem',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+            cursor: 'pointer',
+            maxHeight: isMobile ? '60vh' : 'none',
+            objectFit: isMobile ? 'contain' : 'initial'
           }}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
         />
         {hoveredBoard && hoverPosition && (
-          <div 
+          <div
             style={{
               ...getTooltipStyle(),
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(8px)',
-              padding: '1.5rem',
+              backgroundColor: 'rgba(255, 255, 255, 0.98)',
+              backdropFilter: 'blur(12px)',
+              padding: isMobile ? '1rem' : '1.5rem',
               borderRadius: '0.75rem',
-              boxShadow: '0 20px 25px rgba(0, 0, 0, 0.1)',
+              boxShadow: '0 20px 25px rgba(0, 0, 0, 0.15)',
               border: '1px solid rgba(229, 231, 235, 0.5)',
               opacity: 1,
               transform: `${getTooltipStyle().transform || ''} scale(1)`,
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              maxWidth: isMobile ? '90vw' : '320px',
+              minWidth: isMobile ? '280px' : '280px'
             }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: '280px' }}>
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: '1fr 1fr', 
-                gap: '1.5rem 1rem' 
+            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '0.75rem' : '1rem' }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+                gap: isMobile ? '0.75rem' : '1.5rem 1rem'
               }}>
                 <div>
                   <p style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--color-primary)', margin: '0 0 0.25rem 0' }}>Объем</p>
-                  <p style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>{hoveredBoard.volume.toFixed(4)} м³</p>
+                  <p style={{ fontSize: isMobile ? '1rem' : '1.125rem', fontWeight: '600', margin: 0 }}>{hoveredBoard.volume.toFixed(4)} м³</p>
                 </div>
                 <div>
                   <p style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--color-primary)', margin: '0 0 0.25rem 0' }}>Ширина</p>
-                  <p style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>{mToCm(hoveredBoard.width).toFixed(1)} см</p>
+                  <p style={{ fontSize: isMobile ? '1rem' : '1.125rem', fontWeight: '600', margin: 0 }}>{mToCm(hoveredBoard.width).toFixed(1)} см</p>
                 </div>
                 <div>
                   <p style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--color-primary)', margin: '0 0 0.25rem 0' }}>Высота</p>
-                  <p style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>{mToCm(hoveredBoard.height).toFixed(1)} см</p>
+                  <p style={{ fontSize: isMobile ? '1rem' : '1.125rem', fontWeight: '600', margin: 0 }}>{mToCm(hoveredBoard.height).toFixed(1)} см</p>
                 </div>
                 <div>
                   <p style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--color-primary)', margin: '0 0 0.25rem 0' }}>Длина</p>
-                  <p style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>{mToCm(hoveredBoard.length).toFixed(1)} см</p>
+                  <p style={{ fontSize: isMobile ? '1rem' : '1.125rem', fontWeight: '600', margin: 0 }}>{mToCm(hoveredBoard.length).toFixed(1)} см</p>
                 </div>
               </div>
               <div style={{ paddingTop: '0.5rem', borderTop: '1px solid rgba(229, 231, 235, 0.5)' }}>
                 <p style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--color-primary)', margin: '0 0 0.25rem 0' }}>Уверенность</p>
                 <div style={{ marginTop: '0.25rem', width: '100%', backgroundColor: '#e5e7eb', borderRadius: '9999px', height: '0.5rem' }}>
-                  <div 
-                    style={{ 
-                      backgroundColor: 'var(--color-primary)', 
-                      height: '0.5rem', 
-                      borderRadius: '9999px', 
+                  <div
+                    style={{
+                      backgroundColor: 'var(--color-primary)',
+                      height: '0.5rem',
+                      borderRadius: '9999px',
                       transition: 'all 0.3s ease',
                       width: `${hoveredBoard.detection.confidence * 100}%`
                     }}
@@ -281,10 +298,10 @@ const ResultDisplay = ({ imageUrl, result }) => {
         )}
       </div>
       
-      <div 
+      <div
         style={{
           backgroundColor: 'white',
-          padding: '1.5rem',
+          padding: isMobile ? '1rem' : '1.5rem',
           borderRadius: '0.75rem',
           boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
           border: '1px solid #e5e7eb',
@@ -293,24 +310,78 @@ const ResultDisplay = ({ imageUrl, result }) => {
           transition: 'all 0.3s ease'
         }}
       >
-        <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1.5rem', color: '#374151', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.75rem' }}>
+        <h3 style={{
+          fontSize: isMobile ? '1rem' : '1.125rem',
+          fontWeight: '600',
+          marginBottom: isMobile ? '1rem' : '1.5rem',
+          color: '#374151',
+          borderBottom: '1px solid #e5e7eb',
+          paddingBottom: '0.75rem'
+        }}>
           Сводка анализа
         </h3>
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: window.innerWidth >= 768 ? '1fr 1fr' : '1fr', 
-          gap: '1.5rem' 
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+          gap: isMobile ? '1rem' : '1.5rem'
         }}>
-          <div style={{ backgroundColor: '#dbeafe', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
-            <p style={{ color: '#1e40af', fontWeight: '500', marginBottom: '0.25rem', margin: '0 0 0.25rem 0' }}>Общий объем</p>
-            <div style={{ display: 'flex', alignItems: 'baseline' }}>
-              <p style={{ fontSize: '2rem', fontWeight: '700', color: '#1e3a8a', margin: 0 }}>{result.total_volume.toFixed(4)}</p>
-              <p style={{ marginLeft: '0.25rem', color: '#1e40af', margin: '0 0 0 0.25rem' }}>м³</p>
+          <div style={{
+            backgroundColor: '#dbeafe',
+            padding: isMobile ? '0.75rem' : '1rem',
+            borderRadius: '0.5rem',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+          }}>
+            <p style={{
+              color: '#1e40af',
+              fontWeight: '500',
+              marginBottom: '0.25rem',
+              margin: '0 0 0.25rem 0',
+              fontSize: isMobile ? '0.875rem' : '1rem'
+            }}>
+              Общий объем
+            </p>
+            <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap' }}>
+              <p style={{
+                fontSize: isMobile ? '1.5rem' : '2rem',
+                fontWeight: '700',
+                color: '#1e3a8a',
+                margin: 0
+              }}>
+                {result.total_volume.toFixed(4)}
+              </p>
+              <p style={{
+                marginLeft: '0.25rem',
+                color: '#1e40af',
+                margin: '0 0 0 0.25rem',
+                fontSize: isMobile ? '1rem' : '1.125rem'
+              }}>
+                м³
+              </p>
             </div>
           </div>
-          <div style={{ backgroundColor: '#dbeafe', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
-            <p style={{ color: '#1e40af', fontWeight: '500', marginBottom: '0.25rem', margin: '0 0 0.25rem 0' }}>Всего досок</p>
-            <p style={{ fontSize: '2rem', fontWeight: '700', color: '#1e3a8a', margin: 0 }}>{result.total_count}</p>
+          <div style={{
+            backgroundColor: '#dbeafe',
+            padding: isMobile ? '0.75rem' : '1rem',
+            borderRadius: '0.5rem',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+          }}>
+            <p style={{
+              color: '#1e40af',
+              fontWeight: '500',
+              marginBottom: '0.25rem',
+              margin: '0 0 0.25rem 0',
+              fontSize: isMobile ? '0.875rem' : '1rem'
+            }}>
+              Всего досок
+            </p>
+            <p style={{
+              fontSize: isMobile ? '1.5rem' : '2rem',
+              fontWeight: '700',
+              color: '#1e3a8a',
+              margin: 0
+            }}>
+              {result.total_count}
+            </p>
           </div>
         </div>
       </div>

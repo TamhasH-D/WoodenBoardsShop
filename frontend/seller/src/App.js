@@ -4,8 +4,6 @@ import Dashboard from './components/Dashboard';
 import Products from './components/Products';
 import WoodTypesManager from './components/WoodTypesManager';
 import Chats from './components/Chats';
-import Profile from './components/Profile';
-import HealthCheck from './components/HealthCheck';
 import BoardAnalyzerNew from './components/BoardAnalyzerNew';
 import ErrorBoundary from './components/ErrorBoundary';
 import RequestMonitor from './components/RequestMonitor';
@@ -14,56 +12,107 @@ import './index.css';
 
 function Navigation() {
   const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isActive = (path) => location.pathname === path;
 
   return (
-    <ul className="nav-links">
-      <li>
-        <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
-          {SELLER_TEXTS.DASHBOARD}
-        </Link>
-      </li>
-      <li>
-        <Link to="/products" className={`nav-link ${isActive('/products') ? 'active' : ''}`}>
-          {SELLER_TEXTS.PRODUCTS}
-        </Link>
-      </li>
-      <li>
-        <Link to="/wood-types" className={`nav-link ${isActive('/wood-types') ? 'active' : ''}`}>
-          {SELLER_TEXTS.WOOD_TYPES}
-        </Link>
-      </li>
-      <li>
-        <Link to="/board-analyzer" className={`nav-link ${isActive('/board-analyzer') ? 'active' : ''}`}>
-          🔍 Анализатор досок
-        </Link>
-      </li>
-      <li>
-        <Link to="/chats" className={`nav-link ${isActive('/chats') ? 'active' : ''}`}>
-          {SELLER_TEXTS.CHATS}
-        </Link>
-      </li>
-      <li>
-        <Link to="/profile" className={`nav-link ${isActive('/profile') ? 'active' : ''}`}>
-          {SELLER_TEXTS.PROFILE}
-        </Link>
-      </li>
-      <li>
-        <Link to="/health" className={`nav-link ${isActive('/health') ? 'active' : ''}`}>
-          {SELLER_TEXTS.HEALTH_CHECK}
-        </Link>
-      </li>
-    </ul>
+    <>
+      {/* Desktop Navigation */}
+      <ul className="nav-links desktop-nav">
+        <li>
+          <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
+            {SELLER_TEXTS.DASHBOARD}
+          </Link>
+        </li>
+        <li>
+          <Link to="/products" className={`nav-link ${isActive('/products') ? 'active' : ''}`}>
+            {SELLER_TEXTS.PRODUCTS}
+          </Link>
+        </li>
+        <li>
+          <Link to="/wood-types" className={`nav-link ${isActive('/wood-types') ? 'active' : ''}`}>
+            {SELLER_TEXTS.WOOD_TYPES}
+          </Link>
+        </li>
+        <li>
+          <Link to="/board-analyzer" className={`nav-link ${isActive('/board-analyzer') ? 'active' : ''}`}>
+            🔍 Анализатор досок
+          </Link>
+        </li>
+        <li>
+          <Link to="/chats" className={`nav-link ${isActive('/chats') ? 'active' : ''}`}>
+            {SELLER_TEXTS.CHATS}
+          </Link>
+        </li>
+      </ul>
+
+      {/* Mobile Menu Button */}
+      <button
+        className="mobile-menu-button"
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        aria-label="Открыть меню"
+      >
+        <span className={`hamburger ${isMobileMenuOpen ? 'open' : ''}`}></span>
+      </button>
+
+      {/* Mobile Navigation */}
+      {isMobileMenuOpen && (
+        <div className="mobile-nav-overlay" onClick={() => setIsMobileMenuOpen(false)}>
+          <ul className="mobile-nav" onClick={(e) => e.stopPropagation()}>
+            <li>
+              <Link
+                to="/"
+                className={`nav-link ${isActive('/') ? 'active' : ''}`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {SELLER_TEXTS.DASHBOARD}
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/products"
+                className={`nav-link ${isActive('/products') ? 'active' : ''}`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {SELLER_TEXTS.PRODUCTS}
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/wood-types"
+                className={`nav-link ${isActive('/wood-types') ? 'active' : ''}`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {SELLER_TEXTS.WOOD_TYPES}
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/board-analyzer"
+                className={`nav-link ${isActive('/board-analyzer') ? 'active' : ''}`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                🔍 Анализатор досок
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/chats"
+                className={`nav-link ${isActive('/chats') ? 'active' : ''}`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {SELLER_TEXTS.CHATS}
+              </Link>
+            </li>
+          </ul>
+        </div>
+      )}
+    </>
   );
 }
 
 function App() {
-  const [onlineStatus] = useState({
-    isOnline: false,
-    lastActivity: null,
-    error: null
-  });
   // Auto-refresh functionality removed as it was an unsuccessful experiment
 
   return (
@@ -73,24 +122,7 @@ function App() {
           <div className="container">
             <nav className="nav">
               <div className="nav-brand">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {SELLER_TEXTS.SELLER_DASHBOARD}
-                  {process.env.NODE_ENV === 'development' && (
-                    <span
-                      style={{
-                        fontSize: '0.75rem',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '0.25rem',
-                        backgroundColor: onlineStatus.isOnline ? '#10b981' : '#ef4444',
-                        color: 'white',
-                        fontWeight: '600'
-                      }}
-                      title={onlineStatus.error || `Last activity: ${onlineStatus.lastActivity || 'Never'}`}
-                    >
-                      {onlineStatus.isOnline ? `🟢 ${SELLER_TEXTS.ONLINE}` : `🔴 ${SELLER_TEXTS.OFFLINE}`}
-                    </span>
-                  )}
-                </div>
+                {SELLER_TEXTS.SELLER_DASHBOARD}
               </div>
               <Navigation />
             </nav>
@@ -106,8 +138,6 @@ function App() {
                 <Route path="/wood-types" element={<WoodTypesManager />} />
                 <Route path="/board-analyzer" element={<BoardAnalyzerNew />} />
                 <Route path="/chats" element={<Chats />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/health" element={<HealthCheck />} />
               </Routes>
             </ErrorBoundary>
           </div>
