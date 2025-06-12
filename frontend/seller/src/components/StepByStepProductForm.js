@@ -251,67 +251,117 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
               Анализ досок по фотографии
             </h3>
 
-            <div className="form-grid form-grid-2" style={{ marginBottom: '1rem' }}>
-              <div className="form-group">
-                <label className="form-label">Высота доски (мм)</label>
+            {/* Компактный горизонтальный layout */}
+            <div className="board-analyzer-layout" style={{
+              display: 'grid',
+              gap: '1.5rem',
+              alignItems: 'start'
+            }}>
+              {/* Левая колонка - инпуты и кнопки */}
+              <div>
+                <div className="form-grid form-grid-2" style={{ marginBottom: '1rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Высота доски (мм)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={boardHeight}
+                      onChange={(e) => setBoardHeight(e.target.value)}
+                      placeholder="50"
+                      min="1"
+                      max="1000"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Длина доски (мм)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={boardLength}
+                      onChange={(e) => setBoardLength(e.target.value)}
+                      placeholder="1000"
+                      min="1"
+                      max="10000"
+                    />
+                  </div>
+                </div>
+
+                {/* Кнопки управления изображением */}
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => document.getElementById('board-image-input').click()}
+                    style={{ fontSize: 'var(--font-size-sm)' }}
+                  >
+                    📷 Выбрать фото
+                  </button>
+
+                  {imageFile && !analysisResult && !analyzing && (
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={handleImageAnalysis}
+                      disabled={!boardHeight || !boardLength}
+                      style={{ fontSize: 'var(--font-size-sm)' }}
+                    >
+                      🔍 Анализировать
+                    </button>
+                  )}
+
+                  {imageFile && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        setImageFile(null);
+                        setImageUrl(null);
+                        setAnalysisResult(null);
+                        setAnalysisError(null);
+                      }}
+                      style={{ fontSize: 'var(--font-size-sm)' }}
+                    >
+                      🗑️ Очистить
+                    </button>
+                  )}
+                </div>
+
+                {/* Скрытый input для файла */}
                 <input
-                  type="number"
-                  className="form-input"
-                  value={boardHeight}
-                  onChange={(e) => setBoardHeight(e.target.value)}
-                  placeholder="50"
-                  min="1"
-                  max="1000"
+                  id="board-image-input"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  style={{ display: 'none' }}
                 />
+
+                {analysisError && (
+                  <div style={{
+                    color: 'var(--color-error)',
+                    fontSize: 'var(--font-size-sm)',
+                    marginTop: '0.5rem',
+                    padding: '0.5rem',
+                    backgroundColor: 'var(--color-error-light)',
+                    borderRadius: 'var(--border-radius)',
+                    border: '1px solid var(--color-error)'
+                  }}>
+                    ❌ {analysisError}
+                  </div>
+                )}
               </div>
-              <div className="form-group">
-                <label className="form-label">Длина доски (мм)</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  value={boardLength}
-                  onChange={(e) => setBoardLength(e.target.value)}
-                  placeholder="1000"
-                  min="1"
-                  max="10000"
+
+              {/* Правая колонка - компактное изображение */}
+              <div>
+                <ImagePreviewWithBoards
+                  imageFile={imageFile}
+                  imageUrl={imageUrl}
+                  analysisResult={analysisResult}
+                  onImageSelect={handleImageSelect}
+                  loading={analyzing}
+                  compact={true}
                 />
               </div>
             </div>
-
-            <ImagePreviewWithBoards
-              imageFile={imageFile}
-              imageUrl={imageUrl}
-              analysisResult={analysisResult}
-              onImageSelect={handleImageSelect}
-              loading={analyzing}
-            />
-
-            {imageFile && !analysisResult && !analyzing && (
-              <div style={{ marginTop: '1rem' }}>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleImageAnalysis}
-                  disabled={!boardHeight || !boardLength}
-                >
-                  Анализировать изображение
-                </button>
-              </div>
-            )}
-
-            {analysisError && (
-              <div style={{
-                color: 'var(--color-error)',
-                fontSize: 'var(--font-size-sm)',
-                marginTop: '0.5rem',
-                padding: '0.75rem',
-                backgroundColor: 'var(--color-error-light)',
-                borderRadius: 'var(--border-radius)',
-                border: '1px solid var(--color-error)'
-              }}>
-                ❌ {analysisError}
-              </div>
-            )}
           </div>
         )}
 
@@ -411,24 +461,82 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
         )}
 
         {/* Кнопки управления */}
-        <div className="flex gap-4" style={{ marginTop: 'var(--space-6)' }}>
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={!canSubmit || mutating}
-          >
-            {mutating ? 'Создаем товар...' : 'Создать товар'}
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={onCancel}
-            disabled={mutating}
-          >
-            Отмена
-          </button>
+        <div style={{ marginTop: 'var(--space-6)' }}>
+          {/* Индикатор прогресса заполнения */}
+          {!canSubmit && (
+            <div style={{
+              marginBottom: '1rem',
+              padding: '0.75rem',
+              backgroundColor: 'var(--color-bg-light)',
+              borderRadius: 'var(--border-radius)',
+              border: '1px solid var(--color-border)'
+            }}>
+              <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text)', marginBottom: '0.5rem' }}>
+                <strong>Для создания товара необходимо:</strong>
+              </div>
+              <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-light)' }}>
+                {!formData.title && '• Указать название товара'}
+                {!formData.wood_type_id && '• Выбрать тип древесины'}
+                {!imageFile && '• Загрузить фотографию досок'}
+                {!analysisResult && imageFile && '• Выполнить анализ изображения'}
+                {!formData.volume && '• Указать объем товара'}
+                {!formData.price && '• Указать цену товара'}
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-4">
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={!canSubmit || mutating}
+              style={{
+                opacity: canSubmit ? 1 : 0.6,
+                cursor: canSubmit ? 'pointer' : 'not-allowed',
+                position: 'relative'
+              }}
+            >
+              {mutating ? (
+                <>
+                  <span style={{ marginRight: '0.5rem' }}>⏳</span>
+                  Создаем товар...
+                </>
+              ) : canSubmit ? (
+                <>
+                  <span style={{ marginRight: '0.5rem' }}>✅</span>
+                  Создать товар
+                </>
+              ) : (
+                <>
+                  <span style={{ marginRight: '0.5rem' }}>⏸️</span>
+                  Заполните все поля
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={onCancel}
+              disabled={mutating}
+            >
+              Отмена
+            </button>
+          </div>
         </div>
       </form>
+
+      {/* Стили для адаптивного layout */}
+      <style jsx>{`
+        .board-analyzer-layout {
+          grid-template-columns: 1fr 300px;
+        }
+
+        @media (max-width: 768px) {
+          .board-analyzer-layout {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </div>
   );
 };

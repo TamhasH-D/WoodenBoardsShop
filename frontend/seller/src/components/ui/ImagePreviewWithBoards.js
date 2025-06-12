@@ -3,12 +3,13 @@ import React, { useRef, useEffect, useState } from 'react';
 /**
  * Компонент для отображения изображения с разметкой досок
  */
-const ImagePreviewWithBoards = ({ 
-  imageFile, 
-  imageUrl, 
-  analysisResult, 
-  onImageSelect, 
-  loading = false 
+const ImagePreviewWithBoards = ({
+  imageFile,
+  imageUrl,
+  analysisResult,
+  onImageSelect,
+  loading = false,
+  compact = false
 }) => {
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -24,9 +25,9 @@ const ImagePreviewWithBoards = ({
     const img = new Image();
 
     img.onload = () => {
-      // Устанавливаем размеры canvas
-      const maxWidth = 400;
-      const maxHeight = 300;
+      // Устанавливаем размеры canvas в зависимости от режима
+      const maxWidth = compact ? 280 : 400;
+      const maxHeight = compact ? 200 : 300;
       let { width, height } = img;
 
       // Масштабируем изображение
@@ -50,7 +51,7 @@ const ImagePreviewWithBoards = ({
     };
 
     img.src = imageUrl;
-  }, [imageUrl, analysisResult]);
+  }, [imageUrl, analysisResult, compact]);
 
   const drawBoardsOnCanvas = (ctx, boards, canvasWidth, canvasHeight, originalWidth, originalHeight) => {
     const scaleX = canvasWidth / originalWidth;
@@ -103,18 +104,19 @@ const ImagePreviewWithBoards = ({
 
   return (
     <div className="form-group">
-      <label className="form-label">Фотография досок</label>
-      
-      <div 
+      {!compact && <label className="form-label">Фотография досок</label>}
+
+      <div
         style={{
           border: '2px dashed var(--color-border)',
           borderRadius: 'var(--border-radius)',
-          padding: '1rem',
+          padding: compact ? '0.5rem' : '1rem',
           textAlign: 'center',
           cursor: imageFile ? 'default' : 'pointer',
           transition: 'all 0.2s ease',
           backgroundColor: imageFile ? 'var(--color-bg)' : 'var(--color-bg-light)',
-          position: 'relative'
+          position: 'relative',
+          minHeight: compact ? '150px' : 'auto'
         }}
         onClick={handleCanvasClick}
       >
@@ -127,23 +129,38 @@ const ImagePreviewWithBoards = ({
         />
 
         {!imageFile && !loading && (
-          <div style={{ padding: '2rem' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem', color: 'var(--color-text-light)' }}>
+          <div style={{ padding: compact ? '1rem' : '2rem' }}>
+            <div style={{
+              fontSize: compact ? '2rem' : '3rem',
+              marginBottom: compact ? '0.5rem' : '1rem',
+              color: 'var(--color-text-light)'
+            }}>
               📷
             </div>
-            <p style={{ color: 'var(--color-text)', marginBottom: '0.5rem' }}>
-              Нажмите для выбора изображения досок
+            <p style={{
+              color: 'var(--color-text)',
+              marginBottom: '0.5rem',
+              fontSize: compact ? 'var(--font-size-sm)' : 'var(--font-size-base)'
+            }}>
+              {compact ? 'Выберите фото' : 'Нажмите для выбора изображения досок'}
             </p>
-            <p style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-sm)' }}>
-              Поддерживаются форматы: JPG, PNG, WebP (до 10MB)
-            </p>
+            {!compact && (
+              <p style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-sm)' }}>
+                Поддерживаются форматы: JPG, PNG, WebP (до 10MB)
+              </p>
+            )}
           </div>
         )}
 
         {loading && (
-          <div style={{ padding: '2rem' }}>
+          <div style={{ padding: compact ? '1rem' : '2rem' }}>
             <div className="loading-spinner" style={{ margin: '0 auto 1rem' }}></div>
-            <p style={{ color: 'var(--color-text)' }}>Анализируем изображение...</p>
+            <p style={{
+              color: 'var(--color-text)',
+              fontSize: compact ? 'var(--font-size-sm)' : 'var(--font-size-base)'
+            }}>
+              {compact ? 'Анализируем...' : 'Анализируем изображение...'}
+            </p>
           </div>
         )}
 
@@ -161,16 +178,25 @@ const ImagePreviewWithBoards = ({
             
             {analysisResult && (
               <div style={{
-                marginTop: '1rem',
-                padding: '1rem',
+                marginTop: compact ? '0.5rem' : '1rem',
+                padding: compact ? '0.5rem' : '1rem',
                 backgroundColor: 'var(--color-success-light)',
                 borderRadius: 'var(--border-radius)',
                 border: '1px solid var(--color-success)'
               }}>
-                <h4 style={{ color: 'var(--color-success-dark)', marginBottom: '0.5rem', fontSize: 'var(--font-size-sm)' }}>
-                  ✅ Анализ завершен
+                <h4 style={{
+                  color: 'var(--color-success-dark)',
+                  marginBottom: '0.5rem',
+                  fontSize: compact ? 'var(--font-size-xs)' : 'var(--font-size-sm)'
+                }}>
+                  ✅ {compact ? 'Готово' : 'Анализ завершен'}
                 </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.5rem', fontSize: 'var(--font-size-sm)' }}>
+                <div style={{
+                  display: compact ? 'block' : 'grid',
+                  gridTemplateColumns: compact ? 'none' : 'repeat(auto-fit, minmax(120px, 1fr))',
+                  gap: '0.5rem',
+                  fontSize: compact ? 'var(--font-size-xs)' : 'var(--font-size-sm)'
+                }}>
                   <div>
                     <strong>Досок:</strong> {analysisResult.total_count}
                   </div>
@@ -181,27 +207,29 @@ const ImagePreviewWithBoards = ({
               </div>
             )}
 
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (fileInputRef.current) {
-                  fileInputRef.current.click();
-                }
-              }}
-              style={{
-                marginTop: '1rem',
-                padding: '0.5rem 1rem',
-                backgroundColor: 'var(--color-primary)',
-                color: 'white',
-                border: 'none',
-                borderRadius: 'var(--border-radius)',
-                fontSize: 'var(--font-size-sm)',
-                cursor: 'pointer'
-              }}
-            >
-              Выбрать другое изображение
-            </button>
+            {!compact && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (fileInputRef.current) {
+                    fileInputRef.current.click();
+                  }
+                }}
+                style={{
+                  marginTop: '1rem',
+                  padding: '0.5rem 1rem',
+                  backgroundColor: 'var(--color-primary)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 'var(--border-radius)',
+                  fontSize: 'var(--font-size-sm)',
+                  cursor: 'pointer'
+                }}
+              >
+                Выбрать другое изображение
+              </button>
+            )}
           </div>
         )}
       </div>
