@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNotifications } from '../contexts/NotificationContext';
 
 const ProductChat = ({ productId, product, sellerId, buyerId }) => {
@@ -10,62 +10,22 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [hasExistingChat, setHasExistingChat] = useState(false);
-  
+
   const wsRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+  const isConnectingRef = useRef(false);
 
-  // Предзаполненное сообщение
-  const defaultMessage = `Заинтересовался вашим товаром "${product?.title || product?.neme || 'товар'}"`;
+  // Предзаполненное сообщение - мемоизируем чтобы избежать пересоздания
+  const defaultMessage = useMemo(() =>
+    `Заинтересовался вашим товаром "${product?.title || product?.neme || 'товар'}"`,
+    [product?.title, product?.neme]
+  );
 
-  useEffect(() => {
-    if (!sellerId || !buyerId) return;
-    
-    // Устанавливаем предзаполненное сообщение только если нет существующего чата
-    if (!hasExistingChat && !newMessage) {
-      setNewMessage(defaultMessage);
-    }
-    
-    loadChatData();
-  }, [sellerId, buyerId, productId]);
+  // Мемоизируем функцию загрузки сообщений
+  const loadMessages = useCallback(async (threadId) => {
+    if (!threadId) return;
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const loadChatData = async () => {
-    try {
-      setLoading(true);
-      
-      // Ищем существующий чат между покупателем и продавцом
-      const response = await fetch(`/api/v1/chat-threads/by-buyer/${buyerId}`);
-      if (response.ok) {
-        const result = await response.json();
-        const existingThread = result.data?.find(t => t.seller_id === sellerId);
-        
-        if (existingThread) {
-          setThread(existingThread);
-          setHasExistingChat(true);
-          setNewMessage(''); // Очищаем предзаполненное сообщение
-          
-          // Загружаем сообщения
-          await loadMessages(existingThread.id);
-          
-          // Подключаемся к WebSocket
-          connectWebSocket(existingThread.id);
-        }
-      }
-    } catch (error) {
-      console.error('Ошибка загрузки чата:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadMessages = async (threadId) => {
     try {
       const response = await fetch(`/api/v1/chat-messages/by-thread/${threadId}?limit=50`);
       if (response.ok) {
@@ -75,11 +35,19 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
     } catch (error) {
       console.error('Ошибка загрузки сообщений:', error);
     }
-  };
+  }, []);
 
+  // Мемоизируем функцию подключения WebSocket
   const connectWebSocket = useCallback((threadId) => {
-    if (!threadId || !buyerId) return;
+    if (!threadId || !buyerId || isConnectingRef.current) return;
 
+    // Закрываем существующее соединение если есть
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
+    isConnectingRef.current = true;
     const wsUrl = `ws://localhost:8000/ws/chat/${threadId}?user_id=${buyerId}&user_type=buyer`;
     wsRef.current = new WebSocket(wsUrl);
 
@@ -111,16 +79,60 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
     };
 
     wsRef.current.onclose = () => {
+      isConnectingRef.current = false;
       setIsConnected(false);
-      // Переподключение через 3 секунды
-      setTimeout(() => connectWebSocket(threadId), 3000);
+
+      // Переподключение через 3 секунды только если компонент еще смонтирован
+      if (threadId && buyerId) {
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (threadId && buyerId) { // Двойная проверка
+            connectWebSocket(threadId);
+          }
+        }, 3000);
+      }
     };
 
     wsRef.current.onerror = (error) => {
       console.error('Ошибка WebSocket:', error);
+      isConnectingRef.current = false;
       setIsConnected(false);
     };
   }, [buyerId, sellerId]);
+
+  // Мемоизируем функцию загрузки данных чата
+  const loadChatData = useCallback(async () => {
+    if (!sellerId || !buyerId) return;
+
+    try {
+      setLoading(true);
+
+      // Ищем существующий чат между покупателем и продавцом
+      const response = await fetch(`/api/v1/chat-threads/by-buyer/${buyerId}`);
+      if (response.ok) {
+        const result = await response.json();
+        const existingThread = result.data?.find(t => t.seller_id === sellerId);
+
+        if (existingThread) {
+          setThread(existingThread);
+          setHasExistingChat(true);
+          setNewMessage(''); // Очищаем предзаполненное сообщение
+
+          // Загружаем сообщения
+          await loadMessages(existingThread.id);
+
+          // Подключаемся к WebSocket
+          connectWebSocket(existingThread.id);
+        } else if (!hasExistingChat && !newMessage) {
+          // Устанавливаем предзаполненное сообщение только если нет существующего чата
+          setNewMessage(defaultMessage);
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки чата:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [sellerId, buyerId, loadMessages, connectWebSocket, hasExistingChat, newMessage, defaultMessage]);
 
   const createChatThread = async () => {
     try {
@@ -215,11 +227,38 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
     }
   };
 
+  // Функция прокрутки к последнему сообщению
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  // Основной useEffect для загрузки данных чата
+  useEffect(() => {
+    loadChatData();
+  }, [loadChatData]);
+
+  // useEffect для прокрутки при новых сообщениях
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  // Cleanup useEffect
   useEffect(() => {
     return () => {
+      // Очищаем WebSocket соединение
       if (wsRef.current) {
         wsRef.current.close();
+        wsRef.current = null;
       }
+
+      // Очищаем таймер переподключения
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+
+      // Сбрасываем флаг подключения
+      isConnectingRef.current = false;
     };
   }, []);
 

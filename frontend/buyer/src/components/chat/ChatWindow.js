@@ -13,11 +13,13 @@ const ChatWindow = () => {
   const [threadInfo, setThreadInfo] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
-  
+
   const wsRef = useRef(null);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
-  
+  const reconnectTimeoutRef = useRef(null);
+  const isConnectingRef = useRef(false);
+
   const buyerId = localStorage.getItem('buyer_id') || 'b8c8e1e0-1234-5678-9abc-def012345678';
 
   // Прокрутка к последнему сообщению
@@ -58,20 +60,28 @@ const ChatWindow = () => {
 
   // WebSocket подключение
   const connectWebSocket = useCallback(() => {
-    if (!threadId || !buyerId) return;
+    if (!threadId || !buyerId || isConnectingRef.current) return;
 
+    // Закрываем существующее соединение если есть
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
+    isConnectingRef.current = true;
     const wsUrl = `ws://localhost:8000/ws/chat/${threadId}?user_id=${buyerId}&user_type=buyer`;
     wsRef.current = new WebSocket(wsUrl);
 
     wsRef.current.onopen = () => {
       console.log('WebSocket подключен');
+      isConnectingRef.current = false;
       setIsConnected(true);
     };
 
     wsRef.current.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        
+
         switch (data.type) {
           case 'message':
             // Добавляем новое сообщение
@@ -88,20 +98,20 @@ const ChatWindow = () => {
               is_read_by_seller: data.sender_type === 'seller'
             }]);
             break;
-            
+
           case 'typing':
             if (data.sender_id !== buyerId) {
               setOtherUserTyping(true);
               setTimeout(() => setOtherUserTyping(false), 3000);
             }
             break;
-            
+
           case 'user_joined':
             if (data.sender_id !== buyerId) {
               showInfo('Продавец подключился к чату');
             }
             break;
-            
+
           case 'user_left':
             if (data.sender_id !== buyerId) {
               showInfo('Продавец покинул чат');
@@ -115,13 +125,22 @@ const ChatWindow = () => {
 
     wsRef.current.onclose = () => {
       console.log('WebSocket отключен');
+      isConnectingRef.current = false;
       setIsConnected(false);
-      // Переподключение через 3 секунды
-      setTimeout(connectWebSocket, 3000);
+
+      // Переподключение через 3 секунды только если компонент еще смонтирован
+      if (threadId && buyerId) {
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (threadId && buyerId) { // Двойная проверка
+            connectWebSocket();
+          }
+        }, 3000);
+      }
     };
 
     wsRef.current.onerror = (error) => {
       console.error('Ошибка WebSocket:', error);
+      isConnectingRef.current = false;
       setIsConnected(false);
     };
   }, [threadId, buyerId, threadInfo?.seller_id, showInfo]);
@@ -198,16 +217,32 @@ const ChatWindow = () => {
     if (threadInfo) {
       connectWebSocket();
     }
-    
+  }, [threadInfo, connectWebSocket]);
+
+  // Cleanup useEffect
+  useEffect(() => {
     return () => {
+      // Очищаем WebSocket соединение
       if (wsRef.current) {
         wsRef.current.close();
+        wsRef.current = null;
       }
+
+      // Очищаем таймеры
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
       }
+
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+
+      // Сбрасываем флаг подключения
+      isConnectingRef.current = false;
     };
-  }, [threadInfo, connectWebSocket]);
+  }, []);
 
   if (isLoading) {
     return (
