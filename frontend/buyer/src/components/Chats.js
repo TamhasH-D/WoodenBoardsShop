@@ -3,9 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../contexts/NotificationContext';
 import { apiService } from '../services/api';
 import { BUYER_TEXTS } from '../utils/localization';
+import { MOCK_IDS } from '../utils/constants';
 
-// Mock buyer ID - in real app this would come from authentication
-const MOCK_BUYER_ID = '81f81c96-c56e-4b36-aec3-656f3576d09f';
+// TODO: Replace with real authentication when ready for production
+const getCurrentBuyerKeycloakId = () => {
+  // Используем mock ID для разработки и тестирования
+  // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
+  console.warn('Using mock buyer keycloak ID for development/testing - implement real authentication when ready');
+  return MOCK_IDS.BUYER_ID;
+};
 
 function Chats() {
   const navigate = useNavigate();
@@ -20,7 +26,8 @@ function Chats() {
       setLoading(true);
       setError(null);
 
-      const result = await apiService.getBuyerChats(MOCK_BUYER_ID);
+      const keycloakId = getCurrentBuyerKeycloakId();
+      const result = await apiService.getBuyerChatsByKeycloakId(keycloakId);
       setThreads(result.data || []);
 
     } catch (err) {

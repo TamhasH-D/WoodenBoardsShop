@@ -365,6 +365,32 @@ export const apiService = {
     }
   },
 
+  // Buyer profile management by keycloak_id with automatic creation
+  async getBuyerProfileByKeycloakId(keycloakId) {
+    try {
+      const response = await api.get(`/api/v1/buyers/by-keycloak/${keycloakId}`);
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        // Buyer doesn't exist, try to create it
+        console.warn(`Buyer with keycloak_id ${keycloakId} not found, attempting to create...`);
+        try {
+          const newBuyer = await this.createBuyer({
+            id: generateEntityUUID(ENTITY_TYPES.BUYER),
+            keycloak_uuid: keycloakId,
+            is_online: true
+          });
+          return newBuyer;
+        } catch (createError) {
+          console.error('Failed to create buyer:', createError);
+          throw createError;
+        }
+      }
+      console.error('Failed to get buyer profile by keycloak_id:', error);
+      throw error;
+    }
+  },
+
   // Helper method to ensure buyer exists before making buyer-specific API calls
   async ensureBuyerExists(buyerId) {
     try {
@@ -372,6 +398,8 @@ export const apiService = {
     } catch (error) {
       if (error.response?.status === 404 || error.response?.status === 422) {
         console.log(`Buyer ${buyerId} doesn't exist, creating...`);
+        // For development/testing, allow creation with mock keycloak_uuid
+        // In production, this should use real keycloak authentication
         await this.createBuyer({
           id: buyerId,
           keycloak_uuid: 'mock-keycloak-uuid-' + buyerId.substring(0, 8),
@@ -414,6 +442,27 @@ export const apiService = {
     }
   },
 
+  // Get buyer chats by keycloak_id (gets buyer_id first)
+  async getBuyerChatsByKeycloakId(keycloakId, page = 0, size = 10) {
+    try {
+      // First get buyer by keycloak_id to get the actual buyer_id
+      const buyerResponse = await this.getBuyerProfileByKeycloakId(keycloakId);
+      const buyerId = buyerResponse.data.id;
+
+      // Then get chats using buyer_id
+      return await this.getBuyerChats(buyerId, page, size);
+    } catch (error) {
+      console.error('Failed to get buyer chats by keycloak_id:', error);
+      // Return empty result on error
+      return {
+        data: [],
+        total: 0,
+        offset: page * size,
+        limit: size
+      };
+    }
+  },
+
   async createChatThread(threadData) {
     // Генерируем UUID если не передан
     const payload = threadData.id ? threadData : withUUID(threadData, ENTITY_TYPES.CHAT_THREAD);
@@ -430,6 +479,21 @@ export const apiService = {
       return response.data;
     } catch (error) {
       console.error('Failed to start chat with seller:', error);
+      throw error;
+    }
+  },
+
+  // Start chat with seller by keycloak_id (gets buyer_id first)
+  async startChatWithSellerByKeycloakId(keycloakId, sellerId) {
+    try {
+      // First get buyer by keycloak_id to get the actual buyer_id
+      const buyerResponse = await this.getBuyerProfileByKeycloakId(keycloakId);
+      const buyerId = buyerResponse.data.id;
+
+      // Then start chat using buyer_id
+      return await this.startChatWithSeller(buyerId, sellerId);
+    } catch (error) {
+      console.error('Failed to start chat with seller by keycloak_id:', error);
       throw error;
     }
   },
@@ -479,6 +543,24 @@ export const apiService = {
       return response.data;
     } catch (error) {
       console.error('Failed to send message:', error);
+      throw error;
+    }
+  },
+
+  // Send message by keycloak_id (gets buyer_id first)
+  async sendMessageByKeycloakId(keycloakId, messageData) {
+    try {
+      // First get buyer by keycloak_id to get the actual buyer_id
+      const buyerResponse = await this.getBuyerProfileByKeycloakId(keycloakId);
+      const buyerId = buyerResponse.data.id;
+
+      // Then send message using buyer_id
+      return await this.sendMessage({
+        ...messageData,
+        buyer_id: buyerId
+      });
+    } catch (error) {
+      console.error('Failed to send message by keycloak_id:', error);
       throw error;
     }
   },
