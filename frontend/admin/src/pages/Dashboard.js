@@ -140,7 +140,7 @@ export default function Dashboard() {
               <div className="text-center">
                 <UsersIcon className="mx-auto h-8 w-8 text-gray-400 group-hover:text-accent-600 transition-colors duration-150" />
                 <span className="mt-2 block text-sm font-medium text-gray-900 group-hover:text-accent-700">
-                  Управление пользователями
+                  Управление продавцами и покупателями
                 </span>
               </div>
             </Card>

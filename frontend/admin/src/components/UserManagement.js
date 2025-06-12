@@ -126,7 +126,7 @@ const UserManagement = React.memo(() => {
   }, [formData, activeTab, editingUser, mutate, refetchBuyers, refetchSellers, resetForm]);
 
   const handleDeleteUser = async (id, type) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
+    if (window.confirm('Вы уверены, что хотите удалить этого пользователя?')) {
       try {
         if (type === 'buyer') {
           await mutate(() => apiService.deleteBuyer(id));
@@ -144,7 +144,7 @@ const UserManagement = React.memo(() => {
   const handleBulkDelete = async () => {
     if (selectedUsers.length === 0) return;
 
-    if (window.confirm(`Are you sure you want to delete ${selectedUsers.length} users?`)) {
+    if (window.confirm(`Вы уверены, что хотите удалить ${selectedUsers.length} пользователей?`)) {
       try {
         if (activeTab === 'buyers') {
           await mutate(() => apiService.bulkDeleteBuyers(selectedUsers));
@@ -182,8 +182,8 @@ const UserManagement = React.memo(() => {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">User Management</h1>
-        <p className="page-description">Manage buyers and sellers on the platform</p>
+        <h1 className="page-title">Управление продавцами и покупателями</h1>
+        <p className="page-description">Управление покупателями и продавцами на платформе</p>
       </div>
 
       {/* Tab Navigation */}
@@ -192,13 +192,13 @@ const UserManagement = React.memo(() => {
           onClick={() => setActiveTab('buyers')}
           className={`btn ${activeTab === 'buyers' ? 'btn-primary' : 'btn-secondary'}`}
         >
-          Buyers
+          Покупатели
         </button>
         <button
           onClick={() => setActiveTab('sellers')}
           className={`btn ${activeTab === 'sellers' ? 'btn-primary' : 'btn-secondary'}`}
         >
-          Sellers
+          Продавцы
         </button>
       </div>
 
@@ -218,7 +218,7 @@ const UserManagement = React.memo(() => {
       <div className="card">
         <div className="card-header">
           <h2 className="card-title">
-            {activeTab === 'buyers' ? 'Buyers' : 'Sellers'}
+            {activeTab === 'buyers' ? 'Покупатели' : 'Продавцы'}
           </h2>
         </div>
 
@@ -241,7 +241,7 @@ const UserManagement = React.memo(() => {
               className="btn btn-primary"
               disabled={mutating}
             >
-              Add {activeTab === 'buyers' ? 'Buyer' : 'Seller'}
+              Добавить {activeTab === 'buyers' ? 'покупателя' : 'продавца'}
             </button>
             {selectedUsers.length > 0 && (
               <button
@@ -249,7 +249,7 @@ const UserManagement = React.memo(() => {
                 className="btn btn-secondary"
                 disabled={mutating}
               >
-                Delete Selected ({selectedUsers.length})
+                Удалить выбранные ({selectedUsers.length})
               </button>
             )}
             <button
@@ -257,7 +257,7 @@ const UserManagement = React.memo(() => {
               className="btn btn-secondary"
               disabled={currentLoading}
             >
-              {currentLoading ? 'Loading...' : 'Refresh'}
+              {currentLoading ? 'Загрузка...' : 'Обновить'}
             </button>
           </div>
         </div>
@@ -267,10 +267,10 @@ const UserManagement = React.memo(() => {
           <div className="card mb-6">
             <div className="card-header">
               <h2 className="card-title">
-                {editingUser ? `Edit ${activeTab === 'buyers' ? 'Buyer' : 'Seller'}` : `Add New ${activeTab === 'buyers' ? 'Buyer' : 'Seller'}`}
+                {editingUser ? `Редактировать ${activeTab === 'buyers' ? 'покупателя' : 'продавца'}` : `Добавить нового ${activeTab === 'buyers' ? 'покупателя' : 'продавца'}`}
               </h2>
               <p style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-2)' }}>
-                {editingUser ? 'Update the information below' : `Fill in the details to create a new ${activeTab === 'buyers' ? 'buyer' : 'seller'} account`}
+                {editingUser ? 'Обновите информацию ниже' : `Заполните данные для создания нового ${activeTab === 'buyers' ? 'покупателя' : 'продавца'}`}
               </p>
             </div>
 
@@ -287,7 +287,7 @@ const UserManagement = React.memo(() => {
                   maxLength={100}
                 />
                 <small style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-xs)' }}>
-                  Unique identifier from Keycloak authentication system
+                  Уникальный идентификатор из системы аутентификации Keycloak
                 </small>
               </div>
 
@@ -304,10 +304,10 @@ const UserManagement = React.memo(() => {
                     checked={formData.is_online}
                     onChange={(e) => setFormData({...formData, is_online: e.target.checked})}
                   />
-                  <span>User is Online</span>
+                  <span>Пользователь онлайн</span>
                 </label>
                 <small style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-xs)', marginLeft: '1.5rem' }}>
-                  Set the initial online status for this user
+                  Установить начальный статус онлайн для этого пользователя
                 </small>
               </div>
 
@@ -315,7 +315,7 @@ const UserManagement = React.memo(() => {
               {activeTab === 'sellers' && (
                 <>
                   <div className="form-group">
-                    <label className="form-label">Company Name</label>
+                    <label className="form-label">Название компании</label>
                     <input
                       type="text"
                       className="form-input"
@@ -328,7 +328,7 @@ const UserManagement = React.memo(() => {
 
                   <div className="form-grid form-grid-2">
                     <div className="form-group">
-                      <label className="form-label">Contact Email</label>
+                      <label className="form-label">Контактный email</label>
                       <input
                         type="email"
                         className="form-input"
@@ -339,7 +339,7 @@ const UserManagement = React.memo(() => {
                       />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">Contact Phone</label>
+                      <label className="form-label">Контактный телефон</label>
                       <input
                         type="tel"
                         className="form-input"
@@ -352,7 +352,7 @@ const UserManagement = React.memo(() => {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Business Address</label>
+                    <label className="form-label">Адрес предприятия</label>
                     <input
                       type="text"
                       className="form-input"
@@ -364,17 +364,17 @@ const UserManagement = React.memo(() => {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Business Description</label>
+                    <label className="form-label">Описание предприятия</label>
                     <textarea
                       className="form-input"
                       value={formData.business_description}
                       onChange={(e) => setFormData({...formData, business_description: e.target.value})}
-                      placeholder="Describe the business, specialties, and services offered..."
+                      placeholder="Опишите предприятие, специализацию и предлагаемые услуги..."
                       rows="3"
                       maxLength={500}
                     />
                     <small style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-xs)' }}>
-                      {formData.business_description.length}/500 characters
+                      {formData.business_description.length}/500 символов
                     </small>
                   </div>
                 </>
@@ -386,7 +386,7 @@ const UserManagement = React.memo(() => {
                   className="btn btn-primary"
                   disabled={mutating}
                 >
-                  {mutating ? (editingUser ? 'Updating...' : 'Creating...') : (editingUser ? 'Update' : 'Create')} {activeTab === 'buyers' ? 'Buyer' : 'Seller'}
+                  {mutating ? (editingUser ? 'Обновление...' : 'Создание...') : (editingUser ? 'Обновить' : 'Создать')} {activeTab === 'buyers' ? 'покупателя' : 'продавца'}
                 </button>
                 <button
                   type="button"
@@ -394,18 +394,18 @@ const UserManagement = React.memo(() => {
                   onClick={resetForm}
                   disabled={mutating}
                 >
-                  Cancel
+                  Отменить
                 </button>
               </div>
             </form>
           </div>
         )}
 
-        {currentLoading && <div className="loading">Loading {activeTab}...</div>}
+        {currentLoading && <div className="loading">Загрузка {activeTab === 'buyers' ? 'покупателей' : 'продавцов'}...</div>}
 
         {currentError && (
           <div className="error">
-            <strong>Failed to load {activeTab}:</strong> {currentError}
+            <strong>Не удалось загрузить {activeTab === 'buyers' ? 'покупателей' : 'продавцов'}:</strong> {currentError}
           </div>
         )}
 
@@ -423,15 +423,15 @@ const UserManagement = React.memo(() => {
                   </th>
                   <th>ID</th>
                   <th>Keycloak UUID</th>
-                  <th>Status</th>
+                  <th>Статус</th>
                   {activeTab === 'sellers' && (
                     <>
-                      <th>Company</th>
-                      <th>Contact</th>
+                      <th>Компания</th>
+                      <th>Контакты</th>
                     </>
                   )}
-                  <th>Created</th>
-                  <th>Actions</th>
+                  <th>Создан</th>
+                  <th>Действия</th>
                 </tr>
               </thead>
               <tbody>
@@ -459,19 +459,19 @@ const UserManagement = React.memo(() => {
                     </td>
                     <td>
                       <div style={{ fontSize: 'var(--font-size-xs)', fontFamily: 'monospace' }}>
-                        {user.keycloak_uuid ? user.keycloak_uuid.substring(0, 12) + '...' : 'Not set'}
+                        {user.keycloak_uuid ? user.keycloak_uuid.substring(0, 12) + '...' : 'Не установлен'}
                       </div>
                     </td>
                     <td>
                       <span className={`status ${user.is_online ? 'status-success' : 'status-error'}`}>
-                        {user.is_online ? 'Online' : 'Offline'}
+                        {user.is_online ? 'Онлайн' : 'Оффлайн'}
                       </span>
                     </td>
                     {activeTab === 'sellers' && (
                       <>
                         <td>
                           <div>
-                            <strong>{user.company_name || 'Not specified'}</strong>
+                            <strong>{user.company_name || 'Не указано'}</strong>
                             {user.business_description && (
                               <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-light)', marginTop: '0.25rem' }}>
                                 {user.business_description.length > 50
@@ -501,7 +501,7 @@ const UserManagement = React.memo(() => {
                               </div>
                             )}
                             {!user.contact_email && !user.contact_phone && !user.business_address && (
-                              <span style={{ color: 'var(--color-text-light)' }}>No contact info</span>
+                              <span style={{ color: 'var(--color-text-light)' }}>Нет контактной информации</span>
                             )}
                           </div>
                         </td>
@@ -518,7 +518,7 @@ const UserManagement = React.memo(() => {
                           disabled={mutating}
                           style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
                         >
-                          Edit
+                          Редактировать
                         </button>
                         <button
                           onClick={() => handleDeleteUser(user.id, activeTab.slice(0, -1))}
@@ -526,7 +526,7 @@ const UserManagement = React.memo(() => {
                           disabled={mutating}
                           style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
                         >
-                          Delete
+                          Удалить
                         </button>
                       </div>
                     </td>
@@ -542,21 +542,21 @@ const UserManagement = React.memo(() => {
                 disabled={page === 0 || currentLoading}
                 className="btn btn-secondary"
               >
-                Previous
+                Предыдущая
               </button>
-              <span>Page {page + 1}</span>
+              <span>Страница {page + 1}</span>
               <button
                 onClick={() => setPage(page + 1)}
                 disabled={!currentData?.data || currentData.data.length < 10 || currentLoading}
                 className="btn btn-secondary"
               >
-                Next
+                Следующая
               </button>
             </div>
           </div>
         ) : (
           <div className="text-center">
-            <p>No {activeTab} found.</p>
+            <p>Не найдено {activeTab === 'buyers' ? 'покупателей' : 'продавцов'}.</p>
           </div>
         )}
       </div>

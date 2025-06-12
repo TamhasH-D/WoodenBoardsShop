@@ -45,7 +45,7 @@ export default function EnhancedDashboard() {
 
   const quickActions = [
     {
-      title: 'Управление пользователями',
+      title: 'Управление продавцами и покупателями',
       description: 'Покупатели и продавцы',
       href: '/users',
       icon: UsersIcon,

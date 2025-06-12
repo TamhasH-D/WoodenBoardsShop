@@ -6,7 +6,7 @@ export const ADMIN_TEXTS = {
   ADMIN_PANEL: 'Административная панель',
   ENTERPRISE_DASHBOARD: 'Корпоративная панель управления',
   DASHBOARD: 'Панель управления',
-  USERS: 'Пользователи',
+  USERS: 'Продавцы и Покупатели',
   BUYERS: 'Покупатели',
   SELLERS: 'Продавцы',
   PRODUCTS: 'Товары',
@@ -58,7 +58,7 @@ export const ADMIN_TEXTS = {
 
   // Entity Management
   ENTITY_MANAGEMENT: 'Управление сущностями',
-  USER_MANAGEMENT: 'Управление пользователями',
+  USER_MANAGEMENT: 'Управление продавцами и покупателями',
   PRODUCT_MANAGEMENT: 'Управление товарами',
   WOOD_TYPE_MANAGEMENT: 'Управление типами древесины',
   PRICE_MANAGEMENT: 'Управление ценами',
@@ -156,7 +156,7 @@ export const ADMIN_TEXTS = {
   // Empty States
   NO_DATA: 'Нет данных',
   NO_ITEMS_FOUND: 'Элементы не найдены',
-  NO_USERS: 'Пользователи не найдены',
+  NO_USERS: 'Продавцы и покупатели не найдены',
   NO_PRODUCTS: 'Товары не найдены',
   NO_WOOD_TYPES: 'Типы древесины не найдены',
   NO_PRICES: 'Цены не найдены',
@@ -187,7 +187,7 @@ export const ADMIN_TEXTS = {
   RECONNECTING: 'Переподключение...',
 
   // Analytics
-  TOTAL_USERS: 'Всего пользователей',
+  TOTAL_USERS: 'Всего продавцов и покупателей',
   TOTAL_PRODUCTS: 'Всего товаров',
   TOTAL_SALES: 'Всего продаж',
   REVENUE: 'Выручка',

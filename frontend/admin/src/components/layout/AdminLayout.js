@@ -16,7 +16,7 @@ import { cn } from '../../utils/helpers';
 
 const navigation = [
   { name: 'Панель управления', href: '/', icon: HomeIcon },
-  { name: 'Пользователи', href: '/users', icon: UsersIcon },
+  { name: 'Продавцы и Покупатели', href: '/users', icon: UsersIcon },
   { name: 'Товары', href: '/products', icon: CubeIcon },
   { name: 'Коммуникации', href: '/communication', icon: ChatBubbleLeftRightIcon },
   { name: 'Аналитика', href: '/analytics', icon: ChartBarIcon },
