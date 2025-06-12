@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { MOCK_IDS } from '../utils/constants';
@@ -25,7 +25,7 @@ function Chats() {
   const { mutate, loading: sending } = useApiMutation();
 
   // Загрузка чатов продавца
-  const loadChats = async () => {
+  const loadChats = useCallback(async () => {
     if (!sellerId) return;
 
     try {
@@ -46,13 +46,13 @@ function Chats() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sellerId]);
 
   useEffect(() => {
     if (sellerId) {
       loadChats();
     }
-  }, [sellerId]);
+  }, [sellerId, loadChats]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
