@@ -456,6 +456,115 @@ textarea.form-input {
   border: var(--border-width) solid #bbf7d0;
 }
 
+/* Price Update Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Price Update Form Styles */
+.price-update-form {
+  animation: slideIn 0.3s ease-out;
+}
+
+.price-update-form input:focus {
+  animation: pulse 0.3s ease-in-out;
+}
+
+.price-display {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Enhanced Button Hover Effects */
+.btn:hover {
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+/* Price Display Enhancements */
+.price-display:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Price Input Validation Styles */
+.form-input:invalid {
+  border-color: var(--color-error) !important;
+  background-color: #fef2f2;
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+/* Success Animation */
+@keyframes successPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.price-success {
+  animation: successPulse 0.6s ease-in-out;
+}
+
+/* Loading Spinner */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Gradient Text Animation */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.gradient-text {
+  background: linear-gradient(-45deg, var(--color-primary), var(--color-success), var(--color-primary));
+  background-size: 400% 400%;
+  animation: gradientShift 3s ease infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .container {
