@@ -15,7 +15,7 @@ FRONTEND_BUYER_PORT ?= 8082
 BACKEND_HOST ?= localhost
 
 # Docker compose commands with environment variables
-COMPOSE := docker compose --env-file .env
+COMPOSE := docker compose
 BACKEND_DIR := backend/backend
 
 .PHONY: help
@@ -68,7 +68,7 @@ ps: ## List running containers
 
 .PHONY: backend-up
 backend-up: ## Start only backend services
-	cd $(BACKEND_DIR) && docker compose --env-file ../../.env up -d
+	cd $(BACKEND_DIR) && docker compose up -d
 
 .PHONY: backend-down
 backend-down: ## Stop backend services
