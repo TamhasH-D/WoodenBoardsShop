@@ -8,6 +8,9 @@ import {
   CogIcon,
   Bars3Icon,
   XMarkIcon,
+  ChatBubbleLeftRightIcon,
+  PhotoIcon,
+  WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline';
 import { cn } from '../../utils/helpers';
 
@@ -15,7 +18,10 @@ const navigation = [
   { name: 'Панель управления', href: '/', icon: HomeIcon },
   { name: 'Пользователи', href: '/users', icon: UsersIcon },
   { name: 'Товары', href: '/products', icon: CubeIcon },
+  { name: 'Коммуникации', href: '/communication', icon: ChatBubbleLeftRightIcon },
   { name: 'Аналитика', href: '/analytics', icon: ChartBarIcon },
+  { name: 'Медиа', href: '/media', icon: PhotoIcon },
+  { name: 'Инструменты', href: '/tools', icon: WrenchScrewdriverIcon },
   { name: 'Система', href: '/system', icon: CogIcon },
 ];
 

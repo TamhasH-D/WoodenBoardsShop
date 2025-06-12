@@ -5,7 +5,10 @@ import AdminLayout from './components/layout/AdminLayout';
 import Dashboard from './pages/Dashboard';
 import UsersPage from './pages/UsersPage';
 import ProductsPage from './pages/ProductsPage';
+import CommunicationPage from './pages/CommunicationPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import MediaPage from './pages/MediaPage';
+import ToolsPage from './pages/ToolsPage';
 import SystemPage from './pages/SystemPage';
 import { Toaster } from 'react-hot-toast';
 
@@ -19,7 +22,10 @@ function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/users/*" element={<UsersPage />} />
               <Route path="/products/*" element={<ProductsPage />} />
+              <Route path="/communication/*" element={<CommunicationPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/media/*" element={<MediaPage />} />
+              <Route path="/tools/*" element={<ToolsPage />} />
               <Route path="/system/*" element={<SystemPage />} />
             </Routes>
           </AdminLayout>
