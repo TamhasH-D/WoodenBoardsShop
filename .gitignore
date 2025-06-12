@@ -89,3 +89,80 @@ venv/
 env/
 .venv/
 .env/
+
+# Images and Media Files
+# =====================
+
+# Uploaded images (keep directory structure but ignore files)
+**/uploads/**/*.jpg
+**/uploads/**/*.jpeg
+**/uploads/**/*.png
+**/uploads/**/*.gif
+**/uploads/**/*.bmp
+**/uploads/**/*.webp
+**/uploads/**/*.svg
+**/uploads/**/*.ico
+**/uploads/**/*.tiff
+**/uploads/**/*.tif
+
+# Keep uploads directory structure
+!**/uploads/
+!**/uploads/**/
+!**/uploads/**/.gitkeep
+
+# Media directories
+media/
+static/media/
+public/media/
+assets/media/
+
+# Image cache and temporary files
+*.jpg.tmp
+*.jpeg.tmp
+*.png.tmp
+*.gif.tmp
+*.bmp.tmp
+*.webp.tmp
+*.svg.tmp
+*.ico.tmp
+**/image_cache/
+**/img_cache/
+**/thumbnail_cache/
+**/thumbs/
+
+# Generated images and thumbnails
+**/thumbnails/
+**/thumbs/
+**/resized/
+**/optimized/
+**/compressed/
+
+# Test images (except essential ones)
+**/test_images/
+**/sample_images/
+**/demo_images/
+# Keep benchmark images for YOLO testing
+!backend/prosto_board_volume-main/utils/benchmarks/input/wooden_boards_images/
+
+# Frontend build artifacts with images
+**/dist/**/*.jpg
+**/dist/**/*.jpeg
+**/dist/**/*.png
+**/dist/**/*.gif
+**/dist/**/*.bmp
+**/dist/**/*.webp
+**/dist/**/*.svg
+**/dist/**/*.ico
+
+# Image processing temporary files
+**/processed/
+**/temp_images/
+**/tmp_images/
+*.processed
+*.resized
+*.optimized
+
+# User uploaded content
+user_uploads/
+user_content/
+user_media/
