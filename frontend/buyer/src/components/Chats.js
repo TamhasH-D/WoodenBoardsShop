@@ -5,11 +5,11 @@ import { apiService } from '../services/api';
 import { BUYER_TEXTS } from '../utils/localization';
 import { MOCK_IDS } from '../utils/constants';
 
-// TODO: Replace with real authentication
+// TODO: Replace with real authentication when ready for production
 const getCurrentBuyerKeycloakId = () => {
-  // Временно используем mock ID для разработки
+  // Используем mock ID для разработки и тестирования
   // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
-  console.warn('Using mock buyer keycloak ID for development - implement real authentication');
+  console.warn('Using mock buyer keycloak ID for development/testing - implement real authentication when ready');
   return MOCK_IDS.BUYER_ID;
 };
 
