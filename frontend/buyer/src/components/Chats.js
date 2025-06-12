@@ -1,484 +1,324 @@
-import { useState, useCallback, useMemo } from 'react';
-import { useApi, useApiMutation } from '../hooks/useApi';
-import { apiService } from '../services/api';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useNotifications } from '../contexts/NotificationContext';
+import { BUYER_TEXTS } from '../utils/localization';
 
 // Mock buyer ID - in real app this would come from authentication
 const MOCK_BUYER_ID = '81f81c96-c56e-4b36-aec3-656f3576d09f';
 
 function Chats() {
-  const [page, setPage] = useState(0);
-  const [selectedThread, setSelectedThread] = useState(null);
-  const [newMessage, setNewMessage] = useState('');
+  const navigate = useNavigate();
+  const { showError } = useNotifications();
+  const [threads, setThreads] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Memoize the selected thread ID to prevent unnecessary re-renders
-  const selectedThreadId = useMemo(() => selectedThread?.id || null, [selectedThread?.id]);
-
-  // Create stable API functions to prevent infinite loops
-  const chatsApiFunction = useMemo(() => () => apiService.getBuyerChats(MOCK_BUYER_ID, page, 10), [page]);
-  const { data, loading, error, refetch } = useApi(chatsApiFunction, [page]);
-
-  // Create stable messages API function
-  const messagesApiFunction = useMemo(() => {
-    return () => {
-      if (selectedThreadId) {
-        return apiService.getChatMessages(selectedThreadId);
-      }
-      return Promise.resolve(null);
-    };
-  }, [selectedThreadId]);
-
-  const { data: messages, loading: messagesLoading, refetch: refetchMessages } = useApi(
-    messagesApiFunction,
-    [selectedThreadId]
-  );
-
-  const { mutate, loading: sending } = useApiMutation();
-
-  const handleSendMessage = useCallback(async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !selectedThreadId) return;
-
-    const messageText = newMessage.trim();
-    setNewMessage(''); // Clear immediately for better UX
-
+  // Загрузка чатов покупателя
+  const loadChats = async () => {
     try {
-      const messageId = crypto.randomUUID();
-      await mutate(apiService.sendMessage, {
-        id: messageId,
-        message: messageText,
-        is_read_by_buyer: true,
-        is_read_by_seller: false,
-        thread_id: selectedThreadId,
-        buyer_id: MOCK_BUYER_ID,
-        seller_id: selectedThread?.seller_id
-      });
-      refetchMessages();
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`/api/v1/chat-threads/by-buyer/${MOCK_BUYER_ID}`);
+      if (!response.ok) {
+        throw new Error('Не удалось загрузить чаты');
+      }
+
+      const result = await response.json();
+      setThreads(result.data || []);
+
     } catch (err) {
-      console.error('Failed to send message:', err);
-      // Restore message on error
-      setNewMessage(messageText);
+      console.error('Ошибка загрузки чатов:', err);
+      setError(err.message);
+      showError('Не удалось загрузить чаты');
+    } finally {
+      setLoading(false);
     }
-  }, [newMessage, selectedThreadId, selectedThread?.seller_id, mutate, refetchMessages]);
+  };
+
+  useEffect(() => {
+    loadChats();
+  }, []);
+
+  const handleChatClick = (threadId) => {
+    navigate(`/chats/${threadId}`);
+  };
 
   return (
-    <div>
-      <div className="page-header">
-        <h1 className="page-title">My Conversations</h1>
-        <p className="page-description">Chat with sellers about their products</p>
-      </div>
-
-      <div className="card">
-        <div className="card-header flex justify-between items-center">
-          <h2 className="card-title">Conversations</h2>
+    <div style={{
+      maxWidth: '1200px',
+      margin: '0 auto',
+      padding: '20px',
+      backgroundColor: '#FAF7F0',
+      minHeight: '100vh'
+    }}>
+      <div style={{
+        backgroundColor: 'white',
+        padding: '30px',
+        borderRadius: '12px',
+        marginBottom: '30px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '20px'
+        }}>
+          <div>
+            <h1 style={{ margin: 0, color: '#374151', fontSize: '32px' }}>
+              💬 {BUYER_TEXTS.CHATS || 'Мои чаты'}
+            </h1>
+            <p style={{ margin: '8px 0 0 0', color: '#6b7280', fontSize: '16px' }}>
+              Общение с продавцами о товарах
+            </p>
+          </div>
           <button
-            onClick={refetch}
-            className="btn btn-secondary"
+            onClick={loadChats}
             disabled={loading}
+            style={{
+              padding: '12px 20px',
+              backgroundColor: '#2563eb',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: '600',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.7 : 1,
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) {
+                e.target.style.backgroundColor = '#1d4ed8';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!loading) {
+                e.target.style.backgroundColor = '#2563eb';
+              }
+            }}
           >
-            {loading ? 'Loading...' : 'Refresh'}
+            {loading ? '🔄 Обновление...' : '🔄 Обновить'}
           </button>
         </div>
 
         {error && (
-          <div className="error mb-4">
-            <strong>Failed to load conversations</strong>
-            <p>{error}</p>
+          <div style={{
+            padding: '16px',
+            backgroundColor: '#fef2f2',
+            border: '1px solid #fecaca',
+            borderRadius: '8px',
+            marginBottom: '20px'
+          }}>
+            <strong style={{ color: '#dc2626' }}>Ошибка загрузки чатов</strong>
+            <p style={{ margin: '4px 0 0 0', color: '#7f1d1d' }}>{error}</p>
           </div>
         )}
 
         {loading && (
-          <div className="card animate-fade-in-scale">
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '200px',
+            fontSize: '18px',
+            color: '#6b7280'
+          }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 'var(--space-md)',
-              marginBottom: 'var(--space-lg)'
+              gap: '12px'
             }}>
-              <span className="animate-pulse" style={{ fontSize: '1.5rem' }}>💬</span>
-              <h3>Loading conversations...</h3>
-            </div>
-            <div className="grid grid-2">
-              <div>
-                {[1, 2, 3].map(i => (
-                  <div key={i} style={{
-                    padding: 'var(--space-lg)',
-                    background: 'rgba(255, 255, 255, 0.5)',
-                    borderRadius: 'var(--radius-xl)',
-                    marginBottom: 'var(--space-md)'
-                  }}>
-                    <div className="skeleton skeleton-title"></div>
-                    <div className="skeleton skeleton-text"></div>
-                    <div className="skeleton skeleton-text" style={{ width: '60%' }}></div>
-                  </div>
-                ))}
-              </div>
               <div style={{
-                padding: 'var(--space-lg)',
-                background: 'rgba(255, 255, 255, 0.5)',
-                borderRadius: 'var(--radius-xl)'
-              }}>
-                <div className="skeleton skeleton-title"></div>
-                <div className="skeleton" style={{ height: '200px', marginBottom: 'var(--space-md)' }}></div>
-                <div className="skeleton" style={{ height: '40px' }}></div>
-              </div>
+                width: '24px',
+                height: '24px',
+                border: '3px solid #e5e7eb',
+                borderTop: '3px solid #2563eb',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }} />
+              Загрузка чатов...
             </div>
           </div>
         )}
 
-        {data && (
+        {!loading && (
           <>
-            <div style={{ marginBottom: '1rem' }}>
-              <p>Total conversations: {data.total || data.data?.length || 0}</p>
+            <div style={{ marginBottom: '20px' }}>
+              <p style={{ color: '#6b7280', fontSize: '16px' }}>
+                Всего чатов: {threads.length}
+              </p>
             </div>
 
-            {data.data && data.data.length > 0 ? (
-              <div className="grid grid-2" style={{ gap: 'var(--space-xl)' }}>
-                <div className="animate-fade-in-left">
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'var(--space-md)',
-                    marginBottom: 'var(--space-lg)',
-                    padding: 'var(--space-md)',
-                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
-                    borderRadius: 'var(--radius-lg)',
-                    border: '1px solid rgba(16, 185, 129, 0.2)'
-                  }}>
-                    <span style={{ fontSize: '1.5rem' }}>📋</span>
-                    <h3 style={{ margin: 0 }}>Conversations</h3>
-                  </div>
-                  <div style={{
-                    maxHeight: '500px',
-                    overflowY: 'auto',
-                    padding: 'var(--space-sm)',
-                    background: 'rgba(255, 255, 255, 0.3)',
-                    borderRadius: 'var(--radius-xl)',
-                    border: '1px solid rgba(255, 255, 255, 0.3)'
-                  }}>
-                    {data.data.map((thread, index) => (
-                      <div
-                        key={thread.id}
-                        onClick={() => setSelectedThread(thread)}
-                        className="animate-fade-in-up"
-                        style={{
-                          animationDelay: `${index * 0.1}s`,
-                          padding: 'var(--space-lg)',
-                          background: selectedThread?.id === thread.id
-                            ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%)'
-                            : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%)',
-                          border: selectedThread?.id === thread.id
-                            ? '2px solid rgba(16, 185, 129, 0.3)'
-                            : '1px solid rgba(255, 255, 255, 0.3)',
-                          borderRadius: 'var(--radius-xl)',
-                          marginBottom: 'var(--space-md)',
-                          cursor: 'pointer',
-                          transition: 'all var(--timing-normal) var(--easing-smooth)',
-                          backdropFilter: 'blur(10px)'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (selectedThread?.id !== thread.id) {
-                            e.target.style.transform = 'translateY(-2px) scale(1.02)';
-                            e.target.style.boxShadow = 'var(--shadow-elevation-3)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (selectedThread?.id !== thread.id) {
-                            e.target.style.transform = 'translateY(0) scale(1)';
-                            e.target.style.boxShadow = 'none';
-                          }
-                        }}
-                      >
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 'var(--space-sm)',
-                          marginBottom: 'var(--space-sm)'
-                        }}>
-                          <span style={{ fontSize: '1.2rem' }}>💬</span>
-                          <div style={{ fontWeight: '700', color: '#374151' }}>
-                            Chat #{thread.id.substring(0, 8)}...
-                          </div>
-                        </div>
-                        <div style={{
-                          fontSize: 'var(--font-size-sm)',
-                          color: '#6b7280',
-                          marginBottom: 'var(--space-xs)'
-                        }}>
-                          👤 Seller: {thread.seller_id?.substring(0, 8)}...
-                        </div>
-                        <div style={{
-                          fontSize: 'var(--font-size-xs)',
-                          color: '#9ca3af',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 'var(--space-xs)'
-                        }}>
-                          📅 {new Date(thread.created_at).toLocaleDateString()}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="animate-fade-in-right">
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'var(--space-md)',
-                    marginBottom: 'var(--space-lg)',
-                    padding: 'var(--space-md)',
-                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
-                    borderRadius: 'var(--radius-lg)',
-                    border: '1px solid rgba(16, 185, 129, 0.2)'
-                  }}>
-                    <span style={{ fontSize: '1.5rem' }}>💬</span>
-                    <h3 style={{ margin: 0 }}>Messages</h3>
-                  </div>
-                  {selectedThread ? (
-                    <div>
+            {threads.length > 0 ? (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+                gap: '20px'
+              }}>
+                {threads.map((thread) => (
+                  <div
+                    key={thread.id}
+                    onClick={() => handleChatClick(thread.id)}
+                    style={{
+                      backgroundColor: 'white',
+                      padding: '24px',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      border: '1px solid #e5e7eb'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                    }}
+                  >
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      marginBottom: '16px'
+                    }}>
                       <div style={{
-                        padding: 'var(--space-lg)',
-                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
-                        borderRadius: 'var(--radius-xl)',
-                        marginBottom: 'var(--space-lg)',
-                        border: '1px solid rgba(16, 185, 129, 0.2)',
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '50%',
+                        backgroundColor: '#2563eb',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 'var(--space-md)'
+                        justifyContent: 'center',
+                        fontSize: '20px'
                       }}>
-                        <div style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '50%',
-                          background: 'var(--gradient-primary)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          fontWeight: '700'
-                        }}>
-                          👤
-                        </div>
-                        <div>
-                          <strong style={{ color: '#374151' }}>
-                            Chat with Seller {selectedThread.seller_id?.substring(0, 8)}...
-                          </strong>
-                          <p style={{ margin: 0, marginTop: 'var(--space-xs)', color: '#6b7280', fontSize: 'var(--font-size-sm)' }}>
-                            🟢 Online
-                          </p>
-                        </div>
+                        💬
                       </div>
-                      
-                      {messagesLoading && <div className="loading">Loading messages...</div>}
-                      
-                      {messages?.data && messages.data.length > 0 ? (
-                        <div style={{
-                          maxHeight: '350px',
-                          overflowY: 'auto',
-                          marginBottom: 'var(--space-lg)',
-                          padding: 'var(--space-sm)',
-                          background: 'rgba(255, 255, 255, 0.3)',
-                          borderRadius: 'var(--radius-xl)',
-                          border: '1px solid rgba(255, 255, 255, 0.3)'
+                      <div>
+                        <h3 style={{
+                          margin: 0,
+                          fontSize: '18px',
+                          fontWeight: '600',
+                          color: '#374151'
                         }}>
-                          {messages.data.reverse().map((message, index) => {
-                            const isOwnMessage = message.buyer_id === MOCK_BUYER_ID;
-                            return (
-                              <div
-                                key={message.id}
-                                className="animate-fade-in-up"
-                                style={{
-                                  animationDelay: `${index * 0.1}s`,
-                                  display: 'flex',
-                                  justifyContent: isOwnMessage ? 'flex-end' : 'flex-start',
-                                  marginBottom: 'var(--space-md)'
-                                }}
-                              >
-                                <div style={{
-                                  maxWidth: '70%',
-                                  padding: 'var(--space-md)',
-                                  borderRadius: isOwnMessage
-                                    ? 'var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-xl)'
-                                    : 'var(--radius-xl) var(--radius-xl) var(--radius-xl) var(--radius-sm)',
-                                  background: isOwnMessage
-                                    ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                                    : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%)',
-                                  color: isOwnMessage ? 'white' : '#374151',
-                                  boxShadow: 'var(--shadow-elevation-2)',
-                                  border: isOwnMessage ? 'none' : '1px solid rgba(255, 255, 255, 0.3)',
-                                  backdropFilter: 'blur(10px)'
-                                }}>
-                                  <div style={{
-                                    fontSize: 'var(--font-size-xs)',
-                                    fontWeight: '600',
-                                    marginBottom: 'var(--space-xs)',
-                                    opacity: 0.8
-                                  }}>
-                                    {isOwnMessage ? '👤 You' : '🏪 Seller'}
-                                  </div>
-                                  <div style={{
-                                    fontSize: 'var(--font-size-sm)',
-                                    lineHeight: '1.5',
-                                    marginBottom: 'var(--space-xs)'
-                                  }}>
-                                    {message.message}
-                                  </div>
-                                  <div style={{
-                                    fontSize: 'var(--font-size-xs)',
-                                    opacity: 0.7,
-                                    textAlign: 'right'
-                                  }}>
-                                    📅 {new Date(message.created_at).toLocaleString()}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div style={{ marginBottom: '1rem' }}>
-                          <p>No messages yet. Start the conversation!</p>
-                        </div>
-                      )}
-
-                      {/* Premium Message Input */}
-                      <form onSubmit={handleSendMessage}>
-                        <div style={{
-                          display: 'flex',
-                          gap: 'var(--space-md)',
-                          padding: 'var(--space-lg)',
-                          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%)',
-                          borderRadius: 'var(--radius-2xl)',
-                          border: '1px solid rgba(255, 255, 255, 0.3)',
-                          backdropFilter: 'blur(20px)',
-                          boxShadow: 'var(--shadow-elevation-2)'
-                        }}>
-                          <div style={{ position: 'relative', flex: 1 }}>
-                            <input
-                              type="text"
-                              value={newMessage}
-                              onChange={(e) => setNewMessage(e.target.value)}
-                              placeholder="💬 Type your message..."
-                              className="form-input"
-                              style={{
-                                paddingLeft: '3rem',
-                                border: '2px solid rgba(16, 185, 129, 0.2)',
-                                background: 'rgba(255, 255, 255, 0.8)'
-                              }}
-                              disabled={sending}
-                            />
-                            <div style={{
-                              position: 'absolute',
-                              left: '1rem',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              fontSize: '1.25rem',
-                              color: '#10b981'
-                            }}>
-                              ✍️
-                            </div>
-                          </div>
-                          <button
-                            type="submit"
-                            className="btn btn-primary animate-glow"
-                            disabled={sending || !newMessage.trim()}
-                            style={{
-                              minWidth: '120px',
-                              background: newMessage.trim()
-                                ? 'var(--gradient-primary)'
-                                : 'rgba(156, 163, 175, 0.5)'
-                            }}
-                          >
-                            {sending ? '⏳ Sending...' : '🚀 Send'}
-                          </button>
-                        </div>
-                      </form>
-                    </div>
-                  ) : (
-                    <div style={{
-                      textAlign: 'center',
-                      padding: 'var(--space-3xl)',
-                      background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%)',
-                      border: '2px dashed rgba(16, 185, 129, 0.3)',
-                      borderRadius: 'var(--radius-2xl)'
-                    }}>
-                      <div className="animate-float" style={{ marginBottom: 'var(--space-xl)' }}>
-                        <span style={{ fontSize: '4rem', display: 'block', marginBottom: 'var(--space-lg)' }}>💬</span>
-                        <h3 style={{ margin: 0, marginBottom: 'var(--space-md)', color: '#374151' }}>
-                          Select a conversation
+                          Чат с продавцом
                         </h3>
                         <p style={{
-                          margin: 0,
-                          color: '#6b7280',
-                          fontSize: 'var(--font-size-lg)',
-                          maxWidth: '300px',
-                          marginLeft: 'auto',
-                          marginRight: 'auto',
-                          lineHeight: '1.6'
+                          margin: '4px 0 0 0',
+                          fontSize: '14px',
+                          color: '#6b7280'
                         }}>
-                          Choose a conversation from the list to start chatting with sellers.
+                          ID: {thread.seller_id?.substring(0, 8)}...
                         </p>
                       </div>
                     </div>
-                  )}
-                </div>
+
+                    <div style={{
+                      fontSize: '14px',
+                      color: '#6b7280',
+                      marginBottom: '12px'
+                    }}>
+                      {thread.last_message ? (
+                        <p style={{ margin: 0 }}>
+                          <strong>Последнее сообщение:</strong> {thread.last_message.substring(0, 50)}...
+                        </p>
+                      ) : (
+                        <p style={{ margin: 0 }}>Сообщений пока нет</p>
+                      )}
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      fontSize: '12px',
+                      color: '#9ca3af'
+                    }}>
+                      <span>
+                        📅 {new Date(thread.created_at).toLocaleDateString('ru-RU')}
+                      </span>
+                      {thread.unread_count > 0 && (
+                        <span style={{
+                          backgroundColor: '#ef4444',
+                          color: 'white',
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          fontSize: '11px',
+                          fontWeight: '600'
+                        }}>
+                          {thread.unread_count}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
-              <div className="card animate-fade-in-scale" style={{
+              <div style={{
                 textAlign: 'center',
-                padding: 'var(--space-3xl)',
-                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%)',
-                border: '2px dashed rgba(16, 185, 129, 0.3)',
-                borderRadius: 'var(--radius-2xl)'
+                padding: '60px 20px',
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                border: '2px dashed #d1d5db'
               }}>
-                <div className="animate-float" style={{ marginBottom: 'var(--space-xl)' }}>
-                  <span style={{ fontSize: '4rem', display: 'block', marginBottom: 'var(--space-lg)' }}>💬</span>
-                  <h3 style={{ margin: 0, marginBottom: 'var(--space-md)', color: '#374151' }}>
-                    No conversations yet
-                  </h3>
-                  <p style={{
-                    margin: 0,
-                    color: '#6b7280',
-                    fontSize: 'var(--font-size-lg)',
-                    maxWidth: '400px',
-                    marginLeft: 'auto',
-                    marginRight: 'auto',
-                    lineHeight: '1.6'
-                  }}>
-                    Start chatting with sellers by contacting them from product pages.
-                  </p>
-                </div>
-
-                <a
-                  href="/products"
-                  className="btn btn-primary animate-glow"
-                  style={{ fontSize: 'var(--font-size-lg)', padding: 'var(--space-lg) var(--space-2xl)' }}
+                <div style={{ fontSize: '64px', marginBottom: '20px' }}>💬</div>
+                <h3 style={{
+                  margin: 0,
+                  marginBottom: '12px',
+                  color: '#374151',
+                  fontSize: '24px'
+                }}>
+                  Чатов пока нет
+                </h3>
+                <p style={{
+                  margin: 0,
+                  color: '#6b7280',
+                  fontSize: '16px',
+                  maxWidth: '400px',
+                  marginLeft: 'auto',
+                  marginRight: 'auto',
+                  lineHeight: '1.6',
+                  marginBottom: '30px'
+                }}>
+                  Начните общение с продавцами, связавшись с ними через страницы товаров.
+                </p>
+                <button
+                  onClick={() => navigate('/products')}
+                  style={{
+                    padding: '12px 24px',
+                    backgroundColor: '#2563eb',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#1d4ed8';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = '#2563eb';
+                  }}
                 >
-                  🛍️ Browse Products
-                </a>
+                  🛍️ Посмотреть товары
+                </button>
               </div>
             )}
-
-            <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <button
-                onClick={() => setPage(Math.max(0, page - 1))}
-                disabled={page === 0 || loading}
-                className="btn btn-secondary"
-              >
-                Previous
-              </button>
-              <span>Page {page + 1}</span>
-              <button
-                onClick={() => setPage(page + 1)}
-                disabled={!data?.data || data.data.length < 10 || loading}
-                className="btn btn-secondary"
-              >
-                Next
-              </button>
-            </div>
           </>
         )}
       </div>
+
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

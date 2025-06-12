@@ -1,15 +1,18 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { useCart } from '../contexts/CartContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { BUYER_TEXTS, formatCurrencyRu } from '../utils/localization';
 import { apiService } from '../services/api';
+import StartChatButton from '../components/chat/StartChatButton';
 
 /**
  * Премиум страница каталога товаров
  * Продвинутая фильтрация, поиск, пагинация
  */
 const ProductsPage = () => {
+  const navigate = useNavigate();
   const { setPageTitle, searchQuery, setSearchQuery, filters, setFilters, resetFilters } = useApp();
   const { addToCart, isInCart } = useCart();
   const { showCartSuccess } = useNotifications();
@@ -238,6 +241,7 @@ const ProductsPage = () => {
                   product={product}
                   onAddToCart={handleAddToCart}
                   isInCart={isInCart(product.id)}
+                  navigate={navigate}
                 />
               ))}
             </div>
@@ -290,7 +294,7 @@ const ProductsPage = () => {
 /**
  * Карточка товара - Улучшенная версия
  */
-const ProductCard = ({ product, onAddToCart, isInCart }) => {
+const ProductCard = ({ product, onAddToCart, isInCart, navigate }) => {
   // Вычисляем цену за кубический метр
   const pricePerCubicMeter = product.volume > 0 ? (product.price / product.volume).toFixed(2) : '0.00';
 
@@ -324,7 +328,23 @@ const ProductCard = ({ product, onAddToCart, isInCart }) => {
 
       <div className="product-info">
         <h3 className="product-name">
-          {product.title || product.neme || 'Товар без названия'}
+          <button
+            onClick={() => navigate(`/product/${product.id}`)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'inherit',
+              cursor: 'pointer',
+              textAlign: 'left',
+              padding: 0,
+              font: 'inherit',
+              textDecoration: 'none'
+            }}
+            onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+            onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+          >
+            {product.title || product.neme || 'Товар без названия'}
+          </button>
         </h3>
 
         {(product.descrioption || product.description) && (
@@ -360,13 +380,31 @@ const ProductCard = ({ product, onAddToCart, isInCart }) => {
             </div>
           </div>
 
-          <button
-            onClick={() => onAddToCart(product)}
-            disabled={isInCart}
-            className={`btn btn-small ${isInCart ? 'btn-ghost' : 'btn-primary'}`}
-          >
-            {isInCart ? 'В корзине' : 'В корзину'}
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <button
+              onClick={() => navigate(`/product/${product.id}`)}
+              className="btn btn-small btn-outline"
+            >
+              📋 Подробнее
+            </button>
+
+            <button
+              onClick={() => onAddToCart(product)}
+              disabled={isInCart}
+              className={`btn btn-small ${isInCart ? 'btn-ghost' : 'btn-primary'}`}
+            >
+              {isInCart ? 'В корзине' : 'В корзину'}
+            </button>
+
+            {product.seller_id && (
+              <StartChatButton
+                sellerId={product.seller_id}
+                sellerName={`Продавец товара "${product.title || product.neme || 'Товар'}"`}
+                size="small"
+                className="btn btn-secondary btn-small"
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>
