@@ -77,15 +77,20 @@ const ProductImageWithBoards = ({ product, style = {} }) => {
         });
       }
 
+      console.log(`Изображение товара ${product.id} загружено успешно`);
       setImageLoaded(true);
     };
 
     img.onerror = () => {
+      console.error(`Ошибка загрузки изображения товара ${product.id}:`, img.src);
       setImageError(true);
     };
 
-    // Загружаем изображение
-    img.src = `/api/v1/images/${product.image_id}`;
+    // Загружаем изображение через правильный API endpoint
+    const baseUrl = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+    const imageUrl = `${baseUrl}/api/v1/images/${product.image_id}/file`;
+    console.log(`Загружаем изображение товара ${product.id}:`, imageUrl);
+    img.src = imageUrl;
   }, [product]);
 
   if (imageError) {

@@ -37,8 +37,8 @@ const ProductImage = ({
           // Берем первое изображение
           const mainImage = images[0];
 
-          // Формируем URL для получения файла изображения
-          const imageFileUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/v1/images/${mainImage.id}/file`;
+          // Формируем URL для получения файла изображения через apiService
+          const imageFileUrl = apiService.getImageFileUrl(mainImage.id);
           setImageUrl(imageFileUrl);
         } else {
           // Нет изображений для товара
@@ -136,10 +136,10 @@ export const ProductImageGallery = ({
           // Ограничиваем количество изображений
           const limitedImages = productImages.slice(0, maxImages);
           
-          // Формируем URLs для получения файлов изображений
+          // Формируем URLs для получения файлов изображений через apiService
           const imageUrls = limitedImages.map(img => ({
             id: img.id,
-            url: `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/v1/images/${img.id}/file`,
+            url: apiService.getImageFileUrl(img.id),
             path: img.image_path
           }));
           

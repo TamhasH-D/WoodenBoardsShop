@@ -536,9 +536,10 @@ const ProductCard = ({ product, woodTypeName, woodTypePrice, sellerName, navigat
   const loadProductImages = async () => {
     try {
       const images = await apiService.getProductImages(product.id);
+      console.log(`Загружены изображения для товара ${product.id}:`, images);
       setProductImages(images);
     } catch (error) {
-      console.error('Ошибка загрузки изображений:', error);
+      console.error(`Ошибка загрузки изображений для товара ${product.id}:`, error);
     }
   };
 
@@ -555,8 +556,11 @@ const ProductCard = ({ product, woodTypeName, woodTypePrice, sellerName, navigat
   // Получаем URL первого изображения
   const getImageUrl = () => {
     if (productImages.length > 0) {
-      return apiService.getImageFileUrl(productImages[0].id);
+      const imageUrl = apiService.getImageFileUrl(productImages[0].id);
+      console.log(`URL изображения для товара ${product.id}:`, imageUrl);
+      return imageUrl;
     }
+    console.log(`Нет изображений для товара ${product.id}`);
     return null;
   };
 

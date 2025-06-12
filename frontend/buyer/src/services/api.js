@@ -546,13 +546,17 @@ export const apiService = {
   // Get images for specific product
   async getProductImages(productId) {
     const allImages = await this.getAllImages();
-    return allImages.filter(image => image.product_id === productId);
+    const productImages = allImages.filter(image => image.product_id === productId);
+    console.log(`Найдено ${productImages.length} изображений для товара ${productId}:`, productImages);
+    return productImages;
   },
 
   // Get image file URL
   getImageFileUrl(imageId) {
     const baseUrl = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
-    return `${baseUrl}/api/v1/images/${imageId}/file`;
+    const imageUrl = `${baseUrl}/api/v1/images/${imageId}/file`;
+    console.log(`Сформирован URL изображения ${imageId}:`, imageUrl);
+    return imageUrl;
   },
 
   // Get image metadata
