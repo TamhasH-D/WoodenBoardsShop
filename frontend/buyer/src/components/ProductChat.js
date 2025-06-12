@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNotifications } from '../contexts/NotificationContext';
+import { apiService } from '../services/api';
+import { getChatWebSocketUrl } from '../utils/websocket';
 
 const ProductChat = ({ productId, product, sellerId, buyerId }) => {
   const { showError, showSuccess } = useNotifications();
@@ -27,11 +29,8 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
     if (!threadId) return;
 
     try {
-      const response = await fetch(`/api/v1/chat-messages/by-thread/${threadId}?limit=50`);
-      if (response.ok) {
-        const result = await response.json();
-        setMessages(result.data.reverse());
-      }
+      const result = await apiService.getChatMessages(threadId, 0, 50);
+      setMessages(result.data || []);
     } catch (error) {
       console.error('Ошибка загрузки сообщений:', error);
     }
@@ -48,7 +47,7 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
     }
 
     isConnectingRef.current = true;
-    const wsUrl = `ws://localhost:8000/ws/chat/${threadId}?user_id=${buyerId}&user_type=buyer`;
+    const wsUrl = getChatWebSocketUrl(threadId, buyerId, 'buyer');
     wsRef.current = new WebSocket(wsUrl);
 
     wsRef.current.onopen = () => {
@@ -107,25 +106,22 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
       setLoading(true);
 
       // Ищем существующий чат между покупателем и продавцом
-      const response = await fetch(`/api/v1/chat-threads/by-buyer/${buyerId}`);
-      if (response.ok) {
-        const result = await response.json();
-        const existingThread = result.data?.find(t => t.seller_id === sellerId);
+      const result = await apiService.getBuyerChats(buyerId);
+      const existingThread = result.data?.find(t => t.seller_id === sellerId);
 
-        if (existingThread) {
-          setThread(existingThread);
-          setHasExistingChat(true);
-          setNewMessage(''); // Очищаем предзаполненное сообщение
+      if (existingThread) {
+        setThread(existingThread);
+        setHasExistingChat(true);
+        setNewMessage(''); // Очищаем предзаполненное сообщение
 
-          // Загружаем сообщения
-          await loadMessages(existingThread.id);
+        // Загружаем сообщения
+        await loadMessages(existingThread.id);
 
-          // Подключаемся к WebSocket
-          connectWebSocket(existingThread.id);
-        } else if (!hasExistingChat && !newMessage) {
-          // Устанавливаем предзаполненное сообщение только если нет существующего чата
-          setNewMessage(defaultMessage);
-        }
+        // Подключаемся к WebSocket
+        connectWebSocket(existingThread.id);
+      } else if (!hasExistingChat && !newMessage) {
+        // Устанавливаем предзаполненное сообщение только если нет существующего чата
+        setNewMessage(defaultMessage);
       }
     } catch (error) {
       console.error('Ошибка загрузки чата:', error);
@@ -136,28 +132,13 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
 
   const createChatThread = async () => {
     try {
-      const response = await fetch('/api/v1/chat-threads/start-with-seller', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          buyer_id: buyerId,
-          seller_id: sellerId
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Не удалось создать чат');
-      }
-
-      const result = await response.json();
+      const result = await apiService.startChatWithSeller(buyerId, sellerId);
       const newThread = result.data;
-      
+
       setThread(newThread);
       setHasExistingChat(true);
       connectWebSocket(newThread.id);
-      
+
       return newThread;
     } catch (error) {
       console.error('Ошибка создания чата:', error);
@@ -183,23 +164,18 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
 
       // Отправляем сообщение
       const messageId = crypto.randomUUID();
-      const response = await fetch('/api/v1/chat-messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: messageId,
-          message: messageText,
-          is_read_by_buyer: true,
-          is_read_by_seller: false,
-          thread_id: currentThread.id,
-          buyer_id: buyerId,
-          seller_id: sellerId
-        })
-      });
+      const messageData = {
+        id: messageId,
+        message: messageText,
+        is_read_by_buyer: true,
+        is_read_by_seller: false,
+        thread_id: currentThread.id,
+        buyer_id: buyerId,
+        seller_id: sellerId
+      };
 
-      if (response.ok) {
+      const result = await apiService.sendMessage(messageData);
+      if (result) {
         setNewMessage('');
         
         // Отправляем через WebSocket для real-time обновления
@@ -214,10 +190,8 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
         if (!hasExistingChat) {
           showSuccess('Сообщение отправлено продавцу');
         }
-      } else {
-        throw new Error('Не удалось отправить сообщение');
       }
-      
+
     } catch (error) {
       console.error('Ошибка отправки сообщения:', error);
       showError('Не удалось отправить сообщение');

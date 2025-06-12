@@ -39,12 +39,7 @@ function Chats() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/v1/chat-threads/by-seller/${sellerId}`);
-      if (!response.ok) {
-        throw new Error('Не удалось загрузить чаты');
-      }
-
-      const result = await response.json();
+      const result = await apiService.getSellerChats(sellerId);
       setThreads(result.data || []);
 
     } catch (err) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../contexts/NotificationContext';
+import { apiService } from '../services/api';
 import { BUYER_TEXTS } from '../utils/localization';
 
 // Mock buyer ID - in real app this would come from authentication
@@ -19,12 +20,7 @@ function Chats() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/v1/chat-threads/by-buyer/${MOCK_BUYER_ID}`);
-      if (!response.ok) {
-        throw new Error('Не удалось загрузить чаты');
-      }
-
-      const result = await response.json();
+      const result = await apiService.getBuyerChats(MOCK_BUYER_ID);
       setThreads(result.data || []);
 
     } catch (err) {

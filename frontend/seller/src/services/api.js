@@ -630,21 +630,18 @@ export const apiService = {
       // First ensure the seller exists
       await this.ensureSellerExists(sellerId);
 
-      // Backend doesn't support seller_id filtering, so we'll get all threads and filter client-side
-      const response = await api.get(`/api/v1/chat-threads?offset=0&limit=20`);
-      const allThreads = response.data.data || response.data;
+      // Use the dedicated backend endpoint for seller chats
+      const response = await api.get(`/api/v1/chat-threads/by-seller/${sellerId}`);
+      const threads = response.data.data || response.data || [];
 
-      // Filter threads by seller_id client-side
-      const sellerThreads = allThreads.filter(thread => thread.seller_id === sellerId);
-
-      // Implement client-side pagination
+      // Implement client-side pagination if needed
       const startIndex = page * size;
       const endIndex = startIndex + size;
-      const paginatedData = sellerThreads.slice(startIndex, endIndex);
+      const paginatedData = threads.slice(startIndex, endIndex);
 
       return {
         data: paginatedData,
-        total: sellerThreads.length,
+        total: threads.length,
         offset: startIndex,
         limit: size
       };
@@ -683,24 +680,21 @@ export const apiService = {
 
   async getChatMessages(threadId, page = 0, size = 20) {
     try {
-      // Backend doesn't support thread_id filtering, so we'll get all messages and filter client-side
-      const response = await api.get(`/api/v1/chat-messages?offset=0&limit=20`);
-      const allMessages = response.data.data || response.data;
+      // Use the dedicated backend endpoint for thread messages
+      const response = await api.get(`/api/v1/chat-messages/by-thread/${threadId}?limit=${size}`);
+      const messages = response.data.data || response.data || [];
 
-      // Filter messages by thread_id client-side
-      const threadMessages = allMessages.filter(message => message.thread_id === threadId);
+      // Sort by created_at (oldest first for chat display)
+      messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
-      // Sort by created_at (newest first)
-      threadMessages.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-      // Implement client-side pagination
+      // Implement client-side pagination if needed
       const startIndex = page * size;
       const endIndex = startIndex + size;
-      const paginatedData = threadMessages.slice(startIndex, endIndex);
+      const paginatedData = messages.slice(startIndex, endIndex);
 
       return {
         data: paginatedData,
-        total: threadMessages.length,
+        total: messages.length,
         offset: startIndex,
         limit: size
       };
@@ -738,6 +732,19 @@ export const apiService = {
     const payload = threadData.id ? threadData : withUUID(threadData, ENTITY_TYPES.CHAT_THREAD);
     const response = await api.post('/api/v1/chat-threads', payload);
     return response.data;
+  },
+
+  async startChatWithSeller(buyerId, sellerId) {
+    try {
+      const response = await api.post('/api/v1/chat-threads/start-with-seller', {
+        buyer_id: buyerId,
+        seller_id: sellerId
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to start chat with seller:', error);
+      throw error;
+    }
   },
 
   // Image processing for volume calculation
@@ -887,6 +894,40 @@ export const apiService = {
       debug: process.env.NODE_ENV === 'development',
       ...options
     });
+  },
+
+  // Image management
+  async getAllImages() {
+    try {
+      const response = await api.get('/api/v1/images');
+      return response.data.data || response.data || [];
+    } catch (error) {
+      console.error('Failed to get all images:', error);
+      return [];
+    }
+  },
+
+  // Get images for specific product
+  async getProductImages(productId) {
+    const allImages = await this.getAllImages();
+    return allImages.filter(image => image.product_id === productId);
+  },
+
+  // Get image file URL
+  getImageFileUrl(imageId) {
+    const baseUrl = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+    return `${baseUrl}/api/v1/images/${imageId}/file`;
+  },
+
+  // Get image metadata
+  async getImageMetadata(imageId) {
+    try {
+      const response = await api.get(`/api/v1/images/${imageId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get image metadata:', error);
+      throw error;
+    }
   },
 
   // Analytics - now uses proper pagination

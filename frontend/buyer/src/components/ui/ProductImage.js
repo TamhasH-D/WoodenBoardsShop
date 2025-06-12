@@ -37,7 +37,7 @@ const ProductImage = ({
           // Берем первое изображение
           const mainImage = images[0];
 
-          // Формируем URL для получения файла изображения через apiService
+          // Получаем URL для файла изображения через apiService
           const imageFileUrl = apiService.getImageFileUrl(mainImage.id);
           setImageUrl(imageFileUrl);
         } else {
@@ -136,7 +136,7 @@ export const ProductImageGallery = ({
           // Ограничиваем количество изображений
           const limitedImages = productImages.slice(0, maxImages);
           
-          // Формируем URLs для получения файлов изображений через apiService
+          // Получаем URLs для файлов изображений через apiService
           const imageUrls = limitedImages.map(img => ({
             id: img.id,
             url: apiService.getImageFileUrl(img.id),
