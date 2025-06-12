@@ -115,12 +115,6 @@ add-data-small: ## Generate small dataset for testing (957 records)
 	cd data-generator && python -m pip install -r requirements.txt --quiet
 	cd data-generator && python demo_small.py
 
-.PHONY: add-data-small
-add-data-small: ## Generate small dataset for testing (957 records)
-	@echo "🧪 Generating small test dataset..."
-	cd data-generator && python -m pip install -r requirements.txt --quiet
-	cd data-generator && python demo_small.py
-
 .PHONY: rm-data
 rm-data: ## Remove all synthetic data from database
 	@echo "🗑️ Removing synthetic data..."
