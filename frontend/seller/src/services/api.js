@@ -186,61 +186,87 @@ export const apiService = {
     }
   },
 
-  // Products management
+  // Products management (legacy method - kept for backward compatibility)
   async getSellerProducts(sellerId, page = 0, size = 10) {
     try {
       // First ensure the seller exists
       await this.ensureSellerExists(sellerId);
 
-      // Backend doesn't support seller_id filtering, so we'll get all products and filter client-side
-      const cacheKey = 'all_products';
-      const now = Date.now();
+      // Get seller by ID to get keycloak_uuid, then use new secure endpoint
+      const sellerResponse = await api.get(`/api/v1/sellers/${sellerId}`);
+      const keycloakId = sellerResponse.data.data.keycloak_uuid;
 
-      // Check cache first
-      let allProducts;
-      if (cache.has(cacheKey) && (now - cache.get(cacheKey).timestamp) < CACHE_DURATION) {
-        allProducts = cache.get(cacheKey).data;
-      } else {
-        const response = await api.get(`/api/v1/products?offset=0&limit=20`);
-        allProducts = response.data.data || response.data;
-        cache.set(cacheKey, { data: allProducts, timestamp: now });
-      }
-
-      // Filter products by seller_id client-side
-      const sellerProducts = allProducts.filter(product => product.seller_id === sellerId);
-
-      // Implement client-side pagination
-      const startIndex = page * size;
-      const endIndex = startIndex + size;
-      const paginatedData = sellerProducts.slice(startIndex, endIndex);
-
-      return {
-        data: paginatedData,
-        total: sellerProducts.length,
-        offset: startIndex,
-        limit: size
-      };
+      // Use the new secure endpoint
+      return await this.getSellerProductsByKeycloakId(keycloakId, page, size);
     } catch (error) {
       console.error('Failed to get seller products:', error);
-      // Return empty result on error
-      return {
-        data: [],
-        total: 0,
-        offset: page * size,
-        limit: size
-      };
+      // Fallback to old client-side filtering method if new endpoint fails
+      try {
+        console.warn('Falling back to client-side filtering...');
+
+        const cacheKey = 'all_products';
+        const now = Date.now();
+
+        // Check cache first
+        let allProducts;
+        if (cache.has(cacheKey) && (now - cache.get(cacheKey).timestamp) < CACHE_DURATION) {
+          allProducts = cache.get(cacheKey).data;
+        } else {
+          const response = await api.get(`/api/v1/products?offset=0&limit=20`);
+          allProducts = response.data.data || response.data;
+          cache.set(cacheKey, { data: allProducts, timestamp: now });
+        }
+
+        // Filter products by seller_id client-side
+        const sellerProducts = allProducts.filter(product => product.seller_id === sellerId);
+
+        // Implement client-side pagination
+        const startIndex = page * size;
+        const endIndex = startIndex + size;
+        const paginatedData = sellerProducts.slice(startIndex, endIndex);
+
+        return {
+          data: paginatedData,
+          total: sellerProducts.length,
+          offset: startIndex,
+          limit: size
+        };
+      } catch (fallbackError) {
+        console.error('Fallback method also failed:', fallbackError);
+        // Return empty result on error
+        return {
+          data: [],
+          total: 0,
+          offset: page * size,
+          limit: size
+        };
+      }
     }
   },
 
-  // Get seller products by keycloak_id (gets seller_id first)
-  async getSellerProductsByKeycloakId(keycloakId, page = 0, size = 10) {
+  // Get seller products by keycloak_id using new secure backend endpoint
+  async getSellerProductsByKeycloakId(keycloakId, page = 0, size = 10, sortBy = 'created_at', sortOrder = 'desc') {
     try {
-      // First get seller by keycloak_id to get the actual seller_id
-      const sellerResponse = await this.getSellerProfileByKeycloakId(keycloakId);
-      const sellerId = sellerResponse.data.id;
+      // Use the new secure backend endpoint that automatically filters by seller
+      const actualSize = Math.min(size, 20); // Backend limit
+      const offset = page * actualSize;
 
-      // Then get products using seller_id
-      return await this.getSellerProducts(sellerId, page, size);
+      const response = await api.get(`/api/v1/products/my-products`, {
+        params: {
+          keycloak_id: keycloakId,
+          offset: offset,
+          limit: actualSize,
+          sort_by: sortBy,
+          sort_order: sortOrder
+        }
+      });
+
+      return {
+        data: response.data.data || response.data,
+        total: response.data.pagination?.total || 0,
+        offset: offset,
+        limit: actualSize
+      };
     } catch (error) {
       console.error('Failed to get seller products by keycloak_id:', error);
       // Return empty result on error
@@ -251,6 +277,54 @@ export const apiService = {
         limit: size
       };
     }
+  },
+
+  // Search seller products with filters using new secure backend endpoint
+  async searchSellerProductsByKeycloakId(keycloakId, filters = {}, page = 0, size = 10, sortBy = 'created_at', sortOrder = 'desc') {
+    try {
+      const actualSize = Math.min(size, 20); // Backend limit
+      const offset = page * actualSize;
+
+      const params = {
+        keycloak_id: keycloakId,
+        offset: offset,
+        limit: actualSize,
+        sort_by: sortBy,
+        sort_order: sortOrder,
+        ...filters // Include all search filters
+      };
+
+      const response = await api.get(`/api/v1/products/my-products/search`, { params });
+
+      return {
+        data: response.data.data || response.data,
+        total: response.data.pagination?.total || 0,
+        offset: offset,
+        limit: actualSize
+      };
+    } catch (error) {
+      console.error('Failed to search seller products by keycloak_id:', error);
+      // Return empty result on error
+      return {
+        data: [],
+        total: 0,
+        offset: page * size,
+        limit: size
+      };
+    }
+  },
+
+  // Helper method to clear seller products cache
+  clearSellerProductsCache() {
+    // Clear any cached seller product data
+    // This ensures fresh data is fetched after product changes
+    const keysToDelete = [];
+    for (const key of cache.keys()) {
+      if (key.includes('seller_products_') || key.includes('my_products_')) {
+        keysToDelete.push(key);
+      }
+    }
+    keysToDelete.forEach(key => cache.delete(key));
   },
 
   // Helper method to ensure seller exists before making seller-specific API calls
@@ -292,6 +366,8 @@ export const apiService = {
 
       // Clear products cache to force refresh
       cache.delete('all_products');
+      // Also clear any seller-specific product caches
+      this.clearSellerProductsCache();
 
       return response.data;
     } catch (error) {
@@ -343,6 +419,7 @@ export const apiService = {
 
       // Clear products cache to force refresh
       cache.delete('all_products');
+      this.clearSellerProductsCache();
 
       if (process.env.NODE_ENV === 'development') {
         console.log('Product created successfully with image analysis:', response.data);
@@ -382,6 +459,7 @@ export const apiService = {
 
       // Clear products cache to force refresh
       cache.delete('all_products');
+      this.clearSellerProductsCache();
 
       return response.data;
     } catch (error) {
@@ -447,6 +525,7 @@ export const apiService = {
 
       // Clear products cache to force refresh
       cache.delete('all_products');
+      this.clearSellerProductsCache();
 
       if (process.env.NODE_ENV === 'development') {
         console.log('Product updated successfully with image analysis:', response.data);
@@ -476,6 +555,7 @@ export const apiService = {
 
       // Clear products cache to force refresh
       cache.delete('all_products');
+      this.clearSellerProductsCache();
 
       return response.data;
     } catch (error) {
