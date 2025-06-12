@@ -16,8 +16,8 @@ def test_generator_initialization():
     
     # Проверяем настройки
     assert generator.api_base == "http://localhost:8000/api/v1"
-    assert generator.counts['wood_types'] == 12
-    assert generator.counts['products'] == 350
+    assert generator.counts['wood_types'] == 30  # large профиль
+    assert generator.counts['products'] == 2500  # large профиль
     
     # Проверяем пути к изображениям
     assert generator.images_source.exists(), f"Папка с изображениями не найдена: {generator.images_source}"
@@ -37,7 +37,7 @@ def test_data_templates():
     from data_templates import WOOD_TYPES, WOOD_PRICE_RANGES, PICKUP_CITIES
     
     # Проверяем типы древесины
-    assert len(WOOD_TYPES) >= 12, "Недостаточно типов древесины"
+    assert len(WOOD_TYPES) >= 30, "Недостаточно типов древесины"
     for wood_type in WOOD_TYPES:
         assert 'neme' in wood_type, "Отсутствует поле 'neme'"
         assert 'description' in wood_type, "Отсутствует поле 'description'"
