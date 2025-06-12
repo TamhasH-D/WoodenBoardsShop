@@ -1,6 +1,5 @@
 from collections.abc import Sequence
-from types import get_original_bases
-from typing import Any, get_args
+from typing import Any, Generic, TypeVar, Union, get_args, get_origin
 from uuid import UUID
 
 import sqlalchemy as sa
@@ -15,15 +14,15 @@ from backend.dtos import (
     PaginationParamsSortBy,
 )
 
-PaginationType = PaginationParams | PaginationParamsSortBy
-QueryType = sa.Select[Any] | sa.Update | sa.Delete
+PaginationType = Union[PaginationParams, PaginationParamsSortBy]
+QueryType = Union[sa.Select[Any], sa.Update, sa.Delete]
+
+Model = TypeVar('Model', bound=Base)
+InputDTO = TypeVar('InputDTO', bound=BaseModel)
+UpdateDTO = TypeVar('UpdateDTO', bound=BaseModel)
 
 
-class BaseDAO[
-    Model: Base,
-    InputDTO: BaseModel,
-    UpdateDTO: BaseModel,
-]:
+class BaseDAO(Generic[Model, InputDTO, UpdateDTO]):
     """
     Base class for all Data Access Objects (DAOs).
 
@@ -43,8 +42,11 @@ class BaseDAO[
     def __init_subclass__(
         cls,
     ) -> None:
-        base = get_original_bases(cls)[0]
-        cls.model = get_args(base)[0]
+        # Get the model type from the generic base class
+        for base in cls.__orig_bases__:
+            if get_origin(base) is BaseDAO:
+                cls.model = get_args(base)[0]
+                break
 
     def __init__(
         self,
@@ -56,9 +58,9 @@ class BaseDAO[
     # Private methods #
     ###################
 
-    def _apply_param_filters[
-        T: QueryType,
-    ](self, query: T, **filter_params: Any) -> T:
+    def _apply_param_filters(
+        self, query: QueryType, **filter_params: Any
+    ) -> QueryType:
         """Apply filters to query."""
         for key, value in filter_params.items():
             if hasattr(self.model, key):
@@ -69,8 +71,8 @@ class BaseDAO[
 
     def _apply_base_filter(
         self,
-        query: sa.Select[Any] | None = None,
-        loads: list[Any] | None = None,
+        query: Union[sa.Select[Any], None] = None,
+        loads: Union[list[Any], None] = None,
         **filter_params: Any,
     ) -> sa.Select[tuple[Model]]:
         """Get records by filter parameters."""
@@ -122,9 +124,9 @@ class BaseDAO[
 
     async def filter(
         self,
-        loads: list[Any] | None = None,
+        loads: Union[list[Any], None] = None,
         **filter_params: Any,
-    ) -> Sequence[Model] | None:
+    ) -> Union[Sequence[Model], None]:
         """Get records by filter parameters."""
         query = self._apply_base_filter(loads=loads, **filter_params)
         result = await self.session.execute(query)
@@ -132,9 +134,9 @@ class BaseDAO[
 
     async def filter_first(
         self,
-        loads: list[Any] | None = None,
+        loads: Union[list[Any], None] = None,
         **filter_params: Any,
-    ) -> Model | None:
+    ) -> Union[Model, None]:
         """Get a single record by filter parameters."""
         query = self._apply_base_filter(loads=loads, **filter_params)
         query = query.limit(1)
@@ -168,12 +170,12 @@ class BaseDAO[
         query = self._apply_param_filters(query, **filter_params)
         await self.session.execute(query)
 
-    async def get_offset_results[T: BaseModel](
+    async def get_offset_results(
         self,
-        out_dto: type[T],
+        out_dto: type[BaseModel],
         pagination: PaginationType,
-        query: sa.sql.Select[tuple[Model]] | None = None,
-    ) -> OffsetResults[T]:
+        query: Union[sa.sql.Select[tuple[Model]], None] = None,
+    ) -> OffsetResults[BaseModel]:
         """Get offset paginated results."""
         if query is None:
             query = sa.select(self.model)

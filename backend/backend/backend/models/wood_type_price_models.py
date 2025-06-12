@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -21,7 +21,7 @@ class WoodTypePrice(Base):
     )
     price_per_m3: Mapped[float] = mapped_column(sa.Float, index=True)
     created_at: Mapped[datetime] = mapped_column(
-        sa.DateTime(timezone=True), default=lambda: datetime.now(UTC)
+        sa.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     wood_type_id: Mapped[UUID] = mapped_column(
         sa.UUID(as_uuid=True),

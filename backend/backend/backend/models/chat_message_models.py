@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 import sqlalchemy as sa
@@ -22,7 +22,7 @@ class ChatMessage(Base):
     is_read_by_buyer: Mapped[bool] = mapped_column(sa.Boolean, default=False)
     is_read_by_seller: Mapped[bool] = mapped_column(sa.Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(
-        sa.DateTime(timezone=True), default=lambda: datetime.now(UTC)
+        sa.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     thread_id: Mapped[UUID] = mapped_column(
         sa.UUID(as_uuid=True),

@@ -122,6 +122,64 @@
   }
   ```
 
+### Расширенный поиск и фильтрация продуктов
+
+- **Метод:** GET
+- **Путь:** `/products/search`
+- **Описание:** Расширенный поиск и фильтрация продуктов с поддержкой сортировки.
+
+- **Параметры запроса:**
+
+  **Пагинация и сортировка:**
+  - `offset`: integer (по умолчанию 0, >=0) - Смещение для пагинации
+  - `limit`: integer (по умолчанию 20, >=1, <=20) - Количество записей на странице
+  - `sort_by`: string - Поле для сортировки (price, volume, title, created_at, etc.)
+  - `sort_order`: string (по умолчанию "asc") - Порядок сортировки ("asc" или "desc")
+
+  **Фильтры поиска:**
+  - `search_query`: string (optional) - Текстовый поиск по названию и описанию
+  - `price_min`: float (optional, >=0) - Минимальная цена
+  - `price_max`: float (optional, >=0) - Максимальная цена
+  - `volume_min`: float (optional, >=0) - Минимальный объем
+  - `volume_max`: float (optional, >=0) - Максимальный объем
+  - `wood_type_ids`: array[UUID] (optional) - Фильтр по типам древесины
+  - `seller_ids`: array[UUID] (optional) - Фильтр по продавцам
+  - `delivery_possible`: boolean (optional) - Фильтр по возможности доставки
+  - `has_pickup_location`: boolean (optional) - Фильтр по наличию места самовывоза
+  - `created_after`: datetime (optional) - Товары созданные после указанной даты
+  - `created_before`: datetime (optional) - Товары созданные до указанной даты
+
+- **Примеры запросов:**
+  ```
+  GET /products/search?search_query=дуб&price_min=1000&price_max=5000&sort_by=price&sort_order=asc
+  GET /products/search?wood_type_ids=uuid1&wood_type_ids=uuid2&delivery_possible=true
+  GET /products/search?volume_min=0.5&has_pickup_location=true&sort_by=created_at&sort_order=desc
+  ```
+
+- **Формат выходных данных (OffsetResults[ProductDTO]):**
+  ```json
+  {
+    "data": [
+      {
+        "id": "UUID",
+        "volume": "float",
+        "price": "float",
+        "title": "string",
+        "descrioption": "string | null",
+        "delivery_possible": "boolean",
+        "pickup_location": "string | null",
+        "created_at": "datetime",
+        "updated_at": "datetime",
+        "seller_id": "UUID",
+        "wood_type_id": "UUID"
+      }
+    ],
+    "pagination": {
+      "total": "integer" // Общее количество найденных продуктов
+    }
+  }
+  ```
+
 ### Получение продукта по ID
 
 - **Метод:** GET
