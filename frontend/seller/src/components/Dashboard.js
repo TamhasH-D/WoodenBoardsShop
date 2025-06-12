@@ -3,7 +3,6 @@ import { motion } from 'react-magic-motion';
 import BusinessStats from './dashboard/BusinessStats';
 import QuickActions from './dashboard/QuickActions';
 import RecentActivity from './dashboard/RecentActivity';
-import SalesChart from './dashboard/SalesChart';
 import { SELLER_TEXTS } from '../utils/localization';
 
 const Dashboard = React.memo(() => {
@@ -23,16 +22,6 @@ const Dashboard = React.memo(() => {
         >
           <h1 className="text-3xl font-bold mb-2">{SELLER_TEXTS.DASHBOARD}</h1>
           <p className="text-blue-100 text-lg">{SELLER_TEXTS.BUSINESS_OVERVIEW}</p>
-          <div className="mt-4 flex items-center space-x-4 text-sm">
-            <div className="flex items-center">
-              <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
-              <span>Система работает</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
-              <span>Все сервисы доступны</span>
-            </div>
-          </div>
         </motion.div>
       </div>
 
@@ -42,14 +31,8 @@ const Dashboard = React.memo(() => {
       {/* Quick Actions */}
       <QuickActions />
 
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Activity */}
-        <RecentActivity />
-
-        {/* Sales Chart */}
-        <SalesChart />
-      </div>
+      {/* Recent Activity */}
+      <RecentActivity />
     </motion.div>
   );
 });

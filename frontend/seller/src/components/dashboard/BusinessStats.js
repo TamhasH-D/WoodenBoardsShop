@@ -9,9 +9,13 @@ import {
 import { useApi } from '../../hooks/useApi';
 import { apiService } from '../../services/api';
 import { formatCurrencyRu, formatNumberRu } from '../../utils/localization';
-import { MOCK_IDS } from '../../utils/constants';
 
-const MOCK_SELLER_ID = MOCK_IDS.SELLER_ID;
+// TODO: Replace with real authentication
+const getCurrentSellerId = () => {
+  // This should be replaced with real authentication system
+  console.error('Using placeholder seller ID - implement real authentication');
+  return null;
+};
 
 const StatCard = ({ title, value, change, icon: Icon, color, loading, description }) => {
   return (
@@ -50,11 +54,16 @@ const StatCard = ({ title, value, change, icon: Icon, color, loading, descriptio
 };
 
 const BusinessStats = () => {
-  // API calls for real data
-  const productsApiFunction = useMemo(() => () => apiService.getSellerProducts(MOCK_SELLER_ID, 0, 100), []);
+  const sellerId = getCurrentSellerId();
+
+  // API calls for real data - only if we have seller ID
+  const productsApiFunction = useMemo(() =>
+    sellerId ? () => apiService.getSellerProducts(sellerId, 0, 100) : null,
+    [sellerId]
+  );
   const woodTypesApiFunction = useMemo(() => () => apiService.getWoodTypes(), []);
-  
-  const { data: products, loading: productsLoading } = useApi(productsApiFunction, []);
+
+  const { data: products, loading: productsLoading } = useApi(productsApiFunction, [sellerId]);
   const { data: woodTypes, loading: woodTypesLoading } = useApi(woodTypesApiFunction, []);
 
   // Calculate statistics
@@ -86,7 +95,7 @@ const BusinessStats = () => {
     {
       title: 'Всего товаров',
       value: formatNumberRu(stats.totalProducts, 0),
-      change: stats.totalProducts > 0 ? `+${stats.totalProducts}` : null,
+      change: null, // Remove fake change percentages
       icon: Package,
       color: 'bg-blue-500',
       loading: productsLoading,
@@ -95,7 +104,7 @@ const BusinessStats = () => {
     {
       title: 'Общая стоимость',
       value: formatCurrencyRu(stats.totalValue),
-      change: stats.totalValue > 0 ? `+${formatCurrencyRu(stats.totalValue)}` : null,
+      change: null, // Remove fake change percentages
       icon: DollarSign,
       color: 'bg-green-500',
       loading: productsLoading,
@@ -127,16 +136,8 @@ const BusinessStats = () => {
       color: 'bg-emerald-500',
       loading: woodTypesLoading,
       description: 'Доступных видов'
-    },
-    {
-      title: 'Активные чаты',
-      value: '0',
-      change: null,
-      icon: MessageSquare,
-      color: 'bg-indigo-500',
-      loading: false,
-      description: 'Открытых диалогов'
     }
+    // Removed fake "Active chats" stat - should come from real chat API
   ];
 
   return (

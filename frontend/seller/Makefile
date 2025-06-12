@@ -192,9 +192,7 @@ upgrade-interactive: ## Interactive package upgrade
 	npx npm-check-updates --interactive
 
 # Seller-specific commands
-mock-data: ## Generate mock seller data for development
-	@echo "🎭 Generating mock seller data..."
-	@echo "Mock data would be generated here for development purposes"
+# Removed mock-data command - use real authentication instead
 
 test-api: ## Test API connectivity
 	@echo "🔌 Testing API connectivity..."

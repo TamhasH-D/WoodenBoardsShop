@@ -13,38 +13,9 @@ const BoardAnalyzer = () => {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [analysisHistory, setAnalysisHistory] = useState([]);
   const resultRef = useRef(null);
 
-  // Загрузка истории анализов из localStorage при монтировании
-  useEffect(() => {
-    const savedHistory = localStorage.getItem('boardAnalysisHistory');
-    if (savedHistory) {
-      try {
-        setAnalysisHistory(JSON.parse(savedHistory));
-      } catch (e) {
-        console.error('Error loading analysis history:', e);
-      }
-    }
-  }, []);
-
-  // Сохранение истории в localStorage
-  const saveToHistory = (result) => {
-    const historyItem = {
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      fileName: selectedFile?.name || 'Unknown',
-      boardHeight: parseFloat(boardHeight),
-      boardLength: parseFloat(boardLength),
-      totalVolume: result.total_volume,
-      boardCount: result.wooden_boards?.length || 0,
-      result: result
-    };
-
-    const newHistory = [historyItem, ...analysisHistory.slice(0, 9)]; // Храним последние 10 анализов
-    setAnalysisHistory(newHistory);
-    localStorage.setItem('boardAnalysisHistory', JSON.stringify(newHistory));
-  };
+  // Removed localStorage history - should use real database storage
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
@@ -86,7 +57,7 @@ const BoardAnalyzer = () => {
       
       setAnalysisResult(result);
       setShowDetails(true);
-      saveToHistory(result);
+      // Removed localStorage history saving
 
     } catch (err) {
       console.error('Ошибка анализа изображения:', err);
@@ -109,22 +80,9 @@ const BoardAnalyzer = () => {
     }
   };
 
-  const loadFromHistory = (historyItem) => {
-    setBoardHeight(historyItem.boardHeight.toString());
-    setBoardLength(historyItem.boardLength.toString());
-    setAnalysisResult(historyItem.result);
-    setShowDetails(true);
-    setSelectedFile(null);
-    setPreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
+  // Removed loadFromHistory function - no localStorage history
 
-  const clearHistory = () => {
-    setAnalysisHistory([]);
-    localStorage.removeItem('boardAnalysisHistory');
-  };
+  // Removed clearHistory function - no localStorage history
 
   // Отрисовка результатов на canvas
   useEffect(() => {
@@ -328,42 +286,7 @@ const BoardAnalyzer = () => {
         </div>
       </div>
 
-      {/* История анализов */}
-      {analysisHistory.length > 0 && (
-        <div className="card mt-6">
-          <div className="card-header">
-            <h2 className="card-title">📋 История анализов</h2>
-            <button
-              onClick={clearHistory}
-              className="btn btn-secondary btn-sm"
-            >
-              🗑️ Очистить историю
-            </button>
-          </div>
-
-          <div className="history-list">
-            {analysisHistory.map((item) => (
-              <div key={item.id} className="history-item">
-                <div className="history-info">
-                  <div className="history-filename">{item.fileName}</div>
-                  <div className="history-details">
-                    {new Date(item.timestamp).toLocaleString('ru-RU')} • 
-                    {item.boardCount} досок • 
-                    {item.totalVolume?.toFixed(4)} м³ • 
-                    {item.boardHeight}×{item.boardLength} мм
-                  </div>
-                </div>
-                <button
-                  onClick={() => loadFromHistory(item)}
-                  className="btn btn-secondary btn-sm"
-                >
-                  📂 Загрузить
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Removed localStorage history section - should use real database storage */}
     </div>
   );
 };

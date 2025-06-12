@@ -3,14 +3,8 @@
  * Используются для унификации и предотвращения дублирования
  */
 
-// Mock IDs для разработки и тестирования
-// В реальном приложении эти значения будут получены из аутентификации
-export const MOCK_IDS = {
-  // Используем keycloak_id вместо seller_id для соответствия новому API
-  SELLER_KEYCLOAK_ID: '3ab0f210-ca78-4312-841b-8b1ae774adac',
-  BUYER_ID: '81f81c96-c56e-4b36-aec3-656f3576d09f',
-  ADMIN_ID: 'admin-uuid-placeholder'
-};
+// Authentication will be handled by real auth system
+// No mock IDs - use proper authentication
 
 // API Configuration
 export const API_CONFIG = {
@@ -69,20 +63,18 @@ export const NOTIFICATION_TYPES = {
   WARNING: 'warning',
 };
 
-// Local Storage Keys
+// Local Storage Keys - Use sparingly, prefer server-side storage
 export const STORAGE_KEYS = {
-  USER_PREFERENCES: 'user_preferences',
-  DRAFT_MESSAGES: 'draft_messages',
-  RECENT_SEARCHES: 'recent_searches',
-  CACHE_TIMESTAMP: 'cache_timestamp',
-  CART_ITEMS: 'cart_items',
+  USER_PREFERENCES: 'user_preferences', // Only for UI preferences
+  // Removed draft_messages, recent_searches, cache_timestamp, cart_items
+  // These should be stored server-side with real user accounts
 };
 
 // Development Configuration
 export const DEV_CONFIG = {
   ENABLE_LOGGING: process.env.NODE_ENV === 'development',
   ENABLE_DEBUG_TOOLS: process.env.NODE_ENV === 'development',
-  MOCK_DELAYS: process.env.NODE_ENV === 'development',
+  // Removed MOCK_DELAYS - no fake delays needed
 };
 
 // UI Configuration
@@ -95,7 +87,6 @@ export const UI_CONFIG = {
 
 // Export all as default for convenience
 const constants = {
-  MOCK_IDS,
   API_CONFIG,
   PAGINATION_CONFIG,
   UPLOAD_CONFIG,
