@@ -492,12 +492,10 @@ function WoodTypesManager() {
                         <div
                           className="price-update-form"
                           style={{
-                            background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                            padding: '1rem',
-                            borderRadius: '0.75rem',
-                            border: '2px solid var(--color-primary)',
-                            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)',
-                            animation: 'slideIn 0.3s ease-out',
+                            background: 'var(--color-bg)',
+                            padding: '0.75rem',
+                            borderRadius: 'var(--border-radius)',
+                            border: '1px solid var(--color-border)',
                             position: 'relative'
                           }}
                         >
@@ -506,13 +504,9 @@ function WoodTypesManager() {
                             <div style={{
                               fontSize: 'var(--font-size-xs)',
                               color: 'var(--color-text-light)',
-                              marginBottom: '0.5rem',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.25rem'
+                              marginBottom: '0.5rem'
                             }}>
-                              <span>📊</span>
-                              <span>Текущая цена: {currentPrice.price_per_m3.toFixed(2)} ₽/м³</span>
+                              Текущая цена: {currentPrice.price_per_m3.toFixed(2)} ₽/м³
                             </div>
                           )}
 
@@ -528,13 +522,10 @@ function WoodTypesManager() {
                                 style={{
                                   margin: 0,
                                   width: '100%',
-                                  paddingLeft: '2.5rem',
-                                  fontSize: '1rem',
-                                  fontWeight: '500',
-                                  border: `2px solid ${priceValidationErrors[type.id] ? 'var(--color-error)' : '#e2e8f0'}`,
-                                  borderRadius: '0.5rem',
-                                  transition: 'all 0.2s ease',
-                                  backgroundColor: priceValidationErrors[type.id] ? '#fef2f2' : 'white'
+                                  paddingLeft: '2rem',
+                                  border: `1px solid ${priceValidationErrors[type.id] ? 'var(--color-error)' : 'var(--color-border)'}`,
+                                  borderRadius: 'var(--border-radius)',
+                                  backgroundColor: priceValidationErrors[type.id] ? '#fef2f2' : 'var(--color-bg)'
                                 }}
                                 placeholder="Новая цена"
                                 onKeyPress={(e) => {
@@ -550,25 +541,22 @@ function WoodTypesManager() {
                                 onFocus={(e) => {
                                   if (!priceValidationErrors[type.id]) {
                                     e.target.style.borderColor = 'var(--color-primary)';
-                                    e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)';
                                   }
                                 }}
                                 onBlur={(e) => {
                                   if (!priceValidationErrors[type.id]) {
-                                    e.target.style.borderColor = '#e2e8f0';
-                                    e.target.style.boxShadow = 'none';
+                                    e.target.style.borderColor = 'var(--color-border)';
                                   }
                                 }}
                                 autoFocus
                               />
                               <div style={{
                                 position: 'absolute',
-                                left: '0.75rem',
+                                left: '0.5rem',
                                 top: '50%',
                                 transform: 'translateY(-50%)',
                                 color: 'var(--color-text-light)',
-                                fontSize: '1rem',
-                                fontWeight: '500'
+                                fontSize: 'var(--font-size-base)'
                               }}>
                                 ₽
                               </div>
@@ -581,17 +569,15 @@ function WoodTypesManager() {
                                   left: 0,
                                   right: 0,
                                   marginTop: '0.25rem',
-                                  padding: '0.375rem 0.5rem',
+                                  padding: '0.25rem 0.5rem',
                                   backgroundColor: '#fef2f2',
                                   border: '1px solid var(--color-error)',
-                                  borderRadius: '0.375rem',
+                                  borderRadius: 'var(--border-radius)',
                                   fontSize: 'var(--font-size-xs)',
                                   color: 'var(--color-error)',
-                                  fontWeight: '500',
-                                  zIndex: 10,
-                                  boxShadow: '0 2px 4px rgba(220, 38, 38, 0.1)'
+                                  zIndex: 10
                                 }}>
-                                  ⚠️ {priceValidationErrors[type.id]}
+                                  {priceValidationErrors[type.id]}
                                 </div>
                               )}
                             </div>
@@ -601,42 +587,14 @@ function WoodTypesManager() {
                                 const inputValue = priceInputValues[type.id];
                                 handleUpdatePrice(type.id, inputValue);
                               }}
-                              className="btn"
+                              className="btn btn-primary"
                               style={{
-                                background: priceValidationErrors[type.id] || mutating
-                                  ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)'
-                                  : 'linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%)',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '0.5rem',
-                                padding: '0.5rem 1rem',
-                                fontSize: '0.875rem',
-                                fontWeight: '600',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.25rem',
-                                boxShadow: priceValidationErrors[type.id] || mutating
-                                  ? '0 2px 4px rgba(107, 114, 128, 0.3)'
-                                  : '0 2px 4px rgba(5, 150, 105, 0.3)',
-                                transition: 'all 0.2s ease',
-                                cursor: priceValidationErrors[type.id] || mutating ? 'not-allowed' : 'pointer',
+                                fontSize: 'var(--font-size-sm)',
+                                padding: '0.5rem 0.75rem',
                                 opacity: priceValidationErrors[type.id] || mutating ? 0.6 : 1
-                              }}
-                              onMouseEnter={(e) => {
-                                if (!priceValidationErrors[type.id] && !mutating) {
-                                  e.target.style.transform = 'translateY(-1px)';
-                                  e.target.style.boxShadow = '0 4px 8px rgba(5, 150, 105, 0.4)';
-                                }
-                              }}
-                              onMouseLeave={(e) => {
-                                if (!priceValidationErrors[type.id] && !mutating) {
-                                  e.target.style.transform = 'translateY(0)';
-                                  e.target.style.boxShadow = '0 2px 4px rgba(5, 150, 105, 0.3)';
-                                }
                               }}
                               disabled={mutating || !!priceValidationErrors[type.id]}
                             >
-                              <span>{mutating ? '⏳' : '✓'}</span>
                               {mutating ? 'Сохранение...' : SELLER_TEXTS.SET}
                             </button>
 
@@ -646,31 +604,12 @@ function WoodTypesManager() {
                                 setPriceInputValues(prev => ({...prev, [type.id]: ''}));
                                 setPriceValidationErrors(prev => ({...prev, [type.id]: null}));
                               }}
-                              className="btn"
+                              className="btn btn-secondary"
                               style={{
-                                background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
-                                color: 'var(--color-text)',
-                                border: '2px solid #e2e8f0',
-                                borderRadius: '0.5rem',
-                                padding: '0.5rem 1rem',
-                                fontSize: '0.875rem',
-                                fontWeight: '600',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.25rem',
-                                transition: 'all 0.2s ease',
-                                cursor: 'pointer'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.target.style.background = 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)';
-                                e.target.style.transform = 'translateY(-1px)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.target.style.background = 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)';
-                                e.target.style.transform = 'translateY(0)';
+                                fontSize: 'var(--font-size-sm)',
+                                padding: '0.5rem 0.75rem'
                               }}
                             >
-                              <span>✕</span>
                               {SELLER_TEXTS.CANCEL}
                             </button>
                           </div>
@@ -678,10 +617,9 @@ function WoodTypesManager() {
                           <div style={{
                             fontSize: 'var(--font-size-xs)',
                             color: 'var(--color-text-light)',
-                            marginTop: '0.5rem',
-                            fontStyle: 'italic'
+                            marginTop: '0.5rem'
                           }}>
-                            💡 Нажмите Enter для сохранения, Escape для отмены
+                            Нажмите Enter для сохранения, Escape для отмены
                           </div>
                         </div>
                       ) : (

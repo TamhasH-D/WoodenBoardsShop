@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
+import { useFormValidation } from '../hooks/useFormValidation';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS, formatDateRu } from '../utils/localization';
 import { testWoodenBoardsConnection, testImageAnalysisEndpoint, getWoodenBoardsConfig } from '../utils/testWoodenBoardsConnection';
@@ -12,6 +13,9 @@ import { MOCK_IDS } from '../utils/constants';
 const MOCK_SELLER_KEYCLOAK_ID = MOCK_IDS.SELLER_KEYCLOAK_ID;
 
 function Products() {
+  // Хук для валидации форм
+  const { getFieldClassName, handleFieldBlur, handleFieldChange, resetTouchedFields } = useFormValidation();
+
   const [page, setPage] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -249,6 +253,9 @@ function Products() {
     setEditVolumeCalculationResult(null);
     setEditBoardHeight('50');
     setEditBoardLength('1000');
+
+    // Сбрасываем состояние валидации
+    resetTouchedFields();
   };
 
   const handleUpdateProduct = async (e) => {
@@ -655,9 +662,10 @@ function Products() {
               <label className="form-label">{SELLER_TEXTS.PRODUCT_TITLE} *</label>
               <input
                 type="text"
-                className="form-input"
+                className={getFieldClassName('edit-title')}
                 value={editProduct.title}
-                onChange={(e) => setEditProduct({...editProduct, title: e.target.value})}
+                onChange={handleFieldChange('edit-title', (e) => setEditProduct({...editProduct, title: e.target.value}))}
+                onBlur={() => handleFieldBlur('edit-title')}
                 placeholder="e.g., Premium Oak Boards, Pine Lumber Set"
                 required
                 maxLength={100}
@@ -704,9 +712,10 @@ function Products() {
                   step="0.01"
                   min="0.01"
                   max="999999"
-                  className="form-input"
+                  className={getFieldClassName('edit-price')}
                   value={editProduct.price}
-                  onChange={(e) => setEditProduct({...editProduct, price: e.target.value})}
+                  onChange={handleFieldChange('edit-price', (e) => setEditProduct({...editProduct, price: e.target.value}))}
+                  onBlur={() => handleFieldBlur('edit-price')}
                   placeholder="0.00"
                   required
                 />
@@ -728,9 +737,9 @@ function Products() {
                 </div>
               ) : (
                 <select
-                  className="form-input"
+                  className={getFieldClassName('edit-wood-type')}
                   value={editProduct.wood_type_id}
-                  onChange={(e) => {
+                  onChange={handleFieldChange('edit-wood-type', (e) => {
                     const newWoodTypeId = e.target.value;
                     const currentPrice = getCurrentPrice(newWoodTypeId);
                     const suggestedPrice = currentPrice && editProduct.volume
@@ -742,7 +751,8 @@ function Products() {
                       wood_type_id: newWoodTypeId,
                       price: suggestedPrice
                     });
-                  }}
+                  })}
+                  onBlur={() => handleFieldBlur('edit-wood-type')}
                   required
                   disabled={woodTypesError || !woodTypes?.data}
                 >
