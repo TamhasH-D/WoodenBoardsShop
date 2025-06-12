@@ -10,7 +10,6 @@ const ResultDisplay = ({ imageUrl, result }) => {
   const [hoveredBoard, setHoveredBoard] = useState(null);
   const [hoverPosition, setHoverPosition] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState('bottom');
-  const [tooltipAlign, setTooltipAlign] = useState('center');
 
   // Вычисление расстояния между точкой и отрезком линии
   const distToSegment = (p, v, w) => {
@@ -148,17 +147,8 @@ const ResultDisplay = ({ imageUrl, result }) => {
     if (board !== hoveredBoard) {
       if (board) {
         const mouseY = e.clientY - containerRect.top;
-        const mouseX = e.clientX - containerRect.left;
-        
+
         setTooltipPosition(mouseY > containerRect.height / 2 ? 'top' : 'bottom');
-        
-        if (mouseX < containerRect.width * 0.3) {
-          setTooltipAlign('left');
-        } else if (mouseX > containerRect.width * 0.7) {
-          setTooltipAlign('right');
-        } else {
-          setTooltipAlign('center');
-        }
         
         setHoveredBoard(board);
         setHoverPosition({ x: e.clientX - containerRect.left, y: e.clientY - containerRect.top });
