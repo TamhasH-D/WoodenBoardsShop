@@ -22,11 +22,13 @@ services:
     environment:
       - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
       - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      # Database Connection
       - KC_DB=${KC_DB}
       - KC_DB_URL=${KC_DB_URL} # e.g., jdbc:postgresql://keycloak-postgres:5432/${POSTGRES_DB}
       - KC_DB_USERNAME=${KC_DB_USERNAME}
       - KC_DB_PASSWORD=${KC_DB_PASSWORD}
-      # SMTP Variables (ensure these are in your .env file)
+      # SMTP Variables
+
       - KC_SMTP_SERVER_HOST=${KC_SMTP_SERVER_HOST}
       - KC_SMTP_SERVER_PORT=${KC_SMTP_SERVER_PORT}
       - KC_SMTP_FROM=${KC_SMTP_FROM}
@@ -35,6 +37,10 @@ services:
       - KC_SMTP_PASSWORD=${KC_SMTP_PASSWORD}
       - KC_SMTP_STARTTLS=${KC_SMTP_STARTTLS}
       - KC_SMTP_SSL=${KC_SMTP_SSL}
+      # Hostname Configuration
+      - KC_HOSTNAME_URL=${KC_HOSTNAME_URL}
+      - KC_HOSTNAME_STRICT_HTTPS=${KC_HOSTNAME_STRICT_HTTPS}
+
       # Optional: Set Keycloak log level
       # - KC_LOG_LEVEL=INFO
     ports:
@@ -61,3 +67,4 @@ volumes:
 networks:
   keycloak-network:
     driver: bridge
+

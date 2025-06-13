@@ -29,11 +29,27 @@ This document outlines the steps to set up and run the project locally using Doc
       ```bash
       cp .env.example .env
       ```
-    - Edit `keycloak/.env` and fill in the required credentials:
-        - `KEYCLOAK_ADMIN_PASSWORD`
-        - `POSTGRES_PASSWORD` (for Keycloak's database)
-        - `KC_DB_PASSWORD` (should be same as `POSTGRES_PASSWORD`)
-        - SMTP server details (`KC_SMTP_SERVER_HOST`, etc.) as per `docs/GMAIL_SMTP_CONFIG.md` if using Gmail, or your provider's details.
+    - Edit `keycloak/.env` and **carefully** fill in the required credentials:
+        - `KEYCLOAK_ADMIN` and `KEYCLOAK_ADMIN_PASSWORD`: For the initial Keycloak admin user.
+        - `KEYCLOAK_PORT`: Public port for Keycloak.
+
+        - **PostgreSQL Database (for Keycloak):**
+            - `POSTGRES_DB`: Name of the database Keycloak will use (e.g., `keycloak`).
+            - `POSTGRES_USER`: Username for PostgreSQL. **This user will be created by the PostgreSQL container.**
+            - `POSTGRES_PASSWORD`: Password for the PostgreSQL user.
+
+        - **Keycloak's Database Connection:**
+            - `KC_DB_USERNAME`: Username Keycloak uses to connect to its database. **IMPORTANT: This MUST match the `POSTGRES_USER` value you set above.**
+            - `KC_DB_PASSWORD`: Password Keycloak uses to connect. **IMPORTANT: This MUST match the `POSTGRES_PASSWORD` value you set above.**
+            - `KC_DB_URL`: The JDBC URL. **IMPORTANT: Ensure the hostname matches the PostgreSQL service name in `keycloak/docker-compose.yaml` (which is `keycloak-postgres`) and the database name matches `POSTGRES_DB`.**
+              Example: `jdbc:postgresql://keycloak-postgres:5432/keycloak` (if `POSTGRES_DB=keycloak`). The `${POSTGRES_DB}` variable is already used in the `.env.example` for this.
+
+        - **Keycloak Hostname Configuration:** These settings help Keycloak generate correct public-facing URLs (e.g., in emails).
+            - `KC_HOSTNAME_URL`: The public URL for Keycloak. For local development, this is typically `http://localhost:${KEYCLOAK_PORT}` (e.g., `http://localhost:8030`).
+            - `KC_HOSTNAME_STRICT_HTTPS`: Set to `false` for local HTTP development. Set to `true` if Keycloak is behind a reverse proxy that terminates SSL.
+
+        - **SMTP Server Details:** (`KC_SMTP_SERVER_HOST`, etc.) as per `docs/GMAIL_SMTP_CONFIG.md` if using Gmail, or your provider's details.
+
     - `cd ..` to return to the project root.
 
     *(Check for and configure other `.env` files for backend/frontend services as needed based on their respective `.env.example` files.)*
@@ -46,13 +62,11 @@ This document outlines the steps to set up and run the project locally using Doc
     - This command will:
         - Build the images for all services.
         - Start all services in detached mode.
-
         - Keycloak will automatically import realm configurations from `keycloak/data-to-import/realms/` (mounted from the local path `./data-to-import/realms/` within the `keycloak` service directory, as defined in `keycloak/docker-compose.yaml`) on its first startup. This includes `BuyerRealm`, `SellerRealm`, and `AdminRealm`.
         - Note: The Keycloak Docker configuration has also been optimized to use the `start` command (instead of `start-dev`) and includes healthchecks for better stability and production readiness.
 
-
-
 4.  **Accessing Services and Understanding Keycloak Realms:**
+    (This section remains largely the same as the previous correct version, detailing Buyer/Seller/Admin realms and other service URLs)
 
     - **Keycloak Admin Console:** `http://localhost:8030` (or the port specified in `keycloak/.env` for `KEYCLOAK_PORT`).
         - Username: `admin` (or `KEYCLOAK_ADMIN` from `keycloak/.env`).
@@ -64,10 +78,11 @@ This document outlines the steps to set up and run the project locally using Doc
             - **Registration:** Buyers can self-register. The registration page can typically be found via the `BuyerRealm`'s account console login page.
             - **Account Console Example:** `http://localhost:8030/realms/BuyerRealm/account/`
         - **`SellerRealm`:** For sellers.
-            - **Registration:** Sellers **cannot** self-register. Their accounts must be created by an Administrator (e.g., via the Keycloak Admin Console by navigating to the `SellerRealm`, then Users -> Add user; or via a dedicated admin panel in your application that uses the Keycloak API).
+            - **Registration:** Sellers **cannot** self-register. Their accounts must be created by an Administrator.
             - **Account Console Example:** `http://localhost:8030/realms/SellerRealm/account/`
         - **`AdminRealm`:** For platform administrators.
-            - **Registration:** Administrators **cannot** self-register. Their accounts are typically pre-provisioned or created by a super-administrator (e.g., via the Keycloak Admin Console by navigating to the `AdminRealm`, then Users -> Add user).
+            - **Registration:** Administrators **cannot** self-register.
+
             - **Account Console Example:** `http://localhost:8030/realms/AdminRealm/account/`
 
     - **Backend API:** `http://localhost:8000`
@@ -82,7 +97,14 @@ This document outlines the steps to set up and run the project locally using Doc
 
 - **Port Conflicts:** If a service fails to start, check if the required ports are already in use. Modify ports in the relevant `.env` files or `docker-compose.yaml`.
 - **Keycloak Import Issues:** Check Keycloak container logs (`docker-compose logs keycloak`) for errors related to realm import. Ensure JSON files in `keycloak/data-to-import/realms/` (`AdminRealm-realm.json`, `BuyerRealm-realm.json`, `SellerRealm-realm.json`) are present and valid, and that the volume mount in `keycloak/docker-compose.yaml` correctly points to `./data-to-import/realms/`.
-- **Database Connection:** Ensure PostgreSQL container for Keycloak (`keycloak-postgres`) is running and Keycloak has the correct DB credentials in `keycloak/.env`.
+- **Database Connection (Keycloak):**
+    - **Symptom:** Keycloak fails to start with errors like "Failed to obtain JDBC connection," "password authentication failed," or "Role ... does not exist."
+    - **Check `keycloak/.env`:**
+        - Ensure `POSTGRES_USER` and `KC_DB_USERNAME` have the **exact same value**.
+        - Ensure `POSTGRES_PASSWORD` and `KC_DB_PASSWORD` have the **exact same value**.
+        - Verify `KC_DB_URL` is correct, e.g., `jdbc:postgresql://keycloak-postgres:5432/keycloak` (the hostname `keycloak-postgres` must match the service name of your PostgreSQL container in `keycloak/docker-compose.yaml`).
+    - Ensure the PostgreSQL container (`keycloak-postgres`) is running and healthy before Keycloak attempts to connect (the `depends_on` with `service_healthy` condition in `docker-compose.yaml` should handle this, but verify Postgres logs if issues persist).
+
 
 ## Stopping Services
 
@@ -94,4 +116,3 @@ This document outlines the steps to set up and run the project locally using Doc
   ```bash
   docker-compose down -v
   ```
-```
