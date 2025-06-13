@@ -53,6 +53,13 @@ cd diplom
 make up
 ```
 
+## 📖 Detailed Setup and Configuration
+
+For more detailed instructions on specific setup aspects, please refer to the following guides:
+
+*   **[Project Setup Guide](./docs/PROJECT_SETUP.md):** Comprehensive steps to clone, configure environment variables, and run all project services.
+*   **[Configuring Keycloak SMTP with Gmail](./docs/GMAIL_SMTP_CONFIG.md):** A step-by-step guide to set up Gmail for sending emails from Keycloak (for account verification, password resets, etc.).
+
 ### Manual Setup (if setup script is not available)
 ```bash
 # Initialize Docker networks
