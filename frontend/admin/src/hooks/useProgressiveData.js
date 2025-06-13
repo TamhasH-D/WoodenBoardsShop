@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 /**
  * Hook для прогрессивной загрузки данных с анимацией
@@ -71,9 +71,12 @@ export const useProgressiveData = (fetchFunction, dependencies = []) => {
     }
   }, [fetchFunction]);
 
+  // Стабилизируем зависимости с помощью useMemo
+  const stableDependencies = useMemo(() => dependencies, [JSON.stringify(dependencies)]);
+
   useEffect(() => {
     loadData();
-  }, [loadData, ...dependencies]);
+  }, [loadData, stableDependencies]);
 
   const refetch = useCallback(() => {
     loadData();
@@ -202,7 +205,7 @@ export const useProgressiveStats = (apiService) => {
     } finally {
       setLoading(false);
     }
-  }, [apiService, entities]);
+  }, [entities]);
 
   // Автоматическая загрузка при монтировании
   useEffect(() => {

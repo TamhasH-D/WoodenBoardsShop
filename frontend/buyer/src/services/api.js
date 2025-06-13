@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { withUUID, ENTITY_TYPES } from '../utils/uuid';
+import { withUUID, ENTITY_TYPES, generateEntityUUID } from '../utils/uuid';
 
 // Get API URL from environment variables or use default
 const API_BASE_URL = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
