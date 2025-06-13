@@ -28,6 +28,7 @@ services:
       - KC_DB_USERNAME=${KC_DB_USERNAME}
       - KC_DB_PASSWORD=${KC_DB_PASSWORD}
       # SMTP Variables
+
       - KC_SMTP_SERVER_HOST=${KC_SMTP_SERVER_HOST}
       - KC_SMTP_SERVER_PORT=${KC_SMTP_SERVER_PORT}
       - KC_SMTP_FROM=${KC_SMTP_FROM}
@@ -39,6 +40,7 @@ services:
       # Hostname Configuration
       - KC_HOSTNAME_URL=${KC_HOSTNAME_URL}
       - KC_HOSTNAME_STRICT_HTTPS=${KC_HOSTNAME_STRICT_HTTPS}
+
       # Optional: Set Keycloak log level
       # - KC_LOG_LEVEL=INFO
     ports:
@@ -66,4 +68,3 @@ networks:
   keycloak-network:
     driver: bridge
 
-```

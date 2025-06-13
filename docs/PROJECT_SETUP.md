@@ -49,6 +49,7 @@ This document outlines the steps to set up and run the project locally using Doc
             - `KC_HOSTNAME_STRICT_HTTPS`: Set to `false` for local HTTP development. Set to `true` if Keycloak is behind a reverse proxy that terminates SSL.
 
         - **SMTP Server Details:** (`KC_SMTP_SERVER_HOST`, etc.) as per `docs/GMAIL_SMTP_CONFIG.md` if using Gmail, or your provider's details.
+
     - `cd ..` to return to the project root.
 
     *(Check for and configure other `.env` files for backend/frontend services as needed based on their respective `.env.example` files.)*
@@ -66,6 +67,7 @@ This document outlines the steps to set up and run the project locally using Doc
 
 4.  **Accessing Services and Understanding Keycloak Realms:**
     (This section remains largely the same as the previous correct version, detailing Buyer/Seller/Admin realms and other service URLs)
+
     - **Keycloak Admin Console:** `http://localhost:8030` (or the port specified in `keycloak/.env` for `KEYCLOAK_PORT`).
         - Username: `admin` (or `KEYCLOAK_ADMIN` from `keycloak/.env`).
         - Password: The one you set for `KEYCLOAK_ADMIN_PASSWORD` in `keycloak/.env`.
@@ -80,6 +82,7 @@ This document outlines the steps to set up and run the project locally using Doc
             - **Account Console Example:** `http://localhost:8030/realms/SellerRealm/account/`
         - **`AdminRealm`:** For platform administrators.
             - **Registration:** Administrators **cannot** self-register.
+
             - **Account Console Example:** `http://localhost:8030/realms/AdminRealm/account/`
 
     - **Backend API:** `http://localhost:8000`
@@ -102,6 +105,7 @@ This document outlines the steps to set up and run the project locally using Doc
         - Verify `KC_DB_URL` is correct, e.g., `jdbc:postgresql://keycloak-postgres:5432/keycloak` (the hostname `keycloak-postgres` must match the service name of your PostgreSQL container in `keycloak/docker-compose.yaml`).
     - Ensure the PostgreSQL container (`keycloak-postgres`) is running and healthy before Keycloak attempts to connect (the `depends_on` with `service_healthy` condition in `docker-compose.yaml` should handle this, but verify Postgres logs if issues persist).
 
+
 ## Stopping Services
 
 - To stop all running services defined in the root `docker-compose.yaml`:
@@ -112,4 +116,3 @@ This document outlines the steps to set up and run the project locally using Doc
   ```bash
   docker-compose down -v
   ```
-```
