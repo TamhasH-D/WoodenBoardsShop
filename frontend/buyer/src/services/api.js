@@ -135,16 +135,21 @@ export const apiService = {
     const cacheKey = `search_${JSON.stringify(filters)}_${page}_${size}`;
     const now = Date.now();
 
+    // Reduce cache duration for search to make filters more responsive
+    const SEARCH_CACHE_DURATION = 30000; // 30 seconds instead of 5 minutes
+
     // Check cache first
     if (cache.has(cacheKey)) {
       const cached = cache.get(cacheKey);
-      if (now - cached.timestamp < CACHE_DURATION) {
+      if (now - cached.timestamp < SEARCH_CACHE_DURATION) {
+        console.log('Returning cached search results');
         return cached.data;
       }
     }
 
     // Check if identical request is already in progress
     if (requestCache.has(cacheKey)) {
+      console.log('Request already in progress, waiting...');
       return requestCache.get(cacheKey);
     }
 
@@ -185,14 +190,15 @@ export const apiService = {
         if (filters.has_pickup_location !== undefined) {
           params.append('has_pickup_location', filters.has_pickup_location.toString());
         }
-        if (filters.sort_by) {
-          params.append('sort_by', filters.sort_by);
-        }
-        if (filters.sort_order) {
-          params.append('sort_order', filters.sort_order);
-        }
+        // Всегда добавляем параметры сортировки (с дефолтными значениями)
+        params.append('sort_by', filters.sort_by || 'created_at');
+        params.append('sort_order', filters.sort_order || 'desc');
 
-        const response = await api.get(`/api/v1/products/search?${params.toString()}`);
+        const url = `/api/v1/products/search?${params.toString()}`;
+        console.log('Making API request to:', url);
+        console.log('Filters object:', filters);
+
+        const response = await api.get(url);
         const result = {
           data: response.data.data || response.data,
           total: response.data.pagination?.total || 0,
@@ -202,6 +208,7 @@ export const apiService = {
 
         // Cache the result
         cache.set(cacheKey, { data: result, timestamp: now });
+        console.log('Search completed, cached result');
         return result;
       } finally {
         // Remove from request cache when done
@@ -212,6 +219,18 @@ export const apiService = {
     // Store the promise to prevent duplicate requests
     requestCache.set(cacheKey, requestPromise);
     return requestPromise;
+  },
+
+  // Clear search cache (useful when filters change)
+  clearSearchCache() {
+    const keysToDelete = [];
+    for (const key of cache.keys()) {
+      if (key.startsWith('search_')) {
+        keysToDelete.push(key);
+      }
+    }
+    keysToDelete.forEach(key => cache.delete(key));
+    console.log('Cleared search cache');
   },
 
   // Wood types and prices (for buyers to view)

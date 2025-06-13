@@ -47,21 +47,26 @@ const ProductsPage = () => {
 
   // Загрузка товаров при изменении параметров (с debouncing для поиска)
   useEffect(() => {
+    console.log('useEffect triggered - currentPage:', currentPage, 'searchQuery:', searchQuery, 'filters:', filters);
+
     // Очищаем предыдущий таймер
     if (searchTimeout) {
       clearTimeout(searchTimeout);
     }
 
-    // Если изменились только фильтры или страница - загружаем сразу
-    // Если изменился поиск - ждем 500ms
-    const isSearchChange = searchQuery !== '';
+    // Если изменился только поиск - ждем 500ms для debouncing
+    // Для всех остальных изменений (фильтры, страница, сортировка) - загружаем сразу
+    const hasSearchQuery = searchQuery.trim() !== '';
 
-    if (isSearchChange) {
+    if (hasSearchQuery) {
+      console.log('Search query detected, debouncing...');
       const timeout = setTimeout(() => {
         loadProducts();
       }, 500);
       setSearchTimeout(timeout);
     } else {
+      // Загружаем сразу если нет поискового запроса или изменились другие параметры
+      console.log('No search query, loading immediately...');
       loadProducts();
     }
 
@@ -93,19 +98,15 @@ const ProductsPage = () => {
     try {
       setLoading(true);
 
-      let result;
+      // Всегда используем search API для единообразия и поддержки сортировки
+      const searchFilters = buildSearchFilters();
+      console.log('Loading products with filters:', searchFilters);
 
-      // Если есть поиск или фильтры, используем search API
-      if (searchQuery.trim() || hasActiveFilters()) {
-        const searchFilters = buildSearchFilters();
-        result = await apiService.searchProducts(searchFilters, currentPage, pageSize);
-      } else {
-        // Иначе используем обычный getProducts
-        result = await apiService.getProducts(currentPage, pageSize);
-      }
+      const result = await apiService.searchProducts(searchFilters, currentPage, pageSize);
 
       setProducts(result.data || []);
       setTotalProducts(result.total || 0);
+      console.log('Loaded products:', result.data?.length, 'Total:', result.total);
     } catch (error) {
       console.error('Ошибка загрузки товаров:', error);
       setProducts([]);
@@ -115,12 +116,14 @@ const ProductsPage = () => {
     }
   };
 
-  // Проверяем, есть ли активные фильтры
+  // Проверяем, есть ли активные фильтры (не считая сортировку)
   const hasActiveFilters = () => {
-    return filters.price_min || filters.price_max || 
-           filters.volume_min || filters.volume_max ||
-           filters.wood_type_ids.length > 0 ||
-           filters.seller_ids.length > 0 ||
+    return (filters.price_min && filters.price_min !== '') ||
+           (filters.price_max && filters.price_max !== '') ||
+           (filters.volume_min && filters.volume_min !== '') ||
+           (filters.volume_max && filters.volume_max !== '') ||
+           (filters.wood_type_ids && filters.wood_type_ids.length > 0) ||
+           (filters.seller_ids && filters.seller_ids.length > 0) ||
            filters.delivery_possible !== null ||
            filters.has_pickup_location !== null;
   };
@@ -128,17 +131,55 @@ const ProductsPage = () => {
   // Строим объект фильтров для API
   const buildSearchFilters = () => {
     const searchFilters = { ...filters };
-    
+
     if (searchQuery.trim()) {
       searchFilters.search_query = searchQuery.trim();
     }
 
-    // Конвертируем пустые строки в undefined
-    if (!searchFilters.price_min) searchFilters.price_min = undefined;
-    if (!searchFilters.price_max) searchFilters.price_max = undefined;
-    if (!searchFilters.volume_min) searchFilters.volume_min = undefined;
-    if (!searchFilters.volume_max) searchFilters.volume_max = undefined;
+    // Конвертируем пустые строки в undefined для числовых полей
+    if (!searchFilters.price_min || searchFilters.price_min === '') {
+      searchFilters.price_min = undefined;
+    } else {
+      searchFilters.price_min = parseFloat(searchFilters.price_min);
+    }
 
+    if (!searchFilters.price_max || searchFilters.price_max === '') {
+      searchFilters.price_max = undefined;
+    } else {
+      searchFilters.price_max = parseFloat(searchFilters.price_max);
+    }
+
+    if (!searchFilters.volume_min || searchFilters.volume_min === '') {
+      searchFilters.volume_min = undefined;
+    } else {
+      searchFilters.volume_min = parseFloat(searchFilters.volume_min);
+    }
+
+    if (!searchFilters.volume_max || searchFilters.volume_max === '') {
+      searchFilters.volume_max = undefined;
+    } else {
+      searchFilters.volume_max = parseFloat(searchFilters.volume_max);
+    }
+
+    // Убираем пустые массивы
+    if (searchFilters.wood_type_ids && searchFilters.wood_type_ids.length === 0) {
+      searchFilters.wood_type_ids = undefined;
+    }
+
+    if (searchFilters.seller_ids && searchFilters.seller_ids.length === 0) {
+      searchFilters.seller_ids = undefined;
+    }
+
+    // Убираем null значения для boolean полей
+    if (searchFilters.delivery_possible === null) {
+      searchFilters.delivery_possible = undefined;
+    }
+
+    if (searchFilters.has_pickup_location === null) {
+      searchFilters.has_pickup_location = undefined;
+    }
+
+    console.log('Built search filters:', searchFilters);
     return searchFilters;
   };
 
@@ -161,11 +202,17 @@ const ProductsPage = () => {
   };
 
   const handleSearch = (query) => {
+    console.log('Search query changed:', query);
+    // Очищаем кэш поиска при изменении поискового запроса
+    apiService.clearSearchCache();
     setSearchQuery(query);
     setCurrentPage(0);
   };
 
   const handleFilterChange = (newFilters) => {
+    console.log('Filter changed:', newFilters);
+    // Очищаем кэш поиска при изменении фильтров
+    apiService.clearSearchCache();
     setFilters(prev => ({ ...prev, ...newFilters }));
     setCurrentPage(0);
   };
@@ -533,8 +580,34 @@ const ProductsPage = () => {
             </div>
           </div>
 
-          {/* Кнопка сброса фильтров */}
-          <div style={{ textAlign: 'center' }}>
+          {/* Кнопки управления фильтрами */}
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            justifyContent: 'center',
+            marginTop: '10px'
+          }}>
+            <button
+              onClick={() => {
+                console.log('Applying filters manually...');
+                loadProducts();
+              }}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#3182CE',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                fontWeight: '500',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#2C5282'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#3182CE'}
+            >
+              Применить фильтры
+            </button>
             <button
               onClick={resetFilters}
               style={{
