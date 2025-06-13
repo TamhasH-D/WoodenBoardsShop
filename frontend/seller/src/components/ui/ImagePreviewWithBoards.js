@@ -116,7 +116,10 @@ const ImagePreviewWithBoards = ({
           transition: 'all 0.2s ease',
           backgroundColor: imageFile ? 'var(--color-bg)' : 'var(--color-bg-light)',
           position: 'relative',
-          minHeight: compact ? '150px' : 'auto'
+          minHeight: compact ? '220px' : '350px', // Увеличиваем минимальную высоту для размещения результатов
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: imageFile ? 'flex-start' : 'center'
         }}
         onClick={handleCanvasClick}
       >
@@ -165,47 +168,55 @@ const ImagePreviewWithBoards = ({
         )}
 
         {imageFile && imageUrl && (
-          <div>
-            <canvas
-              ref={canvasRef}
-              style={{
-                maxWidth: '100%',
-                height: 'auto',
-                borderRadius: 'var(--border-radius)',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-              }}
-            />
-            
-            {analysisResult && (
-              <div style={{
-                marginTop: compact ? '0.5rem' : '1rem',
-                padding: compact ? '0.5rem' : '1rem',
-                backgroundColor: 'var(--color-success-light)',
-                borderRadius: 'var(--border-radius)',
-                border: '1px solid var(--color-success)'
-              }}>
-                <h4 style={{
-                  color: 'var(--color-success-dark)',
-                  marginBottom: '0.5rem',
-                  fontSize: compact ? 'var(--font-size-xs)' : 'var(--font-size-sm)'
-                }}>
-                  ✅ {compact ? 'Готово' : 'Анализ завершен'}
-                </h4>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            flex: 1,
+            justifyContent: 'flex-start'
+          }}>
+            <div style={{ position: 'relative' }}>
+              <canvas
+                ref={canvasRef}
+                style={{
+                  maxWidth: '100%',
+                  height: 'auto',
+                  borderRadius: 'var(--border-radius)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                }}
+              />
+
+              {/* Результаты анализа как overlay поверх изображения */}
+              {analysisResult && (
                 <div style={{
-                  display: compact ? 'block' : 'grid',
-                  gridTemplateColumns: compact ? 'none' : 'repeat(auto-fit, minmax(120px, 1fr))',
-                  gap: '0.5rem',
+                  position: 'absolute',
+                  bottom: '8px',
+                  left: '8px',
+                  right: '8px',
+                  padding: compact ? '0.25rem 0.5rem' : '0.5rem',
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  borderRadius: 'var(--border-radius)',
+                  border: '1px solid var(--color-success)',
+                  backdropFilter: 'blur(4px)',
                   fontSize: compact ? 'var(--font-size-xs)' : 'var(--font-size-sm)'
                 }}>
-                  <div>
-                    <strong>Досок:</strong> {analysisResult.total_count}
-                  </div>
-                  <div>
-                    <strong>Объем:</strong> {analysisResult.total_volume?.toFixed(4)} м³
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    color: 'var(--color-success-dark)'
+                  }}>
+                    <span style={{ fontWeight: 'bold' }}>
+                      ✅ {compact ? 'Готово' : 'Анализ завершен'}
+                    </span>
+                    <div style={{ display: 'flex', gap: '0.5rem', fontSize: 'inherit' }}>
+                      <span><strong>Досок:</strong> {analysisResult.board_count || analysisResult.wooden_boards?.length || 0}</span>
+                      <span><strong>Объем:</strong> {analysisResult.total_volume?.toFixed(4)} м³</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {!compact && (
               <button
@@ -217,17 +228,23 @@ const ImagePreviewWithBoards = ({
                   }
                 }}
                 style={{
-                  marginTop: '1rem',
-                  padding: '0.5rem 1rem',
+                  position: 'absolute',
+                  top: '8px',
+                  right: '8px',
+                  padding: '0.25rem 0.5rem',
                   backgroundColor: 'var(--color-primary)',
                   color: 'white',
                   border: 'none',
                   borderRadius: 'var(--border-radius)',
-                  fontSize: 'var(--font-size-sm)',
-                  cursor: 'pointer'
+                  fontSize: 'var(--font-size-xs)',
+                  cursor: 'pointer',
+                  opacity: 0.8,
+                  transition: 'opacity 0.2s ease'
                 }}
+                onMouseEnter={(e) => e.target.style.opacity = '1'}
+                onMouseLeave={(e) => e.target.style.opacity = '0.8'}
               >
-                Выбрать другое изображение
+                📷 Изменить
               </button>
             )}
           </div>
