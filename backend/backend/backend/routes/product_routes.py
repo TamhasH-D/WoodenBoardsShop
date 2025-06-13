@@ -6,6 +6,8 @@ from uuid import UUID, uuid4
 import aiofiles
 import aiohttp
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
+from backend.services.image_service import image_service
 
 from backend.daos import GetDAOs
 from backend.dtos import (
@@ -199,8 +201,7 @@ async def get_product_image(
     daos: GetDAOs,
 ) -> FileResponse:
     """Get the main image for a product by product ID."""
-    from fastapi.responses import FileResponse
-    from backend.services.image_service import image_service
+
 
     # Check if product exists
     product = await daos.product.filter_first(id=product_id)
@@ -236,18 +237,20 @@ async def get_product_image(
 
 @router.post("/with-analysis", status_code=201)
 async def create_product_with_analysis(
-    daos: GetDAOs,
-    keycloak_id: Annotated[UUID, Form()] = ...,
-    title: Annotated[str, Form()] = ...,
-    wood_type_id: Annotated[UUID, Form()] = ...,
-    board_height: Annotated[float, Form()] = ...,
-    board_length: Annotated[float, Form()] = ...,
-    volume: Annotated[float, Form()] = ...,
-    price: Annotated[float, Form()] = ...,
-    image: Annotated[UploadFile, File()] = ...,
-    description: Annotated[str | None, Form()] = None,
-    delivery_possible: Annotated[bool, Form()] = False,
-    pickup_location: Annotated[str | None, Form()] = None,
+    keycloak_id: Annotated[UUID, Form(...)],
+    title: Annotated[str, Form(...)],
+    wood_type_id: Annotated[UUID, Form(...)],
+    board_height: Annotated[float, Form(...)],
+    board_length: Annotated[float, Form(...)],
+    volume: Annotated[float, Form(...)],
+    price: Annotated[float, Form(...)],
+    image: Annotated[UploadFile, File(...)],
+    description: Annotated[str | None, Form(None)] = None,
+    delivery_possible: Annotated[bool, Form(False)] = False,
+    pickup_location: Annotated[str | None, Form(None)] = None,
+
+    # передаём сам класс GetDAOs, FastAPI создаст его экземпляр
+    daos: GetDAOs = Depends(GetDAOs),
 ) -> DataResponse[ProductWithAnalysisResponseDTO]:
     """
     Create a new Product with image analysis and wooden boards.

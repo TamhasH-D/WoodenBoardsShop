@@ -86,8 +86,22 @@ class ProductDAO(
         query = self._apply_advanced_filters(query, filters)
 
         # Apply sorting BEFORE pagination if provided
-        if hasattr(pagination, 'sort_by') and hasattr(pagination, 'sort_order'):
-            query = self._apply_sort(query, pagination.sort_by, pagination.sort_order)
+        if hasattr(pagination, 'sort_by') and pagination.sort_by and hasattr(pagination, 'sort_order'):
+            if isinstance(pagination.sort_by, list):
+                for sort_field in pagination.sort_by:
+                    # Assuming sort_order applies to all fields or is a list of same length
+                    # For simplicity, this example uses a single sort_order for all fields
+                    # or the first element if sort_order is a list.
+                    current_sort_order = pagination.sort_order
+                    if isinstance(pagination.sort_order, list):
+                        # This part needs careful handling if sort_orders can be different for each field
+                        # For now, let's assume if sort_by is a list, sort_order might also be a list
+                        # or we use the first sort_order. This logic might need refinement based on exact requirements.
+                        current_sort_order = pagination.sort_order[0] if pagination.sort_order else "asc" # Default to asc
+
+                    query = self._apply_sort(query, sort_field, current_sort_order)
+            else:
+                query = self._apply_sort(query, pagination.sort_by, pagination.sort_order)
 
         # Compute pagination metadata before applying pagination
         computed_pagination = await self._compute_offset_pagination(query)

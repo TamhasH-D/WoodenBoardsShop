@@ -879,33 +879,66 @@ export const apiService = {
   // Create product with image analysis using new backend API
   async createProductWithAnalysis(productData, imageFile) {
     try {
-      // Validate inputs
+      // --- BEGIN VALIDATION ---
+      const errors = [];
+
       if (!imageFile) {
-        throw new Error('Изображение обязательно для создания товара');
+        errors.push('Изображение обязательно для создания товара');
+      }
+      if (imageFile && (!imageFile.type || !imageFile.type.startsWith('image/'))) {
+        errors.push('Файл должен быть изображением');
+      }
+      if (imageFile && imageFile.size > 10 * 1024 * 1024) { // 10MB
+        errors.push('Размер изображения не должен превышать 10MB');
       }
 
-      if (!productData.keycloak_id) {
-        throw new Error('Keycloak ID продавца обязателен');
+      const isValidUUID = (uuid) => {
+        if (!uuid || typeof uuid !== 'string') return false;
+        const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+        return uuidRegex.test(uuid);
+      };
+
+      if (!productData.keycloak_id || !isValidUUID(productData.keycloak_id)) {
+        errors.push('Keycloak ID продавца обязателен и должен быть в формате UUID.');
       }
 
-      // Validate image file
-      if (!imageFile.type || !imageFile.type.startsWith('image/')) {
-        throw new Error('Файл должен быть изображением');
+      if (!productData.title || typeof productData.title !== 'string' || productData.title.trim() === '') {
+        errors.push('Название товара (title) обязательно.');
       }
 
-      if (imageFile.size > 10 * 1024 * 1024) { // 10MB
-        throw new Error('Размер изображения не должен превышать 10MB');
+      if (!productData.wood_type_id || !isValidUUID(productData.wood_type_id)) {
+        errors.push('Тип древесины (wood_type_id) обязателен и должен быть в формате UUID.');
       }
+
+      const numericFields = {
+        board_height: "Высота доски",
+        board_length: "Длина доски",
+        volume: "Объем",
+        price: "Цена"
+      };
+
+      for (const field in numericFields) {
+        const value = parseFloat(productData[field]);
+        if (isNaN(value) || value <= 0) {
+          errors.push(`${numericFields[field]} (${field}) должен быть числом больше нуля.`);
+        }
+      }
+      
+      if (errors.length > 0) {
+        console.error('Ошибки валидации на фронтенде:', errors);
+        throw new Error(`Ошибка валидации: ${errors.join('; ')}`);
+      }
+      // --- END VALIDATION ---
 
       const formData = new FormData();
 
-      // Add all product fields with proper validation and type conversion
       formData.append('keycloak_id', String(productData.keycloak_id));
-      formData.append('title', String(productData.title));
+      formData.append('title', String(productData.title.trim()));
 
-      // Description is optional
-      if (productData.description && productData.description.trim()) {
+      if (productData.description && String(productData.description).trim()) {
         formData.append('description', String(productData.description.trim()));
+      } else {
+        formData.append('description', ''); // Send empty string if null, undefined or empty
       }
 
       formData.append('wood_type_id', String(productData.wood_type_id));
@@ -915,49 +948,53 @@ export const apiService = {
       formData.append('price', String(parseFloat(productData.price)));
       formData.append('delivery_possible', String(Boolean(productData.delivery_possible)));
 
-      // Pickup location is optional
-      if (productData.pickup_location && productData.pickup_location.trim()) {
+      if (productData.pickup_location && String(productData.pickup_location).trim()) {
         formData.append('pickup_location', String(productData.pickup_location.trim()));
+      } else {
+        formData.append('pickup_location', ''); // Send empty string if null, undefined or empty
       }
 
-      // Add image file with proper filename and content type
       const fileName = imageFile.name || 'board.jpg';
-      const contentType = imageFile.type || 'image/jpeg';
+      // const contentType = imageFile.type || 'image/jpeg'; // Not needed for formData.append with File object
       formData.append('image', imageFile, fileName);
 
-      console.log('Creating product with analysis:', {
-        ...productData,
-        imageFile: {
-          name: fileName,
-          size: imageFile.size,
-          type: contentType
+      console.log('Creating product with analysis (formData):');
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}: File { name: "${value.name}", size: ${value.size}, type: "${value.type}" }`);
+        } else {
+          console.log(`${key}: ${value}`);
         }
-      });
+      }
 
       const response = await api.post('/api/v1/products/with-analysis', formData, {
         headers: {
-          // Don't set Content-Type manually for multipart/form-data
-          // Let the browser set it with the boundary
+          // Content-Type is automatically set by the browser for FormData
         },
-        timeout: 120000, // Увеличенный timeout для обработки изображений
+        timeout: 120000, 
       });
 
       console.log('Product created with analysis:', response.data);
       return response.data;
     } catch (error) {
       console.error('Failed to create product with analysis:', error);
-      console.error('Error details:', error.response?.data || error.message);
+      let errorMessage = 'Ошибка создания товара. Пожалуйста, попробуйте еще раз.';
 
-      // Provide more detailed error message
-      let errorMessage = 'Ошибка создания товара';
-      if (error.response?.status === 422) {
-        errorMessage = 'Ошибка валидации данных. Проверьте правильность заполнения всех полей.';
-        if (error.response?.data?.detail) {
-          errorMessage += ` Детали: ${error.response.data.detail}`;
+      if (error.response) {
+        // Ошибка от сервера
+        console.error('Server error details:', error.response.data);
+        if (error.response.status === 422 && error.response.data && error.response.data.detail) {
+          // Ошибка валидации от FastAPI
+          if (Array.isArray(error.response.data.detail)) {
+            errorMessage = 'Ошибка валидации данных: ' + error.response.data.detail.map(err => `${err.msg} (поле: ${err.loc ? err.loc.join('.') : 'неизвестно'})`).join('; ');
+          } else if (typeof error.response.data.detail === 'string') {
+            errorMessage = `Ошибка валидации: ${error.response.data.detail}`;
+          }
+        } else if (error.response.data && error.response.data.detail) {
+          errorMessage = error.response.data.detail; // Другие ошибки сервера с полем detail
         }
-      } else if (error.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
       } else if (error.message) {
+        // Ошибка на стороне клиента (включая наши ошибки валидации)
         errorMessage = error.message;
       }
 
