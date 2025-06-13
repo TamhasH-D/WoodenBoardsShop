@@ -47,9 +47,9 @@ const ProductCard = ({
   };
 
   // Определяем размеры в зависимости от варианта
-  const cardHeight = variant === 'home' ? '380px' : '420px';
+  const cardHeight = variant === 'home' ? '450px' : '480px';
   const imageHeight = variant === 'home' ? '180px' : '200px';
-  const padding = variant === 'home' ? '20px' : '24px';
+  const padding = variant === 'home' ? '16px' : '20px';
 
   return (
     <div
@@ -183,26 +183,26 @@ const ProductCard = ({
         {/* Заголовок и описание */}
         <div>
           <h3 style={{
-            fontSize: '1.1rem',
+            fontSize: '1rem',
             fontWeight: '600',
             color: '#1f2937',
-            marginBottom: '8px',
-            lineHeight: '1.4',
+            marginBottom: '6px',
+            lineHeight: '1.3',
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
-            minHeight: '2.8rem'
+            minHeight: '2.6rem'
           }}>
             {product.title || 'Товар без названия'}
           </h3>
 
           {product.descrioption && (
             <p style={{
-              fontSize: '0.85rem',
+              fontSize: '0.8rem',
               color: '#6b7280',
-              marginBottom: '12px',
-              lineHeight: '1.4',
+              marginBottom: '10px',
+              lineHeight: '1.3',
               display: '-webkit-box',
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
@@ -214,25 +214,25 @@ const ProductCard = ({
 
           {/* Характеристики товара */}
           <div style={{
-            marginBottom: '16px'
+            marginBottom: '12px'
           }}>
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              paddingBottom: '8px',
+              paddingBottom: '6px',
               borderBottom: '1px solid #f3f4f6',
-              marginBottom: '8px'
+              marginBottom: '6px'
             }}>
               <span style={{
-                fontSize: '0.85rem',
+                fontSize: '0.8rem',
                 color: '#6b7280',
                 fontWeight: '500'
               }}>
                 Объем:
               </span>
               <span style={{
-                fontSize: '0.9rem',
+                fontSize: '0.85rem',
                 color: '#1f2937',
                 fontWeight: '600'
               }}>
@@ -244,19 +244,19 @@ const ProductCard = ({
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              paddingBottom: '8px',
+              paddingBottom: '6px',
               borderBottom: '1px solid #f3f4f6',
-              marginBottom: '8px'
+              marginBottom: '6px'
             }}>
               <span style={{
-                fontSize: '0.85rem',
+                fontSize: '0.8rem',
                 color: '#6b7280',
                 fontWeight: '500'
               }}>
                 Цена за м³:
               </span>
               <span style={{
-                fontSize: '0.9rem',
+                fontSize: '0.85rem',
                 color: '#1f2937',
                 fontWeight: '600'
               }}>
@@ -269,17 +269,17 @@ const ProductCard = ({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                paddingBottom: '8px'
+                paddingBottom: '6px'
               }}>
                 <span style={{
-                  fontSize: '0.85rem',
+                  fontSize: '0.8rem',
                   color: '#6b7280',
                   fontWeight: '500'
                 }}>
                   Продавец:
                 </span>
                 <span style={{
-                  fontSize: '0.85rem',
+                  fontSize: '0.8rem',
                   color: '#1f2937',
                   fontWeight: '500',
                   maxWidth: '120px',
@@ -302,21 +302,21 @@ const ProductCard = ({
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '12px',
-            paddingBottom: '12px',
+            marginBottom: '10px',
+            paddingBottom: '10px',
             borderBottom: '2px solid #f3f4f6'
           }}>
             <div>
               <div style={{
-                fontSize: '0.75rem',
+                fontSize: '0.7rem',
                 color: '#6b7280',
                 fontWeight: '500',
-                marginBottom: '2px'
+                marginBottom: '1px'
               }}>
                 Общая стоимость
               </div>
               <div style={{
-                fontSize: '1.5rem',
+                fontSize: '1.3rem',
                 fontWeight: '700',
                 color: '#1f2937',
                 lineHeight: '1'
@@ -328,15 +328,15 @@ const ProductCard = ({
               textAlign: 'right'
             }}>
               <div style={{
-                fontSize: '0.75rem',
+                fontSize: '0.7rem',
                 color: '#6b7280',
                 fontWeight: '500',
-                marginBottom: '2px'
+                marginBottom: '1px'
               }}>
                 Объем
               </div>
               <div style={{
-                fontSize: '1.1rem',
+                fontSize: '1rem',
                 fontWeight: '600',
                 color: '#1f2937'
               }}>
@@ -353,24 +353,24 @@ const ProductCard = ({
             }}
             style={{
               width: '100%',
-              padding: '12px 16px',
+              padding: '10px 16px',
               backgroundColor: isHovered ? '#1f2937' : '#374151',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
-              fontSize: '0.9rem',
+              fontSize: '0.85rem',
               fontWeight: '500',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px'
+              gap: '6px'
             }}
           >
             <span>Подробнее</span>
             <span style={{
-              fontSize: '0.9rem',
+              fontSize: '0.85rem',
               transition: 'transform 0.2s ease',
               transform: isHovered ? 'translateX(2px)' : 'translateX(0)'
             }}>
