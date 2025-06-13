@@ -1,16 +1,8 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
-import { MOCK_IDS } from '../utils/constants';
+import { getCurrentSellerKeycloakId } from '../utils/auth';
 import { SELLER_TEXTS } from '../utils/localization';
-
-// TODO: Replace with real authentication when ready for production
-const getCurrentSellerKeycloakId = () => {
-  // Используем mock ID для разработки и тестирования
-  // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
-  console.warn('Using mock seller keycloak ID for development/testing - implement real authentication when ready');
-  return MOCK_IDS.SELLER_ID;
-};
 
 function Profile() {
   const [isEditing, setIsEditing] = useState(false);

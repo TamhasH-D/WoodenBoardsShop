@@ -26,72 +26,94 @@ const woodenBoardsApi = axios.create({
   },
 });
 
-// Request interceptor for logging
+// Request interceptor for logging (only in development and only for errors)
 api.interceptors.request.use(
   (config) => {
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    // Only log in development and only for specific debugging
+    if (process.env.NODE_ENV === 'development' && config.url?.includes('debug')) {
+      console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    }
     return config;
   },
   (error) => {
-    console.error('API Request Error:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('API Request Error:', error);
+    }
     return Promise.reject(error);
   }
 );
 
-// Response interceptor for error handling
+// Response interceptor for error handling (reduced logging)
 api.interceptors.response.use(
   (response) => {
-    console.log(`API Response: ${response.status} ${response.config.url}`);
+    // Only log successful responses in development for debugging specific endpoints
+    if (process.env.NODE_ENV === 'development' && response.config.url?.includes('debug')) {
+      console.log(`API Response: ${response.status} ${response.config.url}`);
+    }
     return response;
   },
   (error) => {
-    console.error('API Response Error:', error.response?.status, error.response?.data);
+    // Only log errors in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('API Response Error:', error.response?.status, error.response?.data);
 
-    // Handle common error cases
-    if (error.response?.status === 404) {
-      console.warn('Resource not found');
-    } else if (error.response?.status >= 500) {
-      console.error('Server error occurred');
-    } else if (error.code === 'ECONNABORTED') {
-      console.error('Request timeout');
-    } else if (error.code === 'ERR_NETWORK') {
-      console.error('Network error - backend may be unavailable');
+      // Handle common error cases
+      if (error.response?.status === 404) {
+        console.warn('Resource not found');
+      } else if (error.response?.status >= 500) {
+        console.error('Server error occurred');
+      } else if (error.code === 'ECONNABORTED') {
+        console.error('Request timeout');
+      } else if (error.code === 'ERR_NETWORK') {
+        console.error('Network error - backend may be unavailable');
+      }
     }
 
     return Promise.reject(error);
   }
 );
 
-// Request interceptor for wooden-boards API
+// Request interceptor for wooden-boards API (reduced logging)
 woodenBoardsApi.interceptors.request.use(
   (config) => {
-    console.log(`Wooden Boards API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    // Only log in development for debugging
+    if (process.env.NODE_ENV === 'development' && config.url?.includes('debug')) {
+      console.log(`Wooden Boards API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    }
     return config;
   },
   (error) => {
-    console.error('Wooden Boards API Request Error:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Wooden Boards API Request Error:', error);
+    }
     return Promise.reject(error);
   }
 );
 
-// Response interceptor for wooden-boards API
+// Response interceptor for wooden-boards API (reduced logging)
 woodenBoardsApi.interceptors.response.use(
   (response) => {
-    console.log(`Wooden Boards API Response: ${response.status} ${response.config.url}`);
+    // Only log in development for debugging
+    if (process.env.NODE_ENV === 'development' && response.config.url?.includes('debug')) {
+      console.log(`Wooden Boards API Response: ${response.status} ${response.config.url}`);
+    }
     return response;
   },
   (error) => {
-    console.error('Wooden Boards API Response Error:', error.response?.status, error.response?.data);
+    // Only log errors in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Wooden Boards API Response Error:', error.response?.status, error.response?.data);
 
-    // Handle common error cases for wooden-boards API
-    if (error.response?.status === 404) {
-      console.warn('Wooden boards endpoint not found');
-    } else if (error.response?.status >= 500) {
-      console.error('Wooden boards service error occurred');
-    } else if (error.code === 'ECONNABORTED') {
-      console.error('Wooden boards request timeout');
-    } else if (error.code === 'ERR_NETWORK') {
-      console.error('Network error - wooden boards service may be unavailable');
+      // Handle common error cases for wooden-boards API
+      if (error.response?.status === 404) {
+        console.warn('Wooden boards endpoint not found');
+      } else if (error.response?.status >= 500) {
+        console.error('Wooden boards service error occurred');
+      } else if (error.code === 'ECONNABORTED') {
+        console.error('Wooden boards request timeout');
+      } else if (error.code === 'ERR_NETWORK') {
+        console.error('Network error - wooden boards service may be unavailable');
+      }
     }
 
     return Promise.reject(error);
@@ -924,7 +946,7 @@ export const apiService = {
       const formData = new FormData();
 
       // Add all product fields as per ProductWithImageInputDTO
-      formData.append('keycloak_id', productData.keycloak_id);
+      formData.append('seller_id', productData.seller_id);
       formData.append('title', productData.title);
       // Ensure description is appended only if it exists and is not an empty string
       if (productData.description && String(productData.description).trim() !== '') {
@@ -1025,8 +1047,11 @@ export const apiService = {
       const heightInMm = boardHeight * 1000;
       const lengthInMm = boardLength * 1000;
 
-      console.log(`Seller Board Analysis: Sending request to ${API_BASE_URL}/api/v1/wooden-boards/calculate-volume`);
-      console.log(`Board dimensions: height=${heightInMm}mm, length=${lengthInMm}mm`);
+      // Only log in development for debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Seller Board Analysis: Sending request to ${API_BASE_URL}/api/v1/wooden-boards/calculate-volume`);
+        console.log(`Board dimensions: height=${heightInMm}mm, length=${lengthInMm}mm`);
+      }
 
       // Правильный формат запроса с query параметрами в миллиметрах
       const response = await api.post(
@@ -1040,7 +1065,9 @@ export const apiService = {
         }
       );
 
-      console.log('Board analysis response:', response.data);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Board analysis response:', response.data);
+      }
       return response.data;
     } catch (error) {
       console.error('Failed to analyze wooden board:', error.response?.data || error.message);
@@ -1096,6 +1123,17 @@ export const apiService = {
   getImageFileUrl(imageId) {
     const baseUrl = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
     return `${baseUrl}/api/v1/images/${imageId}/file`;
+  },
+
+  // Get wooden boards detected in image
+  async getImageBoards(imageId) {
+    try {
+      const response = await api.get(`/api/v1/images/${imageId}/boards`);
+      return response.data; // Прямой список, не обернутый в data
+    } catch (error) {
+      console.error('Failed to get image boards:', error);
+      return [];
+    }
   },
 
   // Get image metadata

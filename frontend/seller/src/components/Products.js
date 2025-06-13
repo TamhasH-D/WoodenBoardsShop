@@ -3,31 +3,11 @@ import { useApi, useApiMutation } from '../hooks/useApi';
 import { useFormValidation } from '../hooks/useFormValidation';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS, formatDateRu } from '../utils/localization';
-import { MOCK_IDS } from '../utils/constants';
+import { getCurrentSellerKeycloakId, getCurrentSellerId } from '../utils/auth';
 import ProductImage from './ui/ProductImage';
 import CompactBoardAnalyzer from './CompactBoardAnalyzer';
 import StepByStepProductForm from './StepByStepProductForm';
 import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
-
-// TODO: Replace with real authentication
-const getCurrentSellerKeycloakId = () => {
-  // Временно используем mock ID для разработки
-  // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
-  console.warn('Using mock seller keycloak ID for development - implement real authentication');
-  return MOCK_IDS.SELLER_ID;
-};
-
-// Helper function to get seller_id from keycloak_id
-const getCurrentSellerId = async () => {
-  try {
-    const keycloakId = getCurrentSellerKeycloakId();
-    const sellerResponse = await apiService.getSellerProfileByKeycloakId(keycloakId);
-    return sellerResponse.data.id;
-  } catch (error) {
-    console.error('Failed to get seller_id:', error);
-    throw error;
-  }
-};
 
 function Products() {
   // Хук для валидации форм
@@ -139,7 +119,7 @@ function Products() {
       const errorMessage = error || mutationError || woodTypesError;
       showError(errorMessage);
     }
-  }, [error, mutationError, woodTypesError, showError]);
+  }, [error, mutationError, woodTypesError]); // Removed showError from dependencies to prevent infinite loop
 
   // Helper function to get wood type name by ID
   const getWoodTypeName = (woodTypeId) => {
@@ -964,6 +944,33 @@ function Products() {
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Current Image Section */}
+            <div className="form-group">
+              <label className="form-label">Текущее изображение товара</label>
+              <div style={{
+                padding: '16px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '8px',
+                border: '1px solid #e9ecef',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <ProductImage
+                  productId={editingProduct}
+                  alt="Текущее изображение"
+                  size="large"
+                />
+                <div style={{
+                  fontSize: '0.875rem',
+                  color: '#6b7280'
+                }}>
+                  💡 Нажмите на изображение, чтобы открыть его в полном размере
+                </div>
+              </div>
             </div>
 
             {/* Image Update Section */}

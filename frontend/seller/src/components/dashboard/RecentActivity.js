@@ -9,14 +9,13 @@ import {
 import { useApi } from '../../hooks/useApi';
 import { apiService } from '../../services/api';
 import { SELLER_TEXTS, formatDateRu, formatCurrencyRu } from '../../utils/localization';
-import { MOCK_IDS } from '../../utils/constants';
+import { getCurrentSellerKeycloakId } from '../../utils/auth';
 
 // TODO: Replace with real authentication
 const getCurrentSellerId = () => {
   // Временно используем mock ID для разработки
   // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
-  console.warn('Using mock seller ID for development - implement real authentication');
-  return MOCK_IDS.SELLER_ID;
+  return getCurrentSellerKeycloakId();
 };
 
 const ActivityItem = ({ icon: Icon, title, description, time, action, color }) => {

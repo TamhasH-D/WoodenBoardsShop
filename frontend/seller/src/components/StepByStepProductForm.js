@@ -2,16 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useFormValidation } from '../hooks/useFormValidation';
 import { apiService } from '../services/api';
-import { MOCK_IDS } from '../utils/constants';
+import { getCurrentSellerId } from '../utils/auth';
 import ImagePreviewWithBoards from './ui/ImagePreviewWithBoards';
-
-// TODO: Replace with real authentication
-const getCurrentSellerKeycloakId = () => {
-  // Временно используем mock ID для разработки
-  // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
-  console.warn('Using mock seller keycloak ID for development - implement real authentication');
-  return MOCK_IDS.SELLER_ID;
-};
 
 /**
  * Пошаговая форма создания товара с прогрессивным раскрытием полей
@@ -28,8 +20,7 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
     volume: '',
     price: '',
     delivery_possible: false,
-    pickup_location: '',
-    seller_id: getCurrentSellerKeycloakId()
+    pickup_location: ''
   });
 
   // Состояние анализатора досок
@@ -137,9 +128,12 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
     if (!canSubmit || !imageFile) return;
 
     try {
+      // Получаем seller_id асинхронно
+      const sellerId = await getCurrentSellerId();
+
       // Подготавливаем данные для нового API
       const productData = {
-        keycloak_id: getCurrentSellerKeycloakId(), // TODO: Replace with real Keycloak authentication
+        seller_id: sellerId, // TODO: Replace with real Keycloak authentication
         title: formData.title.trim(),
         description: formData.description?.trim() || '',
         wood_type_id: formData.wood_type_id,

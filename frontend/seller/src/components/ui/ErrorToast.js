@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 /**
  * Компактный компонент для отображения ошибок в фиксированной позиции
@@ -92,7 +92,10 @@ export const useErrorHandler = (debounceMs = 1000) => {
   const [error, setError] = useState(null);
   const [debounceTimer, setDebounceTimer] = useState(null);
 
-  const showError = (errorMessage) => {
+  const showError = useCallback((errorMessage) => {
+    // Prevent duplicate errors
+    if (error === errorMessage) return;
+
     // Clear existing timer
     if (debounceTimer) {
       clearTimeout(debounceTimer);
@@ -104,15 +107,15 @@ export const useErrorHandler = (debounceMs = 1000) => {
     }, debounceMs);
 
     setDebounceTimer(timer);
-  };
+  }, [error, debounceTimer, debounceMs]);
 
-  const clearError = () => {
+  const clearError = useCallback(() => {
     if (debounceTimer) {
       clearTimeout(debounceTimer);
       setDebounceTimer(null);
     }
     setError(null);
-  };
+  }, [debounceTimer]);
 
   useEffect(() => {
     return () => {

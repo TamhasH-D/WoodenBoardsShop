@@ -45,7 +45,9 @@ async def calculate_wooden_board_volume(
             board_length / 1000 if board_length > 0 else 6.0
         )  # default 6000mm
 
-        volume_service_url = f"{settings.prosto_board_volume_seg_url}/wooden_boards_volume_seg/?height={height_in_meters}&length={length_in_meters}"
+        # Ensure proper URL construction without double slashes
+        base_url = settings.prosto_board_volume_seg_url.rstrip('/')
+        volume_service_url = f"{base_url}/wooden_boards_volume_seg/?height={height_in_meters}&length={length_in_meters}"
 
         async with session.post(volume_service_url, data=form_data) as response:
             response.raise_for_status()  # Raise an exception for HTTP errors

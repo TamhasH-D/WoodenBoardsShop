@@ -2,15 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS } from '../utils/localization';
-import { MOCK_IDS } from '../utils/constants';
-
-// TODO: Replace with real authentication
-const getCurrentSellerKeycloakId = () => {
-  // Временно используем mock ID для разработки
-  // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
-  console.warn('Using mock seller keycloak ID for development - implement real authentication');
-  return MOCK_IDS.SELLER_ID;
-};
+import { getCurrentSellerKeycloakId } from '../utils/auth';
 
 function Chats() {
   const [selectedThread, setSelectedThread] = useState(null);

@@ -29,7 +29,7 @@ class ProductImageService:
 
     def __init__(self):
         """Initialize product image service."""
-        self.yolo_base_url = getattr(settings, 'YOLO_BACKEND_URL', 'http://localhost:8001')
+        self.yolo_base_url = getattr(settings, 'prosto_board_volume_seg_url', 'http://localhost:8001')
 
     async def analyze_image(
         self,
@@ -54,22 +54,32 @@ class ProductImageService:
         try:
             # Reset file position
             await image.seek(0)
-            
+
+            # Convert mm to meters for YOLO backend (same as in wooden_board_routes.py)
+            height_in_meters = (
+                board_height / 1000 if board_height > 0 else 0.05
+            )  # default 50mm
+            length_in_meters = (
+                board_length / 1000 if board_length > 0 else 6.0
+            )  # default 6000mm
+
             # Prepare form data for YOLO backend
             form_data = {
-                'board_height': str(board_height),
-                'board_length': str(board_length),
+                'height': str(height_in_meters),
+                'length': str(length_in_meters),
             }
             
             files = {
                 'image': (image.filename, await image.read(), image.content_type)
             }
             
-            # Send request to YOLO backend
+            # Send request to YOLO backend (using same URL pattern as wooden_board_routes.py)
+            base_url = self.yolo_base_url.rstrip('/')
+            volume_service_url = f"{base_url}/wooden_boards_volume_seg/?height={height_in_meters}&length={length_in_meters}"
+
             async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.post(
-                    f"{self.yolo_base_url}/api/v1/wooden-boards/calculate-volume",
-                    data=form_data,
+                    volume_service_url,
                     files=files,
                 )
                 

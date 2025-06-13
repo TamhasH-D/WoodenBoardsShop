@@ -11,6 +11,7 @@ from backend.dtos import (
     Pagination,
 )
 from backend.dtos.image_dtos import ImageDTO, ImageInputDTO, ImageUpdateDTO
+from backend.dtos.wooden_board_dtos import WoodenBoardDTO
 from backend.services.image_service import image_service
 
 router = APIRouter(prefix="/images")
@@ -164,3 +165,23 @@ async def get_image_file(
         media_type=media_type,
         filename=f"image_{image_id}{file_extension}",
     )
+
+
+@router.get("/{image_id}/boards")
+async def get_image_boards(
+    image_id: UUID,
+    daos: GetDAOs,
+) -> list[WoodenBoardDTO]:
+    """Get all wooden boards detected in this image."""
+    # Verify image exists
+    image = await daos.image.filter_first(id=image_id)
+    if not image:
+        raise HTTPException(status_code=404, detail="Изображение не найдено")
+
+    # Get all wooden boards for this image
+    boards = await daos.wooden_board.filter(image_id=image_id)
+
+    # Convert to DTOs
+    board_dtos = [WoodenBoardDTO.model_validate(board) for board in boards]
+
+    return board_dtos
