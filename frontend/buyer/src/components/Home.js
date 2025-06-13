@@ -70,7 +70,7 @@ function Home() {
   // Функции для получения названий
   const getWoodTypeName = (woodTypeId) => {
     const woodType = woodTypes.find(wt => wt.id === woodTypeId);
-    return woodType ? woodType.neme : 'Не указан';
+    return woodType ? (woodType.neme || woodType.name) : 'Не указан';
   };
 
   const getWoodTypePrice = (woodTypeId) => {

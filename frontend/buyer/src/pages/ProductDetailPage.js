@@ -38,17 +38,7 @@ const ProductDetailPage = () => {
       const productData = productResponse.data;
       // No longer set page title immediately here, do it after image potentially added
 
-      // Fetch images for the product
-      if (productData && productData.id) { // Ensure productData and its id exist
-        const images = await apiService.getProductImages(productData.id);
-        if (images && images.length > 0) {
-          productData.image_id = images[0].id; // Add image_id to productData
-        } else {
-          productData.image_id = null; // Or undefined, so ProductImageWithBoards knows there's no image
-        }
-      }
-
-      setProduct(productData); // Set product state after potentially adding image_id
+      setProduct(productData);
       setPageTitle(productData.title || productData.neme || 'Товар'); // Set page title now
 
       // Загружаем данные продавца (can proceed even if image fetch fails)

@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { apiService } from '../services/api';
 
 const ProductImageWithBoards = ({ product, style = {} }) => {
   const canvasRef = useRef(null);
@@ -6,7 +7,7 @@ const ProductImageWithBoards = ({ product, style = {} }) => {
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
-    if (!product?.image_id || !canvasRef.current) return;
+    if (!product?.id || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -25,7 +26,7 @@ const ProductImageWithBoards = ({ product, style = {} }) => {
         product.wooden_boards.forEach((board, index) => {
           if (board.detection && board.detection.points) {
             const { points } = board.detection;
-            
+
             // Настройки для контуров
             ctx.strokeStyle = '#00ff00';
             ctx.lineWidth = 3;
@@ -33,7 +34,7 @@ const ProductImageWithBoards = ({ product, style = {} }) => {
             ctx.shadowBlur = 2;
             ctx.shadowOffsetX = 1;
             ctx.shadowOffsetY = 1;
-            
+
             // Рисуем контур доски
             ctx.beginPath();
             if (points && points.length > 0) {
@@ -45,27 +46,27 @@ const ProductImageWithBoards = ({ product, style = {} }) => {
               });
               ctx.closePath();
               ctx.stroke();
-              
+
               // Добавляем полупрозрачную заливку
               ctx.fillStyle = 'rgba(0, 255, 0, 0.1)';
               ctx.fill();
-              
+
               // Сбрасываем тень для текста
               ctx.shadowColor = 'transparent';
               ctx.shadowBlur = 0;
               ctx.shadowOffsetX = 0;
               ctx.shadowOffsetY = 0;
-              
+
               // Добавляем номер доски в центре
               const centerX = points.reduce((sum, p) => sum + p.x, 0) / points.length;
               const centerY = points.reduce((sum, p) => sum + p.y, 0) / points.length;
-              
+
               // Фон для номера
               ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
               ctx.beginPath();
               ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI);
               ctx.fill();
-              
+
               // Номер доски
               ctx.fillStyle = '#ffffff';
               ctx.font = 'bold 16px Arial';
@@ -86,9 +87,8 @@ const ProductImageWithBoards = ({ product, style = {} }) => {
       setImageError(true);
     };
 
-    // Загружаем изображение через правильный API endpoint
-    const baseUrl = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
-    const imageUrl = `${baseUrl}/api/v1/images/${product.image_id}/file`;
+    // Используем новый метод получения URL изображения товара
+    const imageUrl = apiService.getProductImageUrl(product.id);
     console.log(`Загружаем изображение товара ${product.id}:`, imageUrl);
     img.src = imageUrl;
   }, [product]);
@@ -120,7 +120,7 @@ const ProductImageWithBoards = ({ product, style = {} }) => {
     );
   }
 
-  if (!product?.image_id) {
+  if (!product?.id) {
     return (
       <div style={{
         ...style,
@@ -141,7 +141,7 @@ const ProductImageWithBoards = ({ product, style = {} }) => {
           fontSize: '16px',
           textAlign: 'center'
         }}>
-          Изображение не загружено
+          Товар не найден
         </p>
       </div>
     );
