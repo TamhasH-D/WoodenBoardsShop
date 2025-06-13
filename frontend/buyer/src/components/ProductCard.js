@@ -47,38 +47,39 @@ const ProductCard = ({
   };
 
   // Определяем размеры в зависимости от варианта
-  const cardHeight = variant === 'home' ? '420px' : '480px';
-  const imageHeight = variant === 'home' ? '200px' : '240px';
+  const cardHeight = variant === 'home' ? '380px' : '420px';
+  const imageHeight = variant === 'home' ? '180px' : '200px';
   const padding = variant === 'home' ? '20px' : '24px';
 
   return (
     <div
       style={{
         backgroundColor: 'white',
-        borderRadius: '20px',
+        borderRadius: '8px',
         overflow: 'hidden',
         boxShadow: isHovered
-          ? '0 20px 40px rgba(0,0,0,0.15)'
-          : '0 8px 25px rgba(0,0,0,0.08)',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          ? '0 8px 24px rgba(0,0,0,0.12)'
+          : '0 2px 8px rgba(0,0,0,0.06)',
+        transition: 'all 0.3s ease',
         cursor: 'pointer',
         height: cardHeight,
-        border: '1px solid rgba(0,0,0,0.05)',
-        transform: isHovered ? 'translateY(-8px) scale(1.02)' : 'translateY(0) scale(1)',
+        border: '1px solid #e2e8f0',
+        transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
         position: 'relative',
-        background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)'
+        backgroundColor: '#ffffff'
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
     >
-      {/* Изображение товара с градиентным оверлеем */}
+      {/* Изображение товара */}
       <div style={{
         width: '100%',
         height: imageHeight,
         position: 'relative',
         overflow: 'hidden',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        backgroundColor: '#f8fafc',
+        borderBottom: '1px solid #e2e8f0'
       }}>
         <img
           src={imageUrl}
@@ -89,7 +90,7 @@ const ProductCard = ({
             objectFit: 'cover',
             display: imageLoading ? 'none' : 'block',
             transition: 'transform 0.3s ease',
-            transform: isHovered ? 'scale(1.1)' : 'scale(1)'
+            transform: isHovered ? 'scale(1.05)' : 'scale(1)'
           }}
           onLoad={() => setImageLoading(false)}
           onError={() => {
@@ -97,18 +98,6 @@ const ProductCard = ({
             setImageLoading(false);
           }}
         />
-
-        {/* Градиентный оверлей */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.1) 100%)',
-          opacity: isHovered ? 1 : 0,
-          transition: 'opacity 0.3s ease'
-        }} />
 
         {/* Индикатор загрузки или ошибки */}
         {(imageLoading || imageError) && (
@@ -121,28 +110,26 @@ const ProductCard = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '3rem',
-            color: 'white',
-            background: imageLoading
-              ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-              : 'linear-gradient(135deg, #fc7a57 0%, #f093fb 100%)'
+            fontSize: '2.5rem',
+            color: '#9ca3af',
+            backgroundColor: '#f8fafc'
           }}>
             {imageLoading ? (
               <div style={{
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: '12px'
+                gap: '8px'
               }}>
                 <div style={{
-                  width: '40px',
-                  height: '40px',
-                  border: '4px solid rgba(255,255,255,0.3)',
-                  borderTopColor: 'white',
+                  width: '24px',
+                  height: '24px',
+                  border: '3px solid #e5e7eb',
+                  borderTopColor: '#6b7280',
                   borderRadius: '50%',
                   animation: 'spin 1s linear infinite'
                 }} />
-                <span style={{ fontSize: '14px', fontWeight: '500' }}>Загрузка...</span>
+                <span style={{ fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>Загрузка</span>
               </div>
             ) : '🌲'}
           </div>
@@ -152,38 +139,36 @@ const ProductCard = ({
         {woodTypeName && woodTypeName !== 'Не указан' && (
           <div style={{
             position: 'absolute',
-            top: '12px',
-            left: '12px',
+            top: '8px',
+            left: '8px',
             background: 'rgba(255,255,255,0.95)',
-            backdropFilter: 'blur(10px)',
-            padding: '6px 12px',
-            borderRadius: '20px',
-            fontSize: '12px',
-            fontWeight: '600',
-            color: '#2D3748',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+            padding: '4px 8px',
+            borderRadius: '4px',
+            fontSize: '11px',
+            fontWeight: '500',
+            color: '#374151',
+            border: '1px solid rgba(0,0,0,0.1)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
           }}>
             {woodTypeName}
           </div>
         )}
 
-        {/* Бейдж доставки */}
+        {/* Статус доставки */}
         <div style={{
           position: 'absolute',
-          top: '12px',
-          right: '12px',
-          background: product.delivery_possible
-            ? 'rgba(16, 185, 129, 0.9)'
-            : 'rgba(245, 101, 101, 0.9)',
-          backdropFilter: 'blur(10px)',
-          padding: '6px 12px',
-          borderRadius: '20px',
-          fontSize: '12px',
-          fontWeight: '600',
-          color: 'white',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+          top: '8px',
+          right: '8px',
+          background: 'rgba(255,255,255,0.95)',
+          padding: '4px 8px',
+          borderRadius: '4px',
+          fontSize: '11px',
+          fontWeight: '500',
+          color: product.delivery_possible ? '#059669' : '#dc2626',
+          border: `1px solid ${product.delivery_possible ? '#d1fae5' : '#fecaca'}`,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
         }}>
-          {product.delivery_possible ? '🚚 Доставка' : '📍 Самовывоз'}
+          {product.delivery_possible ? 'Доставка' : 'Самовывоз'}
         </div>
       </div>
 
@@ -198,26 +183,26 @@ const ProductCard = ({
         {/* Заголовок и описание */}
         <div>
           <h3 style={{
-            fontSize: '1.25rem',
-            fontWeight: '700',
-            color: '#1a202c',
+            fontSize: '1.1rem',
+            fontWeight: '600',
+            color: '#1f2937',
             marginBottom: '8px',
-            lineHeight: '1.3',
+            lineHeight: '1.4',
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
-            minHeight: '2.6rem'
+            minHeight: '2.8rem'
           }}>
             {product.title || 'Товар без названия'}
           </h3>
 
           {product.descrioption && (
             <p style={{
-              fontSize: '0.9rem',
-              color: '#718096',
-              marginBottom: '16px',
-              lineHeight: '1.5',
+              fontSize: '0.85rem',
+              color: '#6b7280',
+              marginBottom: '12px',
+              lineHeight: '1.4',
               display: '-webkit-box',
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
@@ -229,80 +214,85 @@ const ProductCard = ({
 
           {/* Характеристики товара */}
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '12px',
             marginBottom: '16px'
           }}>
             <div style={{
-              background: 'linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)',
-              padding: '12px',
-              borderRadius: '12px',
-              textAlign: 'center'
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingBottom: '8px',
+              borderBottom: '1px solid #f3f4f6',
+              marginBottom: '8px'
             }}>
-              <div style={{
-                fontSize: '1.5rem',
-                fontWeight: '700',
-                color: '#2d3748',
-                marginBottom: '4px'
-              }}>
-                {product.volume || 0}
-              </div>
-              <div style={{
-                fontSize: '0.75rem',
-                color: '#718096',
+              <span style={{
+                fontSize: '0.85rem',
+                color: '#6b7280',
                 fontWeight: '500'
               }}>
-                м³
-              </div>
+                Объем:
+              </span>
+              <span style={{
+                fontSize: '0.9rem',
+                color: '#1f2937',
+                fontWeight: '600'
+              }}>
+                {product.volume || 0} м³
+              </span>
             </div>
 
             <div style={{
-              background: 'linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%)',
-              padding: '12px',
-              borderRadius: '12px',
-              textAlign: 'center'
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingBottom: '8px',
+              borderBottom: '1px solid #f3f4f6',
+              marginBottom: '8px'
             }}>
-              <div style={{
-                fontSize: '1.2rem',
-                fontWeight: '700',
-                color: '#22543d',
-                marginBottom: '4px'
-              }}>
-                {pricePerCubicMeter}
-              </div>
-              <div style={{
-                fontSize: '0.75rem',
-                color: '#38a169',
+              <span style={{
+                fontSize: '0.85rem',
+                color: '#6b7280',
                 fontWeight: '500'
               }}>
-                ₽/м³
-              </div>
+                Цена за м³:
+              </span>
+              <span style={{
+                fontSize: '0.9rem',
+                color: '#1f2937',
+                fontWeight: '600'
+              }}>
+                {pricePerCubicMeter} ₽
+              </span>
             </div>
-          </div>
 
-          {/* Информация о продавце */}
-          {sellerName && sellerName !== 'Неизвестный продавец' && (
-            <div style={{
-              background: 'rgba(99, 102, 241, 0.1)',
-              padding: '10px 12px',
-              borderRadius: '10px',
-              marginBottom: '16px',
-              border: '1px solid rgba(99, 102, 241, 0.2)'
-            }}>
+            {sellerName && sellerName !== 'Неизвестный продавец' && (
               <div style={{
-                fontSize: '0.8rem',
-                color: '#6366f1',
-                fontWeight: '600',
                 display: 'flex',
+                justifyContent: 'space-between',
                 alignItems: 'center',
-                gap: '6px'
+                paddingBottom: '8px'
               }}>
-                <span>👤</span>
-                {sellerName}
+                <span style={{
+                  fontSize: '0.85rem',
+                  color: '#6b7280',
+                  fontWeight: '500'
+                }}>
+                  Продавец:
+                </span>
+                <span style={{
+                  fontSize: '0.85rem',
+                  color: '#1f2937',
+                  fontWeight: '500',
+                  maxWidth: '120px',
+                  textAlign: 'right',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {sellerName}
+                </span>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Секция с ценой и кнопкой */}
@@ -312,42 +302,45 @@ const ProductCard = ({
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '16px',
-            padding: '16px',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            borderRadius: '16px',
-            color: 'white'
+            marginBottom: '12px',
+            paddingBottom: '12px',
+            borderBottom: '2px solid #f3f4f6'
           }}>
             <div>
               <div style={{
-                fontSize: '1.8rem',
-                fontWeight: '800',
+                fontSize: '0.75rem',
+                color: '#6b7280',
+                fontWeight: '500',
+                marginBottom: '2px'
+              }}>
+                Общая стоимость
+              </div>
+              <div style={{
+                fontSize: '1.5rem',
+                fontWeight: '700',
+                color: '#1f2937',
                 lineHeight: '1'
               }}>
                 {formatCurrencyRu(product.price || 0)}
-              </div>
-              <div style={{
-                fontSize: '0.9rem',
-                opacity: 0.9,
-                marginTop: '4px'
-              }}>
-                Общая стоимость
               </div>
             </div>
             <div style={{
               textAlign: 'right'
             }}>
               <div style={{
-                fontSize: '1.2rem',
-                fontWeight: '600'
+                fontSize: '0.75rem',
+                color: '#6b7280',
+                fontWeight: '500',
+                marginBottom: '2px'
               }}>
-                {product.volume} м³
+                Объем
               </div>
               <div style={{
-                fontSize: '0.8rem',
-                opacity: 0.9
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                color: '#1f2937'
               }}>
-                объем
+                {product.volume} м³
               </div>
             </div>
           </div>
@@ -360,21 +353,15 @@ const ProductCard = ({
             }}
             style={{
               width: '100%',
-              padding: '14px',
-              background: isHovered
-                ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                : 'linear-gradient(135deg, #4c51bf 0%, #553c9a 100%)',
+              padding: '12px 16px',
+              backgroundColor: isHovered ? '#1f2937' : '#374151',
               color: 'white',
               border: 'none',
-              borderRadius: '12px',
-              fontSize: '1rem',
-              fontWeight: '600',
+              borderRadius: '6px',
+              fontSize: '0.9rem',
+              fontWeight: '500',
               cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              boxShadow: isHovered
-                ? '0 8px 25px rgba(102, 126, 234, 0.4)'
-                : '0 4px 15px rgba(76, 81, 191, 0.3)',
-              transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
+              transition: 'all 0.2s ease',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -383,9 +370,9 @@ const ProductCard = ({
           >
             <span>Подробнее</span>
             <span style={{
-              fontSize: '1.2rem',
-              transition: 'transform 0.3s ease',
-              transform: isHovered ? 'translateX(4px)' : 'translateX(0)'
+              fontSize: '0.9rem',
+              transition: 'transform 0.2s ease',
+              transform: isHovered ? 'translateX(2px)' : 'translateX(0)'
             }}>
               →
             </span>
