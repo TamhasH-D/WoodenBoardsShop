@@ -33,7 +33,7 @@ api.interceptors.response.use(
   },
   (error) => {
     console.error('API Response Error:', error.response?.status, error.response?.data);
-    
+
     // Handle common error cases
     if (error.response?.status === 404) {
       console.warn('Resource not found');
@@ -44,7 +44,7 @@ api.interceptors.response.use(
     } else if (error.code === 'ERR_NETWORK') {
       console.error('Network error - backend may be unavailable');
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -646,10 +646,17 @@ export const apiService = {
 
   // Get images for specific product
   async getProductImages(productId) {
-    const allImages = await this.getAllImages();
-    const productImages = allImages.filter(image => image.product_id === productId);
-    console.log(`Найдено ${productImages.length} изображений для товара ${productId}:`, productImages);
-    return productImages;
+    try {
+      const response = await api.get(`/api/v1/products/${productId}/images`);
+      // The new endpoint returns OffsetResults<ImageDTO>
+      // So response.data will be { data: ImageDTO[], pagination: { total: number } }
+      const productImages = response.data.data || [];
+      console.log(`Fetched ${productImages.length} images for product ${productId} directly:`, productImages);
+      return productImages;
+    } catch (error) {
+      console.error(`Error fetching images for product ${productId}:`, error);
+      return []; // Return empty array on error
+    }
   },
 
   // Get image file URL

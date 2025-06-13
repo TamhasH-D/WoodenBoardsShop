@@ -15,7 +15,7 @@ from backend.dtos import (
     Pagination,
     PaginationParamsSortBy,
 )
-from backend.dtos.image_dtos import ImageInputDTO
+from backend.dtos.image_dtos import ImageDTO, ImageInputDTO
 from backend.dtos.product_dtos import ProductDTO, ProductFilterDTO, ProductInputDTO, ProductUpdateDTO
 from backend.dtos.product_with_analysis_dtos import ProductWithAnalysisResponseDTO
 from backend.dtos.product_with_image_dtos import (
