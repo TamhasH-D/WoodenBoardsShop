@@ -244,16 +244,16 @@ export const apiService = {
     }
   },
 
-  // Get seller products by keycloak_id using new secure backend endpoint
-  async getSellerProductsByKeycloakId(keycloakId, page = 0, size = 10, sortBy = 'created_at', sortOrder = 'desc') {
+  // Get seller products by seller_id using secure backend endpoint
+  async getSellerProductsBySellerId(sellerId, page = 0, size = 10, sortBy = 'created_at', sortOrder = 'desc') {
     try {
-      // Use the new secure backend endpoint that automatically filters by seller
+      // Use the secure backend endpoint that automatically filters by seller
       const actualSize = Math.min(size, 20); // Backend limit
       const offset = page * actualSize;
 
       const response = await api.get(`/api/v1/products/my-products`, {
         params: {
-          keycloak_id: keycloakId,
+          seller_id: sellerId,
           offset: offset,
           limit: actualSize,
           sort_by: sortBy,
@@ -268,7 +268,7 @@ export const apiService = {
         limit: actualSize
       };
     } catch (error) {
-      console.error('Failed to get seller products by keycloak_id:', error);
+      console.error('Failed to get seller products by seller_id:', error);
       // Return empty result on error
       return {
         data: [],
@@ -279,14 +279,14 @@ export const apiService = {
     }
   },
 
-  // Search seller products with filters using new secure backend endpoint
-  async searchSellerProductsByKeycloakId(keycloakId, filters = {}, page = 0, size = 10, sortBy = 'created_at', sortOrder = 'desc') {
+  // Search seller products with filters using secure backend endpoint
+  async searchSellerProductsBySellerId(sellerId, filters = {}, page = 0, size = 10, sortBy = 'created_at', sortOrder = 'desc') {
     try {
       const actualSize = Math.min(size, 20); // Backend limit
       const offset = page * actualSize;
 
       const params = {
-        keycloak_id: keycloakId,
+        seller_id: sellerId,
         offset: offset,
         limit: actualSize,
         sort_by: sortBy,
@@ -302,6 +302,48 @@ export const apiService = {
         offset: offset,
         limit: actualSize
       };
+    } catch (error) {
+      console.error('Failed to search seller products by seller_id:', error);
+      // Return empty result on error
+      return {
+        data: [],
+        total: 0,
+        offset: page * size,
+        limit: size
+      };
+    }
+  },
+
+  // Backward compatibility: Get seller products by keycloak_id (gets seller_id first)
+  async getSellerProductsByKeycloakId(keycloakId, page = 0, size = 10, sortBy = 'created_at', sortOrder = 'desc') {
+    try {
+      // First get seller by keycloak_id to get the actual seller_id
+      const sellerResponse = await this.getSellerProfileByKeycloakId(keycloakId);
+      const sellerId = sellerResponse.data.id;
+
+      // Then get products using seller_id
+      return await this.getSellerProductsBySellerId(sellerId, page, size, sortBy, sortOrder);
+    } catch (error) {
+      console.error('Failed to get seller products by keycloak_id:', error);
+      // Return empty result on error
+      return {
+        data: [],
+        total: 0,
+        offset: page * size,
+        limit: size
+      };
+    }
+  },
+
+  // Backward compatibility: Search seller products by keycloak_id (gets seller_id first)
+  async searchSellerProductsByKeycloakId(keycloakId, filters = {}, page = 0, size = 10, sortBy = 'created_at', sortOrder = 'desc') {
+    try {
+      // First get seller by keycloak_id to get the actual seller_id
+      const sellerResponse = await this.getSellerProfileByKeycloakId(keycloakId);
+      const sellerId = sellerResponse.data.id;
+
+      // Then search products using seller_id
+      return await this.searchSellerProductsBySellerId(sellerId, filters, page, size, sortBy, sortOrder);
     } catch (error) {
       console.error('Failed to search seller products by keycloak_id:', error);
       // Return empty result on error
@@ -389,8 +431,8 @@ export const apiService = {
       // Add image file
       formData.append('image', imageFile);
 
-      // Add product data - backend expects keycloak_id, not seller_id
-      formData.append('keycloak_id', productData.seller_id); // seller_id is actually keycloak_id
+      // Add product data - backend now expects seller_id
+      formData.append('seller_id', productData.seller_id);
       formData.append('title', productData.title);
       formData.append('description', productData.description || '');
       formData.append('price', parseFloat(productData.price));

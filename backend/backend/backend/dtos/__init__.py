@@ -55,7 +55,7 @@ class PaginationParams(BaseModel):
 class PaginationParamsSortBy(PaginationParams):
     """DTO for offset pagination with sorting."""
 
-    sort_by: Union[str, list[str]] = Field(..., description="Field or list of fields to sort by")
+    sort_by: Union[str, list[str]] = Field("created_at", description="Field or list of fields to sort by")
     sort_order: Union[str, list[str]] = Field("asc", description="Sort order: 'asc' or 'desc'. If sort_by is a list, this can be a single string (applied to all) or a list of strings (one for each field).")
 
 

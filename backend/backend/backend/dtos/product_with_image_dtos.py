@@ -7,8 +7,8 @@ from typing import Dict, Any
 
 class ProductWithImageInputDTO(BaseModel):
     """Input DTO for creating product with image analysis."""
-    
-    keycloak_id: UUID = Field(..., description="Keycloak UUID продавца")
+
+    seller_id: UUID = Field(..., description="UUID продавца")
     title: str = Field(..., min_length=1, max_length=200, description="Название товара")
     description: str | None = Field(None, max_length=1000, description="Описание товара")
     wood_type_id: UUID = Field(..., description="Тип древесины")

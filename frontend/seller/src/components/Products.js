@@ -17,6 +17,18 @@ const getCurrentSellerKeycloakId = () => {
   return MOCK_IDS.SELLER_ID;
 };
 
+// Helper function to get seller_id from keycloak_id
+const getCurrentSellerId = async () => {
+  try {
+    const keycloakId = getCurrentSellerKeycloakId();
+    const sellerResponse = await apiService.getSellerProfileByKeycloakId(keycloakId);
+    return sellerResponse.data.id;
+  } catch (error) {
+    console.error('Failed to get seller_id:', error);
+    throw error;
+  }
+};
+
 function Products() {
   // Хук для валидации форм
   const { getFieldClassName, handleFieldBlur, handleFieldChange, resetTouchedFields } = useFormValidation();
@@ -70,7 +82,7 @@ function Products() {
   const { error: toastError, showError, clearError } = useErrorHandler();
 
   // Create stable API functions to prevent infinite loops
-  const sellerId = getCurrentSellerKeycloakId();
+  const keycloakId = getCurrentSellerKeycloakId();
 
   // Build filters object
   const filters = useMemo(() => {
@@ -88,16 +100,16 @@ function Products() {
   const hasActiveFilters = Object.keys(filters).length > 0;
 
   const productsApiFunction = useMemo(() => {
-    if (!sellerId) return null;
+    if (!keycloakId) return null;
 
     if (hasActiveFilters) {
-      // Use search endpoint with filters
-      return () => apiService.searchSellerProductsByKeycloakId(sellerId, filters, page, 10, sortBy, sortOrder);
+      // Use search endpoint with filters - this will internally convert keycloak_id to seller_id
+      return () => apiService.searchSellerProductsByKeycloakId(keycloakId, filters, page, 10, sortBy, sortOrder);
     } else {
-      // Use basic endpoint without filters
-      return () => apiService.getSellerProductsByKeycloakId(sellerId, page, 10, sortBy, sortOrder);
+      // Use basic endpoint without filters - this will internally convert keycloak_id to seller_id
+      return () => apiService.getSellerProductsByKeycloakId(keycloakId, page, 10, sortBy, sortOrder);
     }
-  }, [sellerId, page, filters, hasActiveFilters, sortBy, sortOrder]);
+  }, [keycloakId, page, filters, hasActiveFilters, sortBy, sortOrder]);
   const woodTypesApiFunction = useMemo(() => () => apiService.getAllWoodTypes(), []);
   const woodTypePricesApiFunction = useMemo(() => () => apiService.getAllWoodTypePrices(), []);
 
@@ -208,13 +220,14 @@ function Products() {
         console.log('Creating product with image analysis...');
       }
 
+      const sellerId = await getCurrentSellerId();
       const result = await mutate(() => apiService.createProductWithImage({
         title: newProduct.title.trim(),
         description: newProduct.description?.trim() || null,
         price: price,
         delivery_possible: newProduct.delivery_possible,
         pickup_location: newProduct.pickup_location?.trim() || null,
-        seller_id: getCurrentSellerKeycloakId(),
+        seller_id: sellerId,
         wood_type_id: newProduct.wood_type_id
       }, selectedImage, boardHeightMeters, boardLengthMeters));
 
@@ -231,7 +244,7 @@ function Products() {
         delivery_possible: false,
         pickup_location: '',
         wood_type_id: '',
-        seller_id: getCurrentSellerKeycloakId()
+        seller_id: sellerId
       });
       clearImageData();
       setBoardHeight('50');

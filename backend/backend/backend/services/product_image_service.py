@@ -124,7 +124,7 @@ class ProductImageService:
             ProductWithImageResponseDTO: Created product info
         """
         # Step 1: Validate seller exists
-        seller = await daos.seller.filter_first(keycloak_uuid=product_data.keycloak_id)
+        seller = await daos.seller.filter_first(id=product_data.seller_id)
         if not seller:
             raise HTTPException(
                 status_code=404,
