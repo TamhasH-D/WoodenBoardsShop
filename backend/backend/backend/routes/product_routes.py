@@ -6,7 +6,6 @@ from uuid import UUID, uuid4
 import aiofiles
 import aiohttp
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse
 
 from backend.daos import GetDAOs
 from backend.dtos import (
@@ -200,6 +199,7 @@ async def get_product_image(
     daos: GetDAOs,
 ) -> FileResponse:
     """Get the main image for a product by product ID."""
+    from fastapi.responses import FileResponse
     from backend.services.image_service import image_service
 
     # Check if product exists
@@ -236,15 +236,15 @@ async def get_product_image(
 
 @router.post("/with-analysis", status_code=201)
 async def create_product_with_analysis(
-    keycloak_id: Annotated[UUID, Form()],
-    title: Annotated[str, Form()],
-    wood_type_id: Annotated[UUID, Form()],
-    board_height: Annotated[float, Form()],
-    board_length: Annotated[float, Form()],
-    volume: Annotated[float, Form()],
-    price: Annotated[float, Form()],
-    image: UploadFile = File(...),
-    daos: GetDAOs = Depends(),
+    daos: GetDAOs,
+    keycloak_id: Annotated[UUID, Form()] = ...,
+    title: Annotated[str, Form()] = ...,
+    wood_type_id: Annotated[UUID, Form()] = ...,
+    board_height: Annotated[float, Form()] = ...,
+    board_length: Annotated[float, Form()] = ...,
+    volume: Annotated[float, Form()] = ...,
+    price: Annotated[float, Form()] = ...,
+    image: Annotated[UploadFile, File()] = ...,
     description: Annotated[str | None, Form()] = None,
     delivery_possible: Annotated[bool, Form()] = False,
     pickup_location: Annotated[str | None, Form()] = None,
@@ -279,22 +279,6 @@ async def create_product_with_analysis(
     if board_length <= 0 or board_length > 10000:
         raise HTTPException(
             status_code=400, detail="Длина доски должна быть от 0 до 10000 мм"
-        )
-
-    # Validate image file
-    if not image:
-        raise HTTPException(
-            status_code=400, detail="Изображение обязательно для создания товара"
-        )
-
-    if not image.content_type or not image.content_type.startswith('image/'):
-        raise HTTPException(
-            status_code=400, detail="Файл должен быть изображением"
-        )
-
-    if hasattr(image, 'size') and image.size and image.size > 10 * 1024 * 1024:
-        raise HTTPException(
-            status_code=400, detail="Размер изображения не должен превышать 10MB"
         )
 
     # Step 2: Get seller by keycloak_id
@@ -461,15 +445,15 @@ async def create_product_with_analysis(
 
 @router.post("/with-image", status_code=201)
 async def create_product_with_image(
-    keycloak_id: Annotated[UUID, Form()],
-    title: Annotated[str, Form()],
-    wood_type_id: Annotated[UUID, Form()],
-    board_height: Annotated[float, Form()],
-    board_length: Annotated[float, Form()],
-    volume: Annotated[float, Form()],
-    price: Annotated[float, Form()],
-    image: UploadFile = File(...),
-    daos: GetDAOs = Depends(),
+    daos: GetDAOs,
+    keycloak_id: Annotated[UUID, Form()] = ...,
+    title: Annotated[str, Form()] = ...,
+    wood_type_id: Annotated[UUID, Form()] = ...,
+    board_height: Annotated[float, Form()] = ...,
+    board_length: Annotated[float, Form()] = ...,
+    volume: Annotated[float, Form()] = ...,
+    price: Annotated[float, Form()] = ...,
+    image: Annotated[UploadFile, File()] = ...,
     description: Annotated[str | None, Form()] = None,
     delivery_possible: Annotated[bool, Form()] = False,
     pickup_location: Annotated[str | None, Form()] = None,
@@ -506,7 +490,7 @@ async def create_product_with_image(
 @router.patch("/{product_id}/with-image")
 async def update_product_with_image(
     product_id: UUID,
-    daos: GetDAOs = Depends(),
+    daos: GetDAOs,
     title: Annotated[str | None, Form()] = None,
     description: Annotated[str | None, Form()] = None,
     wood_type_id: Annotated[UUID | None, Form()] = None,
@@ -516,7 +500,7 @@ async def update_product_with_image(
     price: Annotated[float | None, Form()] = None,
     delivery_possible: Annotated[bool | None, Form()] = None,
     pickup_location: Annotated[str | None, Form()] = None,
-    image: UploadFile | None = File(None),
+    image: Annotated[UploadFile | None, File()] = None,
 ) -> DataResponse[ProductWithImageResponseDTO]:
     """
     Update an existing Product with optional image analysis.
