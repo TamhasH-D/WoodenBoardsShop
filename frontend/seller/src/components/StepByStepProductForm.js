@@ -29,7 +29,7 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
     price: '',
     delivery_possible: false,
     pickup_location: '',
-    seller_id: getCurrentSellerId()
+    seller_id: getCurrentSellerKeycloakId()
   });
 
   // Состояние анализатора досок
