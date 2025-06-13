@@ -7,7 +7,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
-      - keycloak_postgres_data:/var/lib/postgresql/data
+      - keycloak_data:/var/lib/postgresql/data
     networks:
       - keycloak-network
     healthcheck: # Added healthcheck for postgres
@@ -20,15 +20,13 @@ services:
     image: quay.io/keycloak/keycloak:latest # Consider versioning, e.g., quay.io/keycloak/keycloak:23.0
     container_name: keycloak
     environment:
-      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
-      # Database Connection
+      - KC_BOOTSTRAP_ADMIN_USERNAME=${KEYCLOAK_ADMIN}
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
       - KC_DB=${KC_DB}
       - KC_DB_URL=${KC_DB_URL} # e.g., jdbc:postgresql://keycloak-postgres:5432/${POSTGRES_DB}
       - KC_DB_USERNAME=${KC_DB_USERNAME}
       - KC_DB_PASSWORD=${KC_DB_PASSWORD}
       # SMTP Variables
-
       - KC_SMTP_SERVER_HOST=${KC_SMTP_SERVER_HOST}
       - KC_SMTP_SERVER_PORT=${KC_SMTP_SERVER_PORT}
       - KC_SMTP_FROM=${KC_SMTP_FROM}
@@ -49,7 +47,7 @@ services:
       keycloak-postgres: # Ensuring postgres is healthy before keycloak starts
         condition: service_healthy
     command:
-      - start # Changed from start-dev
+      - start-dev # Changed from start-dev
     volumes:
       - ./data-to-import/realms:/opt/keycloak/data/import/ # Adjusted path
     networks:
@@ -62,7 +60,7 @@ services:
       start_period: 60s # Give Keycloak time to start up before healthchecks begin
 
 volumes:
-  keycloak_postgres_data:
+  keycloak_data:
 
 networks:
   keycloak-network:
