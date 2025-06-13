@@ -46,7 +46,11 @@ This document outlines the steps to set up and run the project locally using Doc
     - This command will:
         - Build the images for all services.
         - Start all services in detached mode.
-        - Keycloak will automatically import realm configurations from `keycloak-config/realms/` on its first startup. This includes `BuyerRealm`, `SellerRealm`, and `AdminRealm`.
+
+        - Keycloak will automatically import realm configurations from `keycloak/data-to-import/realms/` (mounted from the local path `./data-to-import/realms/` within the `keycloak` service directory, as defined in `keycloak/docker-compose.yaml`) on its first startup. This includes `BuyerRealm`, `SellerRealm`, and `AdminRealm`.
+        - Note: The Keycloak Docker configuration has also been optimized to use the `start` command (instead of `start-dev`) and includes healthchecks for better stability and production readiness.
+
+
 
 4.  **Accessing Services and Understanding Keycloak Realms:**
 
@@ -77,7 +81,7 @@ This document outlines the steps to set up and run the project locally using Doc
 ## Troubleshooting
 
 - **Port Conflicts:** If a service fails to start, check if the required ports are already in use. Modify ports in the relevant `.env` files or `docker-compose.yaml`.
-- **Keycloak Import Issues:** Check Keycloak container logs (`docker-compose logs keycloak`) for errors related to realm import. Ensure JSON files in `keycloak-config/realms/` (`AdminRealm-realm.json`, `BuyerRealm-realm.json`, `SellerRealm-realm.json`) are present and valid.
+- **Keycloak Import Issues:** Check Keycloak container logs (`docker-compose logs keycloak`) for errors related to realm import. Ensure JSON files in `keycloak/data-to-import/realms/` (`AdminRealm-realm.json`, `BuyerRealm-realm.json`, `SellerRealm-realm.json`) are present and valid, and that the volume mount in `keycloak/docker-compose.yaml` correctly points to `./data-to-import/realms/`.
 - **Database Connection:** Ensure PostgreSQL container for Keycloak (`keycloak-postgres`) is running and Keycloak has the correct DB credentials in `keycloak/.env`.
 
 ## Stopping Services
