@@ -1,0 +1,25 @@
+services:
+  admin-frontend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: admin-frontend-dev
+    ports:
+      - "${FRONTEND_ADMIN_PORT:-8080}:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
+      - CHOKIDAR_USEPOLLING=true
+      - FAST_REFRESH=true
+    networks:
+      - diplom_default
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+networks:
+  diplom_default:
+    name: diplom_default
+    external: true

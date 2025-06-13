@@ -1,0 +1,84 @@
+services:
+  api-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: backend:dev
+    container_name: backend-api-dev
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8000}:${BACKEND_PORT:-8000}"
+    depends_on:
+      backend-pg:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - ./uploads:/app/uploads
+    environment:
+      BACKEND_CORS_ALLOW_ORIGINS: ${BACKEND_CORS_ALLOW_ORIGINS:-"*"}
+      BACKEND_CORS_ALLOW_CREDENTIALS: ${BACKEND_CORS_ALLOW_CREDENTIALS:-True}
+      BACKEND_CORS_ALLOW_METHODS: ${BACKEND_CORS_ALLOW_METHODS:-"*"}
+      BACKEND_CORS_ALLOW_HEADERS: ${BACKEND_CORS_ALLOW_HEADERS:-"*"}
+      BACKEND_UPLOADS_DIR: ${BACKEND_UPLOADS_DIR:-uploads}
+      BACKEND_DEBUG: ${BACKEND_DEBUG:-true}
+      BACKEND_RELOAD: ${BACKEND_RELOAD:-true}
+      BACKEND_LOG_LEVEL: ${BACKEND_LOG_LEVEL:-debug}
+      POSTGRES_PASSWORD: ${BACKEND_PG_PASSWORD:-backend}
+      POSTGRES_USER: ${BACKEND_PG_USER:-backend}
+      POSTGRES_DB: ${BACKEND_PG_DATABASE:-backend}
+    networks:
+      - app_network
+      - diplom_default
+
+  backend-pg:
+    image: postgres:17.4-bookworm
+    hostname: backend-pg
+    container_name: backend-pg-dev
+    environment:
+      POSTGRES_PASSWORD: ${BACKEND_PG_PASSWORD:-backend}
+      POSTGRES_USER: ${BACKEND_PG_USER:-backend}
+      POSTGRES_DB: ${BACKEND_PG_DATABASE:-backend}
+    volumes:
+      - backend-pg-data-dev:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - app_network
+      - diplom_default
+    healthcheck:
+      test: pg_isready -U ${BACKEND_PG_USER:-backend}
+      interval: 2s
+      timeout: 3s
+      retries: 40
+
+  redis:
+    image: bitnami/redis:7.4
+    container_name: backend-redis-dev
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    environment:
+      ALLOW_EMPTY_PASSWORD: ${BACKEND_REDIS_PASSWORD:+"no"}${BACKEND_REDIS_PASSWORD:-"yes"}
+      REDIS_PASSWORD: ${BACKEND_REDIS_PASSWORD:-""}
+    networks:
+      - app_network
+      - diplom_default
+    healthcheck:
+      test: redis-cli ping
+      interval: 2s
+      timeout: 3s
+      retries: 40
+    volumes:
+      - backend-redis-data-dev:/bitnami/redis/data
+
+volumes:
+  backend-pg-data-dev:
+  backend-redis-data-dev:
+
+networks:
+  app_network:
+    driver: bridge
+  diplom_default:
+    name: diplom_default
+    external: true

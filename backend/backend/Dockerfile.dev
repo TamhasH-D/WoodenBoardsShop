@@ -1,0 +1,34 @@
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
+
+WORKDIR /app
+
+# Install bash and curl for command chaining and health checks
+RUN apt-get update && apt-get install -y \
+    bash \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy dependency files
+COPY uv.lock pyproject.toml ./
+
+# Install dependencies with dev dependencies for hot reload
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-install-project
+
+# Copy source code
+COPY . .
+
+# Install the project in development mode
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen
+
+# TODO remove
+RUN uv add aiohttp python-multipart
+
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app"
+
+# Development command with hot reload
+CMD ["bash", "-c", "uv run alembic upgrade head && uv run python -m backend --reload"]
