@@ -144,35 +144,34 @@ add-data: ## Generate synthetic data for database (large profile)
 .PHONY: add-data-small
 add-data-small: ## Generate small dataset for testing (957 records)
 	@echo "🧪 Generating small test dataset..."
-	cd data-generator && python -m pip install -r requirements.txt --quiet
-	cd data-generator && python demo_small.py
+	cd data-generator && uvx --with requests --with faker --with python-dotenv python demo_small.py
 
 .PHONY: rm-data
 rm-data: ## Remove all synthetic data from database
 	@echo "🗑️ Removing synthetic data..."
-	cd data-generator && python remove_data.py
+	cd data-generator && uvx --with requests --with tqdm --with python-dotenv python remove_data.py
 
 .PHONY: check-data-generator
 check-data-generator: ## Check data generator status and configuration
 	@echo "🔍 Checking data generator status..."
-	cd data-generator && python check_status.py
+	cd data-generator && uvx --with requests python check_status.py
 
 .PHONY: compare-profiles
 compare-profiles: ## Compare data generation profiles
 	@echo "📊 Comparing generation profiles..."
-	cd data-generator && python profile_comparison.py
+	cd data-generator && uvx --with pandas --with matplotlib python profile_comparison.py
 
 .PHONY: analyze-reports
 analyze-reports: ## Analyze generation reports and performance
 	@echo "📈 Analyzing generation reports..."
-	cd data-generator && python analyze_reports.py
+	cd data-generator && uvx --with pandas --with matplotlib python analyze_reports.py
 
 .PHONY: test-data-generator
 test-data-generator: ## Run data generator tests
 	@echo "🧪 Testing data generator..."
-	cd data-generator && python test_generator.py
+	cd data-generator && uvx --with pytest --with requests python test_generator.py
 
 .PHONY: demo-alive-data
 demo-alive-data: ## Demonstrate alive data generation features
 	@echo "🌟 Demonstrating alive data features..."
-	cd data-generator && python demo_alive_data.py
+	cd data-generator && uvx --with requests --with faker python demo_alive_data.py

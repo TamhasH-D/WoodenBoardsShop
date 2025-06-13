@@ -645,12 +645,32 @@ export const apiService = {
     return allImages;
   },
 
-  // Get images for specific product
+  // Get images for specific product (legacy method - kept for compatibility)
   async getProductImages(productId) {
-    const allImages = await this.getAllImages();
-    const productImages = allImages.filter(image => image.product_id === productId);
-    console.log(`Найдено ${productImages.length} изображений для товара ${productId}:`, productImages);
-    return productImages;
+    try {
+      const response = await fetch(`${this.baseURL}/products/${productId}/images`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(`Найдено ${data.length} изображений для товара ${productId}:`, data);
+      return data;
+    } catch (error) {
+      console.error(`Ошибка загрузки изображений для товара ${productId}:`, error);
+      return [];
+    }
+  },
+
+  // Get product image URL directly (for single image per product)
+  getProductImageUrl(productId) {
+    return `${API_BASE_URL}/api/v1/products/${productId}/image`;
   },
 
   // Get image file URL

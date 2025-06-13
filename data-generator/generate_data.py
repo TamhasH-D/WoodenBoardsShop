@@ -69,12 +69,13 @@ class DataGenerator:
         }
         
         # Настройки изображений
-        self.images_source = Path(os.getenv('IMAGES_SOURCE_DIR', 
+        self.images_source = Path(os.getenv('IMAGES_SOURCE_DIR',
             '../backend/prosto_board_volume-main/utils/benchmarks/input/wooden_boards_images'))
-        self.images_upload = Path(os.getenv('IMAGES_UPLOAD_DIR', './uploaded_images'))
-        
-        # Создаем папку для загруженных изображений
-        self.images_upload.mkdir(exist_ok=True)
+        # Изменяем путь для соответствия структуре backend
+        self.images_upload_base = Path(os.getenv('IMAGES_UPLOAD_DIR', '../backend/backend/uploads'))
+
+        # Создаем базовую папку для загруженных изображений
+        self.images_upload_base.mkdir(exist_ok=True)
 
         # Статистика генерации
         self.stats = {
@@ -448,7 +449,11 @@ class DataGenerator:
 
             try:
                 response = self.make_request('POST', '/products/', payload)
-                self.generated_data['products'].append(product_id)
+                # Сохраняем связь товара с продавцом
+                self.generated_data['products'].append({
+                    'id': product_id,
+                    'seller_id': seller_id
+                })
             except Exception as e:
                 print(f"Ошибка создания товара: {e}")
 
@@ -459,8 +464,8 @@ class DataGenerator:
         """Копирует изображения и создает записи в БД"""
         print("🖼️ Создание изображений...")
 
-        if not self.generated_data['products']:
-            print("❌ Сначала нужно создать товары")
+        if not self.generated_data['products'] or not self.generated_data['sellers']:
+            print("❌ Сначала нужно создать товары и продавцов")
             return
 
         # Получаем список доступных изображений
@@ -475,7 +480,11 @@ class DataGenerator:
 
         print(f"Найдено {len(image_files)} изображений")
 
-        for product_id in tqdm(self.generated_data['products']):
+        for product_data in tqdm(self.generated_data['products']):
+            # Получаем product_id и seller_id из сохраненных данных
+            product_id = product_data['id']
+            seller_id = product_data['seller_id']
+
             # Выбираем случайное изображение
             source_image = random.choice(image_files)
 
@@ -483,7 +492,16 @@ class DataGenerator:
             image_id = str(uuid4())
             file_extension = source_image.suffix
             new_filename = f"{image_id}{file_extension}"
-            target_path = self.images_upload / new_filename
+
+            # Создаем структуру папок как в backend: /uploads/sellers/{seller_id}/products/{product_id}/
+            seller_dir = self.images_upload_base / "sellers" / seller_id
+            product_dir = seller_dir / "products" / product_id
+            product_dir.mkdir(parents=True, exist_ok=True)
+
+            target_path = product_dir / new_filename
+
+            # Путь для сохранения в БД (относительный от uploads/)
+            relative_image_path = str(target_path.relative_to(self.images_upload_base))
 
             try:
                 # Копируем файл
@@ -492,15 +510,14 @@ class DataGenerator:
                 # Создаем запись в БД
                 payload = {
                     'id': image_id,
-                    'filename': new_filename,
-                    'product_id': product_id,
-                    'image_path': new_filename  # Добавляем недостающее поле
+                    'image_path': relative_image_path,  # Используем правильный путь
+                    'product_id': product_id
                 }
 
                 response = self.make_request('POST', '/images/', payload)
                 self.generated_data['images'].append({
                     'id': image_id,
-                    'filename': new_filename,
+                    'image_path': relative_image_path,
                     'product_id': product_id
                 })
 

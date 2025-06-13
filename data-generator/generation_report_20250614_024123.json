@@ -1,0 +1,32 @@
+{
+  "profile": "large",
+  "planned_counts": {
+    "wood_types": 30,
+    "wood_type_prices": 600,
+    "buyers": 500,
+    "sellers": 150,
+    "products": 2500,
+    "chat_threads": 800,
+    "chat_messages": 8000
+  },
+  "actual_counts": {
+    "wood_types": 30,
+    "wood_type_prices": 600,
+    "buyers": 500,
+    "sellers": 150,
+    "products": 2500,
+    "images": 2500,
+    "wooden_boards": 4924,
+    "chat_threads": 800,
+    "chat_messages": 8000
+  },
+  "stats": {
+    "start_time": "2025-06-14 02:36:48.170452",
+    "end_time": "2025-06-14 02:41:23.291120",
+    "total_requests": 20004,
+    "failed_requests": 0,
+    "retries_used": 0
+  },
+  "api_base": "http://localhost:8000/api/v1",
+  "timestamp": "2025-06-14T02:41:23.291604"
+}

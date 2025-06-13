@@ -134,24 +134,28 @@ class ImageService:
     def get_image_file_path(self, image_path: str) -> Path:
         """
         Get Path object for image file.
-        
+
         Args:
-            image_path: Path to image file
-            
+            image_path: Path to image file (can be relative to uploads_path or absolute)
+
         Returns:
             Path: Path object for the file
-            
+
         Raises:
             HTTPException: If file doesn't exist
         """
         file_path = Path(image_path)
-        
+
+        # If path is not absolute, make it relative to uploads_path
+        if not file_path.is_absolute():
+            file_path = self.base_upload_dir / file_path
+
         if not file_path.exists():
             raise HTTPException(
                 status_code=404,
                 detail="Файл изображения не найден",
             )
-            
+
         return file_path
 
     def validate_image_file(self, image: UploadFile) -> None:
