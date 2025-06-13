@@ -46,7 +46,7 @@ api.interceptors.response.use(
   },
   (error) => {
     console.error('API Response Error:', error.response?.status, error.response?.data);
-    
+
     // Handle common error cases
     if (error.response?.status === 404) {
       console.warn('Resource not found');
@@ -57,7 +57,7 @@ api.interceptors.response.use(
     } else if (error.code === 'ERR_NETWORK') {
       console.error('Network error - backend may be unavailable');
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -463,7 +463,7 @@ export const apiService = {
 
       return response.data;
     } catch (error) {
-      console.error('Failed to update product:', error);
+      console.error('Failed to update product:', error.response?.data || error.message);
       throw error;
     }
   },
@@ -534,7 +534,7 @@ export const apiService = {
       return response.data;
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
-        console.error('Failed to update product with image:', error);
+        console.error('Failed to update product with image:', error.response?.data || error.message);
       }
 
       // Provide detailed error information
@@ -559,7 +559,7 @@ export const apiService = {
 
       return response.data;
     } catch (error) {
-      console.error('Failed to delete product:', error);
+      console.error('Failed to delete product:', error.response?.data || error.message);
       throw error;
     }
   },
@@ -802,7 +802,7 @@ export const apiService = {
       const response = await api.post('/api/v1/chat-messages', payload);
       return response.data;
     } catch (error) {
-      console.error('Failed to send message:', error);
+      console.error('Failed to send message:', error.response?.data || error.message);
       throw error;
     }
   },
@@ -822,7 +822,7 @@ export const apiService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Failed to start chat with seller:', error);
+      console.error('Failed to start chat with seller:', error.response?.data || error.message);
       throw error;
     }
   },
@@ -857,7 +857,7 @@ export const apiService = {
       return response;
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
-        console.error('Image processing failed:', error);
+        console.error('Image processing failed:', error.response?.data || error.message);
       }
 
       // Provide more detailed error information
@@ -876,43 +876,100 @@ export const apiService = {
     }
   },
 
-  // Create product with image analysis using new backend API
+  // Create product with image using new backend API (replaces old with-analysis)
   async createProductWithAnalysis(productData, imageFile) {
     try {
       const formData = new FormData();
 
-      // Add all product fields
+      // Add all product fields as per ProductWithImageInputDTO
       formData.append('keycloak_id', productData.keycloak_id);
       formData.append('title', productData.title);
-      if (productData.description) {
+      // Ensure description is appended only if it exists and is not an empty string
+      if (productData.description && String(productData.description).trim() !== '') {
         formData.append('description', productData.description);
       }
       formData.append('wood_type_id', productData.wood_type_id);
-      formData.append('board_height', productData.board_height);
-      formData.append('board_length', productData.board_length);
+      formData.append('board_height', productData.board_height); // Expected in mm
+      formData.append('board_length', productData.board_length); // Expected in mm
       formData.append('volume', productData.volume);
       formData.append('price', productData.price);
       formData.append('delivery_possible', productData.delivery_possible);
-      if (productData.pickup_location) {
+      // Ensure pickup_location is appended only if it exists and is not an empty string
+      if (productData.pickup_location && String(productData.pickup_location).trim() !== '') {
         formData.append('pickup_location', productData.pickup_location);
       }
-      formData.append('image', imageFile);
 
-      console.log('Creating product with analysis:', productData);
+      // Ensure imageFile is present before appending
+      if (imageFile) {
+        formData.append('image', imageFile);
+      } else {
+        // This case should ideally be handled by form validation before calling the API
+        const errorMsg = 'Image file is required to create a product with an image.';
+        if (process.env.NODE_ENV === 'development') {
+            console.error(errorMsg + ' Product data:', productData);
+        }
+        throw new Error(errorMsg);
+      }
 
-      const response = await api.post('/api/v1/products/with-analysis', formData, {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Creating product with image. Product data:', JSON.stringify(productData, null, 2));
+        console.log('Image file:', imageFile ? { name: imageFile.name, size: imageFile.size, type: imageFile.type } : 'No image file provided (this should not happen if error handling above is correct)');
+        console.log('FormData entries:');
+        for (let pair of formData.entries()) {
+          if (pair[1] instanceof File) {
+            console.log(`${pair[0]}: ${pair[1].name} (size: ${pair[1].size}, type: ${pair[1].type})`);
+          } else {
+            console.log(`${pair[0]}: ${pair[1]}`);
+          }
+        }
+      }
+
+      const response = await api.post('/api/v1/products/with-image', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        timeout: 60000, // Увеличенный timeout для обработки изображений
+        timeout: 60000, // Keep existing timeout, suitable for image uploads
       });
 
-      console.log('Product created with analysis:', response.data);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Product created with image successfully:', response.data);
+      }
+
+      // Clear products cache to force refresh
+      cache.delete('all_products');
+      this.clearSellerProductsCache(); // Ensure any seller-specific caches are also cleared
+
       return response.data;
     } catch (error) {
-      console.error('Failed to create product with analysis:', error);
-      console.error('Error details:', error.response?.data || error.message);
-      throw new Error(`Product creation failed: ${error.response?.data?.detail || error.message}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to create product with image:', error);
+        if (error.response) {
+          console.error('Error response data:', JSON.stringify(error.response.data, null, 2));
+          console.error('Error response status:', error.response.status);
+          console.error('Error response headers:', JSON.stringify(error.response.headers, null, 2));
+        } else if (error.request) {
+          console.error('Error request (no response received):', error.request);
+        } else {
+          console.error('Error message (setup issue):', error.message);
+        }
+      }
+
+      let errorMessage = 'Product creation with image failed. ';
+      if (error.response?.data?.detail) {
+        if (Array.isArray(error.response.data.detail)) {
+          errorMessage += error.response.data.detail.map(err => {
+            const loc = err.loc && err.loc.length > 1 ? err.loc[1] : (err.loc ? err.loc[0] : 'field');
+            return `${loc}: ${err.msg}`;
+          }).join('; ');
+        } else if (typeof error.response.data.detail === 'string') {
+          errorMessage += error.response.data.detail;
+        } else {
+          errorMessage += JSON.stringify(error.response.data.detail);
+        }
+      } else if (error.message) {
+        errorMessage += error.message;
+      }
+      throw new Error(errorMessage);
     }
   },
 
@@ -944,7 +1001,7 @@ export const apiService = {
       console.log('Board analysis response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Failed to analyze wooden board:', error);
+      console.error('Failed to analyze wooden board:', error.response?.data || error.message);
       console.error('Error details:', error.response?.data || error.message);
       throw new Error(`Board analysis failed: ${error.response?.data?.detail || error.message}`);
     }
