@@ -70,6 +70,14 @@ export const formatFileSize = (bytes, decimals = 2) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
+// Volume formatting
+export const formatVolume = (volume, decimals = 3) => {
+  if (volume === null || volume === undefined || isNaN(volume)) return '0';
+
+  const number = parseFloat(volume);
+  return number.toFixed(decimals);
+};
+
 // Date formatting
 export const formatDate = (date, formatString = 'MMM dd, yyyy') => {
   if (!date) return '-';

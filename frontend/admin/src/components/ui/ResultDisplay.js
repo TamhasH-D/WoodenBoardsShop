@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { formatVolume } from '../../utils/formatting';
 
 /**
  * Компонент отображения результатов анализа досок
@@ -244,7 +245,7 @@ const ResultDisplay = ({ imageUrl, result }) => {
               }}>
                 <div>
                   <p style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--color-primary)', margin: '0 0 0.25rem 0' }}>Объем</p>
-                  <p style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>{hoveredBoard.volume.toFixed(4)} м³</p>
+                  <p style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>{formatVolume(hoveredBoard.volume)} м³</p>
                 </div>
                 <div>
                   <p style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--color-primary)', margin: '0 0 0.25rem 0' }}>Ширина</p>
@@ -304,7 +305,7 @@ const ResultDisplay = ({ imageUrl, result }) => {
           <div style={{ backgroundColor: '#dbeafe', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
             <p style={{ color: '#1e40af', fontWeight: '500', marginBottom: '0.25rem', margin: '0 0 0.25rem 0' }}>Общий объем</p>
             <div style={{ display: 'flex', alignItems: 'baseline' }}>
-              <p style={{ fontSize: '2rem', fontWeight: '700', color: '#1e3a8a', margin: 0 }}>{result.total_volume.toFixed(4)}</p>
+              <p style={{ fontSize: '2rem', fontWeight: '700', color: '#1e3a8a', margin: 0 }}>{formatVolume(result.total_volume)}</p>
               <p style={{ marginLeft: '0.25rem', color: '#1e40af', margin: '0 0 0 0.25rem' }}>м³</p>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { apiService } from '../services/api';
-import { BUYER_TEXTS } from '../utils/localization';
+import { BUYER_TEXTS, formatVolumeRu } from '../utils/localization';
 
 
 function Home() {
@@ -163,7 +163,7 @@ function Home() {
                           fontSize: '0.875rem',
                           color: '#6b7280'
                         }}>
-                          {product.volume} м³
+                          {formatVolumeRu(product.volume)} м³
                         </div>
                       </div>
 
@@ -173,7 +173,7 @@ function Home() {
                         color: '#6b7280',
                         fontSize: '0.875rem'
                       }}>
-                        {(product.price / product.volume).toFixed(2)} ₽ за м³
+                        {(product.price / product.volume).toFixed(0)} ₽ за м³
                       </div>
 
                       <div style={{

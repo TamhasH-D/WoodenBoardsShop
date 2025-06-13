@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { useToastContext } from '../hooks/useToast';
 import { apiService } from '../services/api';
+import { formatVolume } from '../utils/formatting';
 import Button from './ui/Button';
 
 const ProductManagement = React.memo(() => {
@@ -204,7 +205,7 @@ const ProductManagement = React.memo(() => {
                       {product.seller_id ? product.seller_id.substring(0, 8) + '...' : 'N/A'}
                     </td>
                     <td>
-                      {product.volume} m³
+                      {formatVolume(product.volume)} m³
                     </td>
                     <td>
                       ₽{product.price?.toFixed(2) || 0}

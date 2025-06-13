@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { useFormValidation } from '../hooks/useFormValidation';
 import { apiService } from '../services/api';
-import { SELLER_TEXTS, formatDateRu } from '../utils/localization';
+import { SELLER_TEXTS, formatDateRu, formatVolumeRu } from '../utils/localization';
 import { getCurrentSellerKeycloakId, getCurrentSellerId } from '../utils/auth';
 import ProductImage from './ui/ProductImage';
 import CompactBoardAnalyzer from './CompactBoardAnalyzer';
@@ -614,7 +614,7 @@ function Products() {
                 setBoardLength(result.boardLength.toString());
                 setNewProduct(prev => ({
                   ...prev,
-                  volume: result.total_volume.toFixed(4)
+                  volume: formatVolumeRu(result.total_volume)
                 }));
               }}
               onImageSelect={(file) => {
@@ -634,7 +634,7 @@ function Products() {
                   type="text"
                   className="form-input"
                   value={volumeCalculationResult
-                    ? `${volumeCalculationResult.total_volume.toFixed(4)} м³ (автоматически)`
+                    ? `${formatVolumeRu(volumeCalculationResult.total_volume)} м³ (автоматически)`
                     : 'Загрузите изображение для расчета объема'
                   }
                   disabled
@@ -845,7 +845,7 @@ function Products() {
                 <input
                   type="text"
                   className="form-input"
-                  value={`${parseFloat(editProduct.volume || 0).toFixed(4)} м³`}
+                  value={`${formatVolumeRu(parseFloat(editProduct.volume || 0))} м³`}
                   disabled
                   style={{
                     backgroundColor: 'var(--color-bg-light)',
@@ -984,7 +984,7 @@ function Products() {
                   setEditBoardLength(result.boardLength.toString());
                   setEditProduct(prev => ({
                     ...prev,
-                    volume: result.total_volume.toFixed(4)
+                    volume: formatVolumeRu(result.total_volume)
                   }));
                 }}
                 onImageSelect={(file) => {

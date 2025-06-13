@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
+import { formatVolume } from '../utils/formatting';
 
 function BoardAnalyzer() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -58,9 +59,9 @@ function BoardAnalyzer() {
     }
   };
 
-  const formatVolume = (volume) => {
+  const formatVolumeDisplay = (volume) => {
     if (typeof volume === 'number') {
-      return volume.toFixed(4);
+      return formatVolume(volume);
     }
     return volume;
   };
@@ -218,7 +219,7 @@ function BoardAnalyzer() {
             <div>
               <h5>📈 Сводка</h5>
               <div className="card" style={{ backgroundColor: 'white', padding: '1rem' }}>
-                <p><strong>Общий объем:</strong> {formatVolume(analysisResult.total_volume)} м³</p>
+                <p><strong>Общий объем:</strong> {formatVolumeDisplay(analysisResult.total_volume)} м³</p>
                 <p><strong>Количество досок:</strong> {analysisResult.board_count || 'Не определено'}</p>
                 <p><strong>Время анализа:</strong> {new Date().toLocaleString()}</p>
                 {analysisResult.confidence && (

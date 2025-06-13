@@ -370,4 +370,12 @@ export const formatNumberRu = (number, decimals = 2) => {
   }).format(parseFloat(number));
 };
 
+// Volume formatting for Russian locale
+export const formatVolumeRu = (volume, decimals = 3) => {
+  if (volume === null || volume === undefined || isNaN(volume)) return '0';
+
+  const number = parseFloat(volume);
+  return number.toFixed(decimals);
+};
+
 export default SELLER_TEXTS;

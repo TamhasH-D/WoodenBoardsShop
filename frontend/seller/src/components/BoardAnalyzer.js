@@ -3,6 +3,7 @@ import ImageUpload from './ui/ImageUpload';
 import ResultDisplay from './ui/ResultDisplay';
 import ErrorToast from './ui/ErrorToast';
 import { apiService } from '../services/api';
+import { formatVolumeRu } from '../utils/localization';
 
 /**
  * Анализатор досок для seller frontend
@@ -253,7 +254,7 @@ const BoardAnalyzer = () => {
                   </div>
                   <div className="stat-item">
                     <span className="stat-label">Общий объем:</span>
-                    <span className="stat-value">{analysisResult.total_volume?.toFixed(4)} м³</span>
+                    <span className="stat-value">{formatVolumeRu(analysisResult.total_volume)} м³</span>
                   </div>
                   <div className="stat-item">
                     <span className="stat-label">Размеры досок:</span>
@@ -269,7 +270,7 @@ const BoardAnalyzer = () => {
                     {analysisResult.wooden_boards.map((board, index) => (
                       <div key={index} className="board-item">
                         <span className="board-number">#{index + 1}</span>
-                        <span className="board-volume">{board.volume?.toFixed(4)} м³</span>
+                        <span className="board-volume">{formatVolumeRu(board.volume)} м³</span>
                         <span className="board-dimensions">
                           {board.width?.toFixed(1)} × {board.height?.toFixed(1)} × {board.length?.toFixed(1)} мм
                         </span>

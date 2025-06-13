@@ -305,6 +305,14 @@ export const formatCurrencyRu = (amount) => {
   }).format(number);
 };
 
+// Volume formatting for Russian locale
+export const formatVolumeRu = (volume, decimals = 3) => {
+  if (volume === null || volume === undefined || isNaN(volume)) return '0';
+
+  const number = parseFloat(volume);
+  return number.toFixed(decimals);
+};
+
 export const formatNumberRu = (number, decimals = 2) => {
   if (number === null || number === undefined || isNaN(number)) return '0';
 

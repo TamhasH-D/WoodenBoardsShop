@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { formatVolumeRu } from '../../utils/localization';
 
 /**
  * Компонент отображения результатов анализа досок
@@ -261,7 +262,7 @@ const ResultDisplay = ({ imageUrl, result }) => {
               }}>
                 <div>
                   <p style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--color-primary)', margin: '0 0 0.25rem 0' }}>Объем</p>
-                  <p style={{ fontSize: isMobile ? '1rem' : '1.125rem', fontWeight: '600', margin: 0 }}>{hoveredBoard.volume.toFixed(4)} м³</p>
+                  <p style={{ fontSize: isMobile ? '1rem' : '1.125rem', fontWeight: '600', margin: 0 }}>{formatVolumeRu(hoveredBoard.volume)} м³</p>
                 </div>
                 <div>
                   <p style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--color-primary)', margin: '0 0 0.25rem 0' }}>Ширина</p>
@@ -347,7 +348,7 @@ const ResultDisplay = ({ imageUrl, result }) => {
                 color: '#1e3a8a',
                 margin: 0
               }}>
-                {result.total_volume.toFixed(4)}
+                {formatVolumeRu(result.total_volume)}
               </p>
               <p style={{
                 marginLeft: '0.25rem',

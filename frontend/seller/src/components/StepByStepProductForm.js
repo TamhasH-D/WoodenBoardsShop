@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useFormValidation } from '../hooks/useFormValidation';
 import { apiService } from '../services/api';
+import { formatVolumeRu } from '../utils/localization';
 import { getCurrentSellerId } from '../utils/auth';
 import ImagePreviewWithBoards from './ui/ImagePreviewWithBoards';
 
@@ -69,7 +70,7 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
   // Обновление объема после анализа
   useEffect(() => {
     if (analysisResult?.total_volume) {
-      setFormData(prev => ({ ...prev, volume: analysisResult.total_volume.toFixed(4) }));
+      setFormData(prev => ({ ...prev, volume: formatVolumeRu(analysisResult.total_volume) }));
     }
   }, [analysisResult]);
 

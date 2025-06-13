@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { formatVolumeRu } from '../../utils/localization';
 
 /**
  * Компонент для отображения изображения с разметкой досок
@@ -201,7 +202,7 @@ const ImagePreviewWithBoards = ({
                     <strong>Досок:</strong> {analysisResult.total_count}
                   </div>
                   <div>
-                    <strong>Объем:</strong> {analysisResult.total_volume?.toFixed(4)} м³
+                    <strong>Объем:</strong> {formatVolumeRu(analysisResult.total_volume)} м³
                   </div>
                 </div>
               </div>

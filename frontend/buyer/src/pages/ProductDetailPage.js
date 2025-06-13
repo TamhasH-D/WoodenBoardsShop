@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { useCart } from '../contexts/CartContext';
 import { useNotifications } from '../contexts/NotificationContext';
-import { formatCurrencyRu } from '../utils/localization';
+import { formatCurrencyRu, formatVolumeRu } from '../utils/localization';
 import { apiService } from '../services/api';
 import ProductImageWithBoards from '../components/ProductImageWithBoards';
 import ProductChat from '../components/ProductChat';
@@ -407,7 +407,7 @@ const ProductDetailPage = () => {
                     fontWeight: '700',
                     color: '#1e293b'
                   }}>
-                    {product.volume?.toFixed(4) || '0'} м³
+                    {formatVolumeRu(product.volume || 0)} м³
                   </div>
                 </div>
                 <div style={{

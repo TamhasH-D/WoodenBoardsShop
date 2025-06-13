@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BUYER_TEXTS, formatCurrencyRu } from '../utils/localization';
+import { BUYER_TEXTS, formatCurrencyRu, formatVolumeRu } from '../utils/localization';
 import { apiService } from '../services/api';
 
 /**
@@ -877,7 +877,7 @@ const ProductCard = ({ product, woodTypeName, woodTypePrice, sellerName, navigat
             fontSize: '0.9rem'
           }}>
             <span style={{ color: '#4A5568', fontWeight: '500' }}>Объем:</span>
-            <span style={{ color: '#2D3748', fontWeight: '600' }}>{product.volume || 0} м³</span>
+            <span style={{ color: '#2D3748', fontWeight: '600' }}>{formatVolumeRu(product.volume || 0)} м³</span>
           </div>
 
           <div style={{

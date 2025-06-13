@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
+import { formatVolume } from '../utils/formatting';
 import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
 
 function Products() {
@@ -88,7 +89,7 @@ function Products() {
                 {data.data.map((product) => (
                   <tr key={product.id}>
                     <td>{product.id.substring(0, 8)}...</td>
-                    <td>{product.volume}</td>
+                    <td>{formatVolume(product.volume)} м³</td>
                     <td>{product.price}</td>
                     <td>{product.seller_id?.substring(0, 8)}...</td>
                     <td>{product.wood_type_id?.substring(0, 8)}...</td>

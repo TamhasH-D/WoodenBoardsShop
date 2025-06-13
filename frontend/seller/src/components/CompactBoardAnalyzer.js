@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { formatVolumeRu } from '../utils/localization';
 
 /**
  * Компактный анализатор досок для формы создания товара
@@ -257,7 +258,7 @@ const CompactBoardAnalyzer = ({
                 </div>
                 <div className="result-item">
                   <span className="result-label">Объем:</span>
-                  <span className="result-value">{result.total_volume?.toFixed(4)} м³</span>
+                  <span className="result-value">{formatVolumeRu(result.total_volume)} м³</span>
                 </div>
               </div>
             )}

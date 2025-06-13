@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { formatVolumeRu } from '../utils/localization';
 
 const ProductImageWithBoards = ({ product, style = {} }) => {
   const canvasRef = useRef(null);
@@ -225,7 +226,7 @@ const ProductImageWithBoards = ({ product, style = {} }) => {
                 Общий объем
               </div>
               <div style={{ fontSize: '18px', fontWeight: '700', color: '#0c4a6e' }}>
-                {product.volume?.toFixed(4) || '0'} м³
+                {formatVolumeRu(product.volume || 0)} м³
               </div>
             </div>
             <div style={{

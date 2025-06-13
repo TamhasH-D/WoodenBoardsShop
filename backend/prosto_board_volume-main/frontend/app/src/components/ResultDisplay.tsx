@@ -44,6 +44,9 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ imageUrl, result }
   // Convert meters to centimeters for display
   const mToCm = (meters: number) => meters * 100;
 
+  // Format volume with proper rounding
+  const formatVolume = (volume: number) => volume.toFixed(3);
+
   useEffect(() => {
     if (!result || !imageUrl || !canvasRef.current) return;
 
@@ -237,7 +240,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ imageUrl, result }
                 <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                   <div>
                     <p className="text-sm font-medium text-indigo-600">Volume</p>
-                    <p className="text-lg font-semibold">{hoveredBoard.volume.toFixed(4)} m³</p>
+                    <p className="text-lg font-semibold">{formatVolume(hoveredBoard.volume)} m³</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-indigo-600">Width</p>
@@ -280,7 +283,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ imageUrl, result }
           <div className="bg-indigo-50 p-4 rounded-lg shadow-sm">
             <p className="text-indigo-700 font-medium mb-1">Total Volume</p>
             <div className="flex items-baseline">
-              <p className="text-2xl font-bold text-indigo-900">{result.total_volume.toFixed(4)}</p>
+              <p className="text-2xl font-bold text-indigo-900">{formatVolume(result.total_volume)}</p>
               <p className="ml-1 text-indigo-700">m³</p>
             </div>
           </div>

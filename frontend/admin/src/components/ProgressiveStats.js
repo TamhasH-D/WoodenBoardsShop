@@ -19,8 +19,8 @@ const ProgressiveStats = () => {
     }).format(amount);
   };
 
-  const formatVolume = (volume) => {
-    return parseFloat(volume).toFixed(2);
+  const formatVolumeDisplay = (volume) => {
+    return parseFloat(volume).toFixed(3);
   };
 
   return (
@@ -112,7 +112,7 @@ const ProgressiveStats = () => {
                   {formatNumber(stats.products?.total || 0)} товаров
                 </div>
                 <div className="stat-secondary">
-                  {formatVolume(stats.products?.totalVolume || 0)} м³
+                  {formatVolumeDisplay(stats.products?.totalVolume || 0)} м³
                 </div>
               </div>
               <div className="stat-meta">
