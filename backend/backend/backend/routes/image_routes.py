@@ -36,14 +36,20 @@ async def upload_image(
     # Validate uploaded file
     image_service.validate_image_file(image)
 
+    # Get product to extract seller_id
+    product = await daos.product.filter_first(id=product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Товар не найден")
+
     # Generate image ID
     image_id = uuid4()
 
     try:
-        # Save file to filesystem
+        # Save file to filesystem with seller hierarchy
         image_path = await image_service.save_image_file(
             image=image,
             product_id=product_id,
+            seller_id=product.seller_id,
             image_id=image_id,
         )
 

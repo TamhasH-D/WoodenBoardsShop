@@ -328,23 +328,16 @@ async def create_product_with_analysis(
 
     await daos.product.create(product_dto)
 
-    # Step 8: Save image to filesystem
+    # Step 8: Save image to filesystem using image service
     try:
-        upload_dir = settings.products_uploads_path
-        upload_dir.mkdir(parents=True, exist_ok=True)
+        from backend.services.image_service import image_service
 
-        # Generate unique filename
-        file_extension = Path(image.filename).suffix if image.filename else ".jpg"
-        filename = f"{product_id}_{uuid4()}{file_extension}"
-        file_path = upload_dir / filename
-
-        # Reset file position and save
-        await image.seek(0)
-        async with aiofiles.open(file_path, "wb") as f:
-            content = await image.read()
-            await f.write(content)
-
-        image_path = str(file_path)
+        image_path = await image_service.save_image_file(
+            image=image,
+            product_id=product_id,
+            seller_id=seller.id,
+            image_id=image_id,
+        )
 
     except Exception as e:
         # Clean up created product
