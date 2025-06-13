@@ -305,7 +305,7 @@
 ### Создание товара с анализом изображения
 
 - **Метод:** POST
-- **Путь:** `/products/with-analysis`
+- **Путь:** `/products/with-image`
 - **Описание:** Создает новый товар с анализом изображения досок через YOLO backend.
 
 - **Формат входных данных (multipart/form-data):**
@@ -321,7 +321,7 @@
   - `pickup_location`: string (optional) - Адрес самовывоза (до 500 символов)
   - `image`: file - Изображение досок для анализа
 
-- **Формат выходных данных (DataResponse[ProductWithAnalysisResponseDTO]):**
+- **Формат выходных данных (DataResponse[ProductWithImageResponseDTO]):**
   ```json
   {
     "data": {
