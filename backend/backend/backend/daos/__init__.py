@@ -74,5 +74,9 @@ class AllDAOs:
     def chat_message(self) -> ChatMessageDAO:
         return ChatMessageDAO(self.session)
 
+def get_daos(session: GetDBSession) -> AllDAOs:
+    """Get DAOs instance."""
+    return AllDAOs(session)
 
-GetDAOs = Annotated[AllDAOs, Depends()]
+
+GetDAOs = Annotated[AllDAOs, Depends(get_daos)]

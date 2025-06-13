@@ -237,20 +237,19 @@ async def get_product_image(
 
 @router.post("/with-analysis", status_code=201)
 async def create_product_with_analysis(
-    keycloak_id: Annotated[UUID, Form(...)],
-    title: Annotated[str, Form(...)],
-    wood_type_id: Annotated[UUID, Form(...)],
-    board_height: Annotated[float, Form(...)],
-    board_length: Annotated[float, Form(...)],
-    volume: Annotated[float, Form(...)],
-    price: Annotated[float, Form(...)],
-    image: Annotated[UploadFile, File(...)],
-    description: Annotated[str | None, Form(None)] = None,
-    delivery_possible: Annotated[bool, Form(False)] = False,
-    pickup_location: Annotated[str | None, Form(None)] = None,
+    keycloak_id: Annotated[UUID, Form()],
+    title: Annotated[str, Form()],
+    wood_type_id: Annotated[UUID, Form()],
+    board_height: Annotated[float, Form()],
+    board_length: Annotated[float, Form()],
+    volume: Annotated[float, Form()],
+    price: Annotated[float, Form()],
+    image: Annotated[UploadFile, File()],
+    daos: GetDAOs,
+    description: Annotated[str | None, Form()] = None,
+    delivery_possible: Annotated[bool, Form()] = False,
+    pickup_location: Annotated[str | None, Form()] = None,
 
-    # передаём сам класс GetDAOs, FastAPI создаст его экземпляр
-    daos: GetDAOs = Depends(GetDAOs),
 ) -> DataResponse[ProductWithAnalysisResponseDTO]:
     """
     Create a new Product with image analysis and wooden boards.
