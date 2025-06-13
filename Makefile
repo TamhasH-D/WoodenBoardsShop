@@ -97,8 +97,40 @@ clean-all: down ## Clean all Docker resources including networks
 
 
 .PHONY: dev
-dev: backend-up ## Quick start for development (backend only)
+dev: ## Start all services in development mode with hot reload
+	docker compose -f docker-compose.dev.yaml up -d
+	@echo "🚀 Development environment started!"
+	@echo "📊 Services available at:"
+	@echo "  Backend API:      http://localhost:$(BACKEND_PORT)"
+	@echo "  API Docs:         http://localhost:$(BACKEND_PORT)/docs"
+	@echo "  Admin Frontend:   http://localhost:$(FRONTEND_ADMIN_PORT)"
+	@echo "  Seller Frontend:  http://localhost:$(FRONTEND_SELLER_PORT)"
+	@echo "  Buyer Frontend:   http://localhost:$(FRONTEND_BUYER_PORT)"
+	@echo "  YOLO Backend:     http://localhost:$(PROSTO_BOARD_PORT)"
+
+.PHONY: dev-logs
+dev-logs: ## Show logs from development services
+	docker compose -f docker-compose.dev.yaml logs -f
+
+.PHONY: dev-down
+dev-down: ## Stop development services
+	docker compose -f docker-compose.dev.yaml down
+
+.PHONY: dev-build
+dev-build: ## Build development services
+	docker compose -f docker-compose.dev.yaml build --no-cache
+
+.PHONY: dev-rebuild
+dev-rebuild: dev-down dev-build dev ## Rebuild and restart development services
+
+.PHONY: dev-backend
+dev-backend: ## Start only backend in development mode
+	cd $(BACKEND_DIR) && docker compose -f docker-compose.dev.yaml up -d
 	@echo "🎯 Backend ready at http://localhost:$(BACKEND_PORT)/docs"
+
+.PHONY: dev-status
+dev-status: ## Check development environment status
+	@bash scripts/dev-status.sh
 
 # ============================================================================
 # 📊 DATA GENERATION
