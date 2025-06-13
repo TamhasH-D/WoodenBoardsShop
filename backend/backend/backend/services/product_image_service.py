@@ -173,6 +173,7 @@ class ProductImageService:
             image_path = await image_service.save_image_file(
                 image=image,
                 product_id=product_id,
+                seller_id=seller.id,
                 image_id=image_id,
             )
 
@@ -278,6 +279,7 @@ class ProductImageService:
                 image_path = await image_service.save_image_file(
                     image=image,
                     product_id=product_id,
+                    seller_id=existing_product.seller_id,
                     image_id=new_image_id,
                 )
 

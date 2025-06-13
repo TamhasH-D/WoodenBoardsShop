@@ -6,6 +6,8 @@ from uuid import UUID, uuid4
 import aiofiles
 import aiohttp
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
+from backend.services.image_service import image_service
 
 from backend.daos import GetDAOs
 from backend.dtos import (
@@ -193,20 +195,62 @@ async def get_product(
     return DataResponse(data=ProductDTO.model_validate(product))
 
 
+@router.get("/{product_id}/image")
+async def get_product_image(
+    product_id: UUID,
+    daos: GetDAOs,
+) -> FileResponse:
+    """Get the main image for a product by product ID."""
+
+
+    # Check if product exists
+    product = await daos.product.filter_first(id=product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Товар не найден")
+
+    # Get the first image for this product
+    image = await daos.image.filter_first(product_id=product_id)
+    if not image:
+        raise HTTPException(status_code=404, detail="Изображение для товара не найдено")
+
+    # Get file path and validate it exists
+    file_path = image_service.get_image_file_path(image.image_path)
+
+    # Return file response
+    file_extension = file_path.suffix.lower()
+    media_type_map = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+    }
+
+    media_type = media_type_map.get(file_extension, "image/jpeg")
+
+    return FileResponse(
+        path=file_path,
+        media_type=media_type,
+        filename=f"product_{product_id}{file_extension}"
+    )
+
+
 @router.post("/with-analysis", status_code=201)
 async def create_product_with_analysis(
-    daos: GetDAOs,
-    keycloak_id: Annotated[UUID, Form()] = ...,
-    title: Annotated[str, Form()] = ...,
-    wood_type_id: Annotated[UUID, Form()] = ...,
-    board_height: Annotated[float, Form()] = ...,
-    board_length: Annotated[float, Form()] = ...,
-    volume: Annotated[float, Form()] = ...,
-    price: Annotated[float, Form()] = ...,
-    image: Annotated[UploadFile, File()] = ...,
-    description: Annotated[str | None, Form()] = None,
-    delivery_possible: Annotated[bool, Form()] = False,
-    pickup_location: Annotated[str | None, Form()] = None,
+    keycloak_id: Annotated[UUID, Form(...)],
+    title: Annotated[str, Form(...)],
+    wood_type_id: Annotated[UUID, Form(...)],
+    board_height: Annotated[float, Form(...)],
+    board_length: Annotated[float, Form(...)],
+    volume: Annotated[float, Form(...)],
+    price: Annotated[float, Form(...)],
+    image: Annotated[UploadFile, File(...)],
+    description: Annotated[str | None, Form(None)] = None,
+    delivery_possible: Annotated[bool, Form(False)] = False,
+    pickup_location: Annotated[str | None, Form(None)] = None,
+
+    # передаём сам класс GetDAOs, FastAPI создаст его экземпляр
+    daos: GetDAOs = Depends(GetDAOs),
 ) -> DataResponse[ProductWithAnalysisResponseDTO]:
     """
     Create a new Product with image analysis and wooden boards.
@@ -328,23 +372,16 @@ async def create_product_with_analysis(
 
     await daos.product.create(product_dto)
 
-    # Step 8: Save image to filesystem
+    # Step 8: Save image to filesystem using image service
     try:
-        upload_dir = settings.products_uploads_path
-        upload_dir.mkdir(parents=True, exist_ok=True)
+        from backend.services.image_service import image_service
 
-        # Generate unique filename
-        file_extension = Path(image.filename).suffix if image.filename else ".jpg"
-        filename = f"{product_id}_{uuid4()}{file_extension}"
-        file_path = upload_dir / filename
-
-        # Reset file position and save
-        await image.seek(0)
-        async with aiofiles.open(file_path, "wb") as f:
-            content = await image.read()
-            await f.write(content)
-
-        image_path = str(file_path)
+        image_path = await image_service.save_image_file(
+            image=image,
+            product_id=product_id,
+            seller_id=seller.id,
+            image_id=image_id,
+        )
 
     except Exception as e:
         # Clean up created product

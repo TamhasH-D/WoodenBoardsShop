@@ -15,35 +15,42 @@ class ImageService:
 
     def __init__(self):
         """Initialize image service."""
-        self.upload_dir = settings.products_uploads_path
-        self.upload_dir.mkdir(parents=True, exist_ok=True)
+        self.base_upload_dir = settings.uploads_path
+        self.base_upload_dir.mkdir(parents=True, exist_ok=True)
 
     async def save_image_file(
         self,
         image: UploadFile,
         product_id: UUID,
+        seller_id: UUID,
         image_id: UUID | None = None,
     ) -> str:
         """
-        Save uploaded image file to filesystem.
-        
+        Save uploaded image file to filesystem in seller/product hierarchy.
+
         Args:
             image: Uploaded file
-            product_id: Product UUID for filename
+            product_id: Product UUID for directory structure
+            seller_id: Seller UUID for directory structure
             image_id: Optional image UUID for filename
-            
+
         Returns:
             str: Path to saved file
-            
+
         Raises:
             HTTPException: If file save fails
         """
         try:
+            # Create directory structure: /uploads/sellers/{seller_id}/products/{product_id}/
+            seller_dir = self.base_upload_dir / "sellers" / str(seller_id)
+            product_dir = seller_dir / "products" / str(product_id)
+            product_dir.mkdir(parents=True, exist_ok=True)
+
             # Generate unique filename
             file_extension = Path(image.filename).suffix if image.filename else ".jpg"
             unique_id = image_id or uuid4()
-            filename = f"{product_id}_{unique_id}{file_extension}"
-            file_path = self.upload_dir / filename
+            filename = f"{unique_id}{file_extension}"
+            file_path = product_dir / filename
 
             # Reset file position and save
             await image.seek(0)
@@ -59,13 +66,26 @@ class ImageService:
                 detail=f"Ошибка сохранения изображения: {e!s}",
             ) from e
 
+    def get_seller_product_dir(self, seller_id: UUID, product_id: UUID) -> Path:
+        """
+        Get directory path for seller's product images.
+
+        Args:
+            seller_id: Seller UUID
+            product_id: Product UUID
+
+        Returns:
+            Path: Directory path for the product's images
+        """
+        return self.base_upload_dir / "sellers" / str(seller_id) / "products" / str(product_id)
+
     def delete_image_file(self, image_path: str) -> bool:
         """
-        Delete image file from filesystem.
-        
+        Delete image file from filesystem and clean up empty directories.
+
         Args:
             image_path: Path to image file
-            
+
         Returns:
             bool: True if file was deleted, False if file didn't exist
         """
@@ -73,11 +93,43 @@ class ImageService:
             file_path = Path(image_path)
             if file_path.exists():
                 file_path.unlink()
+                # Clean up empty directories after deletion
+                self.cleanup_empty_directories(image_path)
                 return True
             return False
         except Exception:
             # Log error but don't raise - file deletion is not critical
             return False
+
+    def cleanup_empty_directories(self, image_path: str) -> None:
+        """
+        Clean up empty directories after file deletion.
+
+        Args:
+            image_path: Path to the deleted image file
+        """
+        try:
+            file_path = Path(image_path)
+
+            # Try to remove empty directories up the hierarchy
+            # Start with the product directory
+            product_dir = file_path.parent
+            if product_dir.exists() and not any(product_dir.iterdir()):
+                product_dir.rmdir()
+
+                # Try to remove empty products directory
+                products_dir = product_dir.parent
+                if products_dir.exists() and products_dir.name == "products" and not any(products_dir.iterdir()):
+                    products_dir.rmdir()
+
+                    # Try to remove empty seller directory
+                    seller_dir = products_dir.parent
+                    if seller_dir.exists() and not any(seller_dir.iterdir()):
+                        seller_dir.rmdir()
+
+        except Exception:
+            # Ignore cleanup errors - not critical
+            pass
 
     def get_image_file_path(self, image_path: str) -> Path:
         """

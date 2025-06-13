@@ -6,10 +6,10 @@ import { MOCK_IDS } from '../utils/constants';
 import ImagePreviewWithBoards from './ui/ImagePreviewWithBoards';
 
 // TODO: Replace with real authentication
-const getCurrentSellerId = () => {
+const getCurrentSellerKeycloakId = () => {
   // Временно используем mock ID для разработки
   // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
-  console.warn('Using mock seller ID for development - implement real authentication');
+  console.warn('Using mock seller keycloak ID for development - implement real authentication');
   return MOCK_IDS.SELLER_ID;
 };
 
@@ -29,7 +29,7 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
     price: '',
     delivery_possible: false,
     pickup_location: '',
-    seller_id: getCurrentSellerId()
+    seller_id: getCurrentSellerKeycloakId()
   });
 
   // Состояние анализатора досок
@@ -139,7 +139,7 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
     try {
       // Подготавливаем данные для нового API
       const productData = {
-        keycloak_id: getCurrentSellerId(), // TODO: Replace with real Keycloak authentication
+        keycloak_id: getCurrentSellerKeycloakId(), // TODO: Replace with real Keycloak authentication
         title: formData.title.trim(),
         description: formData.description?.trim() || '',
         wood_type_id: formData.wood_type_id,
@@ -303,14 +303,6 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
 
                 {/* Кнопки управления изображением */}
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => document.getElementById('board-image-input').click()}
-                    style={{ fontSize: 'var(--font-size-sm)' }}
-                  >
-                    📷 Выбрать фото
-                  </button>
 
                   {imageFile && !analysisResult && !analyzing && (
                     <button

@@ -124,7 +124,7 @@ export function useToast() {
       title: 'Ошибка API',
       duration: 7000,
     });
-  }, [error]);
+  }, []);
 
   // Handle API success with proper formatting
   const handleApiSuccess = useCallback((message = 'Операция выполнена успешно', options = {}) => {

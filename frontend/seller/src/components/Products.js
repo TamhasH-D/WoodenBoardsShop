@@ -4,6 +4,7 @@ import { useFormValidation } from '../hooks/useFormValidation';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS, formatDateRu } from '../utils/localization';
 import { MOCK_IDS } from '../utils/constants';
+import ProductImage from './ui/ProductImage';
 import CompactBoardAnalyzer from './CompactBoardAnalyzer';
 import StepByStepProductForm from './StepByStepProductForm';
 import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
@@ -1043,6 +1044,7 @@ function Products() {
             <table className="table">
               <thead>
                 <tr>
+                  <th>Изображение</th>
                   <th>Название</th>
                   <th>Объем (м³)</th>
                   <th>Цена (₽)</th>
@@ -1055,6 +1057,13 @@ function Products() {
               <tbody>
                 {data.data.map((product) => (
                   <tr key={product.id}>
+                    <td>
+                      <ProductImage
+                        productId={product.id}
+                        alt={product.title}
+                        size="medium"
+                      />
+                    </td>
                     <td>
                       <div>
                         <strong>{product.title}</strong>

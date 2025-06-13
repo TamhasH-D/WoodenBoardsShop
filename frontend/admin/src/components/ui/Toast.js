@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { cn } from '../../utils/helpers';
 
@@ -21,6 +21,13 @@ const Toast = ({
   const [isVisible, setIsVisible] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [progress, setProgress] = useState(100);
+
+  const handleClose = useCallback(() => {
+    setIsLeaving(true);
+    setTimeout(() => {
+      onClose?.(id);
+    }, 300);
+  }, [onClose, id]);
 
   useEffect(() => {
     // Show animation
@@ -57,14 +64,7 @@ const Toast = ({
       clearTimeout(closeTimer);
       clearInterval(progressTimer);
     };
-  }, [duration, showProgress]);
-
-  const handleClose = () => {
-    setIsLeaving(true);
-    setTimeout(() => {
-      onClose?.(id);
-    }, 300);
-  };
+  }, [duration, showProgress, handleClose]);
 
   // Icon mapping
   const icons = {

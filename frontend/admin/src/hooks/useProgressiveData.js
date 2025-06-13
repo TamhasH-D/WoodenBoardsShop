@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 /**
  * Hook для прогрессивной загрузки данных с анимацией
@@ -71,9 +71,13 @@ export const useProgressiveData = (fetchFunction, dependencies = []) => {
     }
   }, [fetchFunction]);
 
+  // Стабилизируем зависимости с помощью useMemo
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stableDependencies = useMemo(() => dependencies, [JSON.stringify(dependencies)]);
+
   useEffect(() => {
     loadData();
-  }, [loadData, ...dependencies]);
+  }, [loadData, stableDependencies]);
 
   const refetch = useCallback(() => {
     loadData();
@@ -99,7 +103,8 @@ export const useProgressiveStats = (apiService) => {
   const [progress, setProgress] = useState({ current: 0, total: 9, percentage: 0 });
   const [loadingEntity, setLoadingEntity] = useState('');
 
-  const entities = [
+  // Мемоизируем entities чтобы избежать пересоздания на каждом рендере
+  const entities = useMemo(() => [
     { key: 'buyers', name: 'Покупатели', fetchFn: (page, size) => apiService.getBuyers(page, size) },
     { key: 'sellers', name: 'Продавцы', fetchFn: (page, size) => apiService.getSellers(page, size) },
     { key: 'products', name: 'Товары', fetchFn: (page, size) => apiService.getProducts(page, size) },
@@ -109,7 +114,7 @@ export const useProgressiveStats = (apiService) => {
     { key: 'images', name: 'Изображения', fetchFn: (page, size) => apiService.getImages(page, size) },
     { key: 'threads', name: 'Чаты', fetchFn: (page, size) => apiService.getChatThreads(page, size) },
     { key: 'messages', name: 'Сообщения', fetchFn: (page, size) => apiService.getChatMessages(page, size) }
-  ];
+  ], [apiService]);
 
   const loadStats = useCallback(async () => {
     try {
@@ -202,7 +207,7 @@ export const useProgressiveStats = (apiService) => {
     } finally {
       setLoading(false);
     }
-  }, [apiService, entities]);
+  }, [entities]);
 
   // Автоматическая загрузка при монтировании
   useEffect(() => {

@@ -879,40 +879,126 @@ export const apiService = {
   // Create product with image analysis using new backend API
   async createProductWithAnalysis(productData, imageFile) {
     try {
+      // --- BEGIN VALIDATION ---
+      const errors = [];
+
+      if (!imageFile) {
+        errors.push('Изображение обязательно для создания товара');
+      }
+      if (imageFile && (!imageFile.type || !imageFile.type.startsWith('image/'))) {
+        errors.push('Файл должен быть изображением');
+      }
+      if (imageFile && imageFile.size > 10 * 1024 * 1024) { // 10MB
+        errors.push('Размер изображения не должен превышать 10MB');
+      }
+
+      const isValidUUID = (uuid) => {
+        if (!uuid || typeof uuid !== 'string') return false;
+        const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+        return uuidRegex.test(uuid);
+      };
+
+      if (!productData.keycloak_id || !isValidUUID(productData.keycloak_id)) {
+        errors.push('Keycloak ID продавца обязателен и должен быть в формате UUID.');
+      }
+
+      if (!productData.title || typeof productData.title !== 'string' || productData.title.trim() === '') {
+        errors.push('Название товара (title) обязательно.');
+      }
+
+      if (!productData.wood_type_id || !isValidUUID(productData.wood_type_id)) {
+        errors.push('Тип древесины (wood_type_id) обязателен и должен быть в формате UUID.');
+      }
+
+      const numericFields = {
+        board_height: "Высота доски",
+        board_length: "Длина доски",
+        volume: "Объем",
+        price: "Цена"
+      };
+
+      for (const field in numericFields) {
+        const value = parseFloat(productData[field]);
+        if (isNaN(value) || value <= 0) {
+          errors.push(`${numericFields[field]} (${field}) должен быть числом больше нуля.`);
+        }
+      }
+      
+      if (errors.length > 0) {
+        console.error('Ошибки валидации на фронтенде:', errors);
+        throw new Error(`Ошибка валидации: ${errors.join('; ')}`);
+      }
+      // --- END VALIDATION ---
+
       const formData = new FormData();
 
-      // Add all product fields
-      formData.append('keycloak_id', productData.keycloak_id);
-      formData.append('title', productData.title);
-      if (productData.description) {
-        formData.append('description', productData.description);
-      }
-      formData.append('wood_type_id', productData.wood_type_id);
-      formData.append('board_height', productData.board_height);
-      formData.append('board_length', productData.board_length);
-      formData.append('volume', productData.volume);
-      formData.append('price', productData.price);
-      formData.append('delivery_possible', productData.delivery_possible);
-      if (productData.pickup_location) {
-        formData.append('pickup_location', productData.pickup_location);
-      }
-      formData.append('image', imageFile);
+      formData.append('keycloak_id', String(productData.keycloak_id));
+      formData.append('title', String(productData.title.trim()));
 
-      console.log('Creating product with analysis:', productData);
+      if (productData.description && String(productData.description).trim()) {
+        formData.append('description', String(productData.description.trim()));
+      } else {
+        formData.append('description', ''); // Send empty string if null, undefined or empty
+      }
+
+      formData.append('wood_type_id', String(productData.wood_type_id));
+      formData.append('board_height', String(parseFloat(productData.board_height)));
+      formData.append('board_length', String(parseFloat(productData.board_length)));
+      formData.append('volume', String(parseFloat(productData.volume)));
+      formData.append('price', String(parseFloat(productData.price)));
+      formData.append('delivery_possible', String(Boolean(productData.delivery_possible)));
+
+      if (productData.pickup_location && String(productData.pickup_location).trim()) {
+        formData.append('pickup_location', String(productData.pickup_location.trim()));
+      } else {
+        formData.append('pickup_location', ''); // Send empty string if null, undefined or empty
+      }
+
+      const fileName = imageFile.name || 'board.jpg';
+      // const contentType = imageFile.type || 'image/jpeg'; // Not needed for formData.append with File object
+      formData.append('image', imageFile, fileName);
+
+      console.log('Creating product with analysis (formData):');
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}: File { name: "${value.name}", size: ${value.size}, type: "${value.type}" }`);
+        } else {
+          console.log(`${key}: ${value}`);
+        }
+      }
 
       const response = await api.post('/api/v1/products/with-analysis', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          // Content-Type is automatically set by the browser for FormData
         },
-        timeout: 60000, // Увеличенный timeout для обработки изображений
+        timeout: 120000, 
       });
 
       console.log('Product created with analysis:', response.data);
       return response.data;
     } catch (error) {
       console.error('Failed to create product with analysis:', error);
-      console.error('Error details:', error.response?.data || error.message);
-      throw new Error(`Product creation failed: ${error.response?.data?.detail || error.message}`);
+      let errorMessage = 'Ошибка создания товара. Пожалуйста, попробуйте еще раз.';
+
+      if (error.response) {
+        // Ошибка от сервера
+        console.error('Server error details:', error.response.data);
+        if (error.response.status === 422 && error.response.data && error.response.data.detail) {
+          // Ошибка валидации от FastAPI
+          if (Array.isArray(error.response.data.detail)) {
+            errorMessage = 'Ошибка валидации данных: ' + error.response.data.detail.map(err => `${err.msg} (поле: ${err.loc ? err.loc.join('.') : 'неизвестно'})`).join('; ');
+          } else if (typeof error.response.data.detail === 'string') {
+            errorMessage = `Ошибка валидации: ${error.response.data.detail}`;
+          }
+        } else if (error.response.data && error.response.data.detail) {
+          errorMessage = error.response.data.detail; // Другие ошибки сервера с полем detail
+        }
+      } else if (error.message) {
+        // Ошибка на стороне клиента (включая наши ошибки валидации)
+        errorMessage = error.message;
+      }
+
+      throw new Error(errorMessage);
     }
   },
 
@@ -997,6 +1083,12 @@ export const apiService = {
   getImageFileUrl(imageId) {
     const baseUrl = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
     return `${baseUrl}/api/v1/images/${imageId}/file`;
+  },
+
+  // Get product image URL by product ID
+  getProductImageUrl(productId) {
+    const baseUrl = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+    return `${baseUrl}/api/v1/products/${productId}/image`;
   },
 
   // Get image metadata

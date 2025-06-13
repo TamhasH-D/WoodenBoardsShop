@@ -61,21 +61,22 @@ async def test_upload_image_invalid_product(
     client: AsyncClient,
     daos: AllDAOs,
 ) -> None:
-    """Test upload image with non-existent product: 500."""
+    """Test upload image with non-existent product: 404."""
     non_existent_product_id = uuid4()
-    
+
     # Create fake image content
     image_content = b"fake jpeg content"
-    
+
     # Upload image
     files = {
         "image": ("test.jpg", BytesIO(image_content), "image/jpeg")
     }
     params = {"product_id": str(non_existent_product_id)}
-    
+
     response = await client.post(URI, files=files, params=params)
-    # Should fail due to foreign key constraint
-    assert response.status_code == 500
+    # Should fail because product doesn't exist
+    assert response.status_code == 404
+    assert "не найден" in response.json()["detail"]
 
 
 @pytest.mark.anyio
