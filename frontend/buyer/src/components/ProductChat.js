@@ -137,7 +137,7 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
       setLoading(false);
       console.log('[ProductChat] loadChatData: Finished, setLoading to false.');
     }
-  }, [sellerId, buyerId, loadMessages, connectWebSocket, /* removed hasExistingChat, newMessage from deps */ defaultMessage]);
+  }, [sellerId, buyerId, loadMessages, connectWebSocket, newMessage, defaultMessage]);
 
 
   const createChatThread = async () => {
