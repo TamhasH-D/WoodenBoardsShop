@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { useCart } from '../contexts/CartContext';
 import { useNotifications } from '../contexts/NotificationContext';
-import { BUYER_TEXTS, formatCurrencyRu } from '../utils/localization';
+import { formatCurrencyRu } from '../utils/localization';
 import { apiService } from '../services/api';
 import ProductImageWithBoards from '../components/ProductImageWithBoards';
 import ProductChat from '../components/ProductChat';
@@ -26,7 +26,7 @@ const ProductDetailPage = () => {
 
   useEffect(() => {
     loadProductData();
-  }, [productId]);
+  }, [productId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadProductData = async () => {
     try {
@@ -36,10 +36,22 @@ const ProductDetailPage = () => {
       // Загружаем данные товара
       const productResponse = await apiService.getProduct(productId);
       const productData = productResponse.data;
-      setProduct(productData);
-      setPageTitle(productData.title || productData.neme || 'Товар');
+      // No longer set page title immediately here, do it after image potentially added
 
-      // Загружаем данные продавца
+      // Fetch images for the product
+      if (productData && productData.id) { // Ensure productData and its id exist
+        const images = await apiService.getProductImages(productData.id);
+        if (images && images.length > 0) {
+          productData.image_id = images[0].id; // Add image_id to productData
+        } else {
+          productData.image_id = null; // Or undefined, so ProductImageWithBoards knows there's no image
+        }
+      }
+
+      setProduct(productData); // Set product state after potentially adding image_id
+      setPageTitle(productData.title || productData.neme || 'Товар'); // Set page title now
+
+      // Загружаем данные продавца (can proceed even if image fetch fails)
       if (productData.seller_id) {
         try {
           const sellerResponse = await apiService.getSeller(productData.seller_id);
@@ -49,7 +61,7 @@ const ProductDetailPage = () => {
         }
       }
 
-      // Загружаем тип древесины
+      // Загружаем тип древесины (can proceed even if image fetch fails)
       if (productData.wood_type_id) {
         try {
           const woodTypeResponse = await apiService.getWoodType(productData.wood_type_id);
@@ -63,6 +75,7 @@ const ProductDetailPage = () => {
       console.error('Ошибка загрузки товара:', err);
       setError('Товар не найден');
       showError('Не удалось загрузить товар');
+      setProduct(null); // Ensure product is null on error
     } finally {
       setLoading(false);
     }

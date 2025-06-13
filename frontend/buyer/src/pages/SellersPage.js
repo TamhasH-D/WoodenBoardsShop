@@ -15,7 +15,7 @@ const SellersPage = () => {
   useEffect(() => {
     setPageTitle(BUYER_TEXTS.SELLERS);
     loadSellers();
-  }, [setPageTitle]);
+  }, [setPageTitle]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadSellers = async () => {
     try {

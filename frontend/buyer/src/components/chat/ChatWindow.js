@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { apiService } from '../../services/api';
 import { getChatWebSocketUrl } from '../../utils/websocket';
-import { BUYER_TEXTS } from '../../utils/localization';
+
 
 const ChatWindow = () => {
   const { threadId } = useParams();
@@ -116,6 +116,10 @@ const ChatWindow = () => {
             if (data.sender_id !== buyerId) {
               showInfo('Продавец покинул чат');
             }
+            break;
+
+          default:
+            console.log('Неизвестный тип сообщения:', data.type);
             break;
         }
       } catch (error) {

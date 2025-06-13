@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useMemo } from 'react';
 
 /**
  * Контекст приложения для buyer frontend
@@ -141,49 +141,49 @@ export const AppProvider = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
   // Действия
-  const actions = {
+  const actions = useMemo(() => ({
     setTheme: (theme) => {
       dispatch({ type: actionTypes.SET_THEME, payload: theme });
       localStorage.setItem('buyer-theme', theme);
     },
-    
+
     toggleSidebar: () => {
       dispatch({ type: actionTypes.TOGGLE_SIDEBAR });
     },
-    
+
     setPageTitle: (title) => {
       dispatch({ type: actionTypes.SET_PAGE_TITLE, payload: title });
       document.title = `${title} - Магазин древесины`;
     },
-    
+
     setLoading: (loading) => {
       dispatch({ type: actionTypes.SET_LOADING, payload: loading });
     },
-    
+
     setUser: (user) => {
       dispatch({ type: actionTypes.SET_USER, payload: user });
     },
-    
+
     setBackendStatus: (status) => {
       dispatch({ type: actionTypes.SET_BACKEND_STATUS, payload: status });
     },
-    
+
     setSearchQuery: (query) => {
       dispatch({ type: actionTypes.SET_SEARCH_QUERY, payload: query });
     },
-    
+
     setFilters: (filters) => {
       dispatch({ type: actionTypes.SET_FILTERS, payload: filters });
     },
-    
+
     resetFilters: () => {
       dispatch({ type: actionTypes.RESET_FILTERS });
     },
-    
+
     setCartCount: (count) => {
       dispatch({ type: actionTypes.SET_CART_COUNT, payload: count });
     }
-  };
+  }), [dispatch]);
 
   // Инициализация при загрузке
   useEffect(() => {
