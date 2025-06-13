@@ -193,6 +193,47 @@ async def get_product(
     return DataResponse(data=ProductDTO.model_validate(product))
 
 
+@router.get("/{product_id}/image")
+async def get_product_image(
+    product_id: UUID,
+    daos: GetDAOs,
+) -> FileResponse:
+    """Get the main image for a product by product ID."""
+    from fastapi.responses import FileResponse
+    from backend.services.image_service import image_service
+
+    # Check if product exists
+    product = await daos.product.filter_first(id=product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Товар не найден")
+
+    # Get the first image for this product
+    image = await daos.image.filter_first(product_id=product_id)
+    if not image:
+        raise HTTPException(status_code=404, detail="Изображение для товара не найдено")
+
+    # Get file path and validate it exists
+    file_path = image_service.get_image_file_path(image.image_path)
+
+    # Return file response
+    file_extension = file_path.suffix.lower()
+    media_type_map = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+    }
+
+    media_type = media_type_map.get(file_extension, "image/jpeg")
+
+    return FileResponse(
+        path=file_path,
+        media_type=media_type,
+        filename=f"product_{product_id}{file_extension}"
+    )
+
+
 @router.post("/with-analysis", status_code=201)
 async def create_product_with_analysis(
     daos: GetDAOs,

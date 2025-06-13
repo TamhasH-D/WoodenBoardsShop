@@ -999,6 +999,12 @@ export const apiService = {
     return `${baseUrl}/api/v1/images/${imageId}/file`;
   },
 
+  // Get product image URL by product ID
+  getProductImageUrl(productId) {
+    const baseUrl = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+    return `${baseUrl}/api/v1/products/${productId}/image`;
+  },
+
   // Get image metadata
   async getImageMetadata(imageId) {
     try {
