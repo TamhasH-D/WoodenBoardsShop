@@ -303,14 +303,6 @@ const StepByStepProductForm = ({ onSuccess, onCancel, mutating, mutate }) => {
 
                 {/* Кнопки управления изображением */}
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => document.getElementById('board-image-input').click()}
-                    style={{ fontSize: 'var(--font-size-sm)' }}
-                  >
-                    📷 Выбрать фото
-                  </button>
 
                   {imageFile && !analysisResult && !analyzing && (
                     <button
