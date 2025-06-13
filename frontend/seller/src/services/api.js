@@ -879,32 +879,67 @@ export const apiService = {
   // Create product with image analysis using new backend API
   async createProductWithAnalysis(productData, imageFile) {
     try {
+      // Validate inputs
+      if (!imageFile) {
+        throw new Error('Изображение обязательно для создания товара');
+      }
+
+      if (!productData.keycloak_id) {
+        throw new Error('Keycloak ID продавца обязателен');
+      }
+
+      // Validate image file
+      if (!imageFile.type || !imageFile.type.startsWith('image/')) {
+        throw new Error('Файл должен быть изображением');
+      }
+
+      if (imageFile.size > 10 * 1024 * 1024) { // 10MB
+        throw new Error('Размер изображения не должен превышать 10MB');
+      }
+
       const formData = new FormData();
 
-      // Add all product fields
-      formData.append('keycloak_id', productData.keycloak_id);
-      formData.append('title', productData.title);
-      if (productData.description) {
-        formData.append('description', productData.description);
-      }
-      formData.append('wood_type_id', productData.wood_type_id);
-      formData.append('board_height', productData.board_height);
-      formData.append('board_length', productData.board_length);
-      formData.append('volume', productData.volume);
-      formData.append('price', productData.price);
-      formData.append('delivery_possible', productData.delivery_possible);
-      if (productData.pickup_location) {
-        formData.append('pickup_location', productData.pickup_location);
-      }
-      formData.append('image', imageFile);
+      // Add all product fields with proper validation and type conversion
+      formData.append('keycloak_id', String(productData.keycloak_id));
+      formData.append('title', String(productData.title));
 
-      console.log('Creating product with analysis:', productData);
+      // Description is optional
+      if (productData.description && productData.description.trim()) {
+        formData.append('description', String(productData.description.trim()));
+      }
+
+      formData.append('wood_type_id', String(productData.wood_type_id));
+      formData.append('board_height', String(parseFloat(productData.board_height)));
+      formData.append('board_length', String(parseFloat(productData.board_length)));
+      formData.append('volume', String(parseFloat(productData.volume)));
+      formData.append('price', String(parseFloat(productData.price)));
+      formData.append('delivery_possible', String(Boolean(productData.delivery_possible)));
+
+      // Pickup location is optional
+      if (productData.pickup_location && productData.pickup_location.trim()) {
+        formData.append('pickup_location', String(productData.pickup_location.trim()));
+      }
+
+      // Add image file with proper filename and content type
+      const fileName = imageFile.name || 'board.jpg';
+      const contentType = imageFile.type || 'image/jpeg';
+      formData.append('image', imageFile, fileName);
+
+      console.log('Creating product with analysis:', {
+        ...productData,
+        imageFile: {
+          name: fileName,
+          size: imageFile.size,
+          type: contentType
+        }
+      });
 
       const response = await api.post('/api/v1/products/with-analysis', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          // Don't set Content-Type manually for multipart/form-data
+          // Let the browser set it with the boundary
         },
-        timeout: 60000, // Увеличенный timeout для обработки изображений
+        timeout: 120000, // Увеличенный timeout для обработки изображений
       });
 
       console.log('Product created with analysis:', response.data);
@@ -912,7 +947,21 @@ export const apiService = {
     } catch (error) {
       console.error('Failed to create product with analysis:', error);
       console.error('Error details:', error.response?.data || error.message);
-      throw new Error(`Product creation failed: ${error.response?.data?.detail || error.message}`);
+
+      // Provide more detailed error message
+      let errorMessage = 'Ошибка создания товара';
+      if (error.response?.status === 422) {
+        errorMessage = 'Ошибка валидации данных. Проверьте правильность заполнения всех полей.';
+        if (error.response?.data?.detail) {
+          errorMessage += ` Детали: ${error.response.data.detail}`;
+        }
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      throw new Error(errorMessage);
     }
   },
 
