@@ -7,7 +7,8 @@ import {
   TreePine,
   Search,
   User,
-  LogOut
+  LogOut,
+  UserCircle
 } from 'lucide-react';
 import { SELLER_TEXTS } from '../../utils/localization';
 
@@ -51,6 +52,12 @@ const Sidebar = () => {
       label: SELLER_TEXTS.CHATS,
       icon: MessageSquare,
       description: 'Общение с клиентами'
+    },
+    {
+      path: '/profile',
+      label: SELLER_TEXTS.SELLER_PROFILE,
+      icon: User,
+      description: 'Настройки профиля'
     }
   ];
 
@@ -117,7 +124,7 @@ const Sidebar = () => {
       <div className="p-4 border-t border-gray-200">
         <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
           <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-            <User className="w-4 h-4 text-gray-600" />
+            <UserCircle className="w-4 h-4 text-gray-600" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">

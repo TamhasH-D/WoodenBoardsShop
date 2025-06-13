@@ -5,6 +5,7 @@ import Products from './components/Products';
 import WoodTypesManager from './components/WoodTypesManager';
 import Chats from './components/Chats';
 import BoardAnalyzerNew from './components/BoardAnalyzerNew';
+import Profile from './components/Profile';
 import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar from './components/layout/Sidebar';
 // import { SELLER_TEXTS } from './utils/localization'; // Removed - not used in new layout
@@ -28,6 +29,7 @@ function App() {
                 <Route path="/wood-types" element={<WoodTypesManager />} />
                 <Route path="/board-analyzer" element={<BoardAnalyzerNew />} />
                 <Route path="/chats" element={<Chats />} />
+                <Route path="/profile" element={<Profile />} />
               </Routes>
             </ErrorBoundary>
           </div>
