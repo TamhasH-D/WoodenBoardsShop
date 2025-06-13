@@ -46,8 +46,11 @@ This document outlines the steps to set up and run the project locally using Doc
     - This command will:
         - Build the images for all services.
         - Start all services in detached mode.
+
         - Keycloak will automatically import realm configurations from `keycloak/data-to-import/realms/` (mounted from the local path `./data-to-import/realms/` within the `keycloak` service directory, as defined in `keycloak/docker-compose.yaml`) on its first startup. This includes `BuyerRealm`, `SellerRealm`, and `AdminRealm`.
         - Note: The Keycloak Docker configuration has also been optimized to use the `start` command (instead of `start-dev`) and includes healthchecks for better stability and production readiness.
+
+
 
 4.  **Accessing Services and Understanding Keycloak Realms:**
 
