@@ -90,19 +90,33 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO]):
         sort_order: str,
     ) -> sa.Select[tuple[Model]]:
         """Apply sorting to query."""
-        if hasattr(self.model, sort_by) is False:
-            raise ValueError(f"Invalid sort parameter: {sort_by}")
+        # Validate sort field exists on model
+        if not hasattr(self.model, sort_by):
+            print(f"Warning: Invalid sort parameter '{sort_by}' for model {self.model.__name__}.")
+            # Use default sorting instead of raising error
+            sort_by = 'created_at' if hasattr(self.model, 'created_at') else 'id'
 
         # Normalize sort_order and apply correct SQLAlchemy function
-        sort_order = sort_order.lower()
+        sort_order = sort_order.lower() if sort_order else 'asc'
         if sort_order not in ['asc', 'desc']:
-            raise ValueError(f"Invalid sort order: {sort_order}. Must be 'asc' or 'desc'")
+            print(f"Warning: Invalid sort order '{sort_order}'. Using 'asc' instead.")
+            sort_order = 'asc'
 
-        column = getattr(self.model, sort_by)
-        if sort_order == 'desc':
-            return query.order_by(sa.desc(column))
-        else:
-            return query.order_by(sa.asc(column))
+        try:
+            column = getattr(self.model, sort_by)
+            if sort_order == 'desc':
+                return query.order_by(sa.desc(column))
+            else:
+                return query.order_by(sa.asc(column))
+        except Exception as e:
+            print(f"Error applying sort: {e}. Using default sorting.")
+            # Fallback to default sorting
+            if hasattr(self.model, 'created_at'):
+                return query.order_by(sa.desc(self.model.created_at))
+            elif hasattr(self.model, 'id'):
+                return query.order_by(sa.desc(self.model.id))
+            else:
+                return query  # No sorting if no suitable field found
 
     async def _compute_offset_pagination(
         self,

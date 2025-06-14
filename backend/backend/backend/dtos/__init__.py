@@ -1,7 +1,7 @@
 from typing import Annotated, Generic, TypeVar, Union
 from uuid import UUID
 
-from fastapi import Depends
+from fastapi import Depends, Query
 from pydantic import BaseModel, ConfigDict, Field
 
 T = TypeVar('T', bound=BaseModel)
@@ -55,8 +55,8 @@ class PaginationParams(BaseModel):
 class PaginationParamsSortBy(PaginationParams):
     """DTO for offset pagination with sorting."""
 
-    sort_by: Union[str, list[str]] = Field("created_at", description="Field or list of fields to sort by")
-    sort_order: Union[str, list[str]] = Field("asc", description="Sort order: 'asc' or 'desc'. If sort_by is a list, this can be a single string (applied to all) or a list of strings (one for each field).")
+    sort_by: Union[str, list[str]] = Query(default="created_at", description="Field or list of fields to sort by")
+    sort_order: Union[str, list[str]] = Query(default="desc", description="Sort order: 'asc' or 'desc'. If sort_by is a list, this can be a single string (applied to all) or a list of strings (one for each field).")
 
 
 class OffsetPaginationMetadata(BaseModel):

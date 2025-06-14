@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 
 import aiofiles
 import aiohttp
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from backend.services.image_service import image_service
 
@@ -78,8 +78,11 @@ async def get_product_paginated(
 @router.get("/search")
 async def search_products(
     daos: GetDAOs,
-    pagination: Annotated[PaginationParamsSortBy, Depends()],
     filters: Annotated[ProductFilterDTO, Depends()],
+    offset: int = Query(0, ge=0),
+    limit: int = Query(10, le=20, ge=1),
+    sort_by: str = Query("created_at"),
+    sort_order: str = Query("desc"),
 ) -> OffsetResults[ProductDTO]:
     """
     Search and filter products with advanced criteria.
@@ -92,6 +95,14 @@ async def search_products(
     - Date range filtering
     - Sorting by any product field
     """
+    # Create pagination object from individual parameters
+    pagination = PaginationParamsSortBy(
+        offset=offset,
+        limit=limit,
+        sort_by=sort_by,
+        sort_order=sort_order
+    )
+
     return await daos.product.get_filtered_results(
         out_dto=ProductDTO,
         pagination=pagination,
@@ -103,7 +114,10 @@ async def search_products(
 async def get_my_products(
     seller_id: UUID,  # TODO: Replace with authentication dependency when Keycloak integration is ready
     daos: GetDAOs,
-    pagination: Annotated[PaginationParamsSortBy, Depends()],
+    offset: int = Query(0, ge=0),
+    limit: int = Query(10, le=20, ge=1),
+    sort_by: str = Query("created_at"),
+    sort_order: str = Query("desc"),
 ) -> OffsetResults[ProductDTO]:
     """
     Get products for the current seller.
@@ -122,6 +136,14 @@ async def get_my_products(
     Raises:
         HTTPException: 404 if seller not found
     """
+    # Create pagination object from individual parameters
+    pagination = PaginationParamsSortBy(
+        offset=offset,
+        limit=limit,
+        sort_by=sort_by,
+        sort_order=sort_order
+    )
+
     # Find seller by id
     seller = await daos.seller.filter_first(id=seller_id)
     if seller is None:
@@ -141,8 +163,11 @@ async def get_my_products(
 async def search_my_products(
     seller_id: UUID,  # TODO: Replace with authentication dependency when Keycloak integration is ready
     daos: GetDAOs,
-    pagination: Annotated[PaginationParamsSortBy, Depends()],
     filters: Annotated[ProductFilterDTO, Depends()],
+    offset: int = Query(0, ge=0),
+    limit: int = Query(10, le=20, ge=1),
+    sort_by: str = Query("created_at"),
+    sort_order: str = Query("desc"),
 ) -> OffsetResults[ProductDTO]:
     """
     Search and filter products for the current seller with advanced criteria.
@@ -170,6 +195,14 @@ async def search_my_products(
     Raises:
         HTTPException: 404 if seller not found
     """
+    # Create pagination object from individual parameters
+    pagination = PaginationParamsSortBy(
+        offset=offset,
+        limit=limit,
+        sort_by=sort_by,
+        sort_order=sort_order
+    )
+
     # Find seller by id
     seller = await daos.seller.filter_first(id=seller_id)
     if seller is None:
