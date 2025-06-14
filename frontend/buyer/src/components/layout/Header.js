@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../../contexts/AppContext';
-import { useCart } from '../../contexts/CartContext';
 
 /**
  * Чистый Header для buyer frontend
@@ -10,7 +9,6 @@ import { useCart } from '../../contexts/CartContext';
  */
 const Header = React.memo(() => {
   const { backendStatus } = useApp();
-  const { totalItems } = useCart();
 
   return (
     <header className="header">
@@ -62,9 +60,9 @@ const Header = React.memo(() => {
               </span>
             </div>
 
-            {/* Корзина */}
+            {/* Чаты */}
             <Link
-              to="/cart"
+              to="/chats"
               style={{
                 position: 'relative',
                 padding: '0.5rem',
@@ -72,25 +70,7 @@ const Header = React.memo(() => {
                 textDecoration: 'none'
               }}
             >
-              🛒
-              {totalItems > 0 && (
-                <span style={{
-                  position: 'absolute',
-                  top: '-4px',
-                  right: '-4px',
-                  backgroundColor: 'var(--color-primary)',
-                  color: 'white',
-                  fontSize: '0.75rem',
-                  borderRadius: '50%',
-                  width: '20px',
-                  height: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  {totalItems}
-                </span>
-              )}
+              💬
             </Link>
 
             {/* Меню пользователя */}

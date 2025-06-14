@@ -1,13 +1,11 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useCart } from '../../contexts/CartContext';
 
 /**
  * Чистая боковая панель навигации
  * Профессиональный дизайн
  */
 const Sidebar = () => {
-  const { totalItems } = useCart();
   const location = useLocation();
 
   const isActive = (path) => {
@@ -23,7 +21,6 @@ const Sidebar = () => {
     { path: '/sellers', label: 'Продавцы', icon: '🏪' },
     { path: '/analyzer', label: 'Анализатор досок', icon: '📐' },
     { path: '/chats', label: 'Сообщения', icon: '💬' },
-    { path: '/cart', label: 'Корзина', icon: '🛒', badge: totalItems },
     { path: '/orders', label: 'Заказы', icon: '📋' },
     { path: '/profile', label: 'Профиль', icon: '👤' }
   ];

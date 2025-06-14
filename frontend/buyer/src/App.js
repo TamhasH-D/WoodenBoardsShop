@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './contexts/AppContext';
-import { CartProvider } from './contexts/CartContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProfessionalHeader from './components/layout/ProfessionalHeader';
@@ -12,7 +11,6 @@ import SellersPage from './pages/SellersPage';
 import BoardAnalyzerPage from './pages/BoardAnalyzerPage';
 import ChatsPage from './pages/ChatsPage';
 import ProfilePage from './pages/ProfilePage';
-import CartPage from './pages/CartPage';
 import OrdersPage from './pages/OrdersPage';
 import HealthPage from './pages/HealthPage';
 import NotificationContainer from './components/ui/NotificationContainer';
@@ -37,7 +35,6 @@ function AppContent() {
           <Route path="/sellers/*" element={<SellersPage />} />
           <Route path="/analyzer" element={<BoardAnalyzerPage />} />
           <Route path="/chats/*" element={<ChatsPage />} />
-          <Route path="/cart" element={<CartPage />} />
           <Route path="/orders/*" element={<OrdersPage />} />
           <Route path="/profile/*" element={<ProfilePage />} />
           <Route path="/health" element={<HealthPage />} />
@@ -51,15 +48,13 @@ function App() {
   return (
     <ErrorBoundary>
       <AppProvider>
-        <CartProvider>
-          <NotificationProvider>
-            <Router>
-              <AppContent />
-              <NotificationContainer />
-              <APITestPanel />
-            </Router>
-          </NotificationProvider>
-        </CartProvider>
+        <NotificationProvider>
+          <Router>
+            <AppContent />
+            <NotificationContainer />
+            <APITestPanel />
+          </Router>
+        </NotificationProvider>
       </AppProvider>
     </ErrorBoundary>
   );

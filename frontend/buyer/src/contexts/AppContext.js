@@ -36,10 +36,7 @@ const initialState = {
     woodType: '',
     seller: '',
     location: ''
-  },
-  
-  // Корзина (базовое состояние)
-  cartItemsCount: 0
+  }
 };
 
 // Типы действий
@@ -52,8 +49,7 @@ const actionTypes = {
   SET_BACKEND_STATUS: 'SET_BACKEND_STATUS',
   SET_SEARCH_QUERY: 'SET_SEARCH_QUERY',
   SET_FILTERS: 'SET_FILTERS',
-  RESET_FILTERS: 'RESET_FILTERS',
-  SET_CART_COUNT: 'SET_CART_COUNT'
+  RESET_FILTERS: 'RESET_FILTERS'
 };
 
 // Редьюсер
@@ -122,12 +118,6 @@ function appReducer(state, action) {
         searchQuery: ''
       };
       
-    case actionTypes.SET_CART_COUNT:
-      return {
-        ...state,
-        cartItemsCount: action.payload
-      };
-      
     default:
       return state;
   }
@@ -178,10 +168,6 @@ export const AppProvider = ({ children }) => {
 
     resetFilters: () => {
       dispatch({ type: actionTypes.RESET_FILTERS });
-    },
-
-    setCartCount: (count) => {
-      dispatch({ type: actionTypes.SET_CART_COUNT, payload: count });
     }
   }), [dispatch]);
 
