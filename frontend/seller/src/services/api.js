@@ -268,20 +268,25 @@ export const apiService = {
 
   // Get seller products by seller_id using secure backend endpoint
   async getSellerProductsBySellerId(sellerId, page = 0, size = 10, sortBy = 'created_at', sortOrder = 'desc') {
+    console.log('getSellerProductsBySellerId called with:', { sellerId, page, size, sortBy, sortOrder });
     try {
       // Use the secure backend endpoint that automatically filters by seller
       const actualSize = Math.min(size, 20); // Backend limit
       const offset = page * actualSize;
 
-      const response = await api.get(`/api/v1/products/my-products`, {
-        params: {
-          seller_id: sellerId,
-          offset: offset,
-          limit: actualSize,
-          sort_by: sortBy,
-          sort_order: sortOrder
-        }
-      });
+      const params = {
+        seller_id: sellerId,
+        offset: offset,
+        limit: actualSize,
+        sort_by: sortBy,
+        sort_order: sortOrder
+      };
+
+      console.log('Making API request with params:', params);
+
+      const response = await api.get(`/api/v1/products/my-products`, { params });
+
+      console.log('API response received:', response.data);
 
       return {
         data: response.data.data || response.data,
@@ -303,6 +308,7 @@ export const apiService = {
 
   // Search seller products with filters using secure backend endpoint
   async searchSellerProductsBySellerId(sellerId, filters = {}, page = 0, size = 10, sortBy = 'created_at', sortOrder = 'desc') {
+    console.log('searchSellerProductsBySellerId called with:', { sellerId, filters, page, size, sortBy, sortOrder });
     try {
       const actualSize = Math.min(size, 20); // Backend limit
       const offset = page * actualSize;
@@ -316,7 +322,11 @@ export const apiService = {
         ...filters // Include all search filters
       };
 
+      console.log('Making search API request with params:', params);
+
       const response = await api.get(`/api/v1/products/my-products/search`, { params });
+
+      console.log('Search API response received:', response.data);
 
       return {
         data: response.data.data || response.data,
@@ -338,6 +348,7 @@ export const apiService = {
 
   // Backward compatibility: Get seller products by keycloak_id (gets seller_id first)
   async getSellerProductsByKeycloakId(keycloakId, page = 0, size = 10, sortBy = 'created_at', sortOrder = 'desc') {
+    console.log('getSellerProductsByKeycloakId called with:', { keycloakId, page, size, sortBy, sortOrder });
     try {
       // First get seller by keycloak_id to get the actual seller_id
       const sellerResponse = await this.getSellerProfileByKeycloakId(keycloakId);
@@ -359,6 +370,7 @@ export const apiService = {
 
   // Backward compatibility: Search seller products by keycloak_id (gets seller_id first)
   async searchSellerProductsByKeycloakId(keycloakId, filters = {}, page = 0, size = 10, sortBy = 'created_at', sortOrder = 'desc') {
+    console.log('searchSellerProductsByKeycloakId called with:', { keycloakId, filters, page, size, sortBy, sortOrder });
     try {
       // First get seller by keycloak_id to get the actual seller_id
       const sellerResponse = await this.getSellerProfileByKeycloakId(keycloakId);
@@ -1178,6 +1190,114 @@ export const apiService = {
         totalValue: 0,
       };
     }
+  },
+
+  // Export products to various formats
+  async exportProducts(products, format = 'csv', fields = []) {
+    try {
+      // Prepare data for export
+      const exportData = products.map(product => {
+        const row = {};
+
+        fields.forEach(field => {
+          switch (field) {
+            case 'title':
+              row['Название'] = product.title;
+              break;
+            case 'volume':
+              row['Объем (м³)'] = product.volume;
+              break;
+            case 'price':
+              row['Цена (₽)'] = product.price;
+              break;
+            case 'wood_type':
+              row['Тип древесины'] = product.wood_type_name || 'Неизвестно';
+              break;
+            case 'delivery_possible':
+              row['Доставка'] = product.delivery_possible ? 'Да' : 'Нет';
+              break;
+            case 'created_at':
+              row['Дата создания'] = new Date(product.created_at).toLocaleDateString('ru-RU');
+              break;
+            case 'description':
+              row['Описание'] = product.descrioption || product.description || '';
+              break;
+            case 'pickup_location':
+              row['Адрес самовывоза'] = product.pickup_location || '';
+              break;
+            default:
+              row[field] = product[field] || '';
+          }
+        });
+
+        return row;
+      });
+
+      // Generate file based on format
+      let blob, filename;
+
+      switch (format) {
+        case 'csv':
+          const csvContent = this.convertToCSV(exportData);
+          blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          filename = `products_${new Date().toISOString().split('T')[0]}.csv`;
+          break;
+
+        case 'json':
+          const jsonContent = JSON.stringify(exportData, null, 2);
+          blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
+          filename = `products_${new Date().toISOString().split('T')[0]}.json`;
+          break;
+
+        case 'xlsx':
+          // For XLSX, we'll use a simple CSV format for now
+          // In a real app, you'd use a library like xlsx or exceljs
+          const xlsxContent = this.convertToCSV(exportData);
+          blob = new Blob([xlsxContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+          filename = `products_${new Date().toISOString().split('T')[0]}.xlsx`;
+          break;
+
+        default:
+          throw new Error(`Unsupported export format: ${format}`);
+      }
+
+      // Download file
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      return { success: true, filename };
+    } catch (error) {
+      console.error('Export failed:', error);
+      throw error;
+    }
+  },
+
+  // Convert data to CSV format
+  convertToCSV(data) {
+    if (!data || data.length === 0) return '';
+
+    const headers = Object.keys(data[0]);
+    const csvHeaders = headers.join(',');
+
+    const csvRows = data.map(row =>
+      headers.map(header => {
+        const value = row[header];
+        // Escape quotes and wrap in quotes if contains comma or quote
+        if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      }).join(',')
+    );
+
+    return [csvHeaders, ...csvRows].join('\n');
   },
 };
 
