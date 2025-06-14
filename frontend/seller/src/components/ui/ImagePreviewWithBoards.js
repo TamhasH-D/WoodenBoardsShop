@@ -155,18 +155,6 @@ const ImagePreviewWithBoards = ({
           </div>
         )}
 
-        {loading && (
-          <div style={{ padding: compact ? '1rem' : '2rem' }}>
-            <div className="loading-spinner" style={{ margin: '0 auto 1rem' }}></div>
-            <p style={{
-              color: 'var(--color-text)',
-              fontSize: compact ? 'var(--font-size-sm)' : 'var(--font-size-base)'
-            }}>
-              {compact ? 'Анализируем...' : 'Анализируем изображение...'}
-            </p>
-          </div>
-        )}
-
         {imageFile && imageUrl && (
           <div style={{
             display: 'flex',
@@ -175,6 +163,7 @@ const ImagePreviewWithBoards = ({
             flex: 1,
             justifyContent: 'flex-start'
           }}>
+            {/* Изображение БЕЗ overlay результатов */}
             <div style={{ position: 'relative' }}>
               <canvas
                 ref={canvasRef}
@@ -185,34 +174,78 @@ const ImagePreviewWithBoards = ({
                   boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                 }}
               />
+            </div>
 
-              {/* Результаты анализа как overlay поверх изображения */}
-              {analysisResult && (
+            {/* Секция статуса анализа под изображением */}
+            <div style={{
+              marginTop: 'var(--space-4)',
+              minHeight: '60px',
+              width: '100%'
+            }}>
+              {/* Индикатор загрузки */}
+              {loading && (
                 <div style={{
-                  position: 'absolute',
-                  bottom: '8px',
-                  left: '8px',
-                  right: '8px',
-                  padding: compact ? '0.25rem 0.5rem' : '0.5rem',
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  padding: 'var(--space-4)',
+                  backgroundColor: 'var(--color-bg-light)',
+                  border: 'var(--border-width) solid var(--color-border)',
                   borderRadius: 'var(--border-radius)',
-                  border: '1px solid var(--color-success)',
-                  backdropFilter: 'blur(4px)',
-                  fontSize: compact ? 'var(--font-size-xs)' : 'var(--font-size-sm)'
+                  textAlign: 'center'
                 }}>
                   <div style={{
+                    fontSize: 'var(--font-size-sm)',
+                    color: 'var(--color-text)',
+                    fontWeight: '500',
+                    marginBottom: 'var(--space-3)',
                     display: 'flex',
-                    justifyContent: 'space-between',
                     alignItems: 'center',
-                    color: 'var(--color-success-dark)'
+                    justifyContent: 'center',
+                    gap: 'var(--space-2)'
                   }}>
-                    <span style={{ fontWeight: 'bold' }}>
-                      ✅ {compact ? 'Готово' : 'Анализ завершен'}
-                    </span>
-                    <div style={{ display: 'flex', gap: '0.5rem', fontSize: 'inherit' }}>
-                      <span><strong>Досок:</strong> {analysisResult.board_count || analysisResult.wooden_boards?.length || 0}</span>
-                      <span><strong>Объем:</strong> {analysisResult.total_volume?.toFixed(4)} м³</span>
-                    </div>
+                    <div className="loading-spinner" style={{
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid var(--color-border)',
+                      borderTop: '2px solid var(--color-primary)',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}></div>
+                    🔍 Анализируем изображение...
+                  </div>
+
+                  {/* Прогресс-бар */}
+                  <div style={{
+                    width: '100%',
+                    height: '6px',
+                    backgroundColor: 'var(--color-border)',
+                    borderRadius: '3px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      height: '100%',
+                      width: '60%', // Симуляция прогресса
+                      backgroundColor: 'var(--color-primary)',
+                      borderRadius: '3px',
+                      animation: 'pulse 2s ease-in-out infinite'
+                    }}></div>
+                  </div>
+                </div>
+              )}
+
+              {/* Результаты анализа */}
+              {analysisResult && !loading && (
+                <div style={{
+                  padding: 'var(--space-4)',
+                  backgroundColor: 'var(--color-success-light)',
+                  border: 'var(--border-width) solid var(--color-success)',
+                  borderRadius: 'var(--border-radius)',
+                  textAlign: 'center'
+                }}>
+                  <div style={{
+                    fontSize: compact ? 'var(--font-size-sm)' : 'var(--font-size-base)',
+                    color: 'var(--color-success-dark)',
+                    fontWeight: '600'
+                  }}>
+                    ✅ Обнаружено досок: <strong>{analysisResult.board_count || analysisResult.wooden_boards?.length || 0}</strong>
                   </div>
                 </div>
               )}
@@ -228,23 +261,18 @@ const ImagePreviewWithBoards = ({
                   }
                 }}
                 style={{
-                  position: 'absolute',
-                  top: '8px',
-                  right: '8px',
-                  padding: '0.25rem 0.5rem',
+                  marginTop: '8px',
+                  padding: '0.5rem 1rem',
                   backgroundColor: 'var(--color-primary)',
                   color: 'white',
                   border: 'none',
                   borderRadius: 'var(--border-radius)',
-                  fontSize: 'var(--font-size-xs)',
+                  fontSize: 'var(--font-size-sm)',
                   cursor: 'pointer',
-                  opacity: 0.8,
-                  transition: 'opacity 0.2s ease'
+                  transition: 'all 0.2s ease'
                 }}
-                onMouseEnter={(e) => e.target.style.opacity = '1'}
-                onMouseLeave={(e) => e.target.style.opacity = '0.8'}
               >
-                📷 Изменить
+                📷 Изменить изображение
               </button>
             )}
           </div>

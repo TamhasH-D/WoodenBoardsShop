@@ -266,6 +266,10 @@ class ProductImageService:
         old_image_ids = []
 
         try:
+            # Initialize variables
+            analysis_result = None
+            new_image_id = None
+
             # Step 3: Handle image update if provided
             if image:
                 # Validate image file
@@ -347,10 +351,20 @@ class ProductImageService:
                 product_update_dto = ProductUpdateDTO(**update_data)
                 await daos.product.update(product_id, product_update_dto)
 
+            # Get current image ID for response
+            current_image_id = None
+            if new_image_id:
+                current_image_id = new_image_id
+            else:
+                # Get existing image if no new image was uploaded
+                existing_images = await daos.image.filter(product_id=product_id)
+                if existing_images:
+                    current_image_id = existing_images[0].id
+
             return ProductWithImageResponseDTO(
                 product_id=product_id,
                 seller_id=existing_product.seller_id,
-                image_id=new_image_id or old_image_ids[0] if old_image_ids else None,
+                image_id=current_image_id,
                 analysis_result=analysis_result.model_dump() if analysis_result else {},
                 wooden_boards_count=analysis_result.board_count if analysis_result else 0,
                 total_volume=analysis_result.total_volume if analysis_result else existing_product.volume,

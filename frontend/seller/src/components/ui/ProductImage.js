@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Package } from 'lucide-react';
-import { apiService } from '../../services/api';
 import ImageViewerModal from './ImageViewerModal';
 
 /**
@@ -34,20 +33,14 @@ const ProductImage = ({
         setLoading(true);
         setError(false);
 
-        // Получаем изображения для товара
-        const images = await apiService.getProductImages(productId);
+        // Используем прямой эндпоинт для получения изображения товара
+        const baseUrl = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+        // Добавляем timestamp для принудительного обновления изображения
+        const timestamp = new Date().getTime();
+        const imageUrl = `${baseUrl}/api/v1/products/${productId}/image?t=${timestamp}`;
 
-        if (images && images.length > 0) {
-          // Берем первое изображение
-          const mainImage = images[0];
-
-          // Получаем URL для файла изображения
-          const imageFileUrl = apiService.getImageFileUrl(mainImage.id);
-          setImageUrl(imageFileUrl);
-        } else {
-          // Нет изображений для товара
-          setError(true);
-        }
+        // Устанавливаем URL напрямую, обработка ошибок будет в onError
+        setImageUrl(imageUrl);
       } catch (err) {
         console.error('Ошибка загрузки изображения товара:', err);
         setError(true);
@@ -221,24 +214,18 @@ export const ProductImageGallery = ({
         setLoading(true);
         setError(false);
 
-        // Получаем все изображения для товара
-        const productImages = await apiService.getProductImages(productId);
+        // Для галереи пока используем только основное изображение товара
+        const baseUrl = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+        // Добавляем timestamp для принудительного обновления изображения
+        const timestamp = new Date().getTime();
+        const imageUrl = `${baseUrl}/api/v1/products/${productId}/image?t=${timestamp}`;
 
-        if (productImages && productImages.length > 0) {
-          // Ограничиваем количество изображений
-          const limitedImages = productImages.slice(0, maxImages);
-
-          // Получаем URLs для файлов изображений
-          const imageUrls = limitedImages.map(img => ({
-            id: img.id,
-            url: apiService.getImageFileUrl(img.id),
-            path: img.image_path
-          }));
-
-          setImages(imageUrls);
-        } else {
-          setError(true);
-        }
+        // Устанавливаем изображение напрямую
+        setImages([{
+          id: `product-${productId}`,
+          url: imageUrl,
+          path: imageUrl
+        }]);
       } catch (err) {
         console.error('Ошибка загрузки изображений товара:', err);
         setError(true);

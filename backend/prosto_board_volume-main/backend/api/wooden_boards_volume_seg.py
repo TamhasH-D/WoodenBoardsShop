@@ -326,10 +326,11 @@ async def wooden_boards_volume(
                 height_real = height_px * ratio
                 logger.info(f"Обнаружение {i}: реальные размеры - ширина={width_real:.6f}м, высота={height_real:.6f}м")
 
-                # Calculate volume
-                volume = width_real * height_real * input.length
-                logger.info(f"Обнаружение {i}: рассчитанный объем={volume:.8f} м³")
-                logger.info(f"  Формула: {width_real:.6f} × {height_real:.6f} × {input.length} = {volume:.8f}")
+                # Calculate volume and round it
+                volume_raw = width_real * height_real * input.length
+                volume = round(volume_raw, 6)  # Округляем до 6 знаков для промежуточных расчетов
+                logger.info(f"Обнаружение {i}: рассчитанный объем={volume:.6f} м³ (было {volume_raw:.8f})")
+                logger.info(f"  Формула: {width_real:.6f} × {height_real:.6f} × {input.length} = {volume:.6f}")
 
                 # Enhanced validation with detailed logging
                 if volume <= 0:
@@ -376,11 +377,13 @@ async def wooden_boards_volume(
             total_volume += volume
             logger.debug(f"Добавлен объем {volume:.6f}, общий объем теперь: {total_volume:.6f}")
 
-        # Create final output
-        logger.info(f"Создаем финальный результат: досок={len(detections)}, общий_объем={total_volume:.6f}")
+        # Create final output with rounded volume
+        # Округляем общий объем до 4 знаков после запятой для практичности
+        total_volume_rounded = round(total_volume, 4)
+        logger.info(f"Создаем финальный результат: досок={len(detections)}, общий_объем={total_volume_rounded:.4f} (было {total_volume:.6f})")
 
         result = Wooden_boards_seg_schema_output(
-            total_volume=total_volume,
+            total_volume=total_volume_rounded,
             total_count=len(detections),
             wooden_boards=detections,
         )

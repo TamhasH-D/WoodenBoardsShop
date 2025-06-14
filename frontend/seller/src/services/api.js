@@ -463,15 +463,17 @@ export const apiService = {
       formData.append('wood_type_id', productData.wood_type_id);
       formData.append('volume', parseFloat(productData.volume || 0));
 
-      // Add board dimensions
-      formData.append('board_height', boardHeight);
-      formData.append('board_length', boardLength);
+      // Add board dimensions - convert from meters to millimeters for API
+      const boardHeightMm = boardHeight * 1000;
+      const boardLengthMm = boardLength * 1000;
+      formData.append('board_height', boardHeightMm);
+      formData.append('board_length', boardLengthMm);
 
       if (process.env.NODE_ENV === 'development') {
         console.log('Creating product with image analysis...');
         console.log(`Product: ${productData.title}`);
         console.log(`Image: ${imageFile.name}, size: ${imageFile.size} bytes`);
-        console.log(`Board dimensions: ${boardHeight}m x ${boardLength}m`);
+        console.log(`Board dimensions: ${boardHeight}m x ${boardLength}m (${boardHeightMm}mm x ${boardLengthMm}mm)`);
       }
 
       const response = await api.post('/api/v1/products/with-image', formData, {
@@ -558,12 +560,14 @@ export const apiService = {
         formData.append('pickup_location', productData.pickup_location || '');
       }
 
-      // Add board dimensions if provided
+      // Add board dimensions if provided - convert from meters to millimeters for API
       if (boardHeight) {
-        formData.append('board_height', boardHeight.toString());
+        const boardHeightMm = boardHeight * 1000;
+        formData.append('board_height', boardHeightMm.toString());
       }
       if (boardLength) {
-        formData.append('board_length', boardLength.toString());
+        const boardLengthMm = boardLength * 1000;
+        formData.append('board_length', boardLengthMm.toString());
       }
 
       // Add image file if provided
@@ -576,7 +580,11 @@ export const apiService = {
         console.log(`Product ID: ${productId}`);
         if (imageFile) {
           console.log(`Image: ${imageFile.name}, size: ${imageFile.size} bytes`);
-          console.log(`Board dimensions: ${boardHeight}m x ${boardLength}m`);
+          if (boardHeight && boardLength) {
+            const boardHeightMm = boardHeight * 1000;
+            const boardLengthMm = boardLength * 1000;
+            console.log(`Board dimensions: ${boardHeight}m x ${boardLength}m (${boardHeightMm}mm x ${boardLengthMm}mm)`);
+          }
         }
       }
 

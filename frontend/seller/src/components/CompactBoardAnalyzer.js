@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 /**
  * Компактный анализатор досок для формы создания товара
  * Горизонтальное расположение: поля ввода слева, изображение справа
+ * Улучшенная версия с фиксированными размерами и плавными переходами
  */
 const CompactBoardAnalyzer = ({
   onAnalysisComplete,
@@ -18,7 +19,8 @@ const CompactBoardAnalyzer = ({
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  
+  const [loadingProgress, setLoadingProgress] = useState(0);
+
   const fileInputRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -31,11 +33,42 @@ const CompactBoardAnalyzer = ({
       setImageUrl(url);
       setResult(null);
       setError(null);
-      
+      setLoadingProgress(0);
+
       if (onImageSelect) {
         onImageSelect(file);
       }
     }
+  };
+
+  // Обработка очистки
+  const handleClear = () => {
+    setSelectedFile(null);
+    setImageUrl(null);
+    setResult(null);
+    setError(null);
+    setLoadingProgress(0);
+    setAnalyzing(false);
+
+    // Очищаем input file для возможности повторного выбора того же файла
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Симуляция плавной загрузки
+  const simulateLoadingProgress = () => {
+    setLoadingProgress(0);
+    const interval = setInterval(() => {
+      setLoadingProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(interval);
+          return 90; // Останавливаемся на 90%, завершение при получении результата
+        }
+        return prev + Math.random() * 15;
+      });
+    }, 200);
+    return interval;
   };
 
   // Анализ изображения
@@ -55,25 +88,39 @@ const CompactBoardAnalyzer = ({
 
     setAnalyzing(true);
     setError(null);
+    setResult(null);
+
+    // Запускаем симуляцию прогресса
+    const progressInterval = simulateLoadingProgress();
 
     try {
       const formData = new FormData();
       formData.append('image', selectedFile);
 
-      const response = await fetch(
-        `/api/v1/wooden-boards/calculate-volume?board_height=${height}&board_length=${length}`,
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
+      // Используем правильный базовый URL для API
+      const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+      const apiUrl = `${apiBaseUrl}/api/v1/wooden-boards/calculate-volume?board_height=${height}&board_length=${length}`;
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        body: formData,
+      });
 
       if (!response.ok) {
         throw new Error(`Ошибка анализа: ${response.status}`);
       }
 
       const data = await response.json();
-      setResult(data);
+
+      // Завершаем прогресс
+      clearInterval(progressInterval);
+      setLoadingProgress(100);
+
+      // Небольшая задержка для плавности
+      setTimeout(() => {
+        setResult(data);
+        setLoadingProgress(0);
+      }, 300);
 
       if (onAnalysisComplete) {
         onAnalysisComplete({
@@ -85,14 +132,16 @@ const CompactBoardAnalyzer = ({
       }
 
     } catch (err) {
+      clearInterval(progressInterval);
       console.error('Ошибка анализа:', err);
       setError(err.message || 'Произошла ошибка при анализе');
+      setLoadingProgress(0);
     } finally {
       setAnalyzing(false);
     }
   };
 
-  // Отрисовка изображения с полупрозрачными линиями
+  // Отрисовка изображения с фиксированными размерами
   useEffect(() => {
     if (!canvasRef.current || !imageUrl) return;
 
@@ -101,58 +150,88 @@ const CompactBoardAnalyzer = ({
     const img = new Image();
 
     img.onload = () => {
-      // Размеры canvas
-      const maxWidth = 300;
-      const maxHeight = 200;
-      let { width, height } = img;
+      // Фиксированные размеры canvas для предотвращения прыжков
+      const containerWidth = 280;
+      const containerHeight = 180;
 
-      // Масштабирование
-      if (width > maxWidth || height > maxHeight) {
-        const ratio = Math.min(maxWidth / width, maxHeight / height);
-        width *= ratio;
-        height *= ratio;
-      }
+      // Вычисляем масштаб для сохранения пропорций
+      const scaleX = containerWidth / img.width;
+      const scaleY = containerHeight / img.height;
+      const scale = Math.min(scaleX, scaleY);
 
-      canvas.width = width;
-      canvas.height = height;
+      const scaledWidth = img.width * scale;
+      const scaledHeight = img.height * scale;
 
-      // Отрисовка изображения
-      ctx.drawImage(img, 0, 0, width, height);
+      // Центрируем изображение
+      const offsetX = (containerWidth - scaledWidth) / 2;
+      const offsetY = (containerHeight - scaledHeight) / 2;
 
-      // Отрисовка досок полупрозрачными линиями (без подсчета)
+      // Устанавливаем фиксированные размеры canvas
+      canvas.width = containerWidth;
+      canvas.height = containerHeight;
+
+      // Очищаем canvas
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, containerWidth, containerHeight);
+
+      // Отрисовка изображения по центру
+      ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+
+      // Отрисовка досок полупрозрачными линиями
       if (result?.wooden_boards) {
-        drawBoardOutlines(ctx, result.wooden_boards, width, height, img.width, img.height);
+        drawBoardOutlines(ctx, result.wooden_boards, scaledWidth, scaledHeight, img.width, img.height, offsetX, offsetY);
       }
     };
 
     img.src = imageUrl;
   }, [imageUrl, result]);
 
-  // Отрисовка контуров досок полупрозрачными линиями
-  const drawBoardOutlines = (ctx, boards, canvasWidth, canvasHeight, originalWidth, originalHeight) => {
-    const scaleX = canvasWidth / originalWidth;
-    const scaleY = canvasHeight / originalHeight;
+  // Отрисовка контуров досок с учетом смещения
+  const drawBoardOutlines = (ctx, boards, scaledWidth, scaledHeight, originalWidth, originalHeight, offsetX, offsetY) => {
+    const scaleX = scaledWidth / originalWidth;
+    const scaleY = scaledHeight / originalHeight;
 
-    boards.forEach((board) => {
+    boards.forEach((board, index) => {
       if (board.detection?.points && board.detection.points.length > 0) {
-        // Полупрозрачные линии без заливки
-        ctx.strokeStyle = 'rgba(37, 99, 235, 0.6)';
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([5, 3]); // Пунктирная линия
+        // Полупрозрачные линии с улучшенным стилем
+        ctx.strokeStyle = 'rgba(37, 99, 235, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 4]); // Более заметная пунктирная линия
 
         ctx.beginPath();
         const firstPoint = board.detection.points[0];
-        ctx.moveTo(firstPoint.x * scaleX, firstPoint.y * scaleY);
+        ctx.moveTo(
+          firstPoint.x * scaleX + offsetX,
+          firstPoint.y * scaleY + offsetY
+        );
 
         board.detection.points.forEach((point, i) => {
           if (i > 0) {
-            ctx.lineTo(point.x * scaleX, point.y * scaleY);
+            ctx.lineTo(
+              point.x * scaleX + offsetX,
+              point.y * scaleY + offsetY
+            );
           }
         });
 
         ctx.closePath();
         ctx.stroke();
         ctx.setLineDash([]); // Сброс пунктира
+
+        // Добавляем номер доски
+        if (board.detection.points.length > 0) {
+          const centerX = board.detection.points.reduce((sum, p) => sum + p.x, 0) / board.detection.points.length;
+          const centerY = board.detection.points.reduce((sum, p) => sum + p.y, 0) / board.detection.points.length;
+
+          ctx.fillStyle = 'rgba(37, 99, 235, 0.9)';
+          ctx.font = 'bold 12px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(
+            (index + 1).toString(),
+            centerX * scaleX + offsetX,
+            centerY * scaleY + offsetY
+          );
+        }
       }
     });
   };
@@ -229,12 +308,7 @@ const CompactBoardAnalyzer = ({
               {selectedFile && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedFile(null);
-                    setImageUrl(null);
-                    setResult(null);
-                    setError(null);
-                  }}
+                  onClick={handleClear}
                   className="btn btn-ghost btn-sm"
                   disabled={analyzing}
                 >
@@ -249,48 +323,54 @@ const CompactBoardAnalyzer = ({
               </div>
             )}
 
-            {result && (
-              <div className="quick-results">
-                <div className="result-item">
-                  <span className="result-label">Досок:</span>
-                  <span className="result-value">{result.wooden_boards?.length || 0}</span>
-                </div>
-                <div className="result-item">
-                  <span className="result-label">Объем:</span>
-                  <span className="result-value">{result.total_volume?.toFixed(4)} м³</span>
-                </div>
-              </div>
-            )}
-
             {error && (
-              <div className="error-message">
+              <div className="error-message fade-in">
                 ⚠️ {error}
               </div>
             )}
           </div>
 
-          {/* Правая часть - изображение */}
-          <div className="image-section">
-            {analyzing && (
-              <div className="loading-overlay">
-                <div className="spinner"></div>
-                <p>Анализируем...</p>
-              </div>
-            )}
-            
+          {/* Правая часть - изображение с фиксированными размерами */}
+          <div className="image-section-fixed">
             {imageUrl && (
-              <div className="image-container">
+              <div className="image-container-fixed">
                 <canvas
                   ref={canvasRef}
-                  className="analysis-canvas"
+                  className="analysis-canvas-fixed"
                 />
               </div>
             )}
 
-            {!imageUrl && !analyzing && (
-              <div className="image-placeholder">
-                <div className="placeholder-icon">🖼️</div>
-                <p>Изображение появится здесь</p>
+            {!imageUrl && (
+              <div className="image-placeholder-fixed">
+                <div className="placeholder-icon-large">🖼️</div>
+                <p className="placeholder-text">Изображение появится здесь</p>
+                <p className="placeholder-hint">Загрузите фото досок для анализа</p>
+              </div>
+            )}
+          </div>
+
+          {/* Полоса загрузки и результаты под изображением */}
+          <div className="analysis-status-bar">
+            {analyzing && (
+              <div className="loading-bar-container fade-in">
+                <div className="loading-bar-text">
+                  🔍 Анализируем изображение...
+                </div>
+                <div className="progress-bar-horizontal">
+                  <div
+                    className="progress-fill-horizontal"
+                    style={{ width: `${loadingProgress}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
+
+            {result && !analyzing && (
+              <div className="results-bar-container fade-in">
+                <div className="results-text">
+                  ✅ Обнаружено досок: <strong>{result.wooden_boards?.length || 0}</strong>
+                </div>
               </div>
             )}
           </div>
