@@ -11,13 +11,6 @@ import { apiService } from '../../services/api';
 import { SELLER_TEXTS, formatDateRu, formatCurrencyRu } from '../../utils/localization';
 import { getCurrentSellerKeycloakId } from '../../utils/auth';
 
-// TODO: Replace with real authentication
-const getCurrentSellerId = () => {
-  // Временно используем mock ID для разработки
-  // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
-  return getCurrentSellerKeycloakId();
-};
-
 const ActivityItem = ({ icon: Icon, title, description, time, action, color }) => {
   return (
     <div className="flex items-start space-x-4 p-4 hover:bg-gray-50 rounded-lg transition-colors duration-200">
@@ -42,13 +35,13 @@ const ActivityItem = ({ icon: Icon, title, description, time, action, color }) =
 };
 
 const RecentProducts = () => {
-  const sellerId = getCurrentSellerId();
+  const keycloakId = getCurrentSellerKeycloakId();
 
   const productsApiFunction = useMemo(() =>
-    sellerId ? () => apiService.getSellerProducts(sellerId, 0, 5) : null,
-    [sellerId]
+    keycloakId ? () => apiService.getSellerProductsByKeycloakId(keycloakId, 0, 5) : null,
+    [keycloakId]
   );
-  const { data: products, loading: productsLoading } = useApi(productsApiFunction, [sellerId]);
+  const { data: products, loading: productsLoading } = useApi(productsApiFunction, [keycloakId]);
 
   if (productsLoading) {
     return (
@@ -95,13 +88,13 @@ const RecentProducts = () => {
         <ActivityItem
           key={product.product_uuid || index}
           icon={Package}
-          title={product.neme || 'Товар без названия'}
+          title={product.name || 'Товар без названия'}
           description={`${formatCurrencyRu(product.price)} • ${product.volume} м³ • ${product.wood_type_name || 'Тип не указан'}`}
           time={formatDateRu(product.created_at, 'SHORT')}
           color="bg-blue-500"
           action={
-            <Link 
-              to="/products" 
+            <Link
+              to="/products"
               className="text-xs text-primary-600 hover:text-primary-700 flex items-center"
             >
               <Edit className="w-3 h-3 mr-1" />

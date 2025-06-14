@@ -5,7 +5,6 @@ import {
   MessageSquare,
   TreePine,
   Search,
-  BarChart3,
   Settings
 } from 'lucide-react';
 import { SELLER_TEXTS } from '../../utils/localization';
@@ -97,13 +96,6 @@ const QuickActions = () => {
       title: SELLER_TEXTS.MANAGE_WOOD_TYPES,
       description: 'Управляйте типами древесины и устанавливайте цены',
       color: 'hover:border-amber-300'
-    },
-    {
-      to: '/analytics',
-      icon: BarChart3,
-      title: 'Аналитика продаж',
-      description: 'Просматривайте статистику продаж и анализируйте тренды',
-      color: 'hover:border-indigo-300'
     },
     {
       to: '/profile',
