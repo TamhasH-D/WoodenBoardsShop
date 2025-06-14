@@ -163,19 +163,19 @@ export const apiService = {
         });
 
         // Add filter parameters
-        if (filters.search_query) {
-          params.append('search_query', filters.search_query);
+        if (filters.search_query && filters.search_query.trim() !== '') {
+          params.append('search_query', filters.search_query.trim());
         }
-        if (filters.price_min !== undefined) {
+        if (filters.price_min !== undefined && filters.price_min !== '' && filters.price_min !== null) {
           params.append('price_min', filters.price_min.toString());
         }
-        if (filters.price_max !== undefined) {
+        if (filters.price_max !== undefined && filters.price_max !== '' && filters.price_max !== null) {
           params.append('price_max', filters.price_max.toString());
         }
-        if (filters.volume_min !== undefined) {
+        if (filters.volume_min !== undefined && filters.volume_min !== '' && filters.volume_min !== null) {
           params.append('volume_min', filters.volume_min.toString());
         }
-        if (filters.volume_max !== undefined) {
+        if (filters.volume_max !== undefined && filters.volume_max !== '' && filters.volume_max !== null) {
           params.append('volume_max', filters.volume_max.toString());
         }
         if (filters.wood_type_ids && filters.wood_type_ids.length > 0) {
@@ -184,10 +184,10 @@ export const apiService = {
         if (filters.seller_ids && filters.seller_ids.length > 0) {
           filters.seller_ids.forEach(id => params.append('seller_ids', id));
         }
-        if (filters.delivery_possible !== undefined) {
+        if (filters.delivery_possible !== undefined && filters.delivery_possible !== null) {
           params.append('delivery_possible', filters.delivery_possible.toString());
         }
-        if (filters.has_pickup_location !== undefined) {
+        if (filters.has_pickup_location !== undefined && filters.has_pickup_location !== null) {
           params.append('has_pickup_location', filters.has_pickup_location.toString());
         }
         // Всегда добавляем параметры сортировки (с дефолтными значениями)
