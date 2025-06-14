@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
-import { useCart } from '../contexts/CartContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { formatCurrencyRu } from '../utils/localization';
 import { apiService } from '../services/api';
@@ -12,8 +11,7 @@ const ProductDetailPage = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
   const { setPageTitle } = useApp();
-  const { addToCart, isInCart } = useCart();
-  const { showCartSuccess, showError } = useNotifications();
+  const { showSuccess, showError } = useNotifications();
 
   const [product, setProduct] = useState(null);
   const [seller, setSeller] = useState(null);
@@ -71,10 +69,11 @@ const ProductDetailPage = () => {
     }
   };
 
-  const handleAddToCart = () => {
-    if (product) {
-      addToCart(product);
-      showCartSuccess(`${product.title || product.neme} добавлен в корзину`);
+  const handleStartChat = () => {
+    if (product && seller) {
+      // Переходим к чату с продавцом
+      navigate(`/chats/seller/${seller.id}?product=${product.id}`);
+      showSuccess('Переходим к чату с продавцом');
     }
   };
 
@@ -485,20 +484,19 @@ const ProductDetailPage = () => {
               gap: '16px'
             }}>
               <button
-                onClick={handleAddToCart}
-                disabled={isInCart(product.id)}
+                onClick={handleStartChat}
                 style={{
                   flex: 1,
                   padding: '18px 24px',
-                  backgroundColor: isInCart(product.id) ? '#059669' : '#2563eb',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '12px',
                   fontSize: '16px',
                   fontWeight: '700',
-                  cursor: isInCart(product.id) ? 'default' : 'pointer',
+                  cursor: 'pointer',
                   transition: 'all 0.3s ease',
-                  boxShadow: isInCart(product.id) ? '0 4px 16px rgba(5, 150, 105, 0.3)' : '0 4px 16px rgba(37, 99, 235, 0.3)',
+                  boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)',
                   transform: 'translateY(0)',
                   display: 'flex',
                   alignItems: 'center',
@@ -506,31 +504,18 @@ const ProductDetailPage = () => {
                   gap: '8px'
                 }}
                 onMouseEnter={(e) => {
-                  if (!isInCart(product.id)) {
-                    e.target.style.backgroundColor = '#1d4ed8';
-                    e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 8px 24px rgba(37, 99, 235, 0.4)';
-                  }
+                  e.target.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 8px 24px rgba(16, 185, 129, 0.4)';
                 }}
                 onMouseLeave={(e) => {
-                  if (!isInCart(product.id)) {
-                    e.target.style.backgroundColor = '#2563eb';
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = '0 4px 16px rgba(37, 99, 235, 0.3)';
-                  }
+                  e.target.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 4px 16px rgba(16, 185, 129, 0.3)';
                 }}
               >
-                {isInCart(product.id) ? (
-                  <>
-                    <span>✓</span>
-                    <span>В корзине</span>
-                  </>
-                ) : (
-                  <>
-                    <span>🛒</span>
-                    <span>Добавить в корзину</span>
-                  </>
-                )}
+                <span>💬</span>
+                <span>Написать продавцу</span>
               </button>
 
               <button
