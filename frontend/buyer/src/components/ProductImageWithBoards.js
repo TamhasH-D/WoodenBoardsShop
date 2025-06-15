@@ -199,16 +199,18 @@ const ProductImageWithBoards = ({ product, style = {} }) => {
           marginTop: '16px',
           padding: '16px',
           backgroundColor: '#f0f9ff',
-          borderRadius: '8px',
-          border: '1px solid #0ea5e9'
+          borderRadius: '6px',
+          border: '1px solid #bae6fd'
         }}>
           <h4 style={{
             margin: '0 0 12px 0',
-            fontSize: '16px',
+            fontSize: '14px',
             fontWeight: '600',
-            color: '#0c4a6e'
+            color: '#0c4a6e',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
           }}>
-            📊 Анализ досок
+            Анализ досок
           </h4>
           <div style={{
             display: 'grid',
@@ -218,13 +220,13 @@ const ProductImageWithBoards = ({ product, style = {} }) => {
             <div style={{
               padding: '12px',
               backgroundColor: 'white',
-              borderRadius: '6px',
+              borderRadius: '4px',
               border: '1px solid #bae6fd'
             }}>
-              <div style={{ fontSize: '14px', color: '#0369a1', fontWeight: '500' }}>
+              <div style={{ fontSize: '12px', color: '#0369a1', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Общий объем
               </div>
-              <div style={{ fontSize: '18px', fontWeight: '700', color: '#0c4a6e' }}>
+              <div style={{ fontSize: '16px', fontWeight: '600', color: '#0c4a6e' }}>
                 {product.volume?.toFixed(4) || '0'} м³
               </div>
             </div>

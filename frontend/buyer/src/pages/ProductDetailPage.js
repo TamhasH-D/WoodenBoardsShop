@@ -232,126 +232,132 @@ const ProductDetailPage = () => {
         <div style={{
           display: 'grid',
           gridTemplateColumns: window.innerWidth >= 1024 ? '1.2fr 1fr' : window.innerWidth >= 768 ? '1fr 1fr' : '1fr',
-          gap: '30px',
-          marginBottom: '40px'
+          gap: '24px',
+          marginBottom: '32px'
         }}>
           {/* Левая колонка - Изображение */}
           <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
+            backgroundColor: '#ffffff',
+            borderRadius: '8px',
             padding: '24px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-            border: '1px solid rgba(0,0,0,0.05)'
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            border: '1px solid #e5e7eb'
           }}>
             <ProductImageWithBoards
               product={product}
-              style={{ width: '100%', borderRadius: '12px' }}
+              style={{ width: '100%', borderRadius: '6px' }}
             />
           </div>
 
           {/* Правая колонка - Информация */}
           <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
+            backgroundColor: '#ffffff',
+            borderRadius: '8px',
             padding: '32px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-            border: '1px solid rgba(0,0,0,0.05)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            border: '1px solid #e5e7eb',
             height: 'fit-content'
           }}>
             <div style={{
               display: 'flex',
               alignItems: 'flex-start',
               justifyContent: 'space-between',
-              marginBottom: '24px'
+              marginBottom: '32px',
+              paddingBottom: '24px',
+              borderBottom: '1px solid #f3f4f6'
             }}>
               <h1 style={{
                 margin: 0,
-                fontSize: window.innerWidth >= 768 ? '32px' : '28px',
-                fontWeight: '700',
-                color: '#1f2937',
-                lineHeight: '1.2',
-                flex: 1
+                fontSize: window.innerWidth >= 768 ? '28px' : '24px',
+                fontWeight: '600',
+                color: '#111827',
+                lineHeight: '1.3',
+                flex: 1,
+                letterSpacing: '-0.025em'
               }}>
                 {product.title || product.neme || 'Товар'}
               </h1>
               {product.delivery_possible && (
                 <div style={{
-                  backgroundColor: '#dcfce7',
-                  color: '#166534',
-                  padding: '6px 12px',
-                  borderRadius: '20px',
-                  fontSize: '12px',
-                  fontWeight: '600',
+                  backgroundColor: '#f0fdf4',
+                  color: '#15803d',
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontWeight: '500',
                   marginLeft: '16px',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  border: '1px solid #bbf7d0'
                 }}>
-                  🚚 Доставка
+                  Доставка возможна
                 </div>
               )}
             </div>
 
+            {/* Цена */}
             <div style={{
-              display: 'flex',
-              alignItems: 'baseline',
-              gap: '16px',
-              marginBottom: '24px',
-              padding: '20px',
-              backgroundColor: '#f8fafc',
-              borderRadius: '12px',
-              border: '2px solid #e2e8f0'
+              marginBottom: '32px',
+              padding: '24px',
+              backgroundColor: '#f9fafb',
+              borderRadius: '8px',
+              border: '1px solid #e5e7eb'
             }}>
-              <span style={{
-                fontSize: '36px',
-                fontWeight: '800',
-                color: '#2563eb'
-              }}>
-                {formatCurrencyRu(product.price || 0)}
-              </span>
               <div style={{
                 display: 'flex',
-                flexDirection: 'column',
-                gap: '4px'
+                alignItems: 'baseline',
+                gap: '12px',
+                marginBottom: '12px'
               }}>
                 <span style={{
-                  fontSize: '16px',
-                  color: '#64748b',
-                  fontWeight: '500'
+                  fontSize: window.innerWidth >= 768 ? '32px' : '28px',
+                  fontWeight: '700',
+                  color: '#047857'
                 }}>
-                  {pricePerCubicMeter} ₽/м³
+                  {formatCurrencyRu(product.price || 0)}
                 </span>
                 <span style={{
                   fontSize: '14px',
-                  color: '#94a3b8'
+                  color: '#6b7280',
+                  fontWeight: '500'
                 }}>
-                  за кубический метр
+                  за м³
                 </span>
               </div>
+              {product.volume && (
+                <div style={{
+                  fontSize: '16px',
+                  color: '#374151',
+                  fontWeight: '500'
+                }}>
+                  Общая стоимость: <span style={{ fontWeight: '600', color: '#047857' }}>
+                    {formatCurrencyRu(product.price * product.volume)}
+                  </span>
+                </div>
+              )}
             </div>
 
             {product.descrioption && (
-              <div style={{ marginBottom: '28px' }}>
+              <div style={{ marginBottom: '32px' }}>
                 <h3 style={{
                   margin: '0 0 16px 0',
-                  fontSize: '20px',
+                  fontSize: '18px',
                   fontWeight: '600',
-                  color: '#1f2937',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
+                  color: '#111827',
+                  letterSpacing: '-0.025em'
                 }}>
-                  📝 Описание
+                  Описание
                 </h3>
                 <div style={{
                   padding: '20px',
-                  backgroundColor: '#f8fafc',
-                  borderRadius: '12px',
-                  border: '1px solid #e2e8f0'
+                  backgroundColor: '#f9fafb',
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb'
                 }}>
                   <p style={{
                     margin: 0,
-                    color: '#475569',
-                    lineHeight: '1.7',
-                    fontSize: '16px'
+                    color: '#374151',
+                    lineHeight: '1.6',
+                    fontSize: '15px'
                   }}>
                     {product.descrioption}
                   </p>
@@ -360,17 +366,15 @@ const ProductDetailPage = () => {
             )}
 
             {/* Характеристики */}
-            <div style={{ marginBottom: '28px' }}>
+            <div style={{ marginBottom: '32px' }}>
               <h3 style={{
                 margin: '0 0 20px 0',
-                fontSize: '20px',
+                fontSize: '18px',
                 fontWeight: '600',
-                color: '#1f2937',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
+                color: '#111827',
+                letterSpacing: '-0.025em'
               }}>
-                📊 Характеристики
+                Характеристики товара
               </h3>
               <div style={{
                 display: 'grid',
@@ -379,46 +383,50 @@ const ProductDetailPage = () => {
               }}>
                 <div style={{
                   padding: '20px',
-                  backgroundColor: '#f1f5f9',
-                  borderRadius: '12px',
-                  border: '1px solid #cbd5e1',
-                  textAlign: 'center'
+                  backgroundColor: '#f9fafb',
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb',
+                  textAlign: 'left'
                 }}>
                   <div style={{
-                    fontSize: '14px',
-                    color: '#64748b',
+                    fontSize: '13px',
+                    color: '#6b7280',
                     fontWeight: '500',
-                    marginBottom: '8px'
+                    marginBottom: '8px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
                   }}>
-                    📦 Объем
+                    Объем
                   </div>
                   <div style={{
                     fontSize: '20px',
-                    fontWeight: '700',
-                    color: '#1e293b'
+                    fontWeight: '600',
+                    color: '#111827'
                   }}>
                     {product.volume?.toFixed(4) || '0'} м³
                   </div>
                 </div>
                 <div style={{
                   padding: '20px',
-                  backgroundColor: '#f1f5f9',
-                  borderRadius: '12px',
-                  border: '1px solid #cbd5e1',
-                  textAlign: 'center'
+                  backgroundColor: '#f9fafb',
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb',
+                  textAlign: 'left'
                 }}>
                   <div style={{
-                    fontSize: '14px',
-                    color: '#64748b',
+                    fontSize: '13px',
+                    color: '#6b7280',
                     fontWeight: '500',
-                    marginBottom: '8px'
+                    marginBottom: '8px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
                   }}>
-                    🪵 Количество досок
+                    Количество досок
                   </div>
                   <div style={{
                     fontSize: '20px',
-                    fontWeight: '700',
-                    color: '#1e293b'
+                    fontWeight: '600',
+                    color: '#111827'
                   }}>
                     {product.wooden_boards?.length || product.board_count || 'Не указано'}
                   </div>
@@ -427,22 +435,24 @@ const ProductDetailPage = () => {
                   <div style={{
                     padding: '20px',
                     backgroundColor: '#f0fdf4',
-                    borderRadius: '12px',
+                    borderRadius: '8px',
                     border: '1px solid #bbf7d0',
                     gridColumn: window.innerWidth >= 640 ? '1 / -1' : 'auto',
-                    textAlign: 'center'
+                    textAlign: 'left'
                   }}>
                     <div style={{
-                      fontSize: '14px',
+                      fontSize: '13px',
                       color: '#15803d',
                       fontWeight: '500',
-                      marginBottom: '8px'
+                      marginBottom: '8px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
                     }}>
-                      🌳 Тип древесины
+                      Тип древесины
                     </div>
                     <div style={{
                       fontSize: '20px',
-                      fontWeight: '700',
+                      fontWeight: '600',
                       color: '#14532d'
                     }}>
                       {woodType.neme || woodType.name || 'Не указан'}
@@ -452,19 +462,21 @@ const ProductDetailPage = () => {
                 {product.pickup_location && (
                   <div style={{
                     padding: '20px',
-                    backgroundColor: '#fef3c7',
-                    borderRadius: '12px',
+                    backgroundColor: '#fffbeb',
+                    borderRadius: '8px',
                     border: '1px solid #fcd34d',
                     gridColumn: window.innerWidth >= 640 ? '1 / -1' : 'auto',
-                    textAlign: 'center'
+                    textAlign: 'left'
                   }}>
                     <div style={{
-                      fontSize: '14px',
+                      fontSize: '13px',
                       color: '#92400e',
                       fontWeight: '500',
-                      marginBottom: '8px'
+                      marginBottom: '8px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
                     }}>
-                      📍 Адрес самовывоза
+                      Адрес самовывоза
                     </div>
                     <div style={{
                       fontSize: '16px',
@@ -482,76 +494,76 @@ const ProductDetailPage = () => {
             <div style={{
               display: 'flex',
               flexDirection: window.innerWidth >= 640 ? 'row' : 'column',
-              gap: '16px'
+              gap: '12px'
             }}>
               <button
                 onClick={handleStartChat}
                 style={{
                   flex: 1,
-                  padding: '18px 24px',
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  padding: '16px 24px',
+                  backgroundColor: '#047857',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: '700',
+                  borderRadius: '6px',
+                  fontSize: '15px',
+                  fontWeight: '600',
                   cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                   transform: 'translateY(0)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '8px'
+                  gap: '8px',
+                  letterSpacing: '0.025em'
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 8px 24px rgba(16, 185, 129, 0.4)';
+                  e.target.style.backgroundColor = '#065f46';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                  e.target.style.backgroundColor = '#047857';
                   e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 4px 16px rgba(16, 185, 129, 0.3)';
+                  e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
                 }}
               >
-                <span>💬</span>
-                <span>Написать продавцу</span>
+                <span>Связаться с продавцом</span>
               </button>
 
               <button
                 onClick={() => navigate('/chats')}
                 style={{
                   flex: 1,
-                  padding: '18px 24px',
+                  padding: '16px 24px',
                   backgroundColor: 'transparent',
-                  color: '#2563eb',
-                  border: '2px solid #2563eb',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: '700',
+                  color: '#374151',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  fontSize: '15px',
+                  fontWeight: '600',
                   cursor: 'pointer',
-                  transition: 'all 0.3s ease',
+                  transition: 'all 0.2s ease',
                   transform: 'translateY(0)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '8px'
+                  gap: '8px',
+                  letterSpacing: '0.025em'
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#2563eb';
-                  e.target.style.color = 'white';
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 8px 24px rgba(37, 99, 235, 0.4)';
+                  e.target.style.backgroundColor = '#f9fafb';
+                  e.target.style.borderColor = '#9ca3af';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
                 }}
                 onMouseLeave={(e) => {
                   e.target.style.backgroundColor = 'transparent';
-                  e.target.style.color = '#2563eb';
+                  e.target.style.borderColor = '#d1d5db';
                   e.target.style.transform = 'translateY(0)';
                   e.target.style.boxShadow = 'none';
                 }}
               >
-                <span>📋</span>
                 <span>Все чаты</span>
               </button>
             </div>
@@ -561,23 +573,23 @@ const ProductDetailPage = () => {
         {/* Информация о продавце */}
         {seller && (
           <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
+            backgroundColor: '#ffffff',
+            borderRadius: '8px',
             padding: '32px',
-            marginBottom: '40px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-            border: '1px solid rgba(0,0,0,0.05)'
+            marginBottom: '32px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            border: '1px solid #e5e7eb'
           }}>
             <h2 style={{
               margin: '0 0 24px 0',
-              fontSize: '26px',
-              fontWeight: '700',
-              color: '#1f2937',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
+              fontSize: '20px',
+              fontWeight: '600',
+              color: '#111827',
+              letterSpacing: '-0.025em',
+              paddingBottom: '16px',
+              borderBottom: '1px solid #f3f4f6'
             }}>
-              🏪 О продавце
+              Информация о продавце
             </h2>
             <div style={{
               display: 'flex',
@@ -586,29 +598,29 @@ const ProductDetailPage = () => {
               marginBottom: '24px'
             }}>
               <div style={{
-                width: '80px',
-                height: '80px',
-                borderRadius: '50%',
-                backgroundColor: seller.is_online ? '#10b981' : '#6b7280',
+                width: '64px',
+                height: '64px',
+                borderRadius: '8px',
+                backgroundColor: '#f3f4f6',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '32px',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                fontSize: '24px',
+                border: '1px solid #e5e7eb',
                 position: 'relative'
               }}>
-                🏪
+                <span style={{ color: '#6b7280' }}>👤</span>
                 {/* Индикатор онлайн статуса */}
                 <div style={{
                   position: 'absolute',
-                  bottom: '4px',
-                  right: '4px',
-                  width: '20px',
-                  height: '20px',
+                  bottom: '-2px',
+                  right: '-2px',
+                  width: '16px',
+                  height: '16px',
                   borderRadius: '50%',
                   backgroundColor: seller.is_online ? '#10b981' : '#6b7280',
-                  border: '3px solid white',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                  border: '2px solid white',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                 }} />
               </div>
               <div style={{ flex: 1 }}>
@@ -620,21 +632,23 @@ const ProductDetailPage = () => {
                 }}>
                   <h3 style={{
                     margin: 0,
-                    fontSize: '22px',
-                    fontWeight: '700',
-                    color: '#1f2937'
+                    fontSize: '18px',
+                    fontWeight: '600',
+                    color: '#111827'
                   }}>
                     {seller.neme || seller.name || 'Продавец'}
                   </h3>
                   <span style={{
-                    padding: '4px 12px',
-                    borderRadius: '20px',
-                    fontSize: '12px',
-                    fontWeight: '600',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    fontWeight: '500',
                     backgroundColor: seller.is_online ? '#dcfce7' : '#f3f4f6',
-                    color: seller.is_online ? '#166534' : '#6b7280'
+                    color: seller.is_online ? '#166534' : '#6b7280',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
                   }}>
-                    {seller.is_online ? '🟢 Онлайн' : '⚫ Офлайн'}
+                    {seller.is_online ? 'Онлайн' : 'Офлайн'}
                   </span>
                 </div>
                 <div style={{
@@ -645,27 +659,27 @@ const ProductDetailPage = () => {
                 }}>
                   <div style={{
                     padding: '12px 16px',
-                    backgroundColor: '#f8fafc',
-                    borderRadius: '8px',
-                    border: '1px solid #e2e8f0'
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '6px',
+                    border: '1px solid #e5e7eb'
                   }}>
-                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       ID продавца
                     </div>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', fontFamily: 'monospace' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', color: '#374151', fontFamily: 'monospace' }}>
                       {seller.id?.substring(0, 8)}...
                     </div>
                   </div>
                   <div style={{
                     padding: '12px 16px',
-                    backgroundColor: '#f8fafc',
-                    borderRadius: '8px',
-                    border: '1px solid #e2e8f0'
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '6px',
+                    border: '1px solid #e5e7eb'
                   }}>
-                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       Участник с
                     </div>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', color: '#374151' }}>
                       {new Date(seller.created_at).toLocaleDateString('ru-RU', {
                         year: 'numeric',
                         month: 'long'
@@ -680,8 +694,8 @@ const ProductDetailPage = () => {
             <div style={{
               padding: '16px',
               backgroundColor: '#f0f9ff',
-              borderRadius: '12px',
-              border: '1px solid #0ea5e9'
+              borderRadius: '6px',
+              border: '1px solid #bae6fd'
             }}>
               <div style={{
                 display: 'flex',
@@ -689,9 +703,8 @@ const ProductDetailPage = () => {
                 gap: '8px',
                 marginBottom: '8px'
               }}>
-                <span style={{ fontSize: '16px' }}>💡</span>
                 <span style={{ fontSize: '14px', fontWeight: '600', color: '#0c4a6e' }}>
-                  Совет
+                  Рекомендация
                 </span>
               </div>
               <p style={{
