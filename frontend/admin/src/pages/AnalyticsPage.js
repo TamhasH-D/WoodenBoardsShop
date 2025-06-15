@@ -189,28 +189,7 @@ const AnalyticsPage = () => {
         </Card>
       </div>
 
-      {/* Additional Analytics Sections */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Активность пользователей</h3>
-          <div className="text-center py-12">
-            <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <p className="mt-2 text-sm text-gray-500">
-              Детальная аналитика активности пользователей будет доступна в следующих версиях
-            </p>
-          </div>
-        </Card>
 
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Статистика продаж</h3>
-          <div className="text-center py-12">
-            <CurrencyDollarIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <p className="mt-2 text-sm text-gray-500">
-              Аналитика продаж и доходов будет доступна в следующих версиях
-            </p>
-          </div>
-        </Card>
-      </div>
     </div>
   );
 };

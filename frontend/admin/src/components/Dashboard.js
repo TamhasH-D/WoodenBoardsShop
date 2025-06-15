@@ -7,8 +7,8 @@ import ProgressiveStats from './ProgressiveStats';
 const Dashboard = React.memo(() => {
   // Create stable function references to prevent infinite loops
   const fetchSystemStats = useCallback(async () => {
-    // Fetch system stats directly
-    const result = await apiService.getSystemStats();
+    // Fetch system analytics directly
+    const result = await apiService.getSystemAnalytics();
     return result;
   }, []);
 
