@@ -74,161 +74,255 @@ const ProductCard = ({
     }
   };
 
-  // Конфигурация для разных вариантов
+  // Профессиональная конфигурация для разных вариантов
   const getVariantConfig = () => {
     switch (variant) {
       case 'hero':
         return {
-          height: '480px',
-          maxWidth: '400px',
-          imageHeight: '240px',
-          padding: '20px',
-          titleSize: '1.25rem',
+          height: '520px',
+          maxWidth: '420px',
+          imageHeight: '260px',
+          padding: '24px',
+          titleSize: '1.375rem',
           titleLines: 2,
           showPrice: true,
           showButtons: true,
           buttonLayout: 'column',
-          showBadges: true
+          showBadges: true,
+          borderRadius: '12px',
+          shadowLevel: 'high'
         };
       case 'grid':
         return {
-          height: '380px',
-          maxWidth: '320px',
-          imageHeight: '160px',
-          padding: '12px',
-          titleSize: '0.875rem',
+          height: '420px',
+          maxWidth: '340px',
+          imageHeight: '180px',
+          padding: '16px',
+          titleSize: '0.95rem',
           titleLines: 2,
           showPrice: true,
           showButtons: true,
-          buttonLayout: 'row',
-          showBadges: true
+          buttonLayout: 'column',
+          showBadges: true,
+          borderRadius: '10px',
+          shadowLevel: 'medium'
         };
       case 'list':
         return {
-          height: '140px',
+          height: '160px',
           maxWidth: 'none',
           imageHeight: '100%',
-          imageWidth: '180px',
-          padding: '16px',
-          titleSize: '1rem',
+          imageWidth: '200px',
+          padding: '20px',
+          titleSize: '1.1rem',
           titleLines: 1,
           showPrice: true,
           showButtons: true,
           buttonLayout: 'single',
-          showBadges: false,
-          layout: 'horizontal'
+          showBadges: true,
+          layout: 'horizontal',
+          borderRadius: '8px',
+          shadowLevel: 'low'
         };
       default: // catalog
         return {
-          height: '540px',
-          maxWidth: '420px',
-          imageHeight: '220px',
-          padding: '16px',
-          titleSize: '1.125rem',
-          titleLines: 3,
+          height: '580px',
+          maxWidth: '440px',
+          imageHeight: '240px',
+          padding: '20px',
+          titleSize: '1.2rem',
+          titleLines: 2,
           showPrice: true,
           showButtons: true,
           buttonLayout: 'column',
-          showBadges: true
+          showBadges: true,
+          borderRadius: '12px',
+          shadowLevel: 'medium'
         };
     }
   };
 
   const config = getVariantConfig();
 
-  // Горизонтальная карточка (список)
+  // Профессиональные стили теней
+  const getShadowStyle = (level, hovered = false) => {
+    const shadows = {
+      low: hovered ? '0 4px 12px rgba(47, 27, 20, 0.08)' : '0 1px 3px rgba(47, 27, 20, 0.04)',
+      medium: hovered ? '0 8px 24px rgba(47, 27, 20, 0.12)' : '0 2px 8px rgba(47, 27, 20, 0.06)',
+      high: hovered ? '0 12px 32px rgba(47, 27, 20, 0.16)' : '0 4px 16px rgba(47, 27, 20, 0.08)'
+    };
+    return shadows[level] || shadows.medium;
+  };
+
+  // Горизонтальная карточка (список) - Профессиональный дизайн
   if (config.layout === 'horizontal') {
     return (
       <div
         style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          boxShadow: isHovered ? '0 2px 8px rgba(0,0,0,0.1)' : '0 1px 3px rgba(0,0,0,0.05)',
-          border: '1px solid #e5e7eb',
+          backgroundColor: '#ffffff',
+          borderRadius: config.borderRadius,
+          boxShadow: getShadowStyle(config.shadowLevel, isHovered),
+          border: isHovered ? '1px solid #d2b48c' : '1px solid #e8e2d5',
           cursor: 'pointer',
-          transition: 'all 0.2s ease',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           display: 'flex',
           height: config.height,
           overflow: 'hidden',
-          width: '100%'
+          width: '100%',
+          transform: isHovered ? 'translateY(-1px)' : 'translateY(0)',
+          position: 'relative'
         }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onClick={handleClick}
       >
-        {/* Изображение */}
+        {/* Профессиональная полоска сверху */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '3px',
+          background: 'linear-gradient(90deg, #8B4513, #CD853F)',
+          opacity: isHovered ? 1 : 0,
+          transition: 'opacity 0.3s ease'
+        }} />
+
+        {/* Изображение с профессиональным оформлением */}
         <div style={{
           width: config.imageWidth,
           height: '100%',
           backgroundImage: `url(${getProductImageUrl()})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundColor: '#f3f4f6',
-          flexShrink: 0
-        }} />
-        
-        {/* Контент */}
+          backgroundColor: '#f5f2e8',
+          flexShrink: 0,
+          position: 'relative',
+          borderRight: '1px solid #e8e2d5'
+        }}>
+          {/* Бейдж доставки для списка */}
+          {config.showBadges && (
+            <div style={{
+              position: 'absolute',
+              top: '12px',
+              right: '12px',
+              backgroundColor: product.delivery_possible ? '#689F38' : '#F57C00',
+              color: 'white',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              fontSize: '0.75rem',
+              fontWeight: '600',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              backdropFilter: 'blur(10px)'
+            }}>
+              {product.delivery_possible ? 'Доставка' : 'Самовывоз'}
+            </div>
+          )}
+        </div>
+
+        {/* Контент с профессиональной структурой */}
         <div style={{
           flex: 1,
           padding: config.padding,
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          backgroundColor: '#ffffff'
         }}>
-          <div>
+          {/* Верхняя секция */}
+          <div style={{ flex: 1 }}>
             <h3 style={{
               fontSize: config.titleSize,
-              fontWeight: '600',
-              color: '#1f2937',
+              fontWeight: '700',
+              color: '#2F1B14',
               margin: '0 0 8px 0',
               lineHeight: '1.3',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              fontFamily: 'Playfair Display, Georgia, serif',
+              letterSpacing: '-0.01em'
             }}>
               {product.title || 'Товар без названия'}
             </h3>
-            
+
+            {/* Информационная строка */}
             <div style={{
               fontSize: '0.875rem',
-              color: '#6b7280',
+              color: '#8D6E63',
               display: 'flex',
-              gap: '16px',
+              gap: '12px',
+              alignItems: 'center',
+              marginBottom: '8px',
               flexWrap: 'wrap'
             }}>
-              <span>{roundedVolume} м³</span>
-              <span>{pricePerCubicMeter} ₽/м³</span>
-              {woodTypeName && woodTypeName !== 'Не указан' && <span>{woodTypeName}</span>}
-              {showSeller && sellerName && <span>• {sellerName}</span>}
+              <span style={{
+                fontWeight: '600',
+                color: '#5D4037'
+              }}>{roundedVolume} м³</span>
+              <span style={{ color: '#BCAAA4' }}>•</span>
+              <span style={{ fontWeight: '500' }}>{pricePerCubicMeter} ₽/м³</span>
+              {woodTypeName && woodTypeName !== 'Не указан' && (
+                <>
+                  <span style={{ color: '#BCAAA4' }}>•</span>
+                  <span style={{ fontWeight: '500' }}>{woodTypeName}</span>
+                </>
+              )}
             </div>
+
+            {showSeller && sellerName && sellerName !== 'Неизвестный продавец' && (
+              <div style={{
+                fontSize: '0.8rem',
+                color: '#A1887F',
+                fontStyle: 'italic'
+              }}>
+                Продавец: {sellerName}
+              </div>
+            )}
           </div>
-          
+
+          {/* Нижняя секция - цена и кнопка */}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center'
+            alignItems: 'center',
+            paddingTop: '12px',
+            borderTop: '1px solid #E8E2D5'
           }}>
             <div style={{
-              fontSize: '1.25rem',
-              fontWeight: '700',
-              color: '#1f2937'
+              fontSize: '1.375rem',
+              fontWeight: '800',
+              color: '#2F1B14',
+              fontFamily: 'Playfair Display, Georgia, serif'
             }}>
               {formatCurrency(product.price)}
             </div>
-            
+
             <button
               onClick={handleStartChat}
               disabled={isStartingChat}
               style={{
-                padding: '8px 16px',
-                backgroundColor: isStartingChat ? '#d97706' : '#059669',
+                padding: '10px 20px',
+                backgroundColor: isStartingChat ? '#F57C00' : '#689F38',
                 color: 'white',
                 border: 'none',
                 borderRadius: '6px',
                 fontSize: '0.875rem',
                 fontWeight: '600',
                 cursor: isStartingChat ? 'wait' : 'pointer',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                transform: isHovered && !isStartingChat ? 'scale(1.02)' : 'scale(1)'
+              }}
+              onMouseEnter={(e) => {
+                if (!isStartingChat) {
+                  e.target.style.backgroundColor = '#5a8a32';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isStartingChat) {
+                  e.target.style.backgroundColor = '#689F38';
+                }
               }}
             >
               {isStartingChat ? 'Подключение...' : 'Написать продавцу'}
@@ -239,209 +333,311 @@ const ProductCard = ({
     );
   }
 
-  // Вертикальная карточка (все остальные варианты)
+  // Профессиональная вертикальная карточка (catalog, grid, hero)
   return (
     <div
       style={{
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        boxShadow: isHovered 
-          ? (variant === 'hero' ? '0 8px 24px rgba(0,0,0,0.12)' : '0 4px 12px rgba(0,0,0,0.1)')
-          : '0 1px 3px rgba(0,0,0,0.05)',
-        border: '1px solid #e5e7eb',
+        backgroundColor: '#ffffff',
+        borderRadius: config.borderRadius,
+        boxShadow: getShadowStyle(config.shadowLevel, isHovered),
+        border: isHovered ? '1px solid #d2b48c' : '1px solid #e8e2d5',
         cursor: 'pointer',
-        transition: 'all 0.3s ease',
-        transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        transform: isHovered ? 'translateY(-3px)' : 'translateY(0)',
         height: config.height,
         width: '100%',
         maxWidth: config.maxWidth,
         margin: '0 auto',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        position: 'relative'
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
     >
-      {/* Изображение */}
+      {/* Профессиональная полоска сверху */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '4px',
+        background: 'linear-gradient(90deg, #8B4513, #CD853F)',
+        opacity: isHovered ? 1 : 0,
+        transition: 'opacity 0.3s ease',
+        zIndex: 10
+      }} />
+
+      {/* Профессиональное изображение */}
       <div style={{
         height: config.imageHeight,
         backgroundImage: `url(${getProductImageUrl()})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundColor: '#f3f4f6',
+        backgroundColor: '#f5f2e8',
         position: 'relative',
-        flexShrink: 0
+        flexShrink: 0,
+        borderBottom: '1px solid #e8e2d5'
       }}>
-        {/* Бейджи */}
+        {/* Профессиональные бейджи */}
         {config.showBadges && (
           <>
-            {/* Бейдж доставки */}
+            {/* Элегантный бейдж доставки */}
             <div style={{
               position: 'absolute',
-              top: '12px',
-              right: '12px',
-              backgroundColor: product.delivery_possible ? '#059669' : '#d97706',
+              top: '16px',
+              right: '16px',
+              backgroundColor: product.delivery_possible ? '#689F38' : '#F57C00',
               color: 'white',
-              padding: variant === 'hero' ? '6px 12px' : '4px 8px',
-              borderRadius: '6px',
-              fontSize: variant === 'hero' ? '0.875rem' : '0.75rem',
+              padding: variant === 'hero' ? '8px 14px' : (variant === 'grid' ? '6px 10px' : '7px 12px'),
+              borderRadius: '8px',
+              fontSize: variant === 'hero' ? '0.875rem' : (variant === 'grid' ? '0.75rem' : '0.8rem'),
               fontWeight: '600',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              letterSpacing: '0.02em'
             }}>
               {product.delivery_possible ? 'Доставка' : 'Самовывоз'}
             </div>
-            
-            {/* Цена за м³ */}
+
+            {/* Элегантная цена за м³ */}
             <div style={{
               position: 'absolute',
-              bottom: '12px',
-              left: '12px',
-              backgroundColor: 'rgba(0,0,0,0.8)',
+              bottom: '16px',
+              left: '16px',
+              backgroundColor: 'rgba(47, 27, 20, 0.9)',
               color: 'white',
-              padding: '6px 10px',
-              borderRadius: '6px',
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              backdropFilter: 'blur(10px)'
+              padding: variant === 'hero' ? '8px 14px' : '6px 12px',
+              borderRadius: '8px',
+              fontSize: variant === 'hero' ? '0.875rem' : '0.75rem',
+              fontWeight: '700',
+              backdropFilter: 'blur(15px)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              letterSpacing: '0.02em',
+              fontFamily: 'Inter, sans-serif'
             }}>
               {pricePerCubicMeter} ₽/м³
             </div>
           </>
         )}
+
+        {/* Градиентный оверлей для лучшей читаемости */}
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '60px',
+          background: 'linear-gradient(to top, rgba(47, 27, 20, 0.3), transparent)',
+          pointerEvents: 'none'
+        }} />
       </div>
-      
-      {/* Контент */}
+
+      {/* Профессиональный контент */}
       <div style={{
         padding: config.padding,
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        backgroundColor: '#ffffff'
       }}>
-        <div style={{ flex: 1 }}>
+        {/* Верхняя секция контента */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          {/* Профессиональный заголовок */}
           <h3 style={{
             fontSize: config.titleSize,
             fontWeight: '700',
-            color: '#1f2937',
-            margin: '0 0 8px 0',
-            lineHeight: '1.2',
-            height: `${1.2 * config.titleLines}rem`,
+            color: '#2F1B14',
+            margin: '0 0 12px 0',
+            lineHeight: '1.3',
+            height: `${1.3 * config.titleLines}rem`,
             overflow: 'hidden',
             display: '-webkit-box',
             WebkitLineClamp: config.titleLines,
             WebkitBoxOrient: 'vertical',
-            wordBreak: 'break-word'
+            wordBreak: 'break-word',
+            fontFamily: 'Playfair Display, Georgia, serif',
+            letterSpacing: '-0.01em'
           }}>
             {product.title || 'Товар без названия'}
           </h3>
-          
+
+          {/* Описание для hero варианта */}
           {showDescription && product.descrioption && variant === 'hero' && (
             <p style={{
-              fontSize: '0.875rem',
-              color: '#6b7280',
-              margin: '0 0 12px 0',
-              lineHeight: '1.3',
-              height: '2.6rem',
+              fontSize: '0.9rem',
+              color: '#8D6E63',
+              margin: '0 0 16px 0',
+              lineHeight: '1.4',
+              height: '2.8rem',
               overflow: 'hidden',
               display: '-webkit-box',
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
-              wordBreak: 'break-word'
+              wordBreak: 'break-word',
+              fontFamily: 'Inter, sans-serif'
             }}>
               {product.descrioption}
             </p>
           )}
-          
+
+          {/* Профессиональная информационная секция */}
           <div style={{
-            fontSize: variant === 'grid' ? '0.75rem' : '0.875rem',
-            color: '#6b7280',
-            marginBottom: '8px',
-            display: 'flex',
-            gap: '8px',
-            flexWrap: 'wrap'
+            backgroundColor: '#f9f7f4',
+            padding: variant === 'grid' ? '8px 12px' : '12px 16px',
+            borderRadius: '8px',
+            border: '1px solid #e8e2d5',
+            marginBottom: '12px'
           }}>
-            <span>{roundedVolume} м³</span>
-            <span>•</span>
-            <span>{pricePerCubicMeter} ₽/м³</span>
-            {woodTypeName && woodTypeName !== 'Не указан' && (
-              <>
-                <span>•</span>
-                <span>{woodTypeName}</span>
-              </>
-            )}
+            <div style={{
+              fontSize: variant === 'grid' ? '0.8rem' : '0.875rem',
+              color: '#5D4037',
+              display: 'flex',
+              gap: '12px',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              justifyContent: variant === 'grid' ? 'center' : 'flex-start'
+            }}>
+              <span style={{
+                fontWeight: '700',
+                color: '#2F1B14',
+                fontSize: variant === 'grid' ? '0.85rem' : '0.9rem'
+              }}>{roundedVolume} м³</span>
+              <span style={{ color: '#BCAAA4', fontSize: '0.7rem' }}>•</span>
+              <span style={{ fontWeight: '600' }}>{pricePerCubicMeter} ₽/м³</span>
+              {woodTypeName && woodTypeName !== 'Не указан' && (
+                <>
+                  <span style={{ color: '#BCAAA4', fontSize: '0.7rem' }}>•</span>
+                  <span style={{
+                    fontWeight: '600',
+                    color: '#8B4513',
+                    fontSize: variant === 'grid' ? '0.75rem' : '0.8rem'
+                  }}>{woodTypeName}</span>
+                </>
+              )}
+            </div>
           </div>
-          
+
+          {/* Информация о продавце */}
           {showSeller && sellerName && sellerName !== 'Неизвестный продавец' && (
             <div style={{
-              fontSize: '0.75rem',
-              color: '#6b7280',
+              fontSize: '0.8rem',
+              color: '#A1887F',
+              fontStyle: 'italic',
+              textAlign: variant === 'grid' ? 'center' : 'left',
               marginBottom: '8px'
             }}>
               Продавец: {sellerName}
             </div>
           )}
         </div>
-        
-        <div>
+
+        {/* Профессиональная нижняя секция */}
+        <div style={{
+          borderTop: '1px solid #e8e2d5',
+          paddingTop: '16px'
+        }}>
+          {/* Элегантная цена */}
           {config.showPrice && (
             <div style={{
-              fontSize: variant === 'grid' ? '1rem' : '1.25rem',
+              fontSize: variant === 'grid' ? '1.1rem' : (variant === 'hero' ? '1.5rem' : '1.3rem'),
               fontWeight: '800',
-              color: '#1f2937',
-              marginBottom: '12px',
-              textAlign: variant === 'hero' ? 'center' : 'left'
+              color: '#2F1B14',
+              marginBottom: '16px',
+              textAlign: variant === 'hero' ? 'center' : 'left',
+              fontFamily: 'Playfair Display, Georgia, serif',
+              letterSpacing: '-0.02em'
             }}>
               {formatCurrency(product.price)}
             </div>
           )}
-          
+
+          {/* Профессиональные кнопки */}
           {config.showButtons && (
             <div style={{
               display: 'flex',
               flexDirection: config.buttonLayout === 'column' ? 'column' : 'row',
-              gap: config.buttonLayout === 'column' ? '8px' : '6px'
+              gap: config.buttonLayout === 'column' ? '10px' : '8px'
             }}>
+              {/* Кнопка "Подробнее" */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleClick();
                 }}
                 style={{
-                  flex: 1,
-                  padding: variant === 'grid' ? '6px 8px' : '8px 12px',
+                  flex: config.buttonLayout === 'single' ? 0 : 1,
+                  padding: variant === 'grid' ? '8px 12px' : '10px 16px',
                   backgroundColor: 'transparent',
-                  color: '#3b82f6',
-                  border: '1px solid #3b82f6',
-                  borderRadius: '6px',
-                  fontSize: variant === 'grid' ? '0.75rem' : '0.875rem',
+                  color: '#8B4513',
+                  border: '2px solid #8B4513',
+                  borderRadius: '8px',
+                  fontSize: variant === 'grid' ? '0.8rem' : '0.875rem',
                   fontWeight: '600',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.3s ease',
+                  fontFamily: 'Inter, sans-serif',
+                  letterSpacing: '0.02em',
+                  minWidth: config.buttonLayout === 'single' ? '120px' : 'auto'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#8B4513';
+                  e.target.style.color = 'white';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 4px 8px rgba(139, 69, 19, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = 'transparent';
+                  e.target.style.color = '#8B4513';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
                 }}
               >
                 Подробнее
               </button>
-              
-              <button
-                onClick={handleStartChat}
-                disabled={isStartingChat}
-                style={{
-                  flex: 1,
-                  padding: variant === 'grid' ? '6px 8px' : '8px 12px',
-                  backgroundColor: isStartingChat ? '#d97706' : '#059669',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: variant === 'grid' ? '0.75rem' : '0.875rem',
-                  fontWeight: '600',
-                  cursor: isStartingChat ? 'wait' : 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                {isStartingChat ? (variant === 'grid' ? '...' : 'Подключение...') : 'Написать'}
-              </button>
+
+              {/* Кнопка "Написать" */}
+              {config.buttonLayout !== 'single' && (
+                <button
+                  onClick={handleStartChat}
+                  disabled={isStartingChat}
+                  style={{
+                    flex: 1,
+                    padding: variant === 'grid' ? '8px 12px' : '10px 16px',
+                    backgroundColor: isStartingChat ? '#F57C00' : '#689F38',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: variant === 'grid' ? '0.8rem' : '0.875rem',
+                    fontWeight: '600',
+                    cursor: isStartingChat ? 'wait' : 'pointer',
+                    transition: 'all 0.3s ease',
+                    fontFamily: 'Inter, sans-serif',
+                    letterSpacing: '0.02em',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isStartingChat) {
+                      e.target.style.backgroundColor = '#5a8a32';
+                      e.target.style.transform = 'translateY(-1px)';
+                      e.target.style.boxShadow = '0 4px 8px rgba(104, 159, 56, 0.3)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isStartingChat) {
+                      e.target.style.backgroundColor = '#689F38';
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                    }
+                  }}
+                >
+                  {isStartingChat ? (variant === 'grid' ? 'Ждите...' : 'Подключение...') : 'Написать'}
+                </button>
+              )}
             </div>
           )}
         </div>
