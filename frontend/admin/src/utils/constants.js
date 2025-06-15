@@ -13,10 +13,10 @@ export const MOCK_IDS = {
 
 // API Configuration
 export const API_CONFIG = {
-  TIMEOUT: 30000,
-  RETRY_ATTEMPTS: 3,
-  RETRY_DELAY: 1000,
-  BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:8000'
+  timeout: 30000,
+  retryAttempts: 3,
+  retryDelay: 1000,
+  baseURL: process.env.REACT_APP_API_URL || 'http://172.27.65.14:8000'
 };
 
 // Pagination Configuration
