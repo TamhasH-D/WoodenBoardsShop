@@ -23,6 +23,10 @@ include:
   # - path: ./keycloak/docker-compose.yaml
   #   project_directory: ./keycloak
 
+  # Medama
+  - path: ./medama/docker-compose.yaml
+    project_directory: ./medama
+
 networks:
   diplom_default:
     name: diplom_default
