@@ -49,7 +49,7 @@ const ProductCard = ({
 
   // Обработчики
   const handleClick = () => {
-    navigate(`/products/${product.id}`);
+    navigate(`/product/${product.id}`);
   };
 
   const handleStartChat = async (e) => {

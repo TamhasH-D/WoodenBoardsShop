@@ -6,6 +6,7 @@ import { formatCurrencyRu } from '../utils/localization';
 import { apiService } from '../services/api';
 import ProductImageWithBoards from '../components/ProductImageWithBoards';
 import ProductChat from '../components/ProductChat';
+import { getCurrentBuyerKeycloakId } from '../utils/auth';
 
 const ProductDetailPage = () => {
   const { productId } = useParams();
@@ -20,7 +21,7 @@ const ProductDetailPage = () => {
   const [error, setError] = useState(null);
   const chatRef = useRef(null);
 
-  const buyerId = localStorage.getItem('buyer_id') || 'b8c8e1e0-1234-5678-9abc-def012345678';
+  // buyerId теперь получается внутри ProductChat компонента
 
   useEffect(() => {
     loadProductData();
@@ -71,9 +72,9 @@ const ProductDetailPage = () => {
 
   const handleStartChat = () => {
     if (product && seller) {
-      // Переходим к чату с продавцом
-      navigate(`/chats/seller/${seller.id}?product=${product.id}`);
-      showSuccess('Переходим к чату с продавцом');
+      // Прокручиваем к чату на этой же странице
+      scrollToChat();
+      showSuccess('Прокручиваем к чату с продавцом');
     }
   };
 
@@ -519,7 +520,7 @@ const ProductDetailPage = () => {
               </button>
 
               <button
-                onClick={scrollToChat}
+                onClick={() => navigate('/chats')}
                 style={{
                   flex: 1,
                   padding: '18px 24px',
@@ -550,8 +551,8 @@ const ProductDetailPage = () => {
                   e.target.style.boxShadow = 'none';
                 }}
               >
-                <span>💬</span>
-                <span>Написать продавцу</span>
+                <span>📋</span>
+                <span>Все чаты</span>
               </button>
             </div>
           </div>
@@ -712,7 +713,6 @@ const ProductDetailPage = () => {
             productId={productId}
             product={product}
             sellerId={product.seller_id}
-            buyerId={buyerId}
           />
         </div>
       </div>
