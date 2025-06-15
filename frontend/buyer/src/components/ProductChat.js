@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNotifications } from '../contexts/NotificationContext';
 import { apiService } from '../services/api';
 import { getChatWebSocketUrl } from '../utils/websocket';
+import { getCurrentBuyerId } from '../utils/auth';
 
-const ProductChat = ({ productId, product, sellerId, buyerId }) => {
-  console.log('[ProductChat] Props:', { productId, productTitle: product?.title || product?.neme, sellerId, buyerId });
+const ProductChat = ({ productId, product, sellerId, buyerId: propBuyerId }) => {
+  console.log('[ProductChat] Props:', { productId, productTitle: product?.title || product?.neme, sellerId, buyerId: propBuyerId });
 
   const { showError, showSuccess } = useNotifications();
   const [thread, setThread] = useState(null);
@@ -14,11 +15,13 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [hasExistingChat, setHasExistingChat] = useState(false);
+  const [buyerId, setBuyerId] = useState(null);
 
   const wsRef = useRef(null);
   const messagesEndRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const isConnectingRef = useRef(false);
+  const dataLoadedRef = useRef(false); // Отслеживаем, загружены ли данные
 
   const defaultMessage = useMemo(() =>
     `Заинтересовался вашим товаром "${product?.title || product?.neme || 'товар'}"`,
@@ -33,7 +36,7 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
     } catch (error) {
       console.error('Ошибка загрузки сообщений:', error);
     }
-  }, []);
+  }, []); // Нет зависимостей - функция стабильна
 
   const connectWebSocket = useCallback((threadId) => {
     console.log('[ProductChat] connectWebSocket: Called for threadId:', threadId, 'buyerId:', buyerId);
@@ -59,18 +62,34 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'message') {
-          setMessages(prev => [...prev, {
+          console.log('[ProductChat] WebSocket message received:', data);
+          console.log('[ProductChat] Current buyerId:', buyerId);
+
+          const newMessage = {
             id: data.message_id || Date.now(),
             message: data.message,
             sender_id: data.sender_id,
             sender_type: data.sender_type,
             created_at: data.timestamp,
             thread_id: data.thread_id,
-            buyer_id: data.sender_type === 'buyer' ? data.sender_id : buyerId,
-            seller_id: data.sender_type === 'seller' ? data.sender_id : sellerId,
+            buyer_id: data.sender_type === 'buyer' ? data.sender_id : null,
+            seller_id: data.sender_type === 'seller' ? data.sender_id : null,
             is_read_by_buyer: data.sender_type === 'buyer',
             is_read_by_seller: data.sender_type === 'seller'
-          }]);
+          };
+
+          console.log('[ProductChat] Processed message:', newMessage);
+
+          // Проверяем, нет ли уже такого сообщения
+          setMessages(prev => {
+            const exists = prev.some(msg => msg.id === newMessage.id);
+            if (exists) {
+              console.log('[ProductChat] WebSocket: Message already exists, skipping:', newMessage.id);
+              return prev;
+            }
+            console.log('[ProductChat] WebSocket: Adding new message:', newMessage.id);
+            return [...prev, newMessage];
+          });
         }
       } catch (error) {
         console.error('Ошибка обработки WebSocket сообщения:', error);
@@ -96,14 +115,15 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
       isConnectingRef.current = false;
       setIsConnected(false);
     };
-  }, [buyerId, sellerId]);
+  }, [buyerId, sellerId]); // Добавляем buyerId и sellerId как зависимости
 
   const loadChatData = useCallback(async () => {
     console.log('[ProductChat] loadChatData: Called');
-    if (!sellerId || !buyerId) return;
+    if (!sellerId || !buyerId || dataLoadedRef.current) return;
 
     try {
       setLoading(true);
+      dataLoadedRef.current = true; // Помечаем, что данные загружаются
       console.log('[ProductChat] loadChatData: Calling getBuyerChats for buyerId:', buyerId);
       const result = await apiService.getBuyerChats(buyerId);
       console.log('[ProductChat] loadChatData: getBuyerChats result:', result);
@@ -123,12 +143,8 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
         // This helps the UI reflect that no thread is active yet.
         setThread(null);
         setHasExistingChat(false); // Ensure this is false
-        if (!newMessage) { // Only set default if newMessage is empty
-             console.log('[ProductChat] loadChatData: Setting default message because no existing thread and newMessage is empty.');
-             setNewMessage(defaultMessage);
-        } else {
-            console.log('[ProductChat] loadChatData: No existing thread, but newMessage is already set, not overwriting.');
-        }
+        // Не устанавливаем defaultMessage здесь, чтобы избежать циклов
+        console.log('[ProductChat] loadChatData: No existing thread found.');
       }
     } catch (error) {
       console.error('[ProductChat] loadChatData: Error:', error);
@@ -137,7 +153,7 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
       setLoading(false);
       console.log('[ProductChat] loadChatData: Finished, setLoading to false.');
     }
-  }, [sellerId, buyerId, loadMessages, connectWebSocket, newMessage, defaultMessage]);
+  }, [sellerId, buyerId, loadMessages, connectWebSocket]); // Убираем newMessage и defaultMessage из зависимостей
 
 
   const createChatThread = async () => {
@@ -163,6 +179,14 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
     console.log('[ProductChat] handleSendMessage: Called with message:', newMessage);
+    console.log('[ProductChat] handleSendMessage: buyerId:', buyerId, 'sellerId:', sellerId);
+
+    if (!buyerId) {
+      console.error('[ProductChat] handleSendMessage: buyerId is not available');
+      showError('Ошибка аутентификации. Попробуйте обновить страницу.');
+      return;
+    }
+
     if (!newMessage.trim()) return;
 
     const messageText = newMessage.trim();
@@ -182,15 +206,20 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
         }
       }
 
-      const messageId = crypto.randomUUID();
+      // Генерируем UUID совместимым способом
+      const messageId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : ((r & 0x3) | 0x8);
+        return v.toString(16);
+      });
       const messageData = {
         id: messageId,
         message: messageText,
         is_read_by_buyer: true,
         is_read_by_seller: false,
         thread_id: currentThread.id,
-        buyer_id: buyerId,
-        seller_id: sellerId
+        buyer_id: buyerId,  // Покупатель отправляет - buyer_id заполнен
+        seller_id: null     // seller_id = null
       };
 
       console.log('[ProductChat] handleSendMessage: Calling sendMessage API with data:', messageData);
@@ -198,7 +227,9 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
       console.log('[ProductChat] handleSendMessage: sendMessage API result:', result);
 
       if (result) {
+        // Не добавляем сообщение локально - ждем эхо от WebSocket
         setNewMessage('');
+
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
            const wsMessage = { type: 'message', message: messageText, message_id: messageId, sender_id: buyerId, sender_type: 'buyer', thread_id: currentThread.id, timestamp: new Date().toISOString() };
            console.log('[ProductChat] handleSendMessage: Sending message via WebSocket:', wsMessage);
@@ -206,6 +237,7 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
         }
         if (!hasExistingChat) {
           showSuccess('Сообщение отправлено продавцу');
+          setHasExistingChat(true); // Теперь у нас есть чат
         }
       }
     } catch (error) {
@@ -221,9 +253,41 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
+  // Получаем настоящий buyer_id при загрузке компонента
   useEffect(() => {
-    loadChatData();
-  }, [loadChatData]);
+    if (buyerId) return; // Если уже есть buyerId, не загружаем повторно
+
+    const initializeBuyer = async () => {
+      try {
+        console.log('[ProductChat] initializeBuyer: Starting...');
+        const realBuyerId = await getCurrentBuyerId();
+        console.log('[ProductChat] initializeBuyer: Real buyer_id obtained:', realBuyerId);
+        setBuyerId(realBuyerId);
+      } catch (error) {
+        console.error('[ProductChat] initializeBuyer: Failed to get buyer_id:', error);
+        showError('Не удалось получить данные пользователя');
+      }
+    };
+
+    initializeBuyer();
+  }, [showError]); // Добавляем showError как зависимость
+
+  // Устанавливаем defaultMessage только один раз
+  useEffect(() => {
+    if (!newMessage && product?.title) {
+      setNewMessage(defaultMessage);
+    }
+  }, [product?.title, defaultMessage, newMessage]); // Добавляем зависимости
+
+  // Создаем ref для loadChatData, чтобы избежать циклов
+  const loadChatDataRef = useRef(loadChatData);
+  loadChatDataRef.current = loadChatData;
+
+  useEffect(() => {
+    if (buyerId && sellerId) {
+      loadChatDataRef.current();
+    }
+  }, [buyerId, sellerId]); // Теперь можем безопасно использовать зависимости
 
   useEffect(() => {
     scrollToBottom();
@@ -243,7 +307,8 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
     };
   }, []);
 
-  const chatDisabled = !loading && (!isConnected || !thread);
+  // Чат доступен если есть buyerId и sellerId (WebSocket и thread не обязательны)
+  const chatDisabled = !buyerId || !sellerId || loading;
 
   return (
     <div style={{
@@ -299,15 +364,18 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
             fontWeight: '600'
           }}>
             {loading && (
-              <div style={{ color: '#64748b', backgroundColor: '#f3f4f6' }}>Loading chat...</div>
+              <div style={{ color: '#64748b', backgroundColor: '#f3f4f6' }}>Загрузка чата...</div>
             )}
-            {!loading && !isConnected && !thread && (
-              <div style={{ color: '#ef4444', backgroundColor: '#fee2e2' }}>Chat unavailable</div>
+            {!loading && !buyerId && (
+              <div style={{ color: '#ef4444', backgroundColor: '#fee2e2' }}>Ошибка аутентификации</div>
             )}
-            {!loading && !isConnected && thread && (
-              <div style={{ color: '#f97316', backgroundColor: '#ffedd5' }}>Connecting... (Retrying)</div>
+            {!loading && buyerId && !thread && (
+              <div style={{ color: '#2563eb', backgroundColor: '#dbeafe' }}>Готов к общению</div>
             )}
-            {isConnected && thread && (
+            {!loading && buyerId && thread && !isConnected && (
+              <div style={{ color: '#f97316', backgroundColor: '#ffedd5' }}>Подключение...</div>
+            )}
+            {!loading && buyerId && thread && isConnected && (
               <div style={{ color: '#059669', backgroundColor: '#dcfce7', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{
                   width: '10px',
@@ -316,7 +384,7 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
                   backgroundColor: '#059669',
                   animation: 'pulse 2s infinite'
                 }} />
-                Connected
+                Подключен
               </div>
             )}
           </div>
@@ -349,6 +417,7 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
         ) : (
           <>
             {messages.map((message) => {
+              // Правильная логика: сравниваем с текущим buyerId
               const isOwnMessage = message.buyer_id === buyerId;
               return (
                 <div key={message.id} style={{ display: 'flex', justifyContent: isOwnMessage ? 'flex-end' : 'flex-start', marginBottom: '20px' }}>
@@ -380,8 +449,7 @@ const ProductChat = ({ productId, product, sellerId, buyerId }) => {
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder={
                   loading ? "Загрузка чата..." :
-                  !thread && !isConnected ? "Chat unavailable: Could not establish connection." :
-                  !isConnected && thread ? "Connecting to chat..." :
+                  !buyerId ? "Ошибка аутентификации..." :
                   hasExistingChat ? "Введите сообщение..." :
                   `Заинтересовался вашим товаром "${product?.title || product?.neme || 'товар'}"`
                 }

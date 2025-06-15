@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS } from '../utils/localization';
 import { getCurrentSellerKeycloakId } from '../utils/auth';
+import { getChatWebSocketUrl } from '../utils/websocket';
 
 function Chats() {
   const [selectedThread, setSelectedThread] = useState(null);
@@ -10,6 +11,12 @@ function Chats() {
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+
+  // WebSocket refs
+  const wsRef = useRef(null);
+  const isConnectingRef = useRef(false);
+  const reconnectTimeoutRef = useRef(null);
 
   // Get seller profile to get seller_id
   const keycloakId = getCurrentSellerKeycloakId();
@@ -19,11 +26,104 @@ function Chats() {
   );
   const sellerId = sellerProfile?.data?.id;
 
-  const { data: messages, loading: messagesLoading, refetch: refetchMessages } = useApi(
-    () => selectedThread ? apiService.getChatMessages(selectedThread.id) : Promise.resolve(null),
-    [selectedThread?.id] // Only depend on the ID, not the entire object
-  );
-  const { mutate, loading: sending } = useApiMutation();
+  // Локальное управление сообщениями (как у покупателя)
+  const [messages, setMessages] = useState([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  // Функция загрузки сообщений (как у покупателя)
+  const loadMessages = useCallback(async (threadId) => {
+    if (!threadId) return;
+    try {
+      setMessagesLoading(true);
+      const result = await apiService.getChatMessages(threadId, 0, 50);
+      setMessages(result.data || []);
+    } catch (error) {
+      console.error('Ошибка загрузки сообщений:', error);
+    } finally {
+      setMessagesLoading(false);
+    }
+  }, []);
+
+  // WebSocket connection
+  const connectWebSocket = useCallback((threadId) => {
+    if (!threadId || !sellerId || isConnectingRef.current) return;
+
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
+    isConnectingRef.current = true;
+    const wsUrl = getChatWebSocketUrl(threadId, sellerId, 'seller');
+    console.log('[Chats] Connecting to WebSocket:', wsUrl);
+    wsRef.current = new WebSocket(wsUrl);
+
+    wsRef.current.onopen = () => {
+      console.log('[Chats] WebSocket connected');
+      setIsConnected(true);
+      isConnectingRef.current = false;
+    };
+
+    wsRef.current.onmessage = (event) => {
+      console.log('[Chats] WebSocket message received:', event.data);
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'message') {
+          console.log('[Chats] WebSocket message received:', data);
+          console.log('[Chats] Current sellerId:', sellerId);
+
+          const newMessage = {
+            id: data.message_id || Date.now(),
+            message: data.message,
+            sender_id: data.sender_id,
+            sender_type: data.sender_type,
+            created_at: data.timestamp,
+            thread_id: data.thread_id,
+            buyer_id: data.sender_type === 'buyer' ? data.sender_id : null,
+            seller_id: data.sender_type === 'seller' ? data.sender_id : null,
+            is_read_by_buyer: data.sender_type === 'buyer',
+            is_read_by_seller: data.sender_type === 'seller'
+          };
+
+          console.log('[Chats] Processed message:', newMessage);
+
+          // Проверяем, нет ли уже такого сообщения
+          setMessages(prev => {
+            const exists = prev.some(msg => msg.id === newMessage.id);
+            if (exists) {
+              console.log('[Chats] WebSocket: Message already exists, skipping:', newMessage.id);
+              return prev;
+            }
+            console.log('[Chats] WebSocket: Adding new message:', newMessage.id);
+            return [...prev, newMessage];
+          });
+        }
+      } catch (error) {
+        console.error('[Chats] Error parsing WebSocket message:', error);
+      }
+    };
+
+    wsRef.current.onclose = () => {
+      console.log('[Chats] WebSocket closed');
+      isConnectingRef.current = false;
+      setIsConnected(false);
+
+      // Переподключение через 3 секунды
+      if (threadId && sellerId) {
+        reconnectTimeoutRef.current = setTimeout(() => {
+          console.log('[Chats] Attempting to reconnect WebSocket');
+          connectWebSocket(threadId);
+        }, 3000);
+      }
+    };
+
+    wsRef.current.onerror = (error) => {
+      console.error('[Chats] WebSocket error:', error);
+      isConnectingRef.current = false;
+      setIsConnected(false);
+    };
+  }, [sellerId]);
 
   // Мемоизируем функцию загрузки чатов продавца
   const loadChats = useCallback(async () => {
@@ -52,25 +152,91 @@ function Chats() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sellerId]); // Убираем loadChats из зависимостей чтобы избежать циклов
 
+  // Cleanup WebSocket при размонтировании компонента
+  useEffect(() => {
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      isConnectingRef.current = false;
+    };
+  }, []);
+
+  const handleThreadSelect = async (thread) => {
+    setSelectedThread(thread);
+
+    // Загружаем сообщения локально
+    await loadMessages(thread.id);
+
+    // Подключаем WebSocket для выбранного треда
+    connectWebSocket(thread.id);
+
+    // Отмечаем сообщения как прочитанные продавцом
+    try {
+      await apiService.markMessagesAsRead(thread.id, sellerId, 'seller');
+      console.log('Messages marked as read for seller');
+      // Обновляем список чатов, чтобы убрать счетчик непрочитанных
+      loadChats();
+    } catch (error) {
+      console.error('Failed to mark messages as read:', error);
+    }
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedThread) return;
 
+    const messageText = newMessage.trim();
+    setSending(true);
+
     try {
-      const messageId = crypto.randomUUID();
-      await mutate(() => apiService.sendMessage({
+      // Генерируем UUID совместимым способом
+      const messageId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : ((r & 0x3) | 0x8);
+        return v.toString(16);
+      });
+      const messageData = {
         id: messageId,
-        message: newMessage.trim(),
+        message: messageText,
         is_read_by_buyer: false,
         is_read_by_seller: true,
         thread_id: selectedThread.id,
-        buyer_id: selectedThread.buyer_id,
-        seller_id: sellerId
-      }));
-      setNewMessage('');
-      refetchMessages();
+        buyer_id: null,  // Продавец отправляет - buyer_id = null
+        seller_id: sellerId  // seller_id заполнен = отправитель
+      };
+
+      const result = await apiService.sendMessage(messageData);
+
+      if (result) {
+        // Не добавляем сообщение локально - ждем эхо от WebSocket
+        setNewMessage('');
+
+        // Отправляем через WebSocket если подключен
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          const wsMessage = {
+            type: 'message',
+            message: messageText,
+            message_id: messageId,
+            sender_id: sellerId,
+            sender_type: 'seller',
+            thread_id: selectedThread.id,
+            timestamp: new Date().toISOString()
+          };
+          console.log('[Chats] Sending message via WebSocket:', wsMessage);
+          wsRef.current.send(JSON.stringify(wsMessage));
+        }
+      }
     } catch (err) {
       console.error('Failed to send message:', err);
+      setNewMessage(messageText); // Восстанавливаем сообщение при ошибке
+    } finally {
+      setSending(false);
     }
   };
 
@@ -223,7 +389,7 @@ function Chats() {
                     {threads.map((thread) => (
                       <div
                         key={thread.id}
-                        onClick={() => setSelectedThread(thread)}
+                        onClick={() => handleThreadSelect(thread)}
                         style={{
                           padding: '20px',
                           backgroundColor: selectedThread?.id === thread.id ? '#dbeafe' : '#f9fafb',
@@ -354,7 +520,7 @@ function Chats() {
                         </div>
                       )}
 
-                      {messages?.data && messages.data.length > 0 ? (
+                      {messages && messages.length > 0 ? (
                         <div style={{
                           maxHeight: '350px',
                           overflowY: 'auto',
@@ -364,7 +530,8 @@ function Chats() {
                           borderRadius: '8px',
                           border: '1px solid #e5e7eb'
                         }}>
-                          {messages.data.reverse().map((message) => {
+                          {[...messages].reverse().map((message) => {
+                            // Правильная логика: сравниваем с текущим sellerId
                             const isOwnMessage = message.seller_id === sellerId;
                             return (
                               <div

@@ -1,17 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../contexts/NotificationContext';
 import { apiService } from '../services/api';
 import { BUYER_TEXTS } from '../utils/localization';
-import { MOCK_IDS } from '../utils/constants';
-
-// TODO: Replace with real authentication when ready for production
-const getCurrentBuyerKeycloakId = () => {
-  // Используем mock ID для разработки и тестирования
-  // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
-  console.warn('Using mock buyer keycloak ID for development/testing - implement real authentication when ready');
-  return MOCK_IDS.BUYER_ID;
-};
+import { getCurrentBuyerId } from '../utils/auth';
+import { getChatWebSocketUrl } from '../utils/websocket';
 
 function Chats() {
   const navigate = useNavigate();
@@ -19,15 +12,40 @@ function Chats() {
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [buyerId, setBuyerId] = useState(null);
+  const [selectedThread, setSelectedThread] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+
+  // WebSocket refs
+  const wsRef = useRef(null);
+  const isConnectingRef = useRef(false);
+  const reconnectTimeoutRef = useRef(null);
+
+  // Получаем buyer_id при загрузке компонента
+  useEffect(() => {
+    const initializeBuyer = async () => {
+      try {
+        const realBuyerId = await getCurrentBuyerId();
+        setBuyerId(realBuyerId);
+        console.log('[Chats] Real buyer_id obtained:', realBuyerId);
+      } catch (error) {
+        console.error('[Chats] Failed to get buyer_id:', error);
+        showError('Не удалось получить данные пользователя');
+      }
+    };
+
+    initializeBuyer();
+  }, [showError]);
 
   // Мемоизируем функцию загрузки чатов
   const loadChats = useCallback(async () => {
+    if (!buyerId) return;
+
     try {
       setLoading(true);
       setError(null);
 
-      const keycloakId = getCurrentBuyerKeycloakId();
-      const result = await apiService.getBuyerChatsByKeycloakId(keycloakId);
+      const result = await apiService.getBuyerChats(buyerId);
       setThreads(result.data || []);
 
     } catch (err) {
@@ -37,15 +55,107 @@ function Chats() {
     } finally {
       setLoading(false);
     }
-  }, [showError]);
+  }, [buyerId, showError]);
+
+  // WebSocket connection
+  const connectWebSocket = useCallback((threadId) => {
+    if (!threadId || !buyerId || isConnectingRef.current) return;
+
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
+    isConnectingRef.current = true;
+    const wsUrl = getChatWebSocketUrl(threadId, buyerId, 'buyer');
+    console.log('[Chats] Connecting to WebSocket:', wsUrl);
+    wsRef.current = new WebSocket(wsUrl);
+
+    wsRef.current.onopen = () => {
+      console.log('[Chats] WebSocket connected');
+      setIsConnected(true);
+      isConnectingRef.current = false;
+    };
+
+    wsRef.current.onmessage = (event) => {
+      console.log('[Chats] WebSocket message received:', event.data);
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'message') {
+          // Обновляем список чатов только если это сообщение от другого пользователя
+          if (data.sender_id !== buyerId) {
+            console.log('[Chats] Updating chat list for incoming message');
+            loadChats();
+          }
+        }
+      } catch (error) {
+        console.error('[Chats] Error parsing WebSocket message:', error);
+      }
+    };
+
+    wsRef.current.onclose = () => {
+      console.log('[Chats] WebSocket closed');
+      isConnectingRef.current = false;
+      setIsConnected(false);
+
+      // Переподключение через 3 секунды
+      if (threadId && buyerId) {
+        reconnectTimeoutRef.current = setTimeout(() => {
+          console.log('[Chats] Attempting to reconnect WebSocket');
+          connectWebSocket(threadId);
+        }, 3000);
+      }
+    };
+
+    wsRef.current.onerror = (error) => {
+      console.error('[Chats] WebSocket error:', error);
+      isConnectingRef.current = false;
+      setIsConnected(false);
+    };
+  }, [buyerId, loadChats]);
+
+  const handleThreadSelect = async (thread) => {
+    setSelectedThread(thread);
+
+    // Подключаем WebSocket для выбранного треда
+    connectWebSocket(thread.id);
+
+    // Отмечаем сообщения как прочитанные покупателем
+    try {
+      await apiService.markMessagesAsRead(thread.id, buyerId, 'buyer');
+      console.log('Messages marked as read for buyer');
+      // Обновляем список чатов, чтобы убрать счетчик непрочитанных
+      loadChats();
+    } catch (error) {
+      console.error('Failed to mark messages as read:', error);
+    }
+
+    // Переходим к чату
+    navigate(`/chats/${thread.id}`);
+  };
 
   useEffect(() => {
-    loadChats();
-  }, [loadChats]);
+    if (buyerId) {
+      loadChats();
+    }
+  }, [buyerId, loadChats]);
 
-  const handleChatClick = (threadId) => {
-    navigate(`/chats/${threadId}`);
-  };
+  // Cleanup WebSocket при размонтировании компонента
+  useEffect(() => {
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      isConnectingRef.current = false;
+    };
+  }, []);
+
+  // handleChatClick заменен на handleThreadSelect выше
 
   return (
     <div style={{
@@ -163,7 +273,7 @@ function Chats() {
                 {threads.map((thread) => (
                   <div
                     key={thread.id}
-                    onClick={() => handleChatClick(thread.id)}
+                    onClick={() => handleThreadSelect(thread)}
                     style={{
                       backgroundColor: 'white',
                       padding: '24px',

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { apiService } from '../../services/api';
 import { getChatWebSocketUrl } from '../../utils/websocket';
+import { getCurrentBuyerId } from '../../utils/auth';
 
 
 const ChatWindow = () => {
@@ -15,6 +16,9 @@ const ChatWindow = () => {
   const [threadInfo, setThreadInfo] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
 
   const wsRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -22,7 +26,23 @@ const ChatWindow = () => {
   const reconnectTimeoutRef = useRef(null);
   const isConnectingRef = useRef(false);
 
-  const buyerId = localStorage.getItem('buyer_id') || 'b8c8e1e0-1234-5678-9abc-def012345678';
+  const [buyerId, setBuyerId] = useState(null);
+
+  // Получаем buyer_id при загрузке компонента
+  useEffect(() => {
+    const initializeBuyer = async () => {
+      try {
+        const realBuyerId = await getCurrentBuyerId();
+        setBuyerId(realBuyerId);
+        console.log('[ChatWindow] Real buyer_id obtained:', realBuyerId);
+      } catch (error) {
+        console.error('[ChatWindow] Failed to get buyer_id:', error);
+        showError('Не удалось получить данные пользователя');
+      }
+    };
+
+    initializeBuyer();
+  }, [showError]);
 
   // Прокрутка к последнему сообщению
   const scrollToBottom = () => {
@@ -46,9 +66,11 @@ const ChatWindow = () => {
         setThreadInfo(threadData.data);
       }
 
-      // Загружаем сообщения через apiService
-      const messagesResult = await apiService.getChatMessages(threadId, 0, 50);
+      // Загружаем сообщения через apiService (первая страница)
+      const messagesResult = await apiService.getChatMessages(threadId, 0, 20);
       setMessages(messagesResult.data || []);
+      setHasMoreMessages((messagesResult.data || []).length === 20);
+      setCurrentPage(0);
 
     } catch (error) {
       console.error('Ошибка загрузки данных чата:', error);
@@ -57,6 +79,32 @@ const ChatWindow = () => {
       setIsLoading(false);
     }
   }, [threadId, showError]);
+
+  // Загрузка дополнительных сообщений (пагинация)
+  const loadMoreMessages = useCallback(async () => {
+    if (loadingMore || !hasMoreMessages) return;
+
+    try {
+      setLoadingMore(true);
+      const nextPage = currentPage + 1;
+      const messagesResult = await apiService.getChatMessages(threadId, nextPage, 20);
+      const newMessages = messagesResult.data || [];
+
+      if (newMessages.length > 0) {
+        // Добавляем новые сообщения в начало списка (старые сообщения)
+        setMessages(prev => [...newMessages, ...prev]);
+        setCurrentPage(nextPage);
+        setHasMoreMessages(newMessages.length === 20);
+      } else {
+        setHasMoreMessages(false);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки дополнительных сообщений:', error);
+      showError('Не удалось загрузить дополнительные сообщения');
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [threadId, currentPage, loadingMore, hasMoreMessages, showError]);
 
   // WebSocket подключение
   const connectWebSocket = useCallback(() => {
@@ -84,19 +132,34 @@ const ChatWindow = () => {
 
         switch (data.type) {
           case 'message':
-            // Добавляем новое сообщение
-            setMessages(prev => [...prev, {
+            console.log('[ChatWindow] WebSocket message received:', data);
+            console.log('[ChatWindow] Current buyerId:', buyerId);
+
+            const newMessage = {
               id: data.message_id || Date.now(),
               message: data.message,
               sender_id: data.sender_id,
               sender_type: data.sender_type,
               created_at: data.timestamp,
               thread_id: data.thread_id,
-              buyer_id: data.sender_type === 'buyer' ? data.sender_id : buyerId,
-              seller_id: data.sender_type === 'seller' ? data.sender_id : threadInfo?.seller_id,
+              buyer_id: data.sender_type === 'buyer' ? data.sender_id : null,
+              seller_id: data.sender_type === 'seller' ? data.sender_id : null,
               is_read_by_buyer: data.sender_type === 'buyer',
               is_read_by_seller: data.sender_type === 'seller'
-            }]);
+            };
+
+            console.log('[ChatWindow] Processed message:', newMessage);
+
+            // Проверяем, нет ли уже такого сообщения
+            setMessages(prev => {
+              const exists = prev.some(msg => msg.id === newMessage.id);
+              if (exists) {
+                console.log('[ChatWindow] WebSocket: Message already exists, skipping:', newMessage.id);
+                return prev;
+              }
+              console.log('[ChatWindow] WebSocket: Adding new message:', newMessage.id);
+              return [...prev, newMessage];
+            });
             break;
 
           case 'typing':
@@ -128,18 +191,13 @@ const ChatWindow = () => {
     };
 
     wsRef.current.onclose = () => {
-      console.log('WebSocket отключен');
+      console.log('[ChatWindow] WebSocket отключен');
       isConnectingRef.current = false;
       setIsConnected(false);
 
-      // Переподключение через 3 секунды только если компонент еще смонтирован
-      if (threadId && buyerId) {
-        reconnectTimeoutRef.current = setTimeout(() => {
-          if (threadId && buyerId) { // Двойная проверка
-            connectWebSocket();
-          }
-        }, 3000);
-      }
+      // Временно отключаем автоматическое переподключение
+      // чтобы избежать множественных соединений
+      console.log('[ChatWindow] WebSocket closed, not reconnecting automatically');
     };
 
     wsRef.current.onerror = (error) => {
@@ -147,7 +205,7 @@ const ChatWindow = () => {
       isConnectingRef.current = false;
       setIsConnected(false);
     };
-  }, [threadId, buyerId, threadInfo?.seller_id, showInfo]);
+  }, [threadId, buyerId, showInfo]);
 
   // Отправка сообщения
   const handleSendMessage = async (e) => {
@@ -159,26 +217,39 @@ const ChatWindow = () => {
 
     try {
       // Отправляем через REST API
-      const messageId = crypto.randomUUID();
+      // Генерируем UUID совместимым способом
+      const messageId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : ((r & 0x3) | 0x8);
+        return v.toString(16);
+      });
       const messageData = {
         id: messageId,
         message: messageText,
         is_read_by_buyer: true,
         is_read_by_seller: false,
         thread_id: threadId,
-        buyer_id: buyerId,
-        seller_id: threadInfo?.seller_id
+        buyer_id: buyerId,  // Покупатель отправляет - buyer_id заполнен
+        seller_id: null     // seller_id = null
       };
 
       const result = await apiService.sendMessage(messageData);
       if (result) {
+        // Не добавляем сообщение локально - ждем эхо от WebSocket
+
         // Отправляем через WebSocket для real-time обновления
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({
+          const wsMessage = {
             type: 'message',
             message: messageText,
-            message_id: messageId
-          }));
+            message_id: messageId,
+            sender_id: buyerId,
+            sender_type: 'buyer',
+            thread_id: threadId,
+            timestamp: new Date().toISOString()
+          };
+          console.log('[ChatWindow] Sending message via WebSocket:', wsMessage);
+          wsRef.current.send(JSON.stringify(wsMessage));
         }
       }
       
@@ -207,14 +278,17 @@ const ChatWindow = () => {
   };
 
   useEffect(() => {
-    loadChatData();
-  }, [loadChatData]);
+    if (buyerId) {
+      loadChatData();
+    }
+  }, [buyerId, loadChatData]);
 
   useEffect(() => {
-    if (threadInfo) {
+    if (threadInfo && buyerId && !wsRef.current) {
+      console.log('[ChatWindow] Connecting WebSocket for the first time');
       connectWebSocket();
     }
-  }, [threadInfo, connectWebSocket]);
+  }, [threadInfo, buyerId, connectWebSocket]);
 
   // Cleanup useEffect
   useEffect(() => {
@@ -332,6 +406,39 @@ const ChatWindow = () => {
           marginBottom: '20px',
           padding: '10px'
         }}>
+          {/* Кнопка загрузки дополнительных сообщений */}
+          {hasMoreMessages && messages.length > 0 && (
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <button
+                onClick={loadMoreMessages}
+                disabled={loadingMore}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#f3f4f6',
+                  color: '#374151',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '20px',
+                  fontSize: '14px',
+                  cursor: loadingMore ? 'not-allowed' : 'pointer',
+                  opacity: loadingMore ? 0.7 : 1,
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (!loadingMore) {
+                    e.target.style.backgroundColor = '#e5e7eb';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loadingMore) {
+                    e.target.style.backgroundColor = '#f3f4f6';
+                  }
+                }}
+              >
+                {loadingMore ? '⏳ Загрузка...' : '⬆️ Загрузить больше'}
+              </button>
+            </div>
+          )}
+
           {messages.length === 0 ? (
             <div style={{
               textAlign: 'center',
@@ -343,6 +450,7 @@ const ChatWindow = () => {
             </div>
           ) : (
             messages.map((message) => {
+              // Правильная логика: сравниваем с текущим buyerId
               const isOwnMessage = message.buyer_id === buyerId;
               return (
                 <div

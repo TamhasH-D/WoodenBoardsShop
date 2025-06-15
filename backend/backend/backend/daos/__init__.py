@@ -11,7 +11,7 @@ from backend.daos.seller_daos import SellerDAO
 from backend.daos.wood_type_daos import WoodTypeDAO
 from backend.daos.wood_type_price_daos import WoodTypePriceDAO
 from backend.daos.wooden_board_daos import WoodenBoardDAO
-from backend.db.db_dependencies import GetDBSession
+from backend.db.db_dependencies import GetDBSession, GetDBSessionWebSocket
 
 
 class AllDAOs:
@@ -79,4 +79,10 @@ def get_daos(session: GetDBSession) -> AllDAOs:
     return AllDAOs(session)
 
 
+def get_daos_websocket(session: GetDBSessionWebSocket) -> AllDAOs:
+    """Get DAOs instance for WebSocket connections."""
+    return AllDAOs(session)
+
+
 GetDAOs = Annotated[AllDAOs, Depends(get_daos)]
+GetDAOsWebSocket = Annotated[AllDAOs, Depends(get_daos_websocket)]
