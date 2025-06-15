@@ -1,68 +1,85 @@
 services:
   keycloak-postgres:
-    image: postgres:latest
+    image: postgres:15-alpine
     container_name: keycloak-postgres
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - keycloak_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT}:5432"
     networks:
-      - keycloak-network
-    healthcheck: # Added healthcheck for postgres
+      - diplom_default
+    healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   keycloak:
-    image: quay.io/keycloak/keycloak:latest # Consider versioning, e.g., quay.io/keycloak/keycloak:23.0
+    build: .
+    image: keycloak-custom:latest
     container_name: keycloak
     environment:
-      - KC_BOOTSTRAP_ADMIN_USERNAME=${KEYCLOAK_ADMIN}
-      - KC_BOOTSTRAP_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
-      - KC_DB=${KC_DB}
-      - KC_DB_URL=${KC_DB_URL} # e.g., jdbc:postgresql://keycloak-postgres:5432/${POSTGRES_DB}
-      - KC_DB_USERNAME=${KC_DB_USERNAME}
-      - KC_DB_PASSWORD=${KC_DB_PASSWORD}
-      # SMTP Variables
-      - KC_SMTP_SERVER_HOST=${KC_SMTP_SERVER_HOST}
-      - KC_SMTP_SERVER_PORT=${KC_SMTP_SERVER_PORT}
-      - KC_SMTP_FROM=${KC_SMTP_FROM}
-      - KC_SMTP_AUTH=${KC_SMTP_AUTH}
-      - KC_SMTP_USER=${KC_SMTP_USER}
-      - KC_SMTP_PASSWORD=${KC_SMTP_PASSWORD}
-      - KC_SMTP_STARTTLS=${KC_SMTP_STARTTLS}
-      - KC_SMTP_SSL=${KC_SMTP_SSL}
-      # Hostname Configuration
-      - KC_HOSTNAME_URL=${KC_HOSTNAME_URL}
-      - KC_HOSTNAME_STRICT_HTTPS=${KC_HOSTNAME_STRICT_HTTPS}
-
-      # Optional: Set Keycloak log level
-      # - KC_LOG_LEVEL=INFO
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KC_DB_SCHEMA: public
+      KC_HEALTH_ENABLED: "true"
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME_URL: ${KC_HOSTNAME_URL}
+      KC_HOSTNAME_STRICT_HTTPS: ${KC_HOSTNAME_STRICT_HTTPS}
+      # SMTP Configuration
+      KC_SMTP_SERVER_HOST: ${KC_SMTP_SERVER_HOST}
+      KC_SMTP_SERVER_PORT: ${KC_SMTP_SERVER_PORT}
+      KC_SMTP_FROM: ${KC_SMTP_FROM}
+      KC_SMTP_AUTH: ${KC_SMTP_AUTH}
+      KC_SMTP_USER: ${KC_SMTP_USER}
+      KC_SMTP_PASSWORD: ${KC_SMTP_PASSWORD}
+      KC_SMTP_STARTTLS: ${KC_SMTP_STARTTLS}
+      KC_SMTP_SSL: ${KC_SMTP_SSL}
     ports:
       - "${KEYCLOAK_PORT}:8080"
     depends_on:
-      keycloak-postgres: # Ensuring postgres is healthy before keycloak starts
+      keycloak-postgres:
         condition: service_healthy
     command:
-      - start-dev # Changed from start-dev
-    volumes:
-      - ./data-to-import/realms:/opt/keycloak/data/import/ # Adjusted path
+      - start-dev
     networks:
-      - keycloak-network
-    healthcheck: # Added healthcheck for Keycloak
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s # Give Keycloak time to start up before healthchecks begin
+      - diplom_default
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/bin/bash",
+          "-c",
+          "exec 3<>/dev/tcp/localhost/8080; echo -e 'GET /health/ready HTTP/1.1\\nHost: localhost\\nConnection: close\\n' >&3; grep '200 OK' <&3 || exit 1"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  keycloak-setup:
+    build:
+      context: .
+      dockerfile: Dockerfile.setup
+    container_name: keycloak-setup
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    networks:
+      - diplom_default
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
+      ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+
+
 
 volumes:
   keycloak_data:
-
-networks:
-  keycloak-network:
-    driver: bridge
-

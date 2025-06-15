@@ -1,0 +1,14 @@
+# Dockerfile for Keycloak setup container
+FROM alpine:latest
+
+# Install curl and bash
+RUN apk add --no-cache curl bash
+
+# Copy setup script
+COPY scripts/setup-keycloak-container.sh /setup-keycloak.sh
+
+# Make script executable
+RUN chmod +x /setup-keycloak.sh
+
+# Set entrypoint
+ENTRYPOINT ["/setup-keycloak.sh"]
