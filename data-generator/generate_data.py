@@ -630,6 +630,10 @@ class DataGenerator:
                         ]
                         message_text += random.choice(personal_touches)
 
+                    # Новая логика: отправитель - покупатель (buyer_id заполнен, seller_id = NULL)
+                    sender_buyer_id = thread_data['buyer_id']
+                    sender_seller_id = None
+
                 else:
                     message_text = random.choice(CHAT_MESSAGES_SELLER)
                     is_read_by_buyer = random.choice([True, False])
@@ -639,6 +643,10 @@ class DataGenerator:
                     if random.random() < 0.15:  # 15% сообщений с личностью
                         personality = random.choice(SELLER_PERSONALITIES)
                         message_text += f" {personality}"
+
+                    # Новая логика: отправитель - продавец (seller_id заполнен, buyer_id = NULL)
+                    sender_buyer_id = None
+                    sender_seller_id = thread_data['seller_id']
 
                 # Добавляем случайные города в сообщения
                 if '{city}' in message_text:
@@ -650,8 +658,8 @@ class DataGenerator:
                     'is_read_by_buyer': is_read_by_buyer,
                     'is_read_by_seller': is_read_by_seller,
                     'thread_id': thread_data['id'],
-                    'buyer_id': thread_data['buyer_id'],
-                    'seller_id': thread_data['seller_id']
+                    'buyer_id': sender_buyer_id,
+                    'seller_id': sender_seller_id
                 }
 
                 try:
