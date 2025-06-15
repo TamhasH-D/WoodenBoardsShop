@@ -1,12 +1,18 @@
-version: '3'
-
 services:
     medama:
         image: ghcr.io/medama-io/medama:latest
         ports:
-            - "8070:8080"
+            - "${MEDAMA_PORT:-8070}:8080"
         volumes:
             - medama-data:/app/data
+        environment:
+        networks:
+            - diplom_default
 
 volumes:
     medama-data:
+
+networks:
+    diplom_default:
+        name: diplom_default
+        external: true

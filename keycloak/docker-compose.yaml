@@ -83,3 +83,8 @@ services:
 
 volumes:
   keycloak_data:
+
+networks:
+  diplom_default:
+    name: diplom_default
+    external: true
