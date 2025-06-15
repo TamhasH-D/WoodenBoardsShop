@@ -25,7 +25,13 @@ class BaseOrmModel(BaseModel):
 class DataResponse(BaseModel, Generic[T]):
     """Model for response data."""
 
-    data: Union[T, None] = None
+    data: Union[T, int, str, float, bool, None] = None
+
+
+class ListDataResponse(BaseModel, Generic[T]):
+    """Model for response data containing a list."""
+
+    data: list[T] = []
 
 
 class CreatedResponse(BaseModel):

@@ -26,4 +26,4 @@ base_router.include_router(wooden_board_router, tags=["wooden_board"])
 base_router.include_router(image_router, tags=["image"])
 base_router.include_router(chat_thread_router, tags=["chat_thread"])
 base_router.include_router(chat_message_router, tags=["chat_message"])
-base_router.include_router(websocket_router, tags=["websocket"])
+# WebSocket router НЕ включаем в base_router, так как он должен быть на корневом уровне

@@ -64,6 +64,8 @@ async def get_buyer(
 ) -> DataResponse[BuyerDTO]:
     """Get a Buyer by id."""
     buyer = await daos.buyer.filter_first(id=buyer_id)
+    if buyer is None:
+        raise HTTPException(status_code=404, detail="Buyer not found")
     return DataResponse(data=BuyerDTO.model_validate(buyer))
 
 

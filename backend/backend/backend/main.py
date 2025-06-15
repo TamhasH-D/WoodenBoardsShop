@@ -7,6 +7,7 @@ from loguru import logger
 from backend.db import db_lifetime
 from backend.middleware import add_middleware
 from backend.routes import base_router
+from backend.routes.websocket_routes import router as websocket_router
 from backend.services.redis import redis_lifetime
 from backend.settings import settings
 
@@ -35,4 +36,5 @@ def get_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
     add_middleware(app)
     app.include_router(base_router)
+    app.include_router(websocket_router)  # WebSocket router на корневом уровне
     return app
