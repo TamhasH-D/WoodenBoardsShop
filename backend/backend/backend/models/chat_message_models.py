@@ -29,21 +29,25 @@ class ChatMessage(Base):
         sa.ForeignKey("chat_thread.id", ondelete="CASCADE"),
         index=True,
     )
-    buyer_id: Mapped[UUID] = mapped_column(
-        sa.UUID(as_uuid=True), sa.ForeignKey("buyer.id", ondelete="CASCADE"), index=True
+    buyer_id: Mapped[UUID | None] = mapped_column(
+        sa.UUID(as_uuid=True),
+        sa.ForeignKey("buyer.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True
     )
-    seller_id: Mapped[UUID] = mapped_column(
+    seller_id: Mapped[UUID | None] = mapped_column(
         sa.UUID(as_uuid=True),
         sa.ForeignKey("seller.id", ondelete="CASCADE"),
+        nullable=True,
         index=True,
     )
 
     thread: Mapped[ChatThread] = relationship(
         foreign_keys=[thread_id], back_populates="chat_message", uselist=False
     )
-    buyer: Mapped[Buyer] = relationship(
+    buyer: Mapped[Buyer | None] = relationship(
         foreign_keys=[buyer_id], back_populates="chat_message", uselist=False
     )
-    seller: Mapped[Seller] = relationship(
+    seller: Mapped[Seller | None] = relationship(
         foreign_keys=[seller_id], back_populates="chat_message", uselist=False
     )

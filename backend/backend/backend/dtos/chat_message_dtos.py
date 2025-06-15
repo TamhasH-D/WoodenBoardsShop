@@ -15,8 +15,8 @@ class ChatMessageDTO(BaseOrmModel):
     is_read_by_seller: bool
     created_at: datetime
     thread_id: UUID
-    buyer_id: UUID
-    seller_id: UUID
+    buyer_id: UUID | None
+    seller_id: UUID | None
 
 
 class ChatMessageInputDTO(BaseModel):
@@ -27,8 +27,8 @@ class ChatMessageInputDTO(BaseModel):
     is_read_by_buyer: bool = False
     is_read_by_seller: bool = False
     thread_id: UUID
-    buyer_id: UUID
-    seller_id: UUID
+    buyer_id: UUID | None = None
+    seller_id: UUID | None = None
 
 
 class ChatMessageUpdateDTO(BaseModel):

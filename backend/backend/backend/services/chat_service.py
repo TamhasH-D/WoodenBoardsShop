@@ -65,12 +65,23 @@ class ChatService:
         thread = await self.daos.chat_thread.filter_first(id=message_input.thread_id)
         if not thread:
             raise ValueError("Chat thread not found")
-        
-        # Проверяем, что пользователь является участником треда
-        if (message_input.buyer_id != thread.buyer_id and 
-            message_input.seller_id != thread.seller_id):
-            raise ValueError("User is not a participant of this chat thread")
-        
+
+        # Проверяем, что указан только один отправитель (buyer_id ИЛИ seller_id, но не оба)
+        if (message_input.buyer_id is not None and message_input.seller_id is not None):
+            raise ValueError("Message can have only one sender (buyer_id OR seller_id)")
+
+        if (message_input.buyer_id is None and message_input.seller_id is None):
+            raise ValueError("Message must have a sender (buyer_id OR seller_id)")
+
+        # Проверяем, что отправитель является участником треда
+        if message_input.buyer_id is not None:
+            if message_input.buyer_id != thread.buyer_id:
+                raise ValueError("Buyer is not a participant of this chat thread")
+
+        if message_input.seller_id is not None:
+            if message_input.seller_id != thread.seller_id:
+                raise ValueError("Seller is not a participant of this chat thread")
+
         return await self.daos.chat_message.create(message_input)
 
     async def get_thread_messages(self, thread_id: UUID, limit: int = 50) -> list[ChatMessage]:

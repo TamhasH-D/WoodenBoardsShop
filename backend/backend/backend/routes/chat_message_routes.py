@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from backend.daos import GetDAOs
 from backend.dtos import (
     DataResponse,
+    ListDataResponse,
     EmptyResponse,
     OffsetResults,
     Pagination,
@@ -26,8 +27,12 @@ async def create_chat_message(
     daos: GetDAOs,
 ) -> DataResponse[ChatMessageDTO]:
     """Create a new ChatMessage."""
-    created_obj = await daos.chat_message.create(input_dto)
-    return DataResponse(data=ChatMessageDTO.model_validate(created_obj))
+    chat_service = ChatService(daos)
+    try:
+        created_obj = await chat_service.send_message(input_dto)
+        return DataResponse(data=ChatMessageDTO.model_validate(created_obj))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.patch("/{chat_message_id}")
@@ -68,11 +73,11 @@ async def get_thread_messages(
     thread_id: UUID,
     daos: GetDAOs,
     limit: int = 50,
-) -> DataResponse[list[ChatMessageDTO]]:
+) -> ListDataResponse[ChatMessageDTO]:
     """Get messages for a specific thread."""
     chat_service = ChatService(daos)
     messages = await chat_service.get_thread_messages(thread_id, limit)
-    return DataResponse(data=[ChatMessageDTO.model_validate(msg) for msg in messages])
+    return ListDataResponse(data=[ChatMessageDTO.model_validate(msg) for msg in messages])
 
 
 @router.patch("/{thread_id}/mark-read")

@@ -25,52 +25,82 @@ class ChatMessageDAO(
 
     async def mark_as_read_by_buyer(self, thread_id: UUID, buyer_id: UUID) -> None:
         """Mark all messages in thread as read by buyer."""
-        # Получаем сообщения для обновления
-        messages = await self.filter(
-            thread_id=thread_id,
-            buyer_id=buyer_id,
-            is_read_by_buyer=False
-        )
+        # Используем прямой SQL запрос для обновления сообщений от продавца
+        from sqlalchemy import text
 
-        # Обновляем каждое сообщение
-        for message in messages:
-            update_dto = ChatMessageUpdateDTO(is_read_by_buyer=True)
-            await self.update(message.id, update_dto)
+        query = text("""
+            UPDATE chat_message
+            SET is_read_by_buyer = true
+            WHERE thread_id = :thread_id
+            AND is_read_by_buyer = false
+            AND seller_id IS NOT NULL
+            AND buyer_id IS NULL
+        """)
+
+        await self.session.execute(query, {"thread_id": thread_id})
+        await self.session.commit()
 
     async def mark_as_read_by_seller(self, thread_id: UUID, seller_id: UUID) -> None:
         """Mark all messages in thread as read by seller."""
-        # Получаем сообщения для обновления
-        messages = await self.filter(
-            thread_id=thread_id,
-            seller_id=seller_id,
-            is_read_by_seller=False
-        )
+        # Используем прямой SQL запрос для обновления сообщений от покупателя
+        from sqlalchemy import text
 
-        # Обновляем каждое сообщение
-        for message in messages:
-            update_dto = ChatMessageUpdateDTO(is_read_by_seller=True)
-            await self.update(message.id, update_dto)
+        query = text("""
+            UPDATE chat_message
+            SET is_read_by_seller = true
+            WHERE thread_id = :thread_id
+            AND is_read_by_seller = false
+            AND buyer_id IS NOT NULL
+            AND seller_id IS NULL
+        """)
+
+        await self.session.execute(query, {"thread_id": thread_id})
+        await self.session.commit()
 
     async def count_unread_for_buyer(self, buyer_id: UUID, thread_id: UUID | None = None) -> int:
-        """Count unread messages for buyer."""
-        filter_params = {
-            "buyer_id": buyer_id,
-            "is_read_by_buyer": False
-        }
-        if thread_id:
-            filter_params["thread_id"] = thread_id
+        """Count unread messages for buyer - сообщения от продавца, которые покупатель не прочитал."""
+        from sqlalchemy import text
 
-        messages = await self.filter(**filter_params)
-        return len(messages)
+        if thread_id:
+            query = text("""
+                SELECT COUNT(*) FROM chat_message
+                WHERE thread_id = :thread_id
+                AND is_read_by_buyer = false
+                AND seller_id IS NOT NULL
+                AND buyer_id IS NULL
+            """)
+            result = await self.session.execute(query, {"thread_id": thread_id})
+        else:
+            query = text("""
+                SELECT COUNT(*) FROM chat_message
+                WHERE is_read_by_buyer = false
+                AND seller_id IS NOT NULL
+                AND buyer_id IS NULL
+            """)
+            result = await self.session.execute(query)
+
+        return result.scalar() or 0
 
     async def count_unread_for_seller(self, seller_id: UUID, thread_id: UUID | None = None) -> int:
-        """Count unread messages for seller."""
-        filter_params = {
-            "seller_id": seller_id,
-            "is_read_by_seller": False
-        }
-        if thread_id:
-            filter_params["thread_id"] = thread_id
+        """Count unread messages for seller - сообщения от покупателя, которые продавец не прочитал."""
+        from sqlalchemy import text
 
-        messages = await self.filter(**filter_params)
-        return len(messages)
+        if thread_id:
+            query = text("""
+                SELECT COUNT(*) FROM chat_message
+                WHERE thread_id = :thread_id
+                AND is_read_by_seller = false
+                AND buyer_id IS NOT NULL
+                AND seller_id IS NULL
+            """)
+            result = await self.session.execute(query, {"thread_id": thread_id})
+        else:
+            query = text("""
+                SELECT COUNT(*) FROM chat_message
+                WHERE is_read_by_seller = false
+                AND buyer_id IS NOT NULL
+                AND seller_id IS NULL
+            """)
+            result = await self.session.execute(query)
+
+        return result.scalar() or 0

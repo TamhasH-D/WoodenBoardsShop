@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from backend.daos import GetDAOs
 from backend.dtos import (
     DataResponse,
+    ListDataResponse,
     EmptyResponse,
     OffsetResults,
     Pagination,
@@ -82,22 +83,22 @@ async def start_chat_with_seller(
 async def get_buyer_chats(
     buyer_id: UUID,
     daos: GetDAOs,
-) -> DataResponse[list[ChatThreadWithLastMessageDTO]]:
+) -> ListDataResponse[ChatThreadWithLastMessageDTO]:
     """Get all chat threads for a buyer with last message info."""
     chat_service = ChatService(daos)
     threads = await chat_service.get_buyer_chats(buyer_id)
-    return DataResponse(data=threads)
+    return ListDataResponse(data=threads)
 
 
 @router.get("/by-seller/{seller_id}")
 async def get_seller_chats(
     seller_id: UUID,
     daos: GetDAOs,
-) -> DataResponse[list[ChatThreadWithLastMessageDTO]]:
+) -> ListDataResponse[ChatThreadWithLastMessageDTO]:
     """Get all chat threads for a seller with last message info."""
     chat_service = ChatService(daos)
     threads = await chat_service.get_seller_chats(seller_id)
-    return DataResponse(data=threads)
+    return ListDataResponse(data=threads)
 
 
 @router.get("/{chat_thread_id}")
