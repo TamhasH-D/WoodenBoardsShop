@@ -20,10 +20,7 @@ export const ADMIN_TEXTS = {
   CHAT_THREADS: 'Чат-потоки',
   MESSAGES: 'Сообщения',
   ANALYTICS: 'Аналитика',
-  TOOLS: 'Инструменты',
-  DATA_EXPORT: 'Экспорт данных',
-  DATA_IMPORT: 'Импорт данных',
-  API_TESTER: 'Тестер API',
+
   SYSTEM: 'Система',
   HEALTH_CHECK: 'Проверка состояния',
   SYSTEM_LOGS: 'Системные логи',

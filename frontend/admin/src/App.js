@@ -9,7 +9,7 @@ import ProductsPage from './pages/ProductsPage';
 import CommunicationPage from './pages/CommunicationPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import MediaPage from './pages/MediaPage';
-import ToolsPage from './pages/ToolsPage';
+
 import SystemPage from './pages/SystemPage';
 import ApiTestPage from './pages/ApiTestPage';
 import ToastContainer from './components/ui/ToastContainer';
@@ -29,7 +29,7 @@ function AppWithToast() {
             <Route path="/communication/*" element={<CommunicationPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/media/*" element={<MediaPage />} />
-            <Route path="/tools/*" element={<ToolsPage />} />
+
             <Route path="/system/*" element={<SystemPage />} />
             <Route path="/api-test" element={<ApiTestPage />} />
           </Routes>

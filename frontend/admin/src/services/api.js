@@ -571,6 +571,14 @@ export const apiService = {
     return response.data;
   },
 
+  // Get image file by ID (optimized for display)
+  async getImageFile(id) {
+    const response = await api.get(`/api/v1/images/${id}/file`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  },
+
   async createImage(imageData) {
     // Генерируем UUID если не передан
     const payload = {
@@ -721,6 +729,8 @@ export const apiService = {
     });
   },
 
+
+
   // Bulk operations
   async bulkDeleteBuyers(ids) {
     const promises = ids.map(id => this.deleteBuyer(id));
@@ -767,64 +777,7 @@ export const apiService = {
     return Promise.all(promises);
   },
 
-  // System analytics and stats
-  async getSystemStats() {
-    try {
-      const analytics = await this.getSystemAnalytics();
 
-      // Calculate statistics using totals from pagination and sample data for calculations
-      const stats = {
-        buyers: {
-          total: analytics.totals.buyers,
-          online: analytics.buyers.filter(b => b.is_online).length
-        },
-        sellers: {
-          total: analytics.totals.sellers,
-          online: analytics.sellers.filter(s => s.is_online).length
-        },
-        products: {
-          total: analytics.totals.products,
-          // Use sample data for volume/value calculations (first 20 items)
-          totalVolume: analytics.products.reduce((sum, p) => sum + (p.volume || 0), 0),
-          totalValue: analytics.products.reduce((sum, p) => sum + (p.price || 0), 0)
-        },
-        woodTypes: {
-          total: analytics.totals.woodTypes
-        },
-        prices: {
-          total: analytics.totals.prices,
-          avgPrice: analytics.prices.length > 0
-            ? analytics.prices.reduce((sum, p) => sum + (p.price_per_m3 || 0), 0) / analytics.prices.length
-            : 0
-        },
-        boards: {
-          total: analytics.totals.boards
-        },
-        images: {
-          total: analytics.totals.images
-        },
-        communication: {
-          threads: analytics.totals.threads,
-          messages: analytics.totals.messages
-        }
-      };
-
-      return stats;
-    } catch (error) {
-      console.error('Failed to get system stats:', error);
-      // Return default stats if analytics fails
-      return {
-        buyers: { total: 0, online: 0 },
-        sellers: { total: 0, online: 0 },
-        products: { total: 0, totalVolume: 0, totalValue: 0 },
-        woodTypes: { total: 0 },
-        prices: { total: 0, avgPrice: 0 },
-        boards: { total: 0 },
-        images: { total: 0 },
-        communication: { threads: 0, messages: 0 }
-      };
-    }
-  },
 
   async getSystemAnalytics() {
     try {
@@ -885,136 +838,11 @@ export const apiService = {
     }
   },
 
-  // Demo/Redis operations for testing and debugging
-  async setRedisValue(key, value) {
-    const response = await api.post('/api/v1/demo/set-redis', null, {
-      params: { key, value }
-    });
-    return response.data;
-  },
 
-  async getRedisValue(key) {
-    const response = await api.get('/api/v1/demo/get-redis', {
-      params: { key }
-    });
-    return response.data;
-  },
 
-  // Board Volume Calculator - special endpoint for board analysis
-  async calculateBoardVolume(imageFile, boardHeight = 0.0, boardLength = 0.0) {
-    const formData = new FormData();
-    formData.append('image', imageFile);
 
-    const response = await api.post(
-      `/api/v1/wooden-boards/calculate-volume?board_height=${boardHeight}&board_length=${boardLength}`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
-    return response.data;
-  },
 
-  // Enhanced health check with detailed system information
-  async getDetailedHealthCheck() {
-    try {
-      const [healthCheck, systemStats] = await Promise.all([
-        this.healthCheck(),
-        this.getSystemStats()
-      ]);
 
-      return {
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        backend: healthCheck,
-        system: systemStats,
-        services: {
-          database: 'connected',
-          redis: 'connected',
-          api: 'operational'
-        }
-      };
-    } catch (error) {
-      return {
-        status: 'unhealthy',
-        timestamp: new Date().toISOString(),
-        error: error.message,
-        services: {
-          database: 'unknown',
-          redis: 'unknown',
-          api: 'error'
-        }
-      };
-    }
-  },
-
-  // Data export functionality - exports complete datasets
-  async exportData(entityType, format = 'json') {
-    let data;
-
-    switch (entityType) {
-      case 'buyers':
-        data = await this.getAllBuyers(); // Export complete dataset
-        break;
-      case 'sellers':
-        data = await this.getAllSellers();
-        break;
-      case 'products':
-        data = await this.getAllProducts();
-        break;
-      case 'woodTypes':
-        data = await this.getAllWoodTypes();
-        break;
-      case 'prices':
-        data = await this.getAllWoodTypePrices();
-        break;
-      case 'boards':
-        data = await this.getAllWoodenBoards();
-        break;
-      case 'images':
-        data = await this.getAllImages();
-        break;
-      case 'threads':
-        data = await this.getAllChatThreads();
-        break;
-      case 'messages':
-        data = await this.getAllChatMessages();
-        break;
-      default:
-        throw new Error(`Unknown entity type: ${entityType}`);
-    }
-
-    if (format === 'csv') {
-      return this.convertToCSV(data.data || []);
-    }
-
-    return data;
-  },
-
-  // Convert data to CSV format
-  convertToCSV(data) {
-    if (!data || data.length === 0) {
-      return '';
-    }
-
-    const headers = Object.keys(data[0]);
-    const csvHeaders = headers.join(',');
-
-    const csvRows = data.map(row => {
-      return headers.map(header => {
-        const value = row[header];
-        // Escape commas and quotes in CSV
-        if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
-          return `"${value.replace(/"/g, '""')}"`;
-        }
-        return value;
-      }).join(',');
-    });
-
-    return [csvHeaders, ...csvRows].join('\n');
-  },
 };
 
 export default api;
