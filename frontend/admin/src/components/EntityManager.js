@@ -10,6 +10,7 @@ import Table from './ui/Table';
 import Pagination from './ui/Pagination';
 import Modal from './ui/Modal';
 import LoadingSpinner from './ui/LoadingSpinner';
+import ImageViewer from './ImageViewer';
 import toast from 'react-hot-toast';
 import {
   PlusIcon,
@@ -160,9 +161,11 @@ const ENTITY_CONFIGS = {
       { key: 'id', label: 'ID', type: 'uuid', readonly: true, showInCreate: true, optional: true,
         placeholder: 'Оставьте пустым для автогенерации',
         helperText: 'UUID будет сгенерирован автоматически, если не указан' },
-      { key: 'image_path', label: 'Image Path', type: 'text', required: true },
-      { key: 'product_id', label: 'Product', type: 'select', required: true,
-        options: 'products', optionValue: 'id', optionLabel: 'title' }
+      { key: 'image_path', label: 'Файл', type: 'text', required: true },
+      { key: 'product_id', label: 'Товар', type: 'select', required: true,
+        options: 'products', optionValue: 'id', optionLabel: 'title' },
+      { key: 'created_at', label: 'Создано', type: 'datetime', readonly: true },
+      { key: 'updated_at', label: 'Обновлено', type: 'datetime', readonly: true }
     ],
     api: {
       getAll: (page, size) => apiService.getImages(page, size),
@@ -263,12 +266,16 @@ function EntityManager({ entityType }) {
   );
   const { mutate, loading: mutating } = useApiMutation();
 
-  // Load reference data for select fields
+  // Load reference data for select fields (only load what's needed)
   const { data: woodTypes } = useApi(() => apiService.getAllWoodTypes(), []);
   const { data: sellers } = useApi(() => apiService.getAllSellers(), []);
   const { data: buyers } = useApi(() => apiService.getAllBuyers(), []);
   const { data: products } = useApi(() => apiService.getAllProducts(), []);
-  const { data: images } = useApi(() => apiService.getAllImages(), []);
+  // Don't load all images for reference - too many records (2500+)
+  const { data: images } = useApi(() =>
+    entityType === 'wooden_boards' ? apiService.getImages(0, 100) : Promise.resolve({ data: [] }),
+    [entityType]
+  );
   const { data: threads } = useApi(() => apiService.getAllChatThreads(), []);
 
   const referenceData = {
@@ -409,7 +416,19 @@ function EntityManager({ entityType }) {
     .map(field => ({
       key: field.key,
       header: field.label,
-      render: (value, _row) => {
+      render: (value, row) => {
+        // Special handling for images
+        if (entityType === 'images' && field.key === 'image_path') {
+          const productTitle = referenceData.products.find(p => p.id === row.product_id)?.title;
+          return (
+            <ImageViewer
+              imageId={row.id}
+              imagePath={value}
+              productTitle={productTitle}
+            />
+          );
+        }
+
         if (field.type === 'datetime' && value) {
           return new Date(value).toLocaleString('ru-RU');
         }
