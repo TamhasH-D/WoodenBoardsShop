@@ -7,9 +7,9 @@
 KCADM_CMD="/opt/keycloak/bin/kcadm.sh" # Common path, but might vary
 
 ADMIN_USERNAME="admin"
-ADMIN_PASSWORD="admin_password" # Replace with your actual admin password
-KEYCLOAK_SERVER_URL="http://localhost:8080" # Default Keycloak URL
-REALM_NAMES=("UserRealm1" "UserRealm2" "UserRealm3")
+ADMIN_PASSWORD="admin" # Our actual admin password
+KEYCLOAK_SERVER_URL="http://localhost:8030" # Our Keycloak URL
+REALM_NAMES=("AdminRealm" "BuyerRealm" "SellerRealm")
 
 # --- Helper Function for Output ---
 log_message() {
