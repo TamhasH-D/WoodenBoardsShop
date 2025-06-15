@@ -567,6 +567,16 @@ export const apiService = {
     }
   },
 
+  async markMessagesAsRead(threadId, userId, userType) {
+    try {
+      const response = await api.patch(`/api/v1/chat-messages/${threadId}/mark-read?user_id=${userId}&user_type=${userType}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to mark messages as read:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   // Send message by keycloak_id (gets buyer_id first)
   async sendMessageByKeycloakId(keycloakId, messageData) {
     try {

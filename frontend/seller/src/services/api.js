@@ -891,6 +891,16 @@ export const apiService = {
     }
   },
 
+  async markMessagesAsRead(threadId, userId, userType) {
+    try {
+      const response = await api.patch(`/api/v1/chat-messages/${threadId}/mark-read?user_id=${userId}&user_type=${userType}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to mark messages as read:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   async createChatThread(threadData) {
     // Генерируем UUID если не передан
     const payload = threadData.id ? threadData : withUUID(threadData, ENTITY_TYPES.CHAT_THREAD);
