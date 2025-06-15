@@ -6,6 +6,45 @@ import { BUYER_TEXTS } from '../utils/localization';
 import { getCurrentBuyerId } from '../utils/auth';
 import { getChatWebSocketUrl } from '../utils/websocket';
 
+// Профессиональные иконки
+const Icons = {
+  Search: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="11" cy="11" r="8"/>
+      <path d="21 21l-4.35-4.35"/>
+    </svg>
+  ),
+  Message: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  ),
+  Send: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="22" y1="2" x2="11" y2="13"/>
+      <polygon points="22,2 15,22 11,13 2,9 22,2"/>
+    </svg>
+  ),
+  Online: () => (
+    <div style={{
+      width: '8px',
+      height: '8px',
+      borderRadius: '50%',
+      backgroundColor: '#10b981',
+      border: '2px solid white'
+    }} />
+  ),
+  Offline: () => (
+    <div style={{
+      width: '8px',
+      height: '8px',
+      borderRadius: '50%',
+      backgroundColor: '#6b7280',
+      border: '2px solid white'
+    }} />
+  )
+};
+
 function Chats() {
   const navigate = useNavigate();
   const { showError } = useNotifications();
@@ -15,6 +54,8 @@ function Chats() {
   const [buyerId, setBuyerId] = useState(null);
   const [selectedThread, setSelectedThread] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('all'); // 'all' | 'unread'
 
   // WebSocket refs
   const wsRef = useRef(null);
@@ -157,43 +198,59 @@ function Chats() {
 
   // handleChatClick заменен на handleThreadSelect выше
 
+  // Фильтрация чатов
+  const filteredThreads = threads.filter(thread => {
+    const matchesSearch = !searchQuery ||
+      (thread.last_message && thread.last_message.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (thread.seller_id && thread.seller_id.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const matchesFilter = filterType === 'all' ||
+      (filterType === 'unread' && thread.unread_count > 0);
+
+    return matchesSearch && matchesFilter;
+  });
+
   return (
     <div style={{
-      maxWidth: '1200px',
-      margin: '0 auto',
-      padding: '20px',
-      backgroundColor: '#FAF7F0',
-      minHeight: '100vh'
+      height: '100vh',
+      backgroundColor: '#f8fafc',
+      display: 'flex',
+      flexDirection: 'column'
     }}>
+      {/* Заголовок */}
       <div style={{
         backgroundColor: 'white',
-        padding: '30px',
-        borderRadius: '12px',
-        marginBottom: '30px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        borderBottom: '1px solid #e2e8f0',
+        padding: '16px 24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between'
       }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '20px'
-        }}>
-          <div>
-            <h1 style={{ margin: 0, color: '#374151', fontSize: '32px' }}>
-              💬 {BUYER_TEXTS.CHATS || 'Мои чаты'}
-            </h1>
-            <p style={{ margin: '8px 0 0 0', color: '#6b7280', fontSize: '16px' }}>
-              Общение с продавцами о товарах
-            </p>
-          </div>
-          <button
-            onClick={loadChats}
-            disabled={loading}
-            style={{
-              padding: '12px 20px',
-              backgroundColor: '#2563eb',
-              color: 'white',
-              border: 'none',
+        <div>
+          <h1 style={{
+            margin: 0,
+            fontSize: '24px',
+            fontWeight: '600',
+            color: '#1e293b'
+          }}>
+            Сообщения
+          </h1>
+          <p style={{
+            margin: '4px 0 0 0',
+            fontSize: '14px',
+            color: '#64748b'
+          }}>
+            {threads.length} {threads.length === 1 ? 'чат' : 'чатов'}
+          </p>
+        </div>
+        <button
+          onClick={loadChats}
+          disabled={loading}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: loading ? '#f1f5f9' : '#3b82f6',
+            color: loading ? '#64748b' : 'white',
+            border: 'none',
               borderRadius: '8px',
               fontSize: '16px',
               fontWeight: '600',

@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { BUYER_TEXTS } from '../utils/localization';
-import Chats from '../components/Chats';
-import ChatWindow from '../components/chat/ChatWindow';
+import ProfessionalChats from '../components/ProfessionalChats';
+import ProfessionalChatWindow from '../components/chat/ProfessionalChatWindow';
 
 const ChatsPage = () => {
   const { setPageTitle } = useApp();
@@ -14,12 +14,12 @@ const ChatsPage = () => {
 
   return (
     <div style={{
-      backgroundColor: '#FAF7F0',
+      backgroundColor: '#f8fafc',
       minHeight: 'calc(100vh - 64px)'
     }}>
       <Routes>
-        <Route path="/" element={<Chats />} />
-        <Route path="/:threadId" element={<ChatWindow />} />
+        <Route path="/" element={<ProfessionalChats />} />
+        <Route path="/:threadId" element={<ProfessionalChatWindow />} />
       </Routes>
     </div>
   );
