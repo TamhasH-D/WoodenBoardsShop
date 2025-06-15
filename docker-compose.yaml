@@ -20,8 +20,9 @@ include:
   - path: ./backend/prosto_board_volume-main/docker-compose.yaml
     project_directory: ./backend/prosto_board_volume-main
 
-  # - path: ./keycloak/docker-compose.yaml
-  #   project_directory: ./keycloak
+  # Keycloak Authentication Service
+  - path: ./keycloak/docker-compose.yaml
+    project_directory: ./keycloak
 
   # Medama
   - path: ./medama/docker-compose.yaml

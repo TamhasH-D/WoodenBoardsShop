@@ -20,6 +20,10 @@ include:
   - path: ./backend/prosto_board_volume-main/docker-compose.yaml
     project_directory: ./backend/prosto_board_volume-main
 
+  # Keycloak Authentication Service
+  - path: ./keycloak/docker-compose.yaml
+    project_directory: ./keycloak
+
 networks:
   diplom_default:
     name: diplom_default
