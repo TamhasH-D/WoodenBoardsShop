@@ -1,126 +1,32 @@
 name: diplom
 
-services:
-  # Keycloak PostgreSQL
-  keycloak-postgres:
-    image: postgres:15-alpine
-    container_name: ${KEYCLOAK_POSTGRES_CONTAINER}
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    volumes:
-      - keycloak_postgres_data:/var/lib/postgresql/data
-    networks:
-      - diplom_default
-    restart: unless-stopped
+include:
+  # Backend services
+  - path: ./backend/backend/docker-compose.yaml
 
-  # Keycloak
-  keycloak:
-    build:
-      context: ./keycloak
-      dockerfile: Dockerfile
-    container_name: ${KEYCLOAK_CONTAINER}
-    ports:
-      - "${KEYCLOAK_EXTERNAL_PORT}:8080"
-    environment:
-      - NODE_ENV=${NODE_ENV}
-      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
-      - KC_DB=${KC_DB}
-      - KC_DB_URL=${KC_DB_URL}
-      - KC_DB_USERNAME=${POSTGRES_USER}
-      - KC_DB_PASSWORD=${POSTGRES_PASSWORD}
-      - KC_HOSTNAME=${KC_HOSTNAME}
-      - KC_HOSTNAME_STRICT=${KC_HOSTNAME_STRICT}
-      - KC_HTTP_ENABLED=${KC_HTTP_ENABLED}
-      - KC_PROXY=${KC_PROXY}
-      - KC_HOSTNAME_URL=${KC_HOSTNAME_URL}
-      - KC_HOSTNAME_STRICT_HTTPS=${KC_HOSTNAME_STRICT_HTTPS}
-      - KC_SMTP_SERVER_HOST=${KC_SMTP_SERVER_HOST}
-      - KC_SMTP_SERVER_PORT=${KC_SMTP_SERVER_PORT}
-      - KC_SMTP_FROM=${KC_SMTP_FROM}
-      - KC_SMTP_AUTH=${KC_SMTP_AUTH}
-      - KC_SMTP_USER=${KC_SMTP_USER}
-      - KC_SMTP_PASSWORD=${KC_SMTP_PASSWORD}
-      - KC_SMTP_STARTTLS=${KC_SMTP_STARTTLS}
-      - KC_SMTP_SSL=${KC_SMTP_SSL}
-      - PRODUCTION_ADMIN_HOST=${PRODUCTION_ADMIN_HOST}
-      - PRODUCTION_SELLER_HOST=${PRODUCTION_SELLER_HOST}
-      - PRODUCTION_BUYER_HOST=${PRODUCTION_BUYER_HOST}
-      - PRODUCTION_API_HOST=${PRODUCTION_API_HOST}
-      - PRODUCTION_KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
-    depends_on:
-      - keycloak-postgres
-    networks:
-      - diplom_default
-    restart: unless-stopped
+  # Frontend services - Admin
+  - path: ./frontend/admin/docker-compose.yaml
+    project_directory: ./frontend/admin
 
-  # Keycloak Setup
-  keycloak-setup:
-    build:
-      context: ./keycloak
-      dockerfile: Dockerfile.setup
-    container_name: ${KEYCLOAK_SETUP_CONTAINER}
-    environment:
-      - NODE_ENV=${NODE_ENV}
-      - KEYCLOAK_URL=http://keycloak:8080
-      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
-    depends_on:
-      - keycloak
-    networks:
-      - diplom_default
-    restart: "no"
+  # Frontend services - Seller
+  - path: ./frontend/seller/docker-compose.yaml
+    project_directory: ./frontend/seller
 
-  # Seller Frontend
-  seller-frontend:
-    build:
-      context: ./frontend/seller
-      dockerfile: Dockerfile.dev
-    container_name: ${SELLER_FRONTEND_CONTAINER}
-    ports:
-      - "${SELLER_FRONTEND_PORT}:3000"
-    environment:
-      - NODE_ENV=${NODE_ENV}
-      - PRODUCTION_SELLER_HOST=${PRODUCTION_SELLER_HOST}
-      - PRODUCTION_API_HOST=${PRODUCTION_API_HOST}
-      - PRODUCTION_KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
-      - LOCALHOST_HOST=${LOCALHOST_HOST}
-      - DOCKER_HOST=${DOCKER_HOST}
-      - PRODUCTION_HOST=${PRODUCTION_HOST}
-      - KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
-      - KEYCLOAK_PORT=${KEYCLOAK_PORT}
-      - FRONTEND_PORT=${FRONTEND_PRODUCTION_PORT}
-    networks:
-      - diplom_default
-    restart: unless-stopped
+  # Frontend services - Buyer
+  - path: ./frontend/buyer/docker-compose.yaml
+    project_directory: ./frontend/buyer
 
-  # Buyer Frontend
-  buyer-frontend:
-    build:
-      context: ./frontend/buyer
-      dockerfile: Dockerfile.dev
-    container_name: ${BUYER_FRONTEND_CONTAINER}
-    ports:
-      - "${BUYER_FRONTEND_PORT}:3000"
-    environment:
-      - NODE_ENV=${NODE_ENV}
-      - PRODUCTION_BUYER_HOST=${PRODUCTION_BUYER_HOST}
-      - PRODUCTION_API_HOST=${PRODUCTION_API_HOST}
-      - PRODUCTION_KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
-      - LOCALHOST_HOST=${LOCALHOST_HOST}
-      - DOCKER_HOST=${DOCKER_HOST}
-      - PRODUCTION_HOST=${PRODUCTION_HOST}
-      - KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
-      - KEYCLOAK_PORT=${KEYCLOAK_PORT}
-      - FRONTEND_PORT=${FRONTEND_PRODUCTION_PORT}
-    networks:
-      - diplom_default
-    restart: unless-stopped
+  # Prosto Board Volume Main
+  - path: ./backend/prosto_board_volume-main/docker-compose.yaml
+    project_directory: ./backend/prosto_board_volume-main
 
-volumes:
-  keycloak_postgres_data:
+  # Keycloak Authentication Service
+  - path: ./keycloak/docker-compose.yaml
+    project_directory: ./keycloak
+
+  # Medama
+  - path: ./medama/docker-compose.yaml
+    project_directory: ./medama
 
 networks:
   diplom_default:
