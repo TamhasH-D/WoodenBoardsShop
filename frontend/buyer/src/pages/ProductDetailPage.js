@@ -6,6 +6,7 @@ import { formatCurrencyRu } from '../utils/localization';
 import { apiService } from '../services/api';
 import ProductImageWithBoards from '../components/ProductImageWithBoards';
 import ProductChat from '../components/ProductChat';
+import ProductAnalyzer from '../components/ProductAnalyzer';
 // eslint-disable-next-line no-unused-vars
 import { getCurrentBuyerKeycloakId } from '../utils/auth';
 
@@ -18,6 +19,7 @@ const ProductDetailPage = () => {
   const [product, setProduct] = useState(null);
   const [seller, setSeller] = useState(null);
   const [woodType, setWoodType] = useState(null);
+  const [boardsCount, setBoardsCount] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const chatRef = useRef(null);
@@ -61,6 +63,15 @@ const ProductDetailPage = () => {
         }
       }
 
+      // Загружаем количество досок
+      try {
+        const boardsResponse = await apiService.getWoodenBoardsByProduct(productData.id, 0, 1);
+        setBoardsCount(boardsResponse.total || 0);
+      } catch (err) {
+        console.error('Ошибка загрузки количества досок:', err);
+        setBoardsCount(0);
+      }
+
     } catch (err) {
       console.error('Ошибка загрузки товара:', err);
       setError('Товар не найден');
@@ -92,7 +103,7 @@ const ProductDetailPage = () => {
         justifyContent: 'center',
         alignItems: 'center',
         minHeight: '60vh',
-        backgroundColor: '#FAF7F0'
+        backgroundColor: '#f8fafc'
       }}>
         <div style={{
           display: 'flex',
@@ -104,7 +115,7 @@ const ProductDetailPage = () => {
             width: '48px',
             height: '48px',
             border: '4px solid #e5e7eb',
-            borderTop: '4px solid #2563eb',
+            borderTop: '4px solid #8B4513',
             borderRadius: '50%',
             animation: 'spin 1s linear infinite'
           }} />
@@ -122,7 +133,7 @@ const ProductDetailPage = () => {
         justifyContent: 'center',
         alignItems: 'center',
         minHeight: '60vh',
-        backgroundColor: '#FAF7F0',
+        backgroundColor: '#f8fafc',
         padding: '20px'
       }}>
         <div style={{
@@ -142,17 +153,26 @@ const ProductDetailPage = () => {
             onClick={() => navigate('/products')}
             style={{
               padding: '12px 24px',
-              backgroundColor: '#2563eb',
+              backgroundColor: '#8B4513',
               color: 'white',
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: '12px',
               fontSize: '16px',
               fontWeight: '600',
               cursor: 'pointer',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.3s ease',
+              boxShadow: '0 4px 16px rgba(139, 69, 19, 0.3)'
             }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#1d4ed8'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#2563eb'}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#A0522D';
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 8px 24px rgba(139, 69, 19, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#8B4513';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 4px 16px rgba(139, 69, 19, 0.3)';
+            }}
           >
             Вернуться к каталогу
           </button>
@@ -165,7 +185,7 @@ const ProductDetailPage = () => {
 
   return (
     <div style={{
-      backgroundColor: '#FAF7F0',
+      backgroundColor: '#f8fafc',
       minHeight: '100vh',
       padding: window.innerWidth >= 768 ? '24px 0' : '16px 0'
     }}>
@@ -196,7 +216,7 @@ const ProductDetailPage = () => {
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#2563eb',
+                color: '#8B4513',
                 cursor: 'pointer',
                 textDecoration: 'none',
                 fontWeight: '500',
@@ -205,7 +225,7 @@ const ProductDetailPage = () => {
                 transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#eff6ff';
+                e.target.style.backgroundColor = '#f4f1eb';
                 e.target.style.textDecoration = 'underline';
               }}
               onMouseLeave={(e) => {
@@ -236,17 +256,33 @@ const ProductDetailPage = () => {
           gap: '30px',
           marginBottom: '40px'
         }}>
-          {/* Левая колонка - Изображение */}
+          {/* Левая колонка - Изображение и анализ */}
           <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            padding: '24px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-            border: '1px solid rgba(0,0,0,0.05)'
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px'
           }}>
-            <ProductImageWithBoards
+            {/* Изображение */}
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              padding: '24px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+              border: '1px solid rgba(0,0,0,0.05)'
+            }}>
+              <ProductImageWithBoards
+                product={product}
+                style={{ width: '100%', borderRadius: '12px' }}
+              />
+            </div>
+
+            {/* Анализ товара */}
+            <ProductAnalyzer
               product={product}
-              style={{ width: '100%', borderRadius: '12px' }}
+              onAnalysisComplete={(result) => {
+                console.log('Анализ товара завершен:', result);
+                // Можно добавить дополнительную логику обработки результатов
+              }}
             />
           </div>
 
@@ -304,7 +340,7 @@ const ProductDetailPage = () => {
               <span style={{
                 fontSize: '36px',
                 fontWeight: '800',
-                color: '#2563eb'
+                color: '#8B4513'
               }}>
                 {formatCurrencyRu(product.price || 0)}
               </span>
@@ -421,7 +457,7 @@ const ProductDetailPage = () => {
                     fontWeight: '700',
                     color: '#1e293b'
                   }}>
-                    {product.wooden_boards?.length || product.board_count || 'Не указано'}
+                    {boardsCount !== null ? boardsCount : 'Загрузка...'}
                   </div>
                 </div>
                 {woodType && (
@@ -707,6 +743,8 @@ const ProductDetailPage = () => {
             </div>
           </div>
         )}
+
+
 
         {/* Чат с продавцом */}
         <div ref={chatRef}>

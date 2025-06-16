@@ -197,6 +197,7 @@ const ProductCard = ({
               flexWrap: 'wrap'
             }}>
               <span>{roundedVolume} м³</span>
+              {product.total_boards && <span>📋 {product.total_boards} досок</span>}
               <span>{pricePerCubicMeter} ₽/м³</span>
               {woodTypeName && woodTypeName !== 'Не указан' && <span>{woodTypeName}</span>}
               {showSeller && sellerName && <span>• {sellerName}</span>}
@@ -244,21 +245,22 @@ const ProductCard = ({
     <div
       style={{
         backgroundColor: 'white',
-        borderRadius: '8px',
-        boxShadow: isHovered 
-          ? (variant === 'hero' ? '0 8px 24px rgba(0,0,0,0.12)' : '0 4px 12px rgba(0,0,0,0.1)')
-          : '0 1px 3px rgba(0,0,0,0.05)',
-        border: '1px solid #e5e7eb',
+        borderRadius: '20px',
+        boxShadow: isHovered
+          ? (variant === 'hero' ? '0 20px 60px rgba(0,0,0,0.2)' : '0 12px 40px rgba(0,0,0,0.15)')
+          : '0 4px 16px rgba(0,0,0,0.08)',
+        border: isHovered ? '1px solid #8B4513' : '1px solid #e2e8f0',
         cursor: 'pointer',
-        transition: 'all 0.3s ease',
-        transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
+        transition: 'all 0.4s ease',
+        transform: isHovered ? 'translateY(-8px) scale(1.02)' : 'translateY(0) scale(1)',
         height: config.height,
         width: '100%',
         maxWidth: config.maxWidth,
         margin: '0 auto',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        position: 'relative'
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -363,6 +365,12 @@ const ProductCard = ({
             flexWrap: 'wrap'
           }}>
             <span>{roundedVolume} м³</span>
+            {product.total_boards && (
+              <>
+                <span>•</span>
+                <span>📋 {product.total_boards} досок</span>
+              </>
+            )}
             <span>•</span>
             <span>{pricePerCubicMeter} ₽/м³</span>
             {woodTypeName && woodTypeName !== 'Не указан' && (
@@ -412,13 +420,13 @@ const ProductCard = ({
                   flex: 1,
                   padding: variant === 'grid' ? '6px 8px' : '8px 12px',
                   backgroundColor: 'transparent',
-                  color: '#3b82f6',
-                  border: '1px solid #3b82f6',
-                  borderRadius: '6px',
+                  color: '#8B4513',
+                  border: '1px solid #8B4513',
+                  borderRadius: '12px',
                   fontSize: variant === 'grid' ? '0.75rem' : '0.875rem',
                   fontWeight: '600',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.3s ease'
                 }}
               >
                 Подробнее
@@ -430,14 +438,15 @@ const ProductCard = ({
                 style={{
                   flex: 1,
                   padding: variant === 'grid' ? '6px 8px' : '8px 12px',
-                  backgroundColor: isStartingChat ? '#d97706' : '#059669',
+                  backgroundColor: isStartingChat ? '#A0522D' : '#8B4513',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: '12px',
                   fontSize: variant === 'grid' ? '0.75rem' : '0.875rem',
                   fontWeight: '600',
                   cursor: isStartingChat ? 'wait' : 'pointer',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 2px 8px rgba(139, 69, 19, 0.3)'
                 }}
               >
                 {isStartingChat ? (variant === 'grid' ? '...' : 'Подключение...') : 'Написать'}

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { AuthStatus } from '../auth';
 
 const ProfessionalHeader = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -127,16 +126,7 @@ const ProfessionalHeader = () => {
               ))}
             </nav>
 
-            {/* Authentication Status */}
-            <div style={{
-              display: isMobile ? 'none' : 'block'
-            }}>
-              <AuthStatus
-                showUserInfo={true}
-                showButtons={true}
-                compact={false}
-              />
-            </div>
+
           </div>
 
           {/* Mobile Menu Button */}
@@ -224,18 +214,7 @@ const ProfessionalHeader = () => {
                 </Link>
               ))}
 
-              {/* Mobile Authentication Status */}
-              <div style={{
-                marginTop: '1rem',
-                paddingTop: '1rem',
-                borderTop: '1px solid #e5e7eb'
-              }}>
-                <AuthStatus
-                  showUserInfo={true}
-                  showButtons={true}
-                  compact={true}
-                />
-              </div>
+
             </nav>
           </div>
         )}
