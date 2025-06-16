@@ -11,8 +11,14 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Make entrypoint executable
+RUN chmod +x docker-entrypoint.sh
+
 # Expose port
 EXPOSE 3000
+
+# Use entrypoint for dynamic configuration
+ENTRYPOINT ["./docker-entrypoint.sh"]
 
 # Start development server with hot reload
 CMD ["npm", "start"]
