@@ -3,9 +3,11 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Accept build arguments
-ARG REACT_APP_API_URL=http://localhost:8000
-ARG REACT_APP_WOODEN_BOARDS_API_URL=http://localhost:8001
+# Accept build arguments for API URLs
+ARG REACT_APP_API_URL
+ARG REACT_APP_WOODEN_BOARDS_API_URL
+
+# Set environment variables for build
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
 ENV REACT_APP_WOODEN_BOARDS_API_URL=$REACT_APP_WOODEN_BOARDS_API_URL
 

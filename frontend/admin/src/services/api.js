@@ -138,7 +138,7 @@ export const apiService = {
 
   // Buyers
   async getBuyers(page = 0, size = 20) {
-    const response = await api.get(`/api/v1/buyers?offset=${page * size}&limit=${size}`);
+    const response = await api.get(`/api/v1/buyers/?offset=${page * size}&limit=${size}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
@@ -181,7 +181,7 @@ export const apiService = {
       keycloak_uuid: buyerData.keycloak_uuid,
       is_online: buyerData.is_online || false
     };
-    const response = await api.post('/api/v1/buyers', payload);
+    const response = await api.post('/api/v1/buyers/', payload);
     return response.data;
   },
 
@@ -204,7 +204,7 @@ export const apiService = {
 
   // Sellers
   async getSellers(page = 0, size = 20) {
-    const response = await api.get(`/api/v1/sellers?offset=${page * size}&limit=${size}`);
+    const response = await api.get(`/api/v1/sellers/?offset=${page * size}&limit=${size}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
@@ -247,7 +247,7 @@ export const apiService = {
       keycloak_uuid: sellerData.keycloak_uuid,
       is_online: sellerData.is_online || false
     };
-    const response = await api.post('/api/v1/sellers', payload);
+    const response = await api.post('/api/v1/sellers/', payload);
     return response.data;
   },
 
@@ -270,7 +270,7 @@ export const apiService = {
 
   // Products
   async getProducts(page = 0, size = 10) {
-    const response = await api.get(`/api/v1/products?offset=${page * size}&limit=${size}`);
+    const response = await api.get(`/api/v1/products/?offset=${page * size}&limit=${size}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
@@ -298,7 +298,7 @@ export const apiService = {
       seller_id: productData.seller_id,
       wood_type_id: productData.wood_type_id
     };
-    const response = await api.post('/api/v1/products', payload);
+    const response = await api.post('/api/v1/products/', payload);
     return response.data;
   },
 
@@ -334,7 +334,7 @@ export const apiService = {
   async getWoodTypes(page = 0, size = 20) {
     // Ensure size doesn't exceed backend limit of 20
     const actualSize = Math.min(size, 20);
-    const response = await api.get(`/api/v1/wood-types?offset=${page * actualSize}&limit=${actualSize}`);
+    const response = await api.get(`/api/v1/wood-types/?offset=${page * actualSize}&limit=${actualSize}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
@@ -395,7 +395,7 @@ export const apiService = {
       neme: woodTypeData.name || woodTypeData.neme, // Handle both frontend 'name' and backend 'neme'
       description: woodTypeData.description || null
     };
-    const response = await api.post('/api/v1/wood-types', payload);
+    const response = await api.post('/api/v1/wood-types/', payload);
     return response.data;
   },
 
@@ -413,7 +413,7 @@ export const apiService = {
   async getWoodTypePrices(page = 0, size = 20) {
     // Ensure size doesn't exceed backend limit of 20
     const actualSize = Math.min(size, 20);
-    const response = await api.get(`/api/v1/wood-type-prices?offset=${page * actualSize}&limit=${actualSize}`);
+    const response = await api.get(`/api/v1/wood-type-prices/?offset=${page * actualSize}&limit=${actualSize}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
@@ -474,7 +474,7 @@ export const apiService = {
       price_per_m3: parseFloat(priceData.price_per_m3),
       wood_type_id: priceData.wood_type_id
     };
-    const response = await api.post('/api/v1/wood-type-prices', payload);
+    const response = await api.post('/api/v1/wood-type-prices/', payload);
     return response.data;
   },
 
@@ -490,7 +490,7 @@ export const apiService = {
 
   // Wooden Boards
   async getWoodenBoards(page = 0, size = 20) {
-    const response = await api.get(`/api/v1/wooden-boards?offset=${page * size}&limit=${size}`);
+    const response = await api.get(`/api/v1/wooden-boards/?offset=${page * size}&limit=${size}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
@@ -522,7 +522,7 @@ export const apiService = {
       image_id: boardData.image_id,
       product_id: boardData.product_id
     };
-    const response = await api.post('/api/v1/wooden-boards', payload);
+    const response = await api.post('/api/v1/wooden-boards/', payload);
     return response.data;
   },
 
@@ -551,7 +551,7 @@ export const apiService = {
 
   // Images
   async getImages(page = 0, size = 20) {
-    const response = await api.get(`/api/v1/images?offset=${page * size}&limit=${size}`);
+    const response = await api.get(`/api/v1/images/?offset=${page * size}&limit=${size}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
@@ -586,7 +586,7 @@ export const apiService = {
       image_path: imageData.image_path,
       product_id: imageData.product_id
     };
-    const response = await api.post('/api/v1/images', payload);
+    const response = await api.post('/api/v1/images/', payload);
     return response.data;
   },
 
@@ -615,7 +615,7 @@ export const apiService = {
 
   // Chat Threads
   async getChatThreads(page = 0, size = 10) {
-    const response = await api.get(`/api/v1/chat-threads?offset=${page * size}&limit=${size}`);
+    const response = await api.get(`/api/v1/chat-threads/?offset=${page * size}&limit=${size}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
@@ -642,7 +642,7 @@ export const apiService = {
       buyer_id: threadData.buyer_id,
       seller_id: threadData.seller_id
     };
-    const response = await api.post('/api/v1/chat-threads', payload);
+    const response = await api.post('/api/v1/chat-threads/', payload);
     return response.data;
   },
 
@@ -671,7 +671,7 @@ export const apiService = {
 
   // Chat Messages
   async getChatMessages(page = 0, size = 10) {
-    const response = await api.get(`/api/v1/chat-messages?offset=${page * size}&limit=${size}`);
+    const response = await api.get(`/api/v1/chat-messages/?offset=${page * size}&limit=${size}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
@@ -702,7 +702,7 @@ export const apiService = {
       buyer_id: messageData.buyer_id,
       seller_id: messageData.seller_id
     };
-    const response = await api.post('/api/v1/chat-messages', payload);
+    const response = await api.post('/api/v1/chat-messages/', payload);
     return response.data;
   },
 

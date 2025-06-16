@@ -2,27 +2,23 @@ services:
   buyer-frontend:
     build:
       context: .
-      dockerfile: Dockerfile.dev
-    container_name: ${BUYER_FRONTEND_CONTAINER:-buyer-frontend-prod}
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL}
+        REACT_APP_KEYCLOAK_URL: ${REACT_APP_KEYCLOAK_URL}
+        REACT_APP_KEYCLOAK_REALM: ${REACT_APP_KEYCLOAK_REALM}
+        REACT_APP_KEYCLOAK_CLIENT_ID: ${REACT_APP_KEYCLOAK_CLIENT_ID}
+    container_name: buyer-frontend-prod
     ports:
-      - "${BUYER_FRONTEND_PORT:-8082}:3000"
-    environment:
-      - NODE_ENV=${NODE_ENV:-production}
-      - PRODUCTION_BUYER_HOST=${PRODUCTION_BUYER_HOST}
-      - PRODUCTION_API_HOST=${PRODUCTION_API_HOST}
-      - PRODUCTION_KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
-      - PRODUCTION_HOST=${PRODUCTION_HOST}
-      - KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
-      - KEYCLOAK_PORT=${KEYCLOAK_PORT}
-      - FRONTEND_PORT=${FRONTEND_PRODUCTION_PORT}
+      - "${BUYER_FRONTEND_PORT:-8082}:80"
     networks:
       - diplom_default
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 30s
     restart: unless-stopped
 
 networks:

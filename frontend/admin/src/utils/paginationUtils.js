@@ -4,7 +4,7 @@
  * Backend API Structure:
  * - Uses offset-based pagination with limit <= 20
  * - Returns: { data: [...], pagination: { total: number } }
- * - Query params: ?offset=0&limit=20
+ * - Query params: /?offset=0&limit=20
  */
 
 /**

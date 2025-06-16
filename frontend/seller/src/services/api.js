@@ -180,7 +180,7 @@ export const apiService = {
     try {
       // Генерируем UUID если не передан
       const payload = sellerData.id ? sellerData : withUUID(sellerData, ENTITY_TYPES.SELLER);
-      const response = await api.post('/api/v1/sellers', payload);
+      const response = await api.post('/api/v1/sellers/', payload);
       return response.data;
     } catch (error) {
       console.error('Failed to create seller:', error);
@@ -234,7 +234,7 @@ export const apiService = {
         if (cache.has(cacheKey) && (now - cache.get(cacheKey).timestamp) < CACHE_DURATION) {
           allProducts = cache.get(cacheKey).data;
         } else {
-          const response = await api.get(`/api/v1/products?offset=0&limit=20`);
+          const response = await api.get(`/api/v1/products/?offset=0&limit=20`);
           allProducts = response.data.data || response.data;
           cache.set(cacheKey, { data: allProducts, timestamp: now });
         }
@@ -438,7 +438,7 @@ export const apiService = {
         wood_type_id: productData.wood_type_id
       };
 
-      const response = await api.post('/api/v1/products', payload);
+      const response = await api.post('/api/v1/products/', payload);
 
       // Clear products cache to force refresh
       cache.delete('all_products');
@@ -652,7 +652,7 @@ export const apiService = {
   async getWoodTypes(page = 0, size = 20) {
     // Ensure size doesn't exceed backend limit of 20
     const actualSize = Math.min(size, 20);
-    const response = await api.get(`/api/v1/wood-types?offset=${page * actualSize}&limit=${actualSize}`);
+    const response = await api.get(`/api/v1/wood-types/?offset=${page * actualSize}&limit=${actualSize}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
@@ -704,7 +704,7 @@ export const apiService = {
   async createWoodType(woodTypeData) {
     // Генерируем UUID если не передан
     const payload = woodTypeData.id ? woodTypeData : withUUID(woodTypeData, ENTITY_TYPES.WOOD_TYPE);
-    const response = await api.post('/api/v1/wood-types', payload);
+    const response = await api.post('/api/v1/wood-types/', payload);
     return response.data;
   },
 
@@ -722,7 +722,7 @@ export const apiService = {
   async getWoodTypePrices(page = 0, size = 20) {
     // Ensure size doesn't exceed backend limit of 20
     const actualSize = Math.min(size, 20);
-    const response = await api.get(`/api/v1/wood-type-prices?offset=${page * actualSize}&limit=${actualSize}`);
+    const response = await api.get(`/api/v1/wood-type-prices/?offset=${page * actualSize}&limit=${actualSize}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
@@ -774,7 +774,7 @@ export const apiService = {
   async createWoodTypePrice(priceData) {
     // Генерируем UUID если не передан
     const payload = priceData.id ? priceData : withUUID(priceData, ENTITY_TYPES.WOOD_TYPE_PRICE);
-    const response = await api.post('/api/v1/wood-type-prices', payload);
+    const response = await api.post('/api/v1/wood-type-prices/', payload);
     return response.data;
   },
 
@@ -883,7 +883,7 @@ export const apiService = {
 
       // Генерируем UUID если не передан
       const payload = messageData.id ? messageData : withUUID(messageData, ENTITY_TYPES.CHAT_MESSAGE);
-      const response = await api.post('/api/v1/chat-messages', payload);
+      const response = await api.post('/api/v1/chat-messages/', payload);
       return response.data;
     } catch (error) {
       console.error('Failed to send message:', error.response?.data || error.message);
@@ -904,7 +904,7 @@ export const apiService = {
   async createChatThread(threadData) {
     // Генерируем UUID если не передан
     const payload = threadData.id ? threadData : withUUID(threadData, ENTITY_TYPES.CHAT_THREAD);
-    const response = await api.post('/api/v1/chat-threads', payload);
+    const response = await api.post('/api/v1/chat-threads/', payload);
     return response.data;
   },
 

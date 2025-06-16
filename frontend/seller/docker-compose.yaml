@@ -2,27 +2,21 @@ services:
   seller-frontend:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL}
+        REACT_APP_WOODEN_BOARDS_API_URL: ${REACT_APP_WOODEN_BOARDS_API_URL}
     container_name: ${SELLER_FRONTEND_CONTAINER:-seller-frontend-prod}
     ports:
-      - "${SELLER_FRONTEND_PORT:-8081}:3000"
-    environment:
-      - NODE_ENV=${NODE_ENV:-production}
-      - PRODUCTION_SELLER_HOST=${PRODUCTION_SELLER_HOST}
-      - PRODUCTION_API_HOST=${PRODUCTION_API_HOST}
-      - PRODUCTION_KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
-      - PRODUCTION_HOST=${PRODUCTION_HOST}
-      - KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
-      - KEYCLOAK_PORT=${KEYCLOAK_PORT}
-      - FRONTEND_PORT=${FRONTEND_PRODUCTION_PORT}
+      - "${SELLER_FRONTEND_PORT:-8081}:80"
     networks:
       - diplom_default
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 30s
     restart: unless-stopped
 
 networks:

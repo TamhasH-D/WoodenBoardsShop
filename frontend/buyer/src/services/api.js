@@ -137,7 +137,7 @@ export const apiService = {
     // Make the request
     const requestPromise = (async () => {
       try {
-        const response = await api.get(`/api/v1/products?offset=${page * size}&limit=${size}`);
+        const response = await api.get(`/api/v1/products/?offset=${page * size}&limit=${size}`);
         const result = {
           data: response.data.data || response.data,
           total: response.data.pagination?.total || 0,
@@ -271,7 +271,7 @@ export const apiService = {
   async getWoodTypes(page = 0, size = 20) {
     // Ensure size doesn't exceed backend limit of 20
     const actualSize = Math.min(size, 20);
-    const response = await api.get(`/api/v1/wood-types?offset=${page * actualSize}&limit=${actualSize}`);
+    const response = await api.get(`/api/v1/wood-types/?offset=${page * actualSize}&limit=${actualSize}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
@@ -284,7 +284,7 @@ export const apiService = {
   async getWoodTypePrices(page = 0, size = 20) {
     // Ensure size doesn't exceed backend limit of 20
     const actualSize = Math.min(size, 20);
-    const response = await api.get(`/api/v1/wood-type-prices?offset=${page * actualSize}&limit=${actualSize}`);
+    const response = await api.get(`/api/v1/wood-type-prices/?offset=${page * actualSize}&limit=${actualSize}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
@@ -411,7 +411,7 @@ export const apiService = {
     try {
       // Генерируем UUID если не передан
       const payload = buyerData.id ? buyerData : withUUID(buyerData, ENTITY_TYPES.BUYER);
-      const response = await api.post('/api/v1/buyers', payload);
+      const response = await api.post('/api/v1/buyers/', payload);
       return response.data;
     } catch (error) {
       console.error('Failed to create buyer:', error);
@@ -520,7 +520,7 @@ export const apiService = {
   async createChatThread(threadData) {
     // Генерируем UUID если не передан
     const payload = threadData.id ? threadData : withUUID(threadData, ENTITY_TYPES.CHAT_THREAD);
-    const response = await api.post('/api/v1/chat-threads', payload);
+    const response = await api.post('/api/v1/chat-threads/', payload);
     return response.data;
   },
 
@@ -593,7 +593,7 @@ export const apiService = {
 
       // Генерируем UUID если не передан
       const payload = messageData.id ? messageData : withUUID(messageData, ENTITY_TYPES.CHAT_MESSAGE);
-      const response = await api.post('/api/v1/chat-messages', payload);
+      const response = await api.post('/api/v1/chat-messages/', payload);
       return response.data;
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -636,7 +636,7 @@ export const apiService = {
   },
 
   async getSellers(page = 0, size = 10) {
-    const response = await api.get(`/api/v1/sellers?offset=${page * size}&limit=${size}`);
+    const response = await api.get(`/api/v1/sellers/?offset=${page * size}&limit=${size}`);
     // Backend returns OffsetResults structure: { data: [...], pagination: { total: number } }
     return {
       data: response.data.data || response.data,
@@ -664,7 +664,7 @@ export const apiService = {
 
   // Images
   async getImages(page = 0, size = 20) {
-    const response = await api.get(`/api/v1/images?offset=${page * size}&limit=${size}`);
+    const response = await api.get(`/api/v1/images/?offset=${page * size}&limit=${size}`);
     return {
       data: response.data.data || response.data,
       total: response.data.pagination?.total || 0,

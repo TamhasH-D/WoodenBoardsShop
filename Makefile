@@ -132,6 +132,13 @@ dev-backend: ## Start only backend in development mode
 dev-status: ## Check development environment status
 	@bash scripts/dev-status.sh
 
+.PHONY: admin-rebuild
+admin-rebuild: ## Rebuild and restart frontend admin service
+	$(COMPOSE) stop admin-frontend
+	$(COMPOSE) build --no-cache admin-frontend
+	$(COMPOSE) up -d admin-frontend
+	@echo "🎯 Admin frontend rebuilt and restarted at http://localhost:$(FRONTEND_ADMIN_PORT)"
+
 # ============================================================================
 # 📊 DATA GENERATION
 # ============================================================================
