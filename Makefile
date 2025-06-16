@@ -133,11 +133,33 @@ dev-status: ## Check development environment status
 	@bash scripts/dev-status.sh
 
 .PHONY: admin-rebuild
-admin-rebuild: ## Rebuild and restart frontend admin service
-	$(COMPOSE) stop admin-frontend
+admin-rebuild: ## Rebuild and restart admin frontend
+	$(COMPOSE) down admin-frontend
 	$(COMPOSE) build --no-cache admin-frontend
 	$(COMPOSE) up -d admin-frontend
 	@echo "🎯 Admin frontend rebuilt and restarted at http://localhost:$(FRONTEND_ADMIN_PORT)"
+
+.PHONY: seller-rebuild
+seller-rebuild: ## Rebuild and restart seller frontend
+	$(COMPOSE) down seller-frontend
+	$(COMPOSE) build --no-cache seller-frontend
+	$(COMPOSE) up -d seller-frontend
+	@echo "🎯 Seller frontend rebuilt and restarted at http://localhost:$(FRONTEND_SELLER_PORT)"
+
+.PHONY: buyer-rebuild
+buyer-rebuild: ## Rebuild and restart buyer frontend
+	$(COMPOSE) down buyer-frontend
+	$(COMPOSE) build --no-cache buyer-frontend
+	$(COMPOSE) up -d buyer-frontend
+	@echo "🎯 Buyer frontend rebuilt and restarted at http://localhost:$(FRONTEND_BUYER_PORT)"
+
+.PHONY: frontend-rebuild
+frontend-rebuild: ## Rebuild and restart frontend services
+	$(COMPOSE) down admin-frontend seller-frontend buyer-frontend
+	$(COMPOSE) build --no-cache admin-frontend seller-frontend buyer-frontend
+	$(COMPOSE) up -d admin-frontend seller-frontend buyer-frontend
+	@echo "🎯 Frontend services rebuilt and restarted"
+
 
 # ============================================================================
 # 📊 DATA GENERATION
