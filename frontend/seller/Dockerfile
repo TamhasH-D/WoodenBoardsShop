@@ -15,7 +15,7 @@ ENV REACT_APP_WOODEN_BOARDS_API_URL=$REACT_APP_WOODEN_BOARDS_API_URL
 COPY package*.json ./
 
 # Install all dependencies (including devDependencies needed for build)
-RUN npm install --production=false --silent
+RUN npm cache clean --force && npm install --no-optional --legacy-peer-deps
 
 # Copy source code
 COPY . .

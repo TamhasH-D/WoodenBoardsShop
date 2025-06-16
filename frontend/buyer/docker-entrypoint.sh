@@ -12,9 +12,9 @@ echo "🌍 Environment: $NODE_ENV"
 # Default configuration
 DEFAULT_LOCALHOST_HOST="localhost"
 DEFAULT_DOCKER_HOST="172.27.65.14"
-DEFAULT_PRODUCTION_HOST="your-domain.com"
-DEFAULT_KEYCLOAK_HOST="172.27.65.14"
-DEFAULT_KEYCLOAK_PORT="8030"
+DEFAULT_PRODUCTION_HOST="buyer.taruman.ru"
+DEFAULT_KEYCLOAK_HOST="keycloak.taruman.ru"
+DEFAULT_KEYCLOAK_PORT="443"
 DEFAULT_FRONTEND_PORT="8082"
 
 # Set defaults from environment or use hardcoded defaults
@@ -22,20 +22,28 @@ KEYCLOAK_HOST="${KEYCLOAK_HOST:-$DEFAULT_KEYCLOAK_HOST}"
 KEYCLOAK_PORT="${KEYCLOAK_PORT:-$DEFAULT_KEYCLOAK_PORT}"
 FRONTEND_PORT="${FRONTEND_PORT:-$DEFAULT_FRONTEND_PORT}"
 
+# Production hosts configuration
+PRODUCTION_BUYER_HOST="${PRODUCTION_BUYER_HOST:-buyer.taruman.ru}"
+PRODUCTION_KEYCLOAK_HOST="${PRODUCTION_KEYCLOAK_HOST:-keycloak.taruman.ru}"
+PRODUCTION_API_HOST="${PRODUCTION_API_HOST:-api.taruman.ru}"
+
 # Auto-detect current environment and host
 detect_host() {
     # Check if we're in production mode
     if [ "$NODE_ENV" = "production" ]; then
-        echo "📦 Production mode detected"
+        echo "📦 Production mode detected" >&2
         # Use production domain for buyer frontend
-        echo "${PRODUCTION_BUYER_HOST:-buyer.${PRODUCTION_HOST}}"
+        echo "${PRODUCTION_BUYER_HOST:-buyer.taruman.ru}"
+    else
+        echo "🐳 Running in Docker container" >&2
+        echo "🔧 Development mode detected" >&2
     fi
 }
 
 # Detect Keycloak host
 detect_keycloak_host() {
     if [ "$NODE_ENV" = "production" ]; then
-        echo "${PRODUCTION_KEYCLOAK_HOST:-keycloak.${PRODUCTION_HOST}}"
+        echo "${PRODUCTION_KEYCLOAK_HOST:-keycloak.taruman.ru}"
     else
         echo "$KEYCLOAK_HOST"
     fi
@@ -71,8 +79,8 @@ else
 fi
 
 # Build OIDC URLs
-REACT_APP_OIDC_AUTHORITY="${KEYCLOAK_PROTOCOL}://${CURRENT_KEYCLOAK_HOST}${KEYCLOAK_PORT_SUFFIX}/realms/BuyerRealm"
-REACT_APP_OIDC_CLIENT_ID="buyer-frontend"
+REACT_APP_OIDC_AUTHORITY="${KEYCLOAK_PROTOCOL}://${CURRENT_KEYCLOAK_HOST}${KEYCLOAK_PORT_SUFFIX}/realms/Buyer"
+REACT_APP_OIDC_CLIENT_ID="buyer"
 REACT_APP_OIDC_REDIRECT_URI="${PROTOCOL}://${CURRENT_HOST}${FRONTEND_PORT_SUFFIX}/auth/callback"
 REACT_APP_OIDC_POST_LOGOUT_REDIRECT_URI="${PROTOCOL}://${CURRENT_HOST}${FRONTEND_PORT_SUFFIX}"
 
@@ -113,7 +121,7 @@ window._env_ = {
   REACT_APP_FRONTEND_PORT: "${FRONTEND_PORT}",
   REACT_APP_KEYCLOAK_HOST: "${CURRENT_KEYCLOAK_HOST}",
   REACT_APP_KEYCLOAK_PORT: "${KEYCLOAK_PORT}",
-  REACT_APP_API_URL: "${PROTOCOL}://${PRODUCTION_API_HOST:-api.${PRODUCTION_HOST}}"
+  REACT_APP_API_URL: "${PROTOCOL}://${PRODUCTION_API_HOST}"
 };
 EOF
 
