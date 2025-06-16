@@ -11,8 +11,21 @@
  */
 export const getChatWebSocketUrl = (threadId, userId, userType) => {
   const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-  const wsBaseUrl = apiBaseUrl.replace(/^https?/, 'ws');
-  return `${wsBaseUrl}/ws/chat/${threadId}?user_id=${userId}&user_type=${userType}`;
+
+  // Правильное преобразование HTTP/HTTPS в WS/WSS
+  let wsBaseUrl;
+  if (apiBaseUrl.startsWith('https://')) {
+    wsBaseUrl = apiBaseUrl.replace('https://', 'wss://');
+  } else if (apiBaseUrl.startsWith('http://')) {
+    wsBaseUrl = apiBaseUrl.replace('http://', 'ws://');
+  } else {
+    // Fallback для случаев без протокола
+    wsBaseUrl = `ws://${apiBaseUrl}`;
+  }
+
+  const wsUrl = `${wsBaseUrl}/ws/chat/${threadId}?user_id=${userId}&user_type=${userType}`;
+  console.log('[WebSocket] Generated URL:', wsUrl);
+  return wsUrl;
 };
 
 /**

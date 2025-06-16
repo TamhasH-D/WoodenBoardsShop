@@ -14,39 +14,12 @@ const api = axios.create({
   },
 });
 
-/**
- * Функция для получения токена доступа
- * Пытается получить токен из AuthContext, если доступен
- */
-const getAccessToken = () => {
-  try {
-    // Проверяем, доступен ли контекст аутентификации
-    if (typeof window !== 'undefined' && window.__BUYER_AUTH_CONTEXT__) {
-      return window.__BUYER_AUTH_CONTEXT__.user?.access_token;
-    }
-  } catch (error) {
-    // Игнорируем ошибки получения токена в режиме разработки
-    if (process.env.NODE_ENV === 'development') {
-      console.debug('[API] Could not get access token:', error.message);
-    }
-  }
-  return null;
-};
 
-// Request interceptor for authentication and logging
+
+// Request interceptor for logging
 api.interceptors.request.use(
   (config) => {
-    // Добавляем Bearer токен, если доступен
-    const accessToken = getAccessToken();
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    }
-
     console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
-    if (accessToken) {
-      console.log('API Request: Using Bearer token authentication');
-    }
-
     return config;
   },
   (error) => {
@@ -781,6 +754,17 @@ export const apiService = {
       return response.data;
     } catch (error) {
       console.error('Failed to delete image:', error);
+      throw error;
+    }
+  },
+
+  // Get wooden boards by product
+  async getWoodenBoardsByProduct(productId, page = 0, size = 20) {
+    try {
+      const response = await api.get(`/api/v1/products/${productId}/wooden-boards?page=${page}&size=${size}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get wooden boards by product:', error);
       throw error;
     }
   },
