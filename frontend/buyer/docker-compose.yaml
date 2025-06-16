@@ -2,12 +2,19 @@ services:
   buyer-frontend:
     build:
       context: .
-      dockerfile: Dockerfile
-      args:
-        - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
-    container_name: buyer-frontend
+      dockerfile: Dockerfile.dev
+    container_name: ${BUYER_FRONTEND_CONTAINER:-buyer-frontend-prod}
     ports:
-      - "${FRONTEND_BUYER_PORT:-8082}:80"
+      - "${BUYER_FRONTEND_PORT:-8082}:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PRODUCTION_BUYER_HOST=${PRODUCTION_BUYER_HOST}
+      - PRODUCTION_API_HOST=${PRODUCTION_API_HOST}
+      - PRODUCTION_KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
+      - PRODUCTION_HOST=${PRODUCTION_HOST}
+      - KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
+      - KEYCLOAK_PORT=${KEYCLOAK_PORT}
+      - FRONTEND_PORT=${FRONTEND_PRODUCTION_PORT}
     networks:
       - diplom_default
     healthcheck:

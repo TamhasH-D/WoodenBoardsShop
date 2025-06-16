@@ -6,27 +6,19 @@ include:
 
   # Frontend services - Admin
   - path: ./frontend/admin/docker-compose.yaml
-    project_directory: ./frontend/admin
 
   # Frontend services - Seller
   - path: ./frontend/seller/docker-compose.yaml
-    project_directory: ./frontend/seller
 
   # Frontend services - Buyer
   - path: ./frontend/buyer/docker-compose.yaml
-    project_directory: ./frontend/buyer
 
   # Prosto Board Volume Main
   - path: ./backend/prosto_board_volume-main/docker-compose.yaml
-    project_directory: ./backend/prosto_board_volume-main
 
   # Keycloak Authentication Service
   - path: ./keycloak/docker-compose.yaml
-    project_directory: ./keycloak
 
-  # Medama
-  - path: ./medama/docker-compose.yaml
-    project_directory: ./medama
 
 networks:
   diplom_default:

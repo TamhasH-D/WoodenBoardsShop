@@ -18,8 +18,6 @@ DEFAULT_KEYCLOAK_PORT="8030"
 DEFAULT_FRONTEND_PORT="8082"
 
 # Set defaults from environment or use hardcoded defaults
-LOCALHOST_HOST="${LOCALHOST_HOST:-$DEFAULT_LOCALHOST_HOST}"
-DOCKER_HOST="${DOCKER_HOST:-$DEFAULT_DOCKER_HOST}"
 PRODUCTION_HOST="${PRODUCTION_HOST:-$DEFAULT_PRODUCTION_HOST}"
 KEYCLOAK_HOST="${KEYCLOAK_HOST:-$DEFAULT_KEYCLOAK_HOST}"
 KEYCLOAK_PORT="${KEYCLOAK_PORT:-$DEFAULT_KEYCLOAK_PORT}"
@@ -57,12 +55,6 @@ detect_keycloak_host() {
 detect_seller_host() {
     if [ "$NODE_ENV" = "production" ]; then
         echo "${PRODUCTION_SELLER_HOST:-seller.${PRODUCTION_HOST}}"
-    else
-        if [ -f /.dockerenv ]; then
-            echo "$DOCKER_HOST"
-        else
-            echo "$LOCALHOST_HOST"
-        fi
     fi
 }
 

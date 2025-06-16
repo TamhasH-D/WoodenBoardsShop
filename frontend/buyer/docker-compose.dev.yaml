@@ -14,8 +14,6 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - FAST_REFRESH=true
       - NODE_ENV=development
-      - LOCALHOST_HOST=${LOCALHOST_HOST:-localhost}
-      - DOCKER_HOST=${DOCKER_HOST:-172.27.65.14}
       - PRODUCTION_HOST=${PRODUCTION_HOST:-your-domain.com}
       - KEYCLOAK_HOST=${KEYCLOAK_HOST:-172.27.65.14}
       - KEYCLOAK_PORT=${KEYCLOAK_PORT:-8030}

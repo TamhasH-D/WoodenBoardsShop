@@ -1,15 +1,13 @@
 services:
   keycloak-postgres:
     image: postgres:15-alpine
-    container_name: keycloak-postgres
+    container_name: ${KEYCLOAK_POSTGRES_CONTAINER:-keycloak-postgres-prod}
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - keycloak_data:/var/lib/postgresql/data
-    ports:
-      - "${POSTGRES_PORT}:5432"
+      - keycloak_postgres_data:/var/lib/postgresql/data
     networks:
       - diplom_default
     healthcheck:
@@ -20,30 +18,36 @@ services:
 
   keycloak:
     build: .
-    image: keycloak-custom:latest
-    container_name: keycloak
+    container_name: ${KEYCLOAK_CONTAINER:-keycloak-prod}
     environment:
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
-      KC_DB_USERNAME: ${KC_DB_USERNAME}
-      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
-      KC_DB_SCHEMA: public
-      KC_HEALTH_ENABLED: "true"
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-      KC_HOSTNAME_URL: ${KC_HOSTNAME_URL}
-      KC_HOSTNAME_STRICT_HTTPS: ${KC_HOSTNAME_STRICT_HTTPS}
-      # SMTP Configuration
-      KC_SMTP_SERVER_HOST: ${KC_SMTP_SERVER_HOST}
-      KC_SMTP_SERVER_PORT: ${KC_SMTP_SERVER_PORT}
-      KC_SMTP_FROM: ${KC_SMTP_FROM}
-      KC_SMTP_AUTH: ${KC_SMTP_AUTH}
-      KC_SMTP_USER: ${KC_SMTP_USER}
-      KC_SMTP_PASSWORD: ${KC_SMTP_PASSWORD}
-      KC_SMTP_STARTTLS: ${KC_SMTP_STARTTLS}
-      KC_SMTP_SSL: ${KC_SMTP_SSL}
+      - NODE_ENV=${NODE_ENV}
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      - KC_DB=${KC_DB}
+      - KC_DB_URL=${KC_DB_URL}
+      - KC_DB_USERNAME=${POSTGRES_USER}
+      - KC_DB_PASSWORD=${POSTGRES_PASSWORD}
+      - KC_HOSTNAME=${KC_HOSTNAME}
+      - KC_HOSTNAME_STRICT=${KC_HOSTNAME_STRICT}
+      - KC_HTTP_ENABLED=${KC_HTTP_ENABLED}
+      - KC_PROXY=${KC_PROXY}
+      - KC_HOSTNAME_URL=${KC_HOSTNAME_URL}
+      - KC_HOSTNAME_STRICT_HTTPS=${KC_HOSTNAME_STRICT_HTTPS}
+      - KC_SMTP_SERVER_HOST=${KC_SMTP_SERVER_HOST}
+      - KC_SMTP_SERVER_PORT=${KC_SMTP_SERVER_PORT}
+      - KC_SMTP_FROM=${KC_SMTP_FROM}
+      - KC_SMTP_AUTH=${KC_SMTP_AUTH}
+      - KC_SMTP_USER=${KC_SMTP_USER}
+      - KC_SMTP_PASSWORD=${KC_SMTP_PASSWORD}
+      - KC_SMTP_STARTTLS=${KC_SMTP_STARTTLS}
+      - KC_SMTP_SSL=${KC_SMTP_SSL}
+      - PRODUCTION_ADMIN_HOST=${PRODUCTION_ADMIN_HOST}
+      - PRODUCTION_SELLER_HOST=${PRODUCTION_SELLER_HOST}
+      - PRODUCTION_BUYER_HOST=${PRODUCTION_BUYER_HOST}
+      - PRODUCTION_API_HOST=${PRODUCTION_API_HOST}
+      - PRODUCTION_KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
     ports:
-      - "${KEYCLOAK_PORT}:8080"
+      - "${KEYCLOAK_EXTERNAL_PORT:-8030}:8080"
     depends_on:
       keycloak-postgres:
         condition: service_healthy
@@ -68,28 +72,22 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.setup
-    container_name: keycloak-setup
+    container_name: ${KEYCLOAK_SETUP_CONTAINER:-keycloak-setup-prod}
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
     depends_on:
-      keycloak:
-        condition: service_healthy
+      - keycloak
     networks:
       - diplom_default
-    environment:
-      KEYCLOAK_URL: http://keycloak:8080
-      ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
-      ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-      LOCALHOST_HOST: ${LOCALHOST_HOST}
-      DOCKER_HOST: ${DOCKER_HOST}
-      PRODUCTION_HOST: ${PRODUCTION_HOST}
-      FRONTEND_BUYER_PORT: ${FRONTEND_BUYER_PORT}
-      FRONTEND_SELLER_PORT: ${FRONTEND_SELLER_PORT}
-      FRONTEND_ADMIN_PORT: ${FRONTEND_ADMIN_PORT}
-      FRONTEND_DEV_PORT: ${FRONTEND_DEV_PORT}
+    restart: "no"
 
 
 
 volumes:
-  keycloak_data:
+  keycloak_postgres_data:
 
 networks:
   diplom_default:

@@ -15,7 +15,7 @@ FRONTEND_BUYER_PORT ?= 8082
 BACKEND_HOST ?= localhost
 
 # Docker compose commands with environment variables
-COMPOSE := docker compose
+COMPOSE := docker compose --env-file .env
 BACKEND_DIR := backend/backend
 
 .PHONY: help

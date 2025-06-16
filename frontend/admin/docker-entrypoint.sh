@@ -18,8 +18,6 @@ DEFAULT_KEYCLOAK_PORT="8030"
 DEFAULT_FRONTEND_PORT="8082"
 
 # Set defaults from environment or use hardcoded defaults
-LOCALHOST_HOST="${LOCALHOST_HOST:-$DEFAULT_LOCALHOST_HOST}"
-DOCKER_HOST="${DOCKER_HOST:-$DEFAULT_DOCKER_HOST}"
 PRODUCTION_HOST="${PRODUCTION_HOST:-$DEFAULT_PRODUCTION_HOST}"
 KEYCLOAK_HOST="${KEYCLOAK_HOST:-$DEFAULT_KEYCLOAK_HOST}"
 KEYCLOAK_PORT="${KEYCLOAK_PORT:-$DEFAULT_KEYCLOAK_PORT}"
@@ -32,15 +30,6 @@ detect_host() {
         echo "📦 Production mode detected"
         # Use production domain for buyer frontend
         echo "${PRODUCTION_BUYER_HOST:-buyer.${PRODUCTION_HOST}}"
-    else
-        # Development mode
-        if [ -f /.dockerenv ]; then
-            echo "🔧 Development mode in Docker"
-            echo "$DOCKER_HOST"
-        else
-            echo "💻 Development mode locally"
-            echo "$LOCALHOST_HOST"
-        fi
     fi
 }
 
@@ -57,12 +46,6 @@ detect_keycloak_host() {
 detect_admin_host() {
     if [ "$NODE_ENV" = "production" ]; then
         echo "${PRODUCTION_ADMIN_HOST:-admin.${PRODUCTION_HOST}}"
-    else
-        if [ -f /.dockerenv ]; then
-            echo "$DOCKER_HOST"
-        else
-            echo "$LOCALHOST_HOST"
-        fi
     fi
 }
 
