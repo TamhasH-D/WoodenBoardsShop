@@ -253,9 +253,10 @@ function Chats() {
       <div style={{
         backgroundColor: 'white',
         padding: '30px',
-        borderRadius: '12px',
+        borderRadius: '24px',
         marginBottom: '30px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+        border: '1px solid #e2e8f0'
       }}>
         <div style={{
           display: 'flex',
@@ -276,24 +277,29 @@ function Chats() {
             disabled={loading}
             style={{
               padding: '12px 20px',
-              backgroundColor: '#2563eb',
+              backgroundColor: '#8B4513',
               color: 'white',
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: '12px',
               fontSize: '16px',
               fontWeight: '600',
               cursor: loading ? 'not-allowed' : 'pointer',
               opacity: loading ? 0.7 : 1,
-              transition: 'all 0.2s ease'
+              transition: 'all 0.3s ease',
+              boxShadow: '0 4px 16px rgba(139, 69, 19, 0.3)'
             }}
             onMouseEnter={(e) => {
               if (!loading) {
-                e.target.style.backgroundColor = '#1d4ed8';
+                e.target.style.backgroundColor = '#A0522D';
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 8px 24px rgba(139, 69, 19, 0.4)';
               }
             }}
             onMouseLeave={(e) => {
               if (!loading) {
-                e.target.style.backgroundColor = '#2563eb';
+                e.target.style.backgroundColor = '#8B4513';
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 4px 16px rgba(139, 69, 19, 0.3)';
               }
             }}
           >
@@ -394,12 +400,13 @@ function Chats() {
                         onClick={() => handleThreadSelect(thread)}
                         style={{
                           padding: '20px',
-                          backgroundColor: selectedThread?.id === thread.id ? '#dbeafe' : '#f9fafb',
-                          border: selectedThread?.id === thread.id ? '2px solid #2563eb' : '1px solid #e5e7eb',
-                          borderRadius: '12px',
+                          backgroundColor: selectedThread?.id === thread.id ? '#f4f1eb' : '#f9fafb',
+                          border: selectedThread?.id === thread.id ? '2px solid #8B4513' : '1px solid #e2e8f0',
+                          borderRadius: '16px',
                           marginBottom: '16px',
                           cursor: 'pointer',
-                          transition: 'all 0.2s ease'
+                          transition: 'all 0.3s ease',
+                          boxShadow: selectedThread?.id === thread.id ? '0 4px 16px rgba(139, 69, 19, 0.2)' : '0 2px 8px rgba(0,0,0,0.05)'
                         }}
                         onMouseEnter={(e) => {
                           if (selectedThread?.id !== thread.id) {

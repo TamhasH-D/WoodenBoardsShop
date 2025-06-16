@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../contexts/NotificationContext';
+import { apiService } from '../../services/api';
+import { getCurrentBuyerId } from '../../utils/auth';
 import { BUYER_TEXTS } from '../../utils/localization';
 
 const StartChatButton = ({ sellerId, sellerName, className = '', size = 'medium' }) => {
   const navigate = useNavigate();
   const { showError, showSuccess } = useNotifications();
   const [isStarting, setIsStarting] = useState(false);
-  
-  // Получаем buyer_id из localStorage или контекста
-  const buyerId = localStorage.getItem('buyer_id') || 'b8c8e1e0-1234-5678-9abc-def012345678';
 
   const handleStartChat = async () => {
     if (!sellerId) {
@@ -18,29 +17,28 @@ const StartChatButton = ({ sellerId, sellerName, className = '', size = 'medium'
     }
 
     setIsStarting(true);
-    
-    try {
-      const response = await fetch('/api/v1/chat-threads/start-with-seller', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          buyer_id: buyerId,
-          seller_id: sellerId
-        })
-      });
 
-      if (!response.ok) {
-        throw new Error('Не удалось создать чат');
+    try {
+      // Получаем buyer_id
+      const buyerId = await getCurrentBuyerId();
+
+      // Проверяем, есть ли уже чат с этим продавцом
+      const existingChats = await apiService.getBuyerChats(buyerId);
+      const existingThread = existingChats.data?.find(t => t.seller_id === sellerId);
+
+      if (existingThread) {
+        // Если чат уже существует, переходим к нему
+        showSuccess(`Переход к существующему чату с ${sellerName || 'продавцом'}`);
+        navigate(`/chats/${existingThread.id}`);
+      } else {
+        // Создаем новый чат
+        const result = await apiService.startChatWithSeller(buyerId, sellerId);
+        const threadId = result.data.id;
+
+        showSuccess(`Чат с ${sellerName || 'продавцом'} создан`);
+        navigate(`/chats/${threadId}`);
       }
 
-      const result = await response.json();
-      const threadId = result.data.id;
-      
-      showSuccess(`Чат с ${sellerName || 'продавцом'} создан`);
-      navigate(`/chats/${threadId}`);
-      
     } catch (error) {
       console.error('Ошибка создания чата:', error);
       showError('Не удалось создать чат');
@@ -69,19 +67,20 @@ const StartChatButton = ({ sellerId, sellerName, className = '', size = 'medium'
 
   const buttonStyle = {
     ...buttonSizes[size],
-    backgroundColor: '#2563eb',
+    backgroundColor: '#8B4513',
     color: 'white',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: '12px',
     cursor: isStarting ? 'not-allowed' : 'pointer',
     opacity: isStarting ? 0.7 : 1,
-    transition: 'all 0.2s ease',
+    transition: 'all 0.3s ease',
     fontWeight: '600',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     gap: '8px',
-    textDecoration: 'none'
+    textDecoration: 'none',
+    boxShadow: '0 4px 16px rgba(139, 69, 19, 0.3)'
   };
 
   return (
