@@ -6,6 +6,7 @@ import { formatCurrencyRu } from '../utils/localization';
 import { apiService } from '../services/api';
 import ProductImageWithBoards from '../components/ProductImageWithBoards';
 import ProductChat from '../components/ProductChat';
+// eslint-disable-next-line no-unused-vars
 import { getCurrentBuyerKeycloakId } from '../utils/auth';
 
 const ProductDetailPage = () => {

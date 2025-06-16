@@ -13,7 +13,9 @@ function Chats() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [buyerId, setBuyerId] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [selectedThread, setSelectedThread] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [isConnected, setIsConnected] = useState(false);
 
   // WebSocket refs

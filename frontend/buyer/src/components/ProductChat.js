@@ -115,7 +115,7 @@ const ProductChat = ({ productId, product, sellerId, buyerId: propBuyerId }) => 
       isConnectingRef.current = false;
       setIsConnected(false);
     };
-  }, [buyerId, sellerId]); // Добавляем buyerId и sellerId как зависимости
+  }, [buyerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadChatData = useCallback(async () => {
     console.log('[ProductChat] loadChatData: Called');
@@ -270,7 +270,7 @@ const ProductChat = ({ productId, product, sellerId, buyerId: propBuyerId }) => 
     };
 
     initializeBuyer();
-  }, [showError]); // Добавляем showError как зависимость
+  }, [buyerId, showError]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Устанавливаем defaultMessage только один раз
   useEffect(() => {

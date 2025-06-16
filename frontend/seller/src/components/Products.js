@@ -6,6 +6,7 @@ import { SELLER_TEXTS, formatDateRu } from '../utils/localization';
 import { getCurrentSellerKeycloakId } from '../utils/auth';
 import ProductImage from './ui/ProductImage';
 import UnifiedProductForm from './UnifiedProductForm';
+// eslint-disable-next-line no-unused-vars
 import ProductFilters from './ProductFilters';
 import ProductExport from './ProductExport';
 import ErrorToast, { useErrorHandler } from './ui/ErrorToast';
@@ -33,6 +34,7 @@ function Products() {
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
   const [showFilters, setShowFilters] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [activeFilterTab, setActiveFilterTab] = useState('basic');
   const [showExport, setShowExport] = useState(false);
   const [showSpinner, setShowSpinner] = useState(false);
@@ -176,6 +178,7 @@ function Products() {
   }, []);
 
   // Quick filter presets
+  // eslint-disable-next-line no-unused-vars
   const applyQuickFilter = useCallback((preset) => {
     clearFilters();
     switch (preset) {

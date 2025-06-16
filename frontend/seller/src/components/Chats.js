@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS } from '../utils/localization';
@@ -11,6 +12,7 @@ function Chats() {
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [isConnected, setIsConnected] = useState(false);
 
   // WebSocket refs

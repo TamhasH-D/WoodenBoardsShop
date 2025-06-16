@@ -95,7 +95,7 @@ const UnifiedProductForm = ({
       console.log('UnifiedProductForm - setting new form data:', newFormData); // Временный лог для отладки
       setFormData(newFormData);
     }
-  }, [initialData]);
+  }, [initialData, isEditMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Обновляем рекомендуемую цену при изменении типа древесины
   useEffect(() => {

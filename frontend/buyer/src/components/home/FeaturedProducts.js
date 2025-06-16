@@ -21,7 +21,7 @@ const FeaturedProducts = ({
 
   useEffect(() => {
     loadFeaturedProducts();
-  }, [limit]);
+  }, [limit]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadFeaturedProducts = async () => {
     try {

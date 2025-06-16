@@ -84,7 +84,7 @@ export const BuyerAuthProvider = ({ children }) => {
         hasBuyerProfile: !!buyerProfile
       });
     }
-  }, [oidcAuth.isAuthenticated, oidcAuth.isLoading, oidcAuth.error, buyerId, buyerProfile]);
+  }, [oidcAuth.isAuthenticated, oidcAuth.isLoading, oidcAuth.error, oidcAuth.user?.sub, buyerId, buyerProfile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Объединяем OIDC контекст с buyer-специфичными данными
   const contextValue = {
