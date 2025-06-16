@@ -239,6 +239,7 @@ main() {
     log "🚀 Starting Universal Keycloak Setup with Maximum Wildcards..."
     log "🌐 Keycloak URL: $KEYCLOAK_URL"
     log "👤 Admin User: $ADMIN_USERNAME"
+    log "🌍 Environment: ${NODE_ENV:-development}"
     
     # Wait for Keycloak
     if ! wait_for_keycloak; then

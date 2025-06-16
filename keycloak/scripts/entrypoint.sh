@@ -37,7 +37,7 @@ fi
 
 # Start Keycloak in background
 log "Starting Keycloak server..."
-/opt/keycloak/bin/kc.sh start-dev &
+/opt/keycloak/bin/kc.sh start &
 KEYCLOAK_PID=$!
 
 log "Keycloak started with PID: $KEYCLOAK_PID"

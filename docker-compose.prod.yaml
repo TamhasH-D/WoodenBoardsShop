@@ -1,0 +1,181 @@
+version: '3.8'
+
+services:
+  # Backend API
+  backend-api:
+    build: ./backend
+    container_name: backend-api-prod
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=production
+      - BACKEND_HOST=0.0.0.0
+      - BACKEND_PORT=8000
+      - BACKEND_DEBUG=false
+      - BACKEND_LOG_LEVEL=info
+      - BACKEND_PG_HOST=backend-pg
+      - BACKEND_PG_PORT=5432
+      - BACKEND_PG_USER=${BACKEND_PG_USER}
+      - BACKEND_PG_PASSWORD=${BACKEND_PG_PASSWORD}
+      - BACKEND_PG_DATABASE=${BACKEND_PG_DATABASE}
+      - BACKEND_REDIS_HOST=backend-redis
+      - BACKEND_REDIS_PORT=6379
+      - BACKEND_CORS_ALLOW_ORIGINS=https://admin.taruman.ru,https://seller.taruman.ru,https://buyer.taruman.ru
+    depends_on:
+      - backend-pg
+      - backend-redis
+    networks:
+      - diplom_default
+    restart: unless-stopped
+
+  # PostgreSQL Database
+  backend-pg:
+    image: postgres:17.4-bookworm
+    container_name: backend-pg-prod
+    environment:
+      - POSTGRES_DB=${BACKEND_PG_DATABASE}
+      - POSTGRES_USER=${BACKEND_PG_USER}
+      - POSTGRES_PASSWORD=${BACKEND_PG_PASSWORD}
+    volumes:
+      - backend_pg_data:/var/lib/postgresql/data
+    networks:
+      - diplom_default
+    restart: unless-stopped
+
+  # Redis Cache
+  backend-redis:
+    image: bitnami/redis:7.4
+    container_name: backend-redis-prod
+    environment:
+      - REDIS_PASSWORD=${BACKEND_REDIS_PASSWORD}
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    volumes:
+      - backend_redis_data:/bitnami/redis/data
+    networks:
+      - diplom_default
+    restart: unless-stopped
+
+  # Keycloak
+  keycloak:
+    build:
+      context: ./keycloak
+      dockerfile: Dockerfile
+    container_name: keycloak-prod
+    ports:
+      - "8030:8080"
+    environment:
+      - NODE_ENV=production
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://keycloak-postgres:5432/keycloak
+      - KC_DB_USERNAME=${POSTGRES_USER}
+      - KC_DB_PASSWORD=${POSTGRES_PASSWORD}
+      - KC_HOSTNAME=keycloak.taruman.ru
+      - KC_HOSTNAME_STRICT=false
+      - KC_HTTP_ENABLED=true
+      - KC_PROXY=edge
+      - PRODUCTION_ADMIN_HOST=${PRODUCTION_ADMIN_HOST}
+      - PRODUCTION_SELLER_HOST=${PRODUCTION_SELLER_HOST}
+      - PRODUCTION_BUYER_HOST=${PRODUCTION_BUYER_HOST}
+      - PRODUCTION_API_HOST=${PRODUCTION_API_HOST}
+      - PRODUCTION_KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
+    depends_on:
+      - keycloak-postgres
+    networks:
+      - diplom_default
+    restart: unless-stopped
+
+  # Keycloak PostgreSQL
+  keycloak-postgres:
+    image: postgres:15-alpine
+    container_name: keycloak-postgres-prod
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - keycloak_postgres_data:/var/lib/postgresql/data
+    networks:
+      - diplom_default
+    restart: unless-stopped
+
+  # Keycloak Setup
+  keycloak-setup:
+    build:
+      context: ./keycloak
+      dockerfile: Dockerfile.setup
+    container_name: keycloak-setup-prod
+    environment:
+      - NODE_ENV=production
+      - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+    depends_on:
+      - keycloak
+    networks:
+      - diplom_default
+    restart: "no"
+
+  # Admin Frontend
+  admin-frontend:
+    build: ./frontend/admin
+    container_name: admin-frontend-prod
+    ports:
+      - "8080:80"
+    environment:
+      - NODE_ENV=production
+      - PRODUCTION_ADMIN_HOST=${PRODUCTION_ADMIN_HOST}
+      - PRODUCTION_API_HOST=${PRODUCTION_API_HOST}
+      - PRODUCTION_KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
+    networks:
+      - diplom_default
+    restart: unless-stopped
+
+  # Seller Frontend
+  seller-frontend:
+    build: ./frontend/seller
+    container_name: seller-frontend-prod
+    ports:
+      - "8081:80"
+    environment:
+      - NODE_ENV=production
+      - PRODUCTION_SELLER_HOST=${PRODUCTION_SELLER_HOST}
+      - PRODUCTION_API_HOST=${PRODUCTION_API_HOST}
+      - PRODUCTION_KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
+    networks:
+      - diplom_default
+    restart: unless-stopped
+
+  # Buyer Frontend
+  buyer-frontend:
+    build:
+      context: ./frontend/buyer
+      dockerfile: Dockerfile.dev
+    container_name: buyer-frontend-prod
+    ports:
+      - "8082:3000"
+    environment:
+      - NODE_ENV=production
+      - PRODUCTION_BUYER_HOST=${PRODUCTION_BUYER_HOST}
+      - PRODUCTION_API_HOST=${PRODUCTION_API_HOST}
+      - PRODUCTION_KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
+      - LOCALHOST_HOST=${LOCALHOST_HOST}
+      - DOCKER_HOST=${DOCKER_HOST}
+      - PRODUCTION_HOST=${PRODUCTION_HOST}
+      - KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
+      - KEYCLOAK_PORT=443
+      - FRONTEND_PORT=443
+    networks:
+      - diplom_default
+    restart: unless-stopped
+
+volumes:
+  backend_pg_data:
+  backend_redis_data:
+  keycloak_postgres_data:
+
+networks:
+  diplom_default:
+    name: diplom_default
+    external: true
