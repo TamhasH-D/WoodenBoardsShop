@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { AuthStatus } from '../auth';
 
 const ProfessionalHeader = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -84,42 +85,59 @@ const ProfessionalHeader = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <nav
-            className="desktop-nav"
-            style={{
-              display: isMobile ? 'none' : 'flex',
-              alignItems: 'center',
-              gap: '2rem'
-            }}
-          >
-            {navigationItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                style={{
-                  color: isActive(item.path) ? '#2563eb' : '#374151',
-                  textDecoration: 'none',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  padding: '0.5rem 0',
-                  borderBottom: isActive(item.path) ? '2px solid #2563eb' : '2px solid transparent',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseOver={(e) => {
-                  if (!isActive(item.path)) {
-                    e.target.style.color = '#2563eb';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (!isActive(item.path)) {
-                    e.target.style.color = '#374151';
-                  }
-                }}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2rem'
+          }}>
+            <nav
+              className="desktop-nav"
+              style={{
+                display: isMobile ? 'none' : 'flex',
+                alignItems: 'center',
+                gap: '2rem'
+              }}
+            >
+              {navigationItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  style={{
+                    color: isActive(item.path) ? '#2563eb' : '#374151',
+                    textDecoration: 'none',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    padding: '0.5rem 0',
+                    borderBottom: isActive(item.path) ? '2px solid #2563eb' : '2px solid transparent',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseOver={(e) => {
+                    if (!isActive(item.path)) {
+                      e.target.style.color = '#2563eb';
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (!isActive(item.path)) {
+                      e.target.style.color = '#374151';
+                    }
+                  }}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+
+            {/* Authentication Status */}
+            <div style={{
+              display: isMobile ? 'none' : 'block'
+            }}>
+              <AuthStatus
+                showUserInfo={true}
+                showButtons={true}
+                compact={false}
+              />
+            </div>
+          </div>
 
           {/* Mobile Menu Button */}
           <button
@@ -205,6 +223,19 @@ const ProfessionalHeader = () => {
                   {item.label}
                 </Link>
               ))}
+
+              {/* Mobile Authentication Status */}
+              <div style={{
+                marginTop: '1rem',
+                paddingTop: '1rem',
+                borderTop: '1px solid #e5e7eb'
+              }}>
+                <AuthStatus
+                  showUserInfo={true}
+                  showButtons={true}
+                  compact={true}
+                />
+              </div>
             </nav>
           </div>
         )}

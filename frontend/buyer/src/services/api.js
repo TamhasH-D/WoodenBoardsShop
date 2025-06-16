@@ -14,10 +14,39 @@ const api = axios.create({
   },
 });
 
-// Request interceptor for logging
+/**
+ * Функция для получения токена доступа
+ * Пытается получить токен из AuthContext, если доступен
+ */
+const getAccessToken = () => {
+  try {
+    // Проверяем, доступен ли контекст аутентификации
+    if (typeof window !== 'undefined' && window.__BUYER_AUTH_CONTEXT__) {
+      return window.__BUYER_AUTH_CONTEXT__.user?.access_token;
+    }
+  } catch (error) {
+    // Игнорируем ошибки получения токена в режиме разработки
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('[API] Could not get access token:', error.message);
+    }
+  }
+  return null;
+};
+
+// Request interceptor for authentication and logging
 api.interceptors.request.use(
   (config) => {
+    // Добавляем Bearer токен, если доступен
+    const accessToken = getAccessToken();
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+
     console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    if (accessToken) {
+      console.log('API Request: Using Bearer token authentication');
+    }
+
     return config;
   },
   (error) => {
@@ -34,9 +63,14 @@ api.interceptors.response.use(
   },
   (error) => {
     console.error('API Response Error:', error.response?.status, error.response?.data);
-    
+
     // Handle common error cases
-    if (error.response?.status === 404) {
+    if (error.response?.status === 401) {
+      console.warn('Unauthorized - token may be expired or invalid');
+      // В будущем здесь можно добавить логику обновления токена
+    } else if (error.response?.status === 403) {
+      console.warn('Forbidden - insufficient permissions');
+    } else if (error.response?.status === 404) {
       console.warn('Resource not found');
     } else if (error.response?.status >= 500) {
       console.error('Server error occurred');
@@ -45,7 +79,7 @@ api.interceptors.response.use(
     } else if (error.code === 'ERR_NETWORK') {
       console.error('Network error - backend may be unavailable');
     }
-    
+
     return Promise.reject(error);
   }
 );

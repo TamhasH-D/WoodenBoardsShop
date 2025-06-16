@@ -5,7 +5,7 @@ FROM alpine:latest
 RUN apk add --no-cache curl bash
 
 # Copy setup script
-COPY scripts/setup-keycloak-container.sh /setup-keycloak.sh
+COPY scripts/setup-universal.sh /setup-keycloak.sh
 
 # Make script executable
 RUN chmod +x /setup-keycloak.sh
