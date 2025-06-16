@@ -286,15 +286,15 @@ main() {
         if create_realm "$realm" "$token"; then
             case "$realm" in
                 "AdminRealm")
-                    create_client "$realm" "admin-frontend" '"http://localhost:8080/*"' "$token"
+                    create_client "$realm" "admin-frontend" '"https://admin.taruman.ru/*", "http://localhost:8080/*"' "$token"
                     create_test_user "$realm" "admin@test.com" "admin@test.com" "admin123" "$token"
                     ;;
                 "BuyerRealm")
-                    create_client "$realm" "buyer-frontend" '"http://localhost:8082/*"' "$token"
+                    create_client "$realm" "buyer-frontend" '"https://buyer.taruman.ru/*", "http://localhost:8082/*"' "$token"
                     create_test_user "$realm" "buyer@test.com" "buyer@test.com" "buyer123" "$token"
                     ;;
                 "SellerRealm")
-                    create_client "$realm" "seller-frontend" '"http://localhost:8081/*"' "$token"
+                    create_client "$realm" "seller-frontend" '"https://seller.taruman.ru/*", "http://localhost:8081/*"' "$token"
                     create_test_user "$realm" "seller@test.com" "seller@test.com" "seller123" "$token"
                     ;;
             esac

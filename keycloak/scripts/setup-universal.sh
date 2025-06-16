@@ -89,41 +89,47 @@ create_realm() {
         return 0
     fi
     
-    # Create realm with universal settings
-    local realm_config='{
-        "realm": "'$realm_name'",
-        "enabled": true,
-        "registrationAllowed": false,
-        "loginWithEmailAllowed": true,
-        "duplicateEmailsAllowed": false,
-        "resetPasswordAllowed": true,
-        "editUsernameAllowed": false,
-        "bruteForceProtected": true,
-        "sslRequired": "none",
-        "accessTokenLifespan": 300,
-        "accessTokenLifespanForImplicitFlow": 900,
-        "ssoSessionIdleTimeout": 1800,
-        "ssoSessionMaxLifespan": 36000,
-        "offlineSessionIdleTimeout": 2592000,
-        "accessCodeLifespan": 60,
-        "accessCodeLifespanUserAction": 300,
-        "accessCodeLifespanLogin": 1800,
-        "actionTokenGeneratedByAdminLifespan": 43200,
-        "actionTokenGeneratedByUserLifespan": 300
-    }'
+    # Create realm with minimal settings
+    local realm_config=$(cat <<EOF
+{
+    "realm": "$realm_name",
+    "enabled": true
+}
+EOF
+)
+
+    log "Creating realm with config: $realm_config"
     
+    local temp_file="/tmp/keycloak_response_$$"
     local http_code
+
+    # Debug: show curl command
+    log "Executing: curl -X POST $KEYCLOAK_URL/admin/realms -H 'Authorization: Bearer [TOKEN]' -H 'Content-Type: application/json' -d '$realm_config'"
+
     http_code=$(curl -s -w "%{http_code}" -X POST "$KEYCLOAK_URL/admin/realms" \
         -H "Authorization: Bearer $token" \
         -H "Content-Type: application/json" \
         -d "$realm_config" \
-        -o /dev/null 2>/dev/null)
-    
+        -o "$temp_file" 2>/dev/null)
+
+    local response_body=""
+    if [ -f "$temp_file" ]; then
+        response_body=$(cat "$temp_file" 2>/dev/null || echo "")
+        log "Temp file exists, size: $(wc -c < "$temp_file" 2>/dev/null || echo 0) bytes"
+    else
+        log "Temp file does not exist"
+    fi
+    rm -f "$temp_file"
+
     if [ "$http_code" = "201" ]; then
         log "Realm '$realm_name' created successfully"
         return 0
+    elif [ "$http_code" = "409" ]; then
+        warn "Realm '$realm_name' already exists, skipping"
+        return 0
     else
         error "Failed to create realm '$realm_name' (HTTP $http_code)"
+        error "Response: $response_body"
         return 1
     fi
 }
@@ -172,13 +178,17 @@ create_universal_client() {
         }
     }'
     
+    local temp_file="/tmp/keycloak_client_response_$$"
     local http_code
     http_code=$(curl -s -w "%{http_code}" -X POST "$KEYCLOAK_URL/admin/realms/$realm_name/clients" \
         -H "Authorization: Bearer $token" \
         -H "Content-Type: application/json" \
         -d "$client_config" \
-        -o /dev/null 2>/dev/null)
-    
+        -o "$temp_file" 2>/dev/null)
+
+    local response_body=$(cat "$temp_file" 2>/dev/null || echo "")
+    rm -f "$temp_file"
+
     if [ "$http_code" = "201" ]; then
         log "Universal client '$client_id' created successfully"
         return 0
@@ -187,6 +197,7 @@ create_universal_client() {
         return 0
     else
         error "Failed to create client '$client_id' (HTTP $http_code)"
+        error "Response: $response_body"
         return 1
     fi
 }
@@ -254,7 +265,7 @@ main() {
         error "Failed to get admin token"
         exit 1
     fi
-    log "✅ Admin token acquired successfully"
+    log "✅ Admin token acquired successfully (length: ${#token})"
     
     # Create realms and configure them
     local realms=("AdminRealm" "BuyerRealm" "SellerRealm")

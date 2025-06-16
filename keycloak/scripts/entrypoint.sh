@@ -20,8 +20,8 @@ warn() {
 
 # Function to run setup in background
 run_setup() {
-    log "Starting Keycloak setup in background..."
-    /opt/keycloak/scripts/setup-keycloak.sh &
+    log "Starting Keycloak universal setup in background..."
+    /opt/keycloak/scripts/setup-universal.sh &
     local setup_pid=$!
     log "Setup process started with PID: $setup_pid"
 }

@@ -1,90 +1,54 @@
 services:
   keycloak-postgres:
-    image: postgres:15-alpine
+    image: postgres:14-alpine
     container_name: ${KEYCLOAK_POSTGRES_CONTAINER:-keycloak-postgres-prod}
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-keycloak}
+      POSTGRES_USER: ${POSTGRES_USER:-keycloak}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
     volumes:
       - keycloak_postgres_data:/var/lib/postgresql/data
     networks:
       - diplom_default
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-keycloak} -d ${POSTGRES_DB:-keycloak}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   keycloak:
-    build: .
+    image: quay.io/keycloak/keycloak:26.2.5
     container_name: ${KEYCLOAK_CONTAINER:-keycloak-prod}
     environment:
-      - NODE_ENV=${NODE_ENV}
-      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
-      - KC_DB=${KC_DB}
-      - KC_DB_URL=${KC_DB_URL}
-      - KC_DB_USERNAME=${POSTGRES_USER}
-      - KC_DB_PASSWORD=${POSTGRES_PASSWORD}
-      - KC_HOSTNAME=${KC_HOSTNAME}
-      - KC_HOSTNAME_STRICT=${KC_HOSTNAME_STRICT}
-      - KC_HTTP_ENABLED=${KC_HTTP_ENABLED}
-      - KC_PROXY=${KC_PROXY}
-      - KC_HOSTNAME_URL=${KC_HOSTNAME_URL}
-      - KC_HOSTNAME_STRICT_HTTPS=${KC_HOSTNAME_STRICT_HTTPS}
-      - KC_SMTP_SERVER_HOST=${KC_SMTP_SERVER_HOST}
-      - KC_SMTP_SERVER_PORT=${KC_SMTP_SERVER_PORT}
-      - KC_SMTP_FROM=${KC_SMTP_FROM}
-      - KC_SMTP_AUTH=${KC_SMTP_AUTH}
-      - KC_SMTP_USER=${KC_SMTP_USER}
-      - KC_SMTP_PASSWORD=${KC_SMTP_PASSWORD}
-      - KC_SMTP_STARTTLS=${KC_SMTP_STARTTLS}
-      - KC_SMTP_SSL=${KC_SMTP_SSL}
-      - PRODUCTION_ADMIN_HOST=${PRODUCTION_ADMIN_HOST}
-      - PRODUCTION_SELLER_HOST=${PRODUCTION_SELLER_HOST}
-      - PRODUCTION_BUYER_HOST=${PRODUCTION_BUYER_HOST}
-      - PRODUCTION_API_HOST=${PRODUCTION_API_HOST}
-      - PRODUCTION_KEYCLOAK_HOST=${PRODUCTION_KEYCLOAK_HOST}
+      # Админ пользователь и пароль
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin_password}
+      # База данных
+      KC_DB: postgres
+      KC_DB_USERNAME: ${POSTGRES_USER:-keycloak}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      KC_DB_URL: jdbc:postgresql://${KEYCLOAK_POSTGRES_CONTAINER:-keycloak-postgres-prod}:5432/${POSTGRES_DB:-keycloak}
+      # Хост и прокси (настройте по необходимости)
+      KC_HOSTNAME: ${KC_HOSTNAME_URL:-localhost}
+      KC_PROXY: ${KC_PROXY:-edge}
+      KC_HTTP_ENABLED: "true"  # если нужен http, иначе false
     ports:
       - "${KEYCLOAK_EXTERNAL_PORT:-8030}:8080"
     depends_on:
       keycloak-postgres:
         condition: service_healthy
     command:
-      - start-dev
+      - start
     networks:
       - diplom_default
     healthcheck:
-      test:
-        [
-          "CMD",
-          "/bin/bash",
-          "-c",
-          "exec 3<>/dev/tcp/localhost/8080; echo -e 'GET /health/ready HTTP/1.1\\nHost: localhost\\nConnection: close\\n' >&3; grep '200 OK' <&3 || exit 1"
-        ]
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 60s
-
-  keycloak-setup:
-    build:
-      context: .
-      dockerfile: Dockerfile.setup
-    container_name: ${KEYCLOAK_SETUP_CONTAINER:-keycloak-setup-prod}
-    environment:
-      - NODE_ENV=${NODE_ENV}
-      - KEYCLOAK_URL=http://keycloak:8080
-      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
-    depends_on:
-      - keycloak
-    networks:
-      - diplom_default
-    restart: "no"
-
-
+    restart: unless-stopped
 
 volumes:
   keycloak_postgres_data:
