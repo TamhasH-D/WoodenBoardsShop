@@ -1,12 +1,14 @@
 import React from 'react';
 import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import HealthCheck from '../components/HealthCheck';
+import DatabaseManager from '../components/DatabaseManager';
 import Card from '../components/ui/Card';
 import { cn } from '../utils/helpers';
 import {
   HeartIcon,
   DocumentTextIcon,
   CogIcon,
+  CircleStackIcon,
 } from '@heroicons/react/24/outline';
 
 /**
@@ -44,6 +46,7 @@ const SystemPage = () => {
 
   const tabs = [
     { key: 'health', label: 'Состояние системы', path: '/system/health', icon: HeartIcon },
+    { key: 'database', label: 'База данных', path: '/system/database', icon: CircleStackIcon },
     { key: 'logs', label: 'Логи', path: '/system/logs', icon: DocumentTextIcon },
     { key: 'settings', label: 'Настройки', path: '/system/settings', icon: CogIcon },
   ];
@@ -54,7 +57,7 @@ const SystemPage = () => {
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Система</h1>
         <p className="mt-1 text-sm text-gray-600">
-          Мониторинг состояния системы, логи и настройки
+          Мониторинг состояния системы, управление базой данных, логи и настройки
         </p>
       </div>
 
@@ -88,6 +91,7 @@ const SystemPage = () => {
       <Routes>
         <Route path="/" element={<Navigate to="/system/health" replace />} />
         <Route path="/health" element={<HealthCheck />} />
+        <Route path="/database" element={<DatabaseManager />} />
         <Route path="/logs" element={<SystemLogsPlaceholder />} />
         <Route path="/settings" element={<SystemSettingsPlaceholder />} />
       </Routes>

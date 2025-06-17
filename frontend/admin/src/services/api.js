@@ -843,6 +843,23 @@ export const apiService = {
 
 
 
+  // Database Import/Export
+  async exportDatabase() {
+    const response = await api.get('/api/v1/demo/export-database');
+    return response.data;
+  },
+
+  async importDatabase(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await api.post('/api/v1/demo/import-database', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };
 
 export default api;
