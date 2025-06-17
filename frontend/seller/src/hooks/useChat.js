@@ -227,11 +227,25 @@ export const useChat = () => {
 
   // Send message
   const sendMessage = useCallback(async (messageText) => {
-    if (!selectedThread || !sellerId || !messageText.trim()) return false;
+    if (!sellerId || !messageText.trim()) return false;
+    let thread = selectedThread;
+    if (!thread) {
+      try {
+        const response = await apiService.createSellerChatThread(sellerId);
+        thread = response.data;
+        await selectThread(thread);
+      } catch (err) {
+        console.error('Failed to create chat thread:', err);
+        const errorMessage = 'Ошибка создания чата';
+        setError(errorMessage);
+        notifyError(errorMessage);
+        return false;
+      }
+    }
 
     // Генерируем UUID для сообщения
     const messageId = crypto.randomUUID ? crypto.randomUUID() : `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
+    
     try {
       // Добавляем сообщение локально сразу для лучшего UX
       const tempMessage = {
@@ -239,7 +253,7 @@ export const useChat = () => {
         message: messageText.trim(),
         buyer_id: null,
         seller_id: sellerId,
-        thread_id: selectedThread.id,
+        thread_id: thread.id,
         created_at: new Date().toISOString(),
         is_read_by_buyer: false,
         is_read_by_seller: true,
@@ -250,7 +264,7 @@ export const useChat = () => {
 
       const messageData = {
         id: messageId,
-        thread_id: selectedThread.id,
+        thread_id: thread.id,
         message: messageText.trim(),
         is_read_by_buyer: false,
         is_read_by_seller: true,
@@ -287,7 +301,7 @@ export const useChat = () => {
       notifyError(errorMessage);
       return false;
     }
-  }, [selectedThread, sellerId]);
+  }, [selectedThread, sellerId, notifyError, notifyMessageSent]);
 
   // Send typing indicator
   const sendTypingIndicator = useCallback((isTyping) => {
@@ -310,6 +324,147 @@ export const useChat = () => {
       loadThreads();
     }
   }, [sellerId, loadThreads]);
+
+  // Connect to global WebSocket channel for new threads and buyer messages
+  useEffect(() => {
+    if (sellerId) {
+      console.log('[useChat] Connecting to Global WebSocket channel for new threads');
+      websocketManager.addMessageHandler(`global_${sellerId}`, (data) => {
+        if (data.type === 'new_thread' && data.thread) {
+          setThreads(prev => {
+            if (prev.some(t => t.id === data.thread.id)) return prev;
+            return [...prev, data.thread];
+          });
+        } else if (data.type === 'buyer_message' && data.thread) {
+          // Update thread with buyer message info
+          setThreads(prev => prev.map(t =>
+            t.id === data.thread.id
+              ? { 
+                  ...t, 
+                  last_message: data.message, 
+                  updated_at: data.timestamp || new Date().toISOString(), 
+                  unread_count: (t.unread_count || 0) + 1 
+                }
+              : t
+          ));
+          // Create buyer message object
+          const buyerMsg = {
+            id: data.message_id || Date.now(),
+            message: data.message,
+            sender_id: data.sender_id,
+            sender_type: 'buyer',
+            created_at: data.timestamp || new Date().toISOString(),
+            thread_id: data.thread.id,
+            buyer_id: data.sender_id,
+            seller_id: null,
+            is_read_by_buyer: false,
+            is_read_by_seller: false
+          };
+          // Update messages state if the thread is selected
+          if (selectedThread && selectedThread.id === data.thread.id) {
+            setMessages(prev => {
+              if (prev.some(msg => msg.id === buyerMsg.id)) return prev;
+              return [...prev, buyerMsg].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            });
+          }
+          // Update messages cache regardless of selection
+          const cached = messagesRef.current.get(data.thread.id) || [];
+          if (!cached.some(msg => msg.id === buyerMsg.id)) {
+            messagesRef.current.set(data.thread.id, [...cached, buyerMsg].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
+          }
+        }
+      });
+      websocketManager.connect(`global_${sellerId}`, sellerId, 'seller', (connected) => {
+        console.log(`[useChat] Global WebSocket connection status:`, connected);
+      });
+    }
+    return () => {
+      if (sellerId) {
+        websocketManager.removeMessageHandler(`global_${sellerId}`);
+        websocketManager.disconnect(`global_${sellerId}`);
+      }
+    };
+  }, [sellerId]);
+
+  // Connect to WebSocket for all threads when threads are loaded
+  useEffect(() => {
+    if (sellerId && threads.length > 0) {
+      console.log('[useChat] Connecting to WebSocket for all threads:', threads.length);
+
+      // Подключаемся ко всем чатам для получения уведомлений
+      threads.forEach(thread => {
+        if (!websocketManager.isConnected(thread.id)) {
+          console.log(`[useChat] Connecting to WebSocket for thread ${thread.id}`);
+
+          // Добавляем обработчик сообщений для каждого треда
+          websocketManager.addMessageHandler(thread.id, (data, threadId) => {
+            console.log(`[useChat] Global message received for thread ${threadId}:`, data);
+
+            if (data.type === 'message') {
+              // Игнорируем собственные сообщения
+              if (data.sender_id === sellerId) {
+                console.log('[useChat] Ignoring own message from WebSocket');
+                return;
+              }
+
+              const newMessage = {
+                id: data.message_id || Date.now(),
+                message: data.message,
+                sender_id: data.sender_id,
+                sender_type: data.sender_type,
+                created_at: data.timestamp || new Date().toISOString(),
+                thread_id: threadId,
+                buyer_id: data.sender_type === 'buyer' ? data.sender_id : null,
+                seller_id: data.sender_type === 'seller' ? data.sender_id : null,
+                is_read_by_buyer: data.sender_type === 'buyer',
+                is_read_by_seller: data.sender_type === 'seller'
+              };
+
+              // Обновляем сообщения только если это выбранный тред
+              if (selectedThread?.id === threadId) {
+                setMessages(prevMessages => {
+                  const exists = prevMessages.some(msg => msg.id === newMessage.id);
+                  if (exists) return prevMessages;
+
+                  const updated = [...prevMessages, newMessage].sort(
+                    (a, b) => new Date(a.created_at) - new Date(b.created_at)
+                  );
+
+                  return updated;
+                });
+              }
+
+              // Обновляем список тредов с новым сообщением
+              setThreads(prevThreads =>
+                prevThreads.map(t =>
+                  t.id === threadId
+                    ? {
+                        ...t,
+                        last_message: newMessage.message,
+                        updated_at: newMessage.created_at,
+                        unread_count: newMessage.sender_type === 'buyer'
+                          ? (t.unread_count || 0) + 1
+                          : t.unread_count
+                      }
+                    : t
+                )
+              );
+
+              // Показываем уведомление для новых сообщений от покупателя
+              if (newMessage.sender_type === 'buyer') {
+                notifyNewMessage('Покупатель', newMessage.message, threadId);
+              }
+            }
+          });
+
+          // Подключаемся к WebSocket
+          websocketManager.connect(thread.id, sellerId, 'seller', (connected) => {
+            console.log(`[useChat] WebSocket connection status for thread ${thread.id}:`, connected);
+          });
+        }
+      });
+    }
+  }, [sellerId, threads, selectedThread, notifyNewMessage]);
 
   // Cleanup on unmount
   useEffect(() => {

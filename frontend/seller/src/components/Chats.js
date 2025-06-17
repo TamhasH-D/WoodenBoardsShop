@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ChatContainer } from './chat';
 import { useChat } from '../hooks/useChat';
 import { SELLER_TEXTS } from '../utils/localization';
@@ -21,13 +21,41 @@ function Chats() {
     clearError
   } = useChat();
 
+  // Refresh threads on component mount.
+  // Initial refresh on mount
+  useEffect(() => {
+    refreshThreads();
+  }, [refreshThreads]);
+
+  // Poll for new threads/messages every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log("Polling refreshThreads");
+      refreshThreads();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [refreshThreads]);
+
+  useEffect(() => {
+    console.log("Chat connection status:", isConnected);
+  }, [isConnected]);
+  
+  useEffect(() => {
+    if (isConnected) {
+      refreshThreads();
+    }
+  }, [isConnected, refreshThreads]);
+  
   const handleThreadSelect = (thread) => {
     selectThread(thread);
   };
 
   const handleSendMessage = async (messageText) => {
     const success = await sendMessage(messageText);
-    if (!success) {
+    if (success) {
+      // Refresh threads to load the latest messages.
+      refreshThreads();
+    } else {
       // Handle error - could show toast notification
       console.error('Failed to send message');
     }
@@ -41,6 +69,7 @@ function Chats() {
     clearError();
     refreshThreads();
   };
+
   return (
     <div style={{
       maxWidth: '1400px',
