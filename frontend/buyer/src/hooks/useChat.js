@@ -175,8 +175,13 @@ export const useChat = (sellerId, productTitle) => {
       throw new Error('Failed to create or get chat thread');
     }
 
-    // Генерируем уникальный ID для сообщения
-    const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Генерируем правильный UUID для сообщения
+    const messageId = crypto.randomUUID ? crypto.randomUUID() :
+      'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : ((r & 0x3) | 0x8);
+        return v.toString(16);
+      });
     
     const messageData = {
       id: messageId,
@@ -240,12 +245,14 @@ export const useChat = (sellerId, productTitle) => {
     }
   }, [buyerId, sellerId, loadExistingChat]);
 
-  // Очистка при размонтировании
+  // Очистка при размонтировании компонента
   useEffect(() => {
     return () => {
       if (thread) {
+        console.log('[useChat] Cleaning up WebSocket for thread:', thread.id);
         websocketManager.removeMessageHandler(thread.id, handleWebSocketMessage);
-        websocketManager.disconnect(thread.id);
+        // Не отключаем WebSocket при размонтировании - пусть остается активным
+        // websocketManager.disconnect(thread.id);
       }
     };
   }, [thread, handleWebSocketMessage]);

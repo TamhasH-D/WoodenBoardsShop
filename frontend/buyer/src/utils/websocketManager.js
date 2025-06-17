@@ -44,24 +44,12 @@ class WebSocketManager {
   }
 
   /**
-   * Устанавливает статус подключения с дебаунсингом
+   * Устанавливает статус подключения немедленно (убираем дебаунсинг)
    */
   setConnectionStatus(threadId, status, onStatusChange) {
-    // Очищаем предыдущий таймер
-    const existingTimeout = this.statusTimeouts.get(threadId);
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
+    if (onStatusChange) {
+      onStatusChange(status);
     }
-
-    // Устанавливаем новый таймер
-    const timeout = setTimeout(() => {
-      if (onStatusChange) {
-        onStatusChange(status);
-      }
-      this.statusTimeouts.delete(threadId);
-    }, this.statusDebounceDelay);
-
-    this.statusTimeouts.set(threadId, timeout);
   }
 
   /**
@@ -70,16 +58,19 @@ class WebSocketManager {
   connect(threadId, userId, userType, onStatusChange) {
     console.log('[WebSocketManager] Connecting:', { threadId, userId, userType });
 
-    // Если соединение уже существует и активно, возвращаем его
+    // Если соединение уже существует и активно, просто обновляем callback
     const existing = this.connections.get(threadId);
-    if (existing && existing.ws.readyState === WebSocket.OPEN) {
+    if (existing && (existing.ws.readyState === WebSocket.OPEN || existing.ws.readyState === WebSocket.CONNECTING)) {
       console.log('[WebSocketManager] Using existing connection for thread:', threadId);
-      if (onStatusChange) onStatusChange(true);
+      existing.onStatusChange = onStatusChange; // Обновляем callback
+      if (existing.ws.readyState === WebSocket.OPEN && onStatusChange) {
+        onStatusChange(true);
+      }
       return existing.ws;
     }
 
-    // Закрываем старое соединение если оно есть
-    if (existing) {
+    // Закрываем старое соединение если оно есть и не активно
+    if (existing && existing.ws.readyState === WebSocket.CLOSED) {
       this.disconnect(threadId);
     }
 
@@ -100,7 +91,7 @@ class WebSocketManager {
     this.connections.set(threadId, connectionInfo);
 
     ws.onopen = () => {
-      console.log('[WebSocketManager] Connected to thread:', threadId);
+      console.log('[WebSocketManager] ✅ Connected to thread:', threadId);
       connectionInfo.reconnectAttempts = 0;
       connectionInfo.isConnecting = false;
       this.setConnectionStatus(threadId, true, onStatusChange);
@@ -108,12 +99,13 @@ class WebSocketManager {
     };
 
     ws.onmessage = (event) => {
-      console.log('[WebSocketManager] Message received for thread:', threadId, event.data);
+      // Уменьшаем логирование - только для отладки
+      // console.log('[WebSocketManager] Message received for thread:', threadId);
       this.handleMessage(threadId, event);
     };
 
     ws.onclose = (event) => {
-      console.log('[WebSocketManager] Connection closed for thread:', threadId, 'Code:', event.code);
+      console.log('[WebSocketManager] ❌ Connection closed for thread:', threadId, 'Code:', event.code);
       connectionInfo.isConnecting = false;
       this.setConnectionStatus(threadId, false, onStatusChange);
       this.stopHeartbeat(threadId);
@@ -125,7 +117,7 @@ class WebSocketManager {
     };
 
     ws.onerror = (error) => {
-      console.error('[WebSocketManager] Error for thread:', threadId, error);
+      console.error('[WebSocketManager] ⚠️ Error for thread:', threadId, error);
       connectionInfo.isConnecting = false;
       this.setConnectionStatus(threadId, false, onStatusChange);
     };
@@ -291,18 +283,39 @@ class WebSocketManager {
    */
   cleanup() {
     console.log('[WebSocketManager] Cleaning up all connections');
-    
+
     this.connections.forEach((connection, threadId) => {
       this.disconnect(threadId);
     });
-    
+
     this.connections.clear();
     this.messageHandlers.clear();
     this.reconnectTimeouts.clear();
+  }
+
+  /**
+   * Принудительно отключает WebSocket для треда (например, при выходе из чата)
+   */
+  forceDisconnect(threadId) {
+    console.log('[WebSocketManager] Force disconnecting thread:', threadId);
+    this.disconnect(threadId);
   }
 }
 
 // Создаем единственный экземпляр менеджера
 const websocketManager = new WebSocketManager();
+
+// Отключаем все WebSocket соединения при закрытии вкладки
+window.addEventListener('beforeunload', () => {
+  websocketManager.cleanup();
+});
+
+// Отключаем соединения при потере фокуса страницы (опционально)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    console.log('[WebSocketManager] Page hidden, keeping connections alive');
+    // Не отключаем соединения при скрытии страницы - пусть остаются активными
+  }
+});
 
 export default websocketManager;

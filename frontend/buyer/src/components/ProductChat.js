@@ -81,109 +81,122 @@ const ProductChat = ({ productId, product, sellerId }) => {
   return (
     <div style={{
       backgroundColor: 'white',
-      borderRadius: '24px',
-      boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+      borderRadius: '20px',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
       border: '1px solid #e2e8f0',
       overflow: 'hidden',
-      background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)'
+      background: 'white'
     }}>
       {/* Заголовок чата */}
       <div style={{
-        padding: window.innerWidth >= 768 ? '32px' : '24px',
-        borderBottom: '1px solid #e2e8f0',
-        background: 'linear-gradient(135deg, #8B4513 0%, #D2691E 100%)',
-        color: 'white'
+        padding: window.innerWidth >= 768 ? '24px 32px' : '20px 24px',
+        borderBottom: '1px solid #f1f5f9',
+        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+        color: 'white',
+        position: 'relative'
       }}>
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          flexWrap: 'wrap',
           gap: '16px'
         }}>
-          <div style={{ flex: 1, minWidth: '200px' }}>
+          <div style={{ flex: 1 }}>
             <h2 style={{
-              margin: '0 0 8px 0',
-              fontSize: window.innerWidth >= 768 ? '28px' : '24px',
-              fontWeight: '700',
+              margin: '0 0 6px 0',
+              fontSize: window.innerWidth >= 768 ? '22px' : '20px',
+              fontWeight: '600',
               color: 'white',
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
-              textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              gap: '10px',
+              letterSpacing: '-0.025em'
             }}>
-              💬 Чат с продавцом
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '16px'
+              }}>
+                💬
+              </div>
+              Связь с продавцом
             </h2>
             <p style={{
               margin: 0,
-              color: 'rgba(255,255,255,0.9)',
-              fontSize: '16px',
-              fontWeight: '500'
+              color: 'rgba(255,255,255,0.8)',
+              fontSize: '14px',
+              fontWeight: '400'
             }}>
-              {hasExistingChat ? 'История переписки' : 'Начните общение с продавцом'}
+              {hasExistingChat ? 'Продолжите переписку' : 'Задайте вопрос о товаре'}
             </p>
           </div>
 
-          {/* Connection Status Display */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            fontSize: '14px',
-            padding: '8px 16px',
-            borderRadius: '20px',
-            fontWeight: '600'
-          }}>
-            {loading && (
-              <div style={{ color: '#64748b', backgroundColor: '#f3f4f6' }}>Загрузка чата...</div>
-            )}
-            {!loading && !buyerId && (
-              <div style={{ color: '#ef4444', backgroundColor: '#fee2e2' }}>Ошибка аутентификации</div>
-            )}
-            {!loading && buyerId && !thread && (
-              <div style={{ color: '#2563eb', backgroundColor: '#dbeafe' }}>Готов к общению</div>
-            )}
-            {!loading && buyerId && thread && !isConnected && (
-              <div style={{ color: '#f97316', backgroundColor: '#ffedd5' }}>Подключение...</div>
-            )}
-            {!loading && buyerId && thread && isConnected && (
-              <div style={{ color: '#059669', backgroundColor: '#dcfce7', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{
-                  width: '10px',
-                  height: '10px',
-                  borderRadius: '50%',
-                  backgroundColor: '#059669',
-                  animation: 'pulse 2s infinite'
-                }} />
-                Подключен
-              </div>
-            )}
-          </div>
+          {/* Статус чата - только при ошибках */}
+          {(!loading && !buyerId) && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '14px',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              fontWeight: '600',
+              color: '#ef4444',
+              backgroundColor: 'rgba(255,255,255,0.2)'
+            }}>
+              ⚠️ Ошибка аутентификации
+            </div>
+          )}
 
         </div>
       </div>
 
       {/* Область сообщений */}
       <div style={{
-        height: hasExistingChat ? (window.innerWidth >= 768 ? '450px' : '350px') : (window.innerWidth >= 768 ? '250px' : '200px'),
+        height: hasExistingChat ? (window.innerWidth >= 768 ? '400px' : '320px') : (window.innerWidth >= 768 ? '280px' : '240px'),
         overflowY: 'auto',
         padding: window.innerWidth >= 768 ? '24px' : '16px',
-        backgroundColor: '#f8fafc',
-        backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(139, 69, 19, 0.03) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(210, 105, 30, 0.03) 0%, transparent 50%)'
+        backgroundColor: '#fafafa',
+        backgroundImage: 'linear-gradient(135deg, #fafafa 0%, #f8fafc 100%)'
       }}>
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#64748b' }}>
-            <div style={{ width: '32px', height: '32px', border: '3px solid #e2e8f0', borderTop: '3px solid #2563eb', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '16px' }} />
-            <span style={{ fontSize: '16px', fontWeight: '500' }}>Загрузка чата...</span>
+            <div style={{
+              width: '24px',
+              height: '24px',
+              border: '2px solid #e2e8f0',
+              borderTop: '2px solid #3b82f6',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              marginBottom: '12px'
+            }} />
+            <span style={{ fontSize: '14px', fontWeight: '500' }}>Загрузка...</span>
           </div>
         ) : messages.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', color: '#64748b' }}>
-            <div style={{ fontSize: '64px', marginBottom: '20px', opacity: 0.7 }}>💬</div>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: '600', color: '#374151' }}>
-              {hasExistingChat ? 'Сообщений пока нет' : 'Начните разговор с продавцом'}
+            <div style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '16px',
+              background: 'linear-gradient(135deg, #e2e8f0, #cbd5e1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '24px',
+              marginBottom: '16px'
+            }}>
+              💬
+            </div>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600', color: '#374151' }}>
+              {hasExistingChat ? 'Сообщений пока нет' : 'Свяжитесь с продавцом'}
             </h3>
-            <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.5', maxWidth: '280px' }}>
-              Задайте вопрос о товаре, условиях доставки или договоритесь о цене
+            <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.4', maxWidth: '240px', color: '#64748b' }}>
+              Обсудите детали товара, условия доставки или договоритесь о цене
             </p>
           </div>
         ) : (
@@ -192,24 +205,24 @@ const ProductChat = ({ productId, product, sellerId }) => {
               // Правильная логика: сравниваем с текущим buyerId
               const isOwnMessage = message.buyer_id === buyerId;
               return (
-                <div key={message.id} style={{ display: 'flex', justifyContent: isOwnMessage ? 'flex-end' : 'flex-start', marginBottom: '16px' }}>
+                <div key={message.id} style={{ display: 'flex', justifyContent: isOwnMessage ? 'flex-end' : 'flex-start', marginBottom: '12px' }}>
                   <div style={{
-                    maxWidth: window.innerWidth >= 768 ? '70%' : '80%',
-                    padding: '16px 20px',
-                    borderRadius: isOwnMessage ? '24px 24px 8px 24px' : '24px 24px 24px 8px',
-                    backgroundColor: isOwnMessage ? '#8B4513' : 'white',
-                    color: isOwnMessage ? 'white' : '#374151',
-                    fontSize: '16px',
-                    lineHeight: '1.5',
-                    boxShadow: isOwnMessage ? '0 8px 24px rgba(139, 69, 19, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.1)',
-                    border: isOwnMessage ? 'none' : '1px solid #e2e8f0',
+                    maxWidth: window.innerWidth >= 768 ? '75%' : '85%',
+                    padding: '12px 16px',
+                    borderRadius: isOwnMessage ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                    backgroundColor: isOwnMessage ? '#3b82f6' : 'white',
+                    color: isOwnMessage ? 'white' : '#1f2937',
+                    fontSize: '15px',
+                    lineHeight: '1.4',
+                    boxShadow: isOwnMessage ? '0 4px 12px rgba(59, 130, 246, 0.25)' : '0 2px 8px rgba(0, 0, 0, 0.08)',
+                    border: isOwnMessage ? 'none' : '1px solid #e5e7eb',
                     position: 'relative',
-                    animation: 'messageSlideIn 0.3s ease-out'
+                    animation: 'messageSlideIn 0.2s ease-out'
                   }}>
-                    <div style={{ marginBottom: '8px', wordBreak: 'break-word' }}>{message.message}</div>
+                    <div style={{ marginBottom: '6px', wordBreak: 'break-word' }}>{message.message}</div>
                     <div style={{
-                      fontSize: '12px',
-                      opacity: 0.8,
+                      fontSize: '11px',
+                      opacity: isOwnMessage ? 0.8 : 0.6,
                       textAlign: 'right',
                       display: 'flex',
                       alignItems: 'center',
@@ -217,7 +230,7 @@ const ProductChat = ({ productId, product, sellerId }) => {
                       gap: '4px'
                     }}>
                       <span>{new Date(message.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
-                      {isOwnMessage && <span>✓</span>}
+                      {isOwnMessage && <span style={{ fontSize: '10px' }}>✓</span>}
                     </div>
                   </div>
                 </div>
@@ -230,13 +243,13 @@ const ProductChat = ({ productId, product, sellerId }) => {
 
       {/* Форма отправки сообщения */}
       <div style={{
-        padding: window.innerWidth >= 768 ? '24px' : '16px',
-        borderTop: '1px solid #e2e8f0',
+        padding: window.innerWidth >= 768 ? '20px 24px' : '16px 20px',
+        borderTop: '1px solid #f1f5f9',
         background: 'white'
       }}>
         <form onSubmit={handleSendMessage}>
-          <div style={{ display: 'flex', gap: window.innerWidth >= 768 ? '16px' : '12px', alignItems: 'flex-end', flexDirection: window.innerWidth >= 640 ? 'row' : 'column' }}>
-            <div style={{ flex: 1, width: window.innerWidth >= 640 ? 'auto' : '100%' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
+            <div style={{ flex: 1 }}>
               <textarea
                 value={newMessage}
                 onChange={(e) => {
@@ -244,18 +257,39 @@ const ProductChat = ({ productId, product, sellerId }) => {
                   handleTyping();
                 }}
                 placeholder={
-                  loading ? "Загрузка чата..." :
+                  loading ? "Загрузка..." :
                   !buyerId ? "Ошибка аутентификации..." :
                   hasExistingChat ? "Введите сообщение..." :
                   defaultMessage || "Напишите сообщение..."
                 }
-                rows={window.innerWidth >= 768 ? 3 : 2}
+                rows={2}
                 style={{
-                  width: '100%', padding: '16px 20px', border: '2px solid #e2e8f0', borderRadius: '16px', fontSize: '16px', outline: 'none', transition: 'all 0.3s ease', resize: 'none', fontFamily: 'inherit', backgroundColor: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                  opacity: (sending || chatDisabled) ? 0.7 : 1 // Visual cue for disabled
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '12px',
+                  fontSize: '15px',
+                  outline: 'none',
+                  transition: 'all 0.2s ease',
+                  resize: 'none',
+                  fontFamily: 'inherit',
+                  backgroundColor: '#fafafa',
+                  opacity: (sending || chatDisabled) ? 0.7 : 1
                 }}
-                onFocus={(e) => { if (!chatDisabled && !sending) { e.target.style.borderColor = '#8B4513'; e.target.style.boxShadow = '0 4px 16px rgba(139, 69, 19, 0.2)'; } }}
-                onBlur={(e) => { if (!chatDisabled && !sending) { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)'; } }}
+                onFocus={(e) => {
+                  if (!chatDisabled && !sending) {
+                    e.target.style.borderColor = '#3b82f6';
+                    e.target.style.backgroundColor = 'white';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                  }
+                }}
+                onBlur={(e) => {
+                  if (!chatDisabled && !sending) {
+                    e.target.style.borderColor = '#e5e7eb';
+                    e.target.style.backgroundColor = '#fafafa';
+                    e.target.style.boxShadow = 'none';
+                  }
+                }}
                 disabled={sending || chatDisabled}
               />
             </div>
@@ -263,32 +297,57 @@ const ProductChat = ({ productId, product, sellerId }) => {
               type="submit"
               disabled={!newMessage.trim() || sending || chatDisabled}
               style={{
-                padding: window.innerWidth >= 768 ? '16px 24px' : '14px 20px',
-                backgroundColor: '#8B4513',
+                padding: '12px 20px',
+                backgroundColor: '#3b82f6',
                 color: 'white',
                 border: 'none',
-                borderRadius: '20px',
-                fontSize: '16px',
-                fontWeight: '700',
+                borderRadius: '12px',
+                fontSize: '14px',
+                fontWeight: '600',
                 cursor: (!newMessage.trim() || sending || chatDisabled) ? 'not-allowed' : 'pointer',
                 opacity: (!newMessage.trim() || sending || chatDisabled) ? 0.5 : 1,
-                transition: 'all 0.3s ease',
+                transition: 'all 0.2s ease',
                 whiteSpace: 'nowrap',
-                boxShadow: '0 4px 16px rgba(139, 69, 19, 0.3)',
-                transform: 'translateY(0)',
-                width: window.innerWidth >= 640 ? 'auto' : '100%',
+                boxShadow: '0 2px 8px rgba(59, 130, 246, 0.25)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px'
+                gap: '6px',
+                minWidth: '100px'
               }}
-              onMouseEnter={(e) => { if (newMessage.trim() && !sending && !chatDisabled) { e.target.style.backgroundColor = '#A0522D'; e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 8px 24px rgba(139, 69, 19, 0.4)'; } }}
-              onMouseLeave={(e) => { if (newMessage.trim() && !sending && !chatDisabled) { e.target.style.backgroundColor = '#8B4513'; e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 4px 16px rgba(139, 69, 19, 0.3)'; } }}
+              onMouseEnter={(e) => {
+                if (newMessage.trim() && !sending && !chatDisabled) {
+                  e.target.style.backgroundColor = '#2563eb';
+                  e.target.style.transform = 'translateY(-1px)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (newMessage.trim() && !sending && !chatDisabled) {
+                  e.target.style.backgroundColor = '#3b82f6';
+                  e.target.style.transform = 'translateY(0)';
+                }
+              }}
             >
               {sending ? (
-                <> <div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /> <span>Отправка...</span> </>
+                <>
+                  <div style={{
+                    width: '14px',
+                    height: '14px',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    borderTop: '2px solid white',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                  <span>Отправка</span>
+                </>
               ) : (
-                <> <span>📤</span> <span>Отправить</span> </>
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22,2 15,22 11,13 2,9"></polygon>
+                  </svg>
+                  <span>Отправить</span>
+                </>
               )}
             </button>
           </div>
