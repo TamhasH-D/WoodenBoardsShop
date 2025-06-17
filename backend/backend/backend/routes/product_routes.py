@@ -327,6 +327,54 @@ async def get_product_boards_stats(
     })
 
 
+@router.get("/{product_id}/wooden-boards")
+async def get_product_wooden_boards(
+    product_id: UUID,
+    daos: GetDAOs,
+    pagination: Pagination,
+) -> OffsetResults[WoodenBoardDTO]:
+    """Get wooden boards for a specific product with pagination."""
+
+    # Check if product exists
+    product = await daos.product.filter_first(id=product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Товар не найден")
+
+    # Get all images for this product
+    images = await daos.image.filter(product_id=product_id)
+
+    if not images:
+        # Return empty result if no images
+        return OffsetResults(
+            data=[],
+            total=0,
+            offset=pagination.offset,
+            limit=pagination.limit
+        )
+
+    # Get all wooden boards for these images
+    all_boards = []
+    for image in images:
+        image_boards = await daos.wooden_board.filter(image_id=image.id)
+        all_boards.extend(image_boards)
+
+    # Apply pagination manually since we're aggregating from multiple sources
+    total = len(all_boards)
+    start_idx = pagination.offset
+    end_idx = start_idx + pagination.limit
+    paginated_boards = all_boards[start_idx:end_idx]
+
+    # Convert to DTOs
+    board_dtos = [WoodenBoardDTO.model_validate(board) for board in paginated_boards]
+
+    return OffsetResults(
+        data=board_dtos,
+        total=total,
+        offset=pagination.offset,
+        limit=pagination.limit
+    )
+
+
 
 
 @router.post("/with-image", status_code=201)

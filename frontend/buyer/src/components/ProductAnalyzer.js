@@ -31,22 +31,23 @@ const ProductAnalyzer = ({ product, onAnalysisComplete }) => {
     setLoadingDimensions(true);
     try {
       const stats = await apiService.getProductBoardsStats(product.id);
-      setBoardsStats(stats);
+      setBoardsStats(stats.data || stats); // Обрабатываем оба формата ответа
 
       // Устанавливаем размеры для анализа
-      if (stats.average_height && stats.average_height > 0) {
-        setBoardHeight(stats.average_height.toFixed(3));
+      const statsData = stats.data || stats;
+      if (statsData.average_height && statsData.average_height > 0) {
+        setBoardHeight(statsData.average_height.toFixed(3));
       } else if (product.board_height) {
         setBoardHeight(product.board_height.toFixed(3));
       }
 
-      if (stats.average_length && stats.average_length > 0) {
-        setBoardLength(stats.average_length.toFixed(1));
+      if (statsData.average_length && statsData.average_length > 0) {
+        setBoardLength(statsData.average_length.toFixed(1));
       } else if (product.board_length) {
         setBoardLength(product.board_length.toFixed(1));
       }
 
-      console.log('Загружена статистика досок:', stats);
+      console.log('Загружена статистика досок:', statsData);
     } catch (err) {
       console.error('Ошибка загрузки статистики досок:', err);
       // Используем размеры из товара как fallback
@@ -56,6 +57,15 @@ const ProductAnalyzer = ({ product, onAnalysisComplete }) => {
       if (product.board_length) {
         setBoardLength(product.board_length.toFixed(1));
       }
+
+      // Устанавливаем пустую статистику, чтобы показать, что данные недоступны
+      setBoardsStats({
+        total_count: 0,
+        average_height: null,
+        average_width: null,
+        average_length: null,
+        total_volume: 0
+      });
     } finally {
       setLoadingDimensions(false);
     }
@@ -307,7 +317,7 @@ const ProductAnalyzer = ({ product, onAnalysisComplete }) => {
                 Количество
               </div>
               <div style={{ fontSize: '14px', fontWeight: '600', color: '#0c4a6e' }}>
-                {boardsStats.total_count} шт
+                {boardsStats.total_count > 0 ? `${boardsStats.total_count} шт` : 'Нет данных'}
               </div>
             </div>
             <div style={{
@@ -350,7 +360,7 @@ const ProductAnalyzer = ({ product, onAnalysisComplete }) => {
               </div>
             </div>
           </div>
-          {boardsStats.total_volume > 0 && (
+          {boardsStats.total_volume > 0 ? (
             <div style={{
               marginTop: '12px',
               padding: '8px 12px',
@@ -364,6 +374,22 @@ const ProductAnalyzer = ({ product, onAnalysisComplete }) => {
               </div>
               <div style={{ fontSize: '16px', fontWeight: '700', color: '#0c4a6e' }}>
                 {boardsStats.total_volume} м³
+              </div>
+            </div>
+          ) : boardsStats.total_count === 0 && (
+            <div style={{
+              marginTop: '12px',
+              padding: '12px',
+              backgroundColor: '#fef3c7',
+              borderRadius: '6px',
+              border: '1px solid #f59e0b',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '12px', color: '#92400e', fontWeight: '500' }}>
+                ℹ️ Данные о досках для этого товара пока недоступны
+              </div>
+              <div style={{ fontSize: '11px', color: '#a16207', marginTop: '4px' }}>
+                Анализ все равно возможен с использованием стандартных размеров
               </div>
             </div>
           )}
