@@ -3,6 +3,13 @@ import { useApi, useApiMutation } from '../hooks/useApi';
 import { apiService } from '../services/api';
 import { SELLER_TEXTS } from '../utils/localization';
 
+// Helper function for Russian pluralization
+const getPriceRecordsText = (count) => {
+  if (count === 1) return SELLER_TEXTS.PRICE_RECORD_SINGLE;
+  if (count >= 2 && count <= 4) return SELLER_TEXTS.PRICE_RECORDS_FEW;
+  return SELLER_TEXTS.PRICE_RECORDS;
+};
+
 function WoodTypesManager() {
   const [page, setPage] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -96,12 +103,12 @@ function WoodTypesManager() {
 
     // Validation
     if (!newType.neme.trim()) {
-      alert('Wood type name is required');
+      alert(SELLER_TEXTS.WOOD_TYPE_NAME_REQUIRED_ERROR);
       return;
     }
 
     if (newType.initial_price && (isNaN(parseFloat(newType.initial_price)) || parseFloat(newType.initial_price) <= 0)) {
-      alert('Please enter a valid initial price');
+      alert(SELLER_TEXTS.VALID_INITIAL_PRICE_ERROR);
       return;
     }
 
@@ -183,7 +190,7 @@ function WoodTypesManager() {
 
   // Delete wood type handler
   const handleDeleteType = useCallback(async (typeId) => {
-    if (window.confirm('Are you sure you want to delete this wood type? This will also delete all associated prices.')) {
+    if (window.confirm(SELLER_TEXTS.CONFIRM_DELETE_WOOD_TYPE_FULL)) {
       try {
         await mutate(() => apiService.deleteWoodType(typeId));
         refetchTypes();
@@ -317,7 +324,7 @@ function WoodTypesManager() {
 
         <div className="flex justify-between items-center mb-4">
           <div>
-            <p>Всего типов древесины: {woodTypes?.data?.length || 0}</p>
+            <p>{SELLER_TEXTS.TOTAL} {SELLER_TEXTS.WOOD_TYPES}: {woodTypes?.data?.length || 0}</p>
             {pricesLoading && <p style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-sm)' }}>{SELLER_TEXTS.LOADING} данных о ценах...</p>}
           </div>
           <div className="flex gap-4">
@@ -349,7 +356,7 @@ function WoodTypesManager() {
 
         {pricesError && (
           <div className="error mb-4">
-            Failed to load prices: {pricesError}
+            {SELLER_TEXTS.FAILED_TO_LOAD_PRICES}: {pricesError}
           </div>
         )}
 
@@ -357,42 +364,42 @@ function WoodTypesManager() {
         {showAddForm && (
           <div className="card mb-4">
             <div className="card-header">
-              <h3 className="card-title">Add New Wood Type</h3>
+              <h3 className="card-title">{SELLER_TEXTS.ADD_NEW_WOOD_TYPE}</h3>
               <p style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-2)' }}>
-                Create a new wood type with optional initial pricing
+                {SELLER_TEXTS.CREATE_NEW_WOOD_TYPE_DESC}
               </p>
             </div>
             <form onSubmit={handleAddType}>
               <div className="form-group">
-                <label className="form-label">Wood Type Name *</label>
+                <label className="form-label">{SELLER_TEXTS.WOOD_TYPE_NAME_REQUIRED}</label>
                 <input
                   type="text"
                   className="form-input"
                   value={newType.neme}
                   onChange={(e) => setNewType({...newType, neme: e.target.value})}
-                  placeholder="e.g., Oak, Pine, Birch, Maple"
+                  placeholder={SELLER_TEXTS.WOOD_TYPE_NAME_EXAMPLES}
                   required
                   maxLength={100}
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label">Description</label>
+                <label className="form-label">{SELLER_TEXTS.DESCRIPTION}</label>
                 <textarea
                   className="form-input"
                   value={newType.description}
                   onChange={(e) => setNewType({...newType, description: e.target.value})}
-                  placeholder="Describe the wood type characteristics, quality, and typical uses..."
+                  placeholder={SELLER_TEXTS.WOOD_TYPE_DESCRIPTION_LONG}
                   rows="3"
                   maxLength={500}
                 />
                 <small style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-xs)' }}>
-                  {newType.description.length}/500 characters
+                  {newType.description.length}/500 {SELLER_TEXTS.CHARACTERS}
                 </small>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Initial Price per m³ ($)</label>
+                <label className="form-label">{SELLER_TEXTS.INITIAL_PRICE_M3}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -400,19 +407,19 @@ function WoodTypesManager() {
                   className="form-input"
                   value={newType.initial_price}
                   onChange={(e) => setNewType({...newType, initial_price: e.target.value})}
-                  placeholder="e.g., 150.00 (optional)"
+                  placeholder={SELLER_TEXTS.INITIAL_PRICE_EXAMPLE}
                 />
                 <small style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-xs)' }}>
-                  Optional: Set an initial price for this wood type. You can add or update prices later.
+                  {SELLER_TEXTS.INITIAL_PRICE_HELP}
                 </small>
               </div>
 
               <div className="flex gap-4" style={{ marginTop: 'var(--space-6)' }}>
                 <button type="submit" className="btn btn-primary" disabled={mutating}>
-                  {mutating ? 'Creating...' : 'Create Wood Type'}
+                  {mutating ? SELLER_TEXTS.CREATING : SELLER_TEXTS.CREATE_WOOD_TYPE}
                 </button>
                 <button type="button" className="btn btn-secondary" onClick={resetForm} disabled={mutating}>
-                  Cancel
+                  {SELLER_TEXTS.CANCEL}
                 </button>
               </div>
             </form>
@@ -420,7 +427,7 @@ function WoodTypesManager() {
         )}
 
         {/* Loading State */}
-        {typesLoading && <div className="loading">Loading wood types...</div>}
+        {typesLoading && <div className="loading">{SELLER_TEXTS.LOADING_WOOD_TYPES}</div>}
 
         {/* Wood Types Table with Integrated Pricing */}
         {woodTypes && woodTypes.data && woodTypes.data.length > 0 ? (
@@ -452,11 +459,11 @@ function WoodTypesManager() {
                           onChange={(e) => setEditingType({...editingType, neme: e.target.value})}
                           className="form-input"
                           style={{ margin: 0 }}
-                          placeholder="Wood type name"
+                          placeholder={SELLER_TEXTS.WOOD_TYPE_NAME_PLACEHOLDER}
                         />
                       ) : (
                         <div>
-                          <strong>{type.neme || 'Unnamed Type'}</strong>
+                          <strong>{type.neme || SELLER_TEXTS.UNNAMED_TYPE}</strong>
                           <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-light)', marginTop: '0.25rem' }}>
                             ID: {type.id.substring(0, 8)}...
                           </div>
@@ -473,14 +480,14 @@ function WoodTypesManager() {
                           className="form-input"
                           style={{ margin: 0 }}
                           rows="2"
-                          placeholder="Description"
+                          placeholder={SELLER_TEXTS.DESCRIPTION_PLACEHOLDER}
                         />
                       ) : (
                         <div>
                           {type.description ? (
                             <span>{type.description.length > 100 ? `${type.description.substring(0, 100)}...` : type.description}</span>
                           ) : (
-                            <em style={{ color: 'var(--color-text-light)' }}>No description</em>
+                            <em style={{ color: 'var(--color-text-light)' }}>{SELLER_TEXTS.NO_DESCRIPTION}</em>
                           )}
                         </div>
                       )}
@@ -619,7 +626,7 @@ function WoodTypesManager() {
                               color: 'var(--color-text-light)',
                               fontStyle: 'italic'
                             }}>
-                              Нажмите для установки цены
+                              {SELLER_TEXTS.CLICK_TO_SET_PRICE}
                             </div>
                           )}
                         </div>
@@ -631,14 +638,14 @@ function WoodTypesManager() {
                       {priceHistory.length > 0 ? (
                         <div>
                           <div style={{ fontSize: 'var(--font-size-sm)', marginBottom: '0.5rem' }}>
-                            <strong>{priceHistory.length}</strong> ценов{priceHistory.length === 1 ? 'ая запись' : priceHistory.length < 5 ? 'ые записи' : 'ых записей'}
+                            <strong>{priceHistory.length}</strong> {getPriceRecordsText(priceHistory.length)}
                           </div>
                           <button
                             onClick={() => togglePriceHistory(type.id)}
                             className="btn btn-secondary"
                             style={{ fontSize: '0.7em', padding: '0.2rem 0.4rem' }}
                           >
-                            {showPriceHistory[type.id] ? 'Скрыть историю' : 'Показать историю'}
+                            {showPriceHistory[type.id] ? SELLER_TEXTS.HIDE_HISTORY : SELLER_TEXTS.SHOW_HISTORY}
                           </button>
 
                           {showPriceHistory[type.id] && (
@@ -655,7 +662,7 @@ function WoodTypesManager() {
                                   <strong>{price.price_per_m3.toFixed(2)} ₽/м³</strong>
                                   <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-light)' }}>
                                     {formatDateTime(price.created_at)}
-                                    {index === 0 && <span style={{ color: 'var(--color-success)', marginLeft: '0.5rem' }}>(Текущая)</span>}
+                                    {index === 0 && <span style={{ color: 'var(--color-success)', marginLeft: '0.5rem' }}>({SELLER_TEXTS.CURRENT})</span>}
                                   </div>
                                 </div>
                               ))}
@@ -663,7 +670,7 @@ function WoodTypesManager() {
                           )}
                         </div>
                       ) : (
-                        <em style={{ color: 'var(--color-text-light)' }}>Нет истории цен</em>
+                        <em style={{ color: 'var(--color-text-light)' }}>{SELLER_TEXTS.NO_PRICE_HISTORY}</em>
                       )}
                     </td>
 
@@ -678,14 +685,14 @@ function WoodTypesManager() {
                               disabled={mutating}
                               style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
                             >
-                              Save
+                              {SELLER_TEXTS.SAVE}
                             </button>
                             <button
                               onClick={() => setEditingType(null)}
                               className="btn btn-secondary"
                               style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
                             >
-                              Cancel
+                              {SELLER_TEXTS.CANCEL}
                             </button>
                           </>
                         ) : (
@@ -695,7 +702,7 @@ function WoodTypesManager() {
                               className="btn btn-secondary"
                               style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
                             >
-                              Edit
+                              {SELLER_TEXTS.EDIT}
                             </button>
                             <button
                               onClick={() => handleDeleteType(type.id)}
@@ -708,7 +715,7 @@ function WoodTypesManager() {
                                 color: 'var(--color-error)'
                               }}
                             >
-                              Delete
+                              {SELLER_TEXTS.DELETE}
                             </button>
                           </>
                         )}
@@ -721,12 +728,12 @@ function WoodTypesManager() {
           </table>
         ) : (
           <div className="text-center">
-            <p>No wood types found.</p>
+            <p>{SELLER_TEXTS.NO_WOOD_TYPES_FOUND}</p>
             <button
               onClick={() => setShowAddForm(true)}
               className="btn btn-primary mt-4"
             >
-              Add Your First Wood Type
+              {SELLER_TEXTS.ADD_FIRST_WOOD_TYPE}
             </button>
           </div>
         )}
@@ -739,15 +746,15 @@ function WoodTypesManager() {
               disabled={page === 0 || typesLoading}
               className="btn btn-secondary"
             >
-              Previous
+              {SELLER_TEXTS.PREVIOUS}
             </button>
-            <span>Page {page + 1}</span>
+            <span>{SELLER_TEXTS.PAGE} {page + 1}</span>
             <button
               onClick={() => setPage(page + 1)}
               disabled={!woodTypes?.data || woodTypes.data.length < 10 || typesLoading}
               className="btn btn-secondary"
             >
-              Next
+              {SELLER_TEXTS.NEXT}
             </button>
           </div>
         )}

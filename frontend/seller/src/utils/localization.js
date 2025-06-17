@@ -35,6 +35,7 @@ export const SELLER_TEXTS = {
   PRODUCT_MANAGEMENT: 'Управление товарами',
   MANAGE_INVENTORY_DESC: 'Управляйте инвентарем изделий из дерева',
   TOTAL_PRODUCTS: 'Всего товаров',
+  TOTAL: 'Всего',
   CANCEL: 'Отменить',
   REFRESH: 'Обновить',
   LOADING: 'Загрузка...',
@@ -107,6 +108,40 @@ export const SELLER_TEXTS = {
   NO_WOOD_TYPES: 'Типы древесины не найдены',
   NO_PRICES: 'Цены не найдены',
   WOOD_TYPES_AVAILABLE: 'типов древесины доступно',
+
+  // Wood Types Form
+  ADD_NEW_WOOD_TYPE: 'Добавить новый тип древесины',
+  CREATE_NEW_WOOD_TYPE_DESC: 'Создать новый тип древесины с дополнительным начальным ценообразованием',
+  WOOD_TYPE_NAME_REQUIRED: 'Название типа древесины *',
+  WOOD_TYPE_NAME_EXAMPLES: 'например: Дуб, Сосна, Береза, Клен',
+  WOOD_TYPE_DESCRIPTION_LONG: 'Опишите характеристики типа древесины, качество и типичное использование...',
+  INITIAL_PRICE_M3: 'Начальная цена за м³ (₽)',
+  INITIAL_PRICE_EXAMPLE: 'например: 150.00 (необязательно)',
+  INITIAL_PRICE_HELP: 'Необязательно: Установите начальную цену для этого типа древесины. Вы можете добавить или обновить цены позже.',
+
+  // Wood Types Table
+  UNNAMED_TYPE: 'Безымянный тип',
+  NO_DESCRIPTION: 'Нет описания',
+  CLICK_TO_SET_PRICE: 'Нажмите для установки цены',
+  PRICE_RECORDS: 'ценовых записей',
+  PRICE_RECORD_SINGLE: 'ценовая запись',
+  PRICE_RECORDS_FEW: 'ценовые записи',
+  HIDE_HISTORY: 'Скрыть историю',
+  SHOW_HISTORY: 'Показать историю',
+  CURRENT: 'Текущая',
+  NO_PRICE_HISTORY: 'Нет истории цен',
+
+  // Empty States
+  NO_WOOD_TYPES_FOUND: 'Типы древесины не найдены.',
+  ADD_FIRST_WOOD_TYPE: 'Добавить ваш первый тип древесины',
+
+  // Error Messages
+  FAILED_TO_LOAD_PRICES: 'Не удалось загрузить цены',
+  WOOD_TYPE_NAME_REQUIRED_ERROR: 'Название типа древесины обязательно',
+  VALID_INITIAL_PRICE_ERROR: 'Пожалуйста, введите корректную начальную цену',
+
+  // Confirmation Messages
+  CONFIRM_DELETE_WOOD_TYPE_FULL: 'Вы уверены, что хотите удалить этот тип древесины? Это также удалит все связанные цены.',
 
   // Chats Management
   CUSTOMER_COMMUNICATION: 'Общение с клиентами',
