@@ -58,6 +58,12 @@ export const useChat = () => {
     console.log('[useChat] WebSocket message received:', data);
 
     if (data.type === 'message') {
+      // Игнорируем собственные сообщения - они уже добавлены локально
+      if (data.sender_id === sellerId) {
+        console.log('[useChat] Ignoring own message from WebSocket');
+        return;
+      }
+
       const newMessage = {
         id: data.message_id || Date.now(),
         message: data.message,
@@ -80,10 +86,10 @@ export const useChat = () => {
         const updated = [...prevMessages, newMessage].sort(
           (a, b) => new Date(a.created_at) - new Date(b.created_at)
         );
-        
+
         // Update messages cache
         messagesRef.current.set(threadId, updated);
-        
+
         return updated;
       });
 
@@ -110,12 +116,12 @@ export const useChat = () => {
     } else if (data.type === 'typing') {
       if (data.sender_type === 'buyer') {
         setIsTyping(data.is_typing);
-        
+
         // Clear typing timeout
         if (typingTimeoutRef.current) {
           clearTimeout(typingTimeoutRef.current);
         }
-        
+
         // Auto-clear typing indicator after 3 seconds
         if (data.is_typing) {
           typingTimeoutRef.current = setTimeout(() => {
@@ -124,7 +130,7 @@ export const useChat = () => {
         }
       }
     }
-  }, []);
+  }, [sellerId]);
 
   // Load chat threads
   const loadThreads = useCallback(async () => {
@@ -223,43 +229,59 @@ export const useChat = () => {
   const sendMessage = useCallback(async (messageText) => {
     if (!selectedThread || !sellerId || !messageText.trim()) return false;
 
-    const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+    // Генерируем UUID для сообщения
+    const messageId = crypto.randomUUID ? crypto.randomUUID() : `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     try {
+      // Добавляем сообщение локально сразу для лучшего UX
+      const tempMessage = {
+        id: messageId,
+        message: messageText.trim(),
+        buyer_id: null,
+        seller_id: sellerId,
+        thread_id: selectedThread.id,
+        created_at: new Date().toISOString(),
+        is_read_by_buyer: false,
+        is_read_by_seller: true,
+        sending: true // Флаг для отображения статуса отправки
+      };
+
+      setMessages(prev => [...prev, tempMessage]);
+
       const messageData = {
         id: messageId,
         thread_id: selectedThread.id,
         message: messageText.trim(),
-        sender_id: sellerId,
-        sender_type: 'seller',
-        buyer_id: selectedThread.buyer_id,
+        is_read_by_buyer: false,
+        is_read_by_seller: true,
+        buyer_id: null,
         seller_id: sellerId
       };
 
-      // Send via API
-      await apiService.sendMessage(messageData);
+      // Отправляем только через API (backend сам разошлет через WebSocket)
+      const result = await apiService.sendMessage(messageData);
 
-      // Send via WebSocket if connected
-      if (websocketManager.isConnected(selectedThread.id)) {
-        const wsMessage = {
-          type: 'message',
-          message: messageText.trim(),
-          message_id: messageId,
-          sender_id: sellerId,
-          sender_type: 'seller',
-          thread_id: selectedThread.id,
-          timestamp: new Date().toISOString()
-        };
+      if (result) {
+        // Обновляем локальное сообщение - убираем флаг отправки
+        setMessages(prev => prev.map(msg =>
+          msg.id === messageId
+            ? { ...msg, sending: false, created_at: result.data?.created_at || msg.created_at }
+            : msg
+        ));
 
-        websocketManager.sendMessage(selectedThread.id, wsMessage);
+        // Notify message sent
+        notifyMessageSent();
+
+        return true;
+      } else {
+        throw new Error('API call failed');
       }
-
-      // Notify message sent
-      notifyMessageSent();
-
-      return true;
     } catch (err) {
       console.error('Failed to send message:', err);
+
+      // Удаляем неудачное сообщение из списка
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+
       const errorMessage = 'Ошибка отправки сообщения';
       setError(errorMessage);
       notifyError(errorMessage);

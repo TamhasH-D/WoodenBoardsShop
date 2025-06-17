@@ -82,7 +82,37 @@ class ChatService:
             if message_input.seller_id != thread.seller_id:
                 raise ValueError("Seller is not a participant of this chat thread")
 
-        return await self.daos.chat_message.create(message_input)
+        # Создаем сообщение в базе данных
+        created_message = await self.daos.chat_message.create(message_input)
+
+        # Отправляем WebSocket уведомление
+        try:
+            from backend.routes.websocket_routes import notify_new_message
+
+            # Определяем отправителя
+            sender_id = message_input.buyer_id if message_input.buyer_id else message_input.seller_id
+            sender_type = "buyer" if message_input.buyer_id else "seller"
+
+            # Создаем WebSocket сообщение
+            ws_message = self.create_websocket_message(
+                message_type="message",
+                thread_id=message_input.thread_id,
+                sender_id=sender_id,
+                sender_type=sender_type,
+                message=message_input.message,
+                message_id=message_input.id
+            )
+
+            # Отправляем через WebSocket
+            await notify_new_message(str(message_input.thread_id), ws_message)
+
+        except Exception as e:
+            # Логируем ошибку, но не прерываем выполнение
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to send WebSocket notification: {e}")
+
+        return created_message
 
     async def get_thread_messages(self, thread_id: UUID, limit: int = 50) -> list[ChatMessage]:
         """Get messages for a specific thread."""

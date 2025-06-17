@@ -50,6 +50,12 @@ const ChatWindow = () => {
     console.log('[ChatWindow] WebSocket message received:', data);
 
     if (data.type === 'message') {
+      // Игнорируем собственные сообщения - они уже добавлены локально
+      if (data.sender_id === buyerId) {
+        console.log('[ChatWindow] Ignoring own message from WebSocket');
+        return;
+      }
+
       const messageId = data.message_id || `ws-${Date.now()}`;
 
       // Проверяем дублирование
@@ -171,10 +177,26 @@ const ChatWindow = () => {
     setSending(true);
     setNewMessage('');
 
-    const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Генерируем UUID для сообщения
+    const messageId = crypto.randomUUID ? crypto.randomUUID() : `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     try {
-      // Отправляем через API
+      // Добавляем сообщение локально сразу для лучшего UX
+      const tempMessage = {
+        id: messageId,
+        message: messageText,
+        buyer_id: buyerId,
+        seller_id: null,
+        thread_id: threadId,
+        created_at: new Date().toISOString(),
+        is_read_by_buyer: true,
+        is_read_by_seller: false,
+        sending: true // Флаг для отображения статуса отправки
+      };
+
+      setMessages(prev => [...prev, tempMessage]);
+
+      // Отправляем только через API (backend сам разошлет через WebSocket)
       const messageData = {
         id: messageId,
         message: messageText,
@@ -189,27 +211,22 @@ const ChatWindow = () => {
       const result = await apiService.sendMessage(messageData);
 
       if (result) {
-        // Отправляем через WebSocket
-        const wsMessage = {
-          type: 'message',
-          message: messageText,
-          message_id: messageId,
-          sender_id: buyerId,
-          sender_type: 'buyer',
-          thread_id: threadId,
-          timestamp: new Date().toISOString()
-        };
-
-        const sent = websocketManager.sendMessage(threadId, wsMessage);
-        if (!sent) {
-          console.warn('[ChatWindow] Failed to send via WebSocket');
-        }
+        // Обновляем локальное сообщение - убираем флаг отправки
+        setMessages(prev => prev.map(msg =>
+          msg.id === messageId
+            ? { ...msg, sending: false, created_at: result.data?.created_at || msg.created_at }
+            : msg
+        ));
+        console.log('[ChatWindow] Message sent successfully');
       } else {
         throw new Error('API call failed');
       }
     } catch (error) {
       console.error('[ChatWindow] Error sending message:', error);
       showError('Не удалось отправить сообщение');
+
+      // Удаляем неудачное сообщение из списка
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
       setNewMessage(messageText); // Восстанавливаем текст
     } finally {
       setSending(false);
