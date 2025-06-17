@@ -81,8 +81,8 @@ const ProductDetailPage = () => {
 
       // Загружаем количество досок
       try {
-        const boardsResponse = await apiService.getWoodenBoardsByProduct(productData.id, 0, 1);
-        setBoardsCount(boardsResponse.total || 0);
+        const boardsStats = await apiService.getProductBoardsStats(productData.id);
+        setBoardsCount(boardsStats.total_count || 0);
       } catch (err) {
         console.error('Ошибка загрузки количества досок:', err);
         setBoardsCount(0);
@@ -446,7 +446,7 @@ const ProductDetailPage = () => {
                     {product.volume?.toFixed(4) || '0'} м³
                   </div>
                 </div>
-                <div style={{
+                {/* <div style={{
                   padding: '20px',
                   backgroundColor: '#f1f5f9',
                   borderRadius: '12px',
@@ -468,7 +468,7 @@ const ProductDetailPage = () => {
                   }}>
                     {boardsCount !== null ? boardsCount : 'Загрузка...'}
                   </div>
-                </div>
+                </div> */}
                 {woodType && (
                   <div style={{
                     padding: '20px',

@@ -17,7 +17,7 @@ const UserMenu = () => {
       </button>
       
       {isOpen && (
-        <div className="user-dropdown">
+        <div className="user-dropdown" style={{ position: 'absolute', top: '100%', right: 0, zIndex: 1000001 }}>
           <a href="/profile">Профиль</a>
           <a href="/orders">Заказы</a>
           <a href="/settings">Настройки</a>

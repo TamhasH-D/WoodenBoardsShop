@@ -11,7 +11,7 @@ const Header = React.memo(() => {
   const { backendStatus } = useApp();
 
   return (
-    <header className="header">
+    <header className="header" style={{ position: 'relative', zIndex: 100000 }}>
       <div className="container">
         <nav className="nav">
           {/* Левая часть */}

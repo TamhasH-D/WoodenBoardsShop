@@ -776,6 +776,17 @@ export const apiService = {
     return result.data;
   },
 
+  // Get wooden boards for a specific product with pagination
+  async getWoodenBoardsByProduct(productId, page = 0, size = 20) {
+    const response = await api.get(`/api/v1/products/${productId}/wooden-boards?offset=${page * size}&limit=${size}`);
+    return {
+      data: response.data.data || response.data,
+      total: response.data.total || 0,
+      offset: page * size,
+      limit: size
+    };
+  },
+
   // Get image file URL
   getImageFileUrl(imageId) {
     const baseUrl = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');

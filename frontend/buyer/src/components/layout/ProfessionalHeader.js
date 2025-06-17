@@ -221,7 +221,7 @@ const ProfessionalHeader = () => {
       </div>
 
       {/* Mobile Overlay */}
-      {mobileMenuOpen && isMobile && (
+      {/* {mobileMenuOpen && isMobile && (
         <div
           onClick={() => setMobileMenuOpen(false)}
           style={{
@@ -234,7 +234,7 @@ const ProfessionalHeader = () => {
             zIndex: 40
           }}
         />
-      )}
+      )} */}
 
       <style jsx>{`
         @media (min-width: 768px) {
