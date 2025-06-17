@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 /**
- * Компактный анализатор досок для формы создания товара
+ * Компактный инструмент подсчета досок для формы создания товара
  * Горизонтальное расположение: поля ввода слева, изображение справа
  * Улучшенная версия с фиксированными размерами и плавными переходами
  */
@@ -107,7 +107,7 @@ const CompactBoardAnalyzer = ({
       });
 
       if (!response.ok) {
-        throw new Error(`Ошибка анализа: ${response.status}`);
+        throw new Error(`Ошибка подсчета: ${response.status}`);
       }
 
       const data = await response.json();
@@ -133,8 +133,8 @@ const CompactBoardAnalyzer = ({
 
     } catch (err) {
       clearInterval(progressInterval);
-      console.error('Ошибка анализа:', err);
-      setError(err.message || 'Произошла ошибка при анализе');
+      console.error('Ошибка подсчета:', err);
+      setError(err.message || 'Произошла ошибка при подсчете');
       setLoadingProgress(0);
     } finally {
       setAnalyzing(false);
@@ -345,7 +345,7 @@ const CompactBoardAnalyzer = ({
               <div className="image-placeholder-fixed">
                 <div className="placeholder-icon-large">🖼️</div>
                 <p className="placeholder-text">Изображение появится здесь</p>
-                <p className="placeholder-hint">Загрузите фото досок для анализа</p>
+                <p className="placeholder-hint">Загрузите фото досок для подсчета</p>
               </div>
             )}
           </div>
@@ -355,7 +355,7 @@ const CompactBoardAnalyzer = ({
             {analyzing && (
               <div className="loading-bar-container fade-in">
                 <div className="loading-bar-text">
-                  🔍 Анализируем изображение...
+                  🔢 Подсчитываем доски...
                 </div>
                 <div className="progress-bar-horizontal">
                   <div

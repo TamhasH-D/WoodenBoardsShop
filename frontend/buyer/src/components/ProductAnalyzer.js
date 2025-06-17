@@ -185,12 +185,12 @@ const ProductAnalyzer = ({ product, onAnalysisComplete }) => {
       // Создаем File объект из blob
       const file = new File([blob], `product-${product.id}.jpg`, { type: blob.type });
 
-      // Анализируем изображение
+      // Подсчитываем доски на изображении
       const result = await apiService.analyzeWoodenBoard(file, height, length);
       setAnalysisResult(result);
       setShowAnalysis(true);
 
-      // Уведомляем родительский компонент о завершении анализа
+      // Уведомляем родительский компонент о завершении подсчета
       if (onAnalysisComplete) {
         onAnalysisComplete(result);
       }

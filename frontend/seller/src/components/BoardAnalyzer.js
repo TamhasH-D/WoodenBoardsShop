@@ -60,8 +60,8 @@ const BoardAnalyzer = () => {
       // Removed localStorage history saving
 
     } catch (err) {
-      console.error('Ошибка анализа изображения:', err);
-      setError(err.message || 'Произошла ошибка при анализе изображения');
+      console.error('Ошибка подсчета досок:', err);
+      setError(err.message || 'Произошла ошибка при подсчете досок');
     } finally {
       setAnalyzing(false);
     }
@@ -141,15 +141,15 @@ const BoardAnalyzer = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Левая колонка - Форма анализа */}
+        {/* Левая колонка - Форма подсчета */}
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">📸 Загрузка и анализ изображения</h2>
+            <h2 className="card-title">📸 Загрузка и подсчет досок</h2>
           </div>
 
           <div className="form-group">
             <label className="form-label">
-              Изображение досок для анализа *
+              Изображение досок для подсчета *
             </label>
             <input
               ref={fileInputRef}
@@ -204,7 +204,7 @@ const BoardAnalyzer = () => {
               disabled={!selectedFile || !boardHeight || !boardLength || analyzing}
               className="btn btn-primary"
             >
-              {analyzing ? '🔄 Анализируем...' : '🔍 Анализировать изображение'}
+              {analyzing ? '🔄 Подсчитываем...' : '🔢 Подсчитать доски'}
             </button>
             
             {(selectedFile || analysisResult) && (
@@ -245,7 +245,7 @@ const BoardAnalyzer = () => {
           {analysisResult && showDetails && (
             <div className="analysis-results">
               <div className="results-summary">
-                <h4>📈 Сводка анализа:</h4>
+                <h4>📈 Результаты подсчета:</h4>
                 <div className="stats-grid">
                   <div className="stat-item">
                     <span className="stat-label">Обнаружено досок:</span>

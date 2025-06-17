@@ -79,8 +79,8 @@ const QuickActions = () => {
     {
       to: '/board-analyzer',
       icon: Search,
-      title: 'Анализатор досок',
-      description: 'Используйте AI для анализа изображений досок и расчета объема',
+      title: 'Подсчет досок',
+      description: 'Используйте AI для автоматического подсчета досок и расчета объема',
       color: 'hover:border-purple-300'
     },
     {

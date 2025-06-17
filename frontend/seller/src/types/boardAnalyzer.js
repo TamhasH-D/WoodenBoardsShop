@@ -1,5 +1,5 @@
 /**
- * Типы для анализатора досок
+ * Типы для инструмента подсчета досок
  * Адаптированы из TypeScript версии backend/prosto_board_volume-main/frontend
  */
 
@@ -26,16 +26,16 @@
  */
 
 /**
- * @typedef {Object} AnalysisResponse
+ * @typedef {Object} CountingResponse
  * @property {number} total_volume - Общий объем всех досок в м³
  * @property {number} total_count - Общее количество досок
  * @property {WoodenBoard[]} wooden_boards - Массив обнаруженных досок
  */
 
 // Экспортируем для JSDoc
-export const BoardAnalyzerTypes = {
+export const BoardCounterTypes = {
   Point: {},
   Detection: {},
   WoodenBoard: {},
-  AnalysisResponse: {}
+  CountingResponse: {}
 };

@@ -4,7 +4,7 @@ import ResultDisplay from './ui/ResultDisplay';
 import ErrorToast from './ui/ErrorToast';
 
 /**
- * Улучшенный анализатор досок с красивым UI
+ * Улучшенный инструмент подсчета досок с красивым UI
  * Адаптирован из backend/prosto_board_volume-main/frontend
  * Использует правильные API запросы seller frontend
  */

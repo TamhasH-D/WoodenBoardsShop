@@ -69,7 +69,7 @@ function Home() {
             </h1>
             <p className="hero-subtitle">
               Современная платформа для покупки и продажи пиломатериалов
-              с ИИ-анализом качества и прямым общением с поставщиками
+              с ИИ-подсчетом досок и объема, прямым общением с поставщиками
             </p>
             <div className="hero-buttons">
               <button
@@ -100,7 +100,7 @@ function Home() {
             </div>
             <div className="visual-card card-2">
               <div className="card-icon">🤖</div>
-              <div className="card-text">ИИ анализ</div>
+              <div className="card-text">ИИ подсчет</div>
             </div>
             <div className="visual-card card-3">
               <div className="card-icon">💬</div>
@@ -135,7 +135,7 @@ function Home() {
                 </div>
                 <div className="stat-item">
                   <div className="stat-number">99%</div>
-                  <div className="stat-label">Точность ИИ анализа</div>
+                  <div className="stat-label">Точность ИИ подсчета</div>
                 </div>
               </div>
 
@@ -150,9 +150,9 @@ function Home() {
             <div className="about-visual">
               <div className="visual-container">
                 <div className="tech-card">
-                  <div className="tech-icon">🔬</div>
-                  <h4>ИИ Анализ качества</h4>
-                  <p>Автоматическое определение дефектов и классификация древесины</p>
+                  <div className="tech-icon">🔢</div>
+                  <h4>ИИ Подсчет досок</h4>
+                  <p>Автоматический подсчет количества досок и расчет объема древесины</p>
                 </div>
                 <div className="tech-card">
                   <div className="tech-icon">📊</div>
@@ -198,8 +198,8 @@ function Home() {
                   <path d="M9 12l2 2 4-4M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <h3>ИИ контроль качества</h3>
-              <p>Автоматический анализ досок с точностью 99% для определения дефектов и сортности</p>
+              <h3>ИИ подсчет досок</h3>
+              <p>Автоматический подсчет количества досок и расчет объема с точностью 99%</p>
             </div>
 
             <div className="feature-card">
@@ -277,13 +277,13 @@ function Home() {
             <div className="step-item reverse">
               <div className="step-number">02</div>
               <div className="step-content">
-                <h3>ИИ анализ качества</h3>
-                <p>Загрузите фото досок в наш анализатор для автоматической оценки качества и выявления дефектов</p>
+                <h3>ИИ подсчет досок</h3>
+                <p>Загрузите фото досок в наш анализатор для автоматического подсчета количества и расчета объема</p>
                 <button
                   className="step-button"
                   onClick={() => navigate('/analyzer')}
                 >
-                  Попробовать анализатор
+                  Попробовать подсчет
                 </button>
               </div>
               <div className="step-visual">
@@ -305,23 +305,6 @@ function Home() {
               </div>
               <div className="step-visual">
                 <div className="visual-icon">💬</div>
-              </div>
-            </div>
-
-            <div className="step-item reverse">
-              <div className="step-number">04</div>
-              <div className="step-content">
-                <h3>Оформление заказа</h3>
-                <p>Завершите сделку с гарантией качества и отслеживанием доставки до вашего объекта</p>
-                <button
-                  className="step-button"
-                  onClick={() => navigate('/orders')}
-                >
-                  Мои заказы
-                </button>
-              </div>
-              <div className="step-visual">
-                <div className="visual-icon">📦</div>
               </div>
             </div>
           </div>
@@ -348,7 +331,7 @@ function Home() {
                 className="btn btn-outline large"
                 onClick={() => navigate('/analyzer')}
               >
-                Попробовать ИИ анализатор
+                Попробовать ИИ подсчет
               </button>
             </div>
           </div>

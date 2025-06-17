@@ -51,9 +51,9 @@ const BoardAnalyzerNew = () => {
     <div className="container">
       {/* Header */}
       <div className="page-header">
-        <h1 className="page-title">Анализатор досок</h1>
+        <h1 className="page-title">Подсчет досок</h1>
         <p className="page-description">
-          Загрузите изображение досок и получите точный анализ объема и количества с помощью искусственного интеллекта
+          Загрузите изображение досок и получите точный подсчет количества и расчет объема с помощью искусственного интеллекта
         </p>
       </div>
 

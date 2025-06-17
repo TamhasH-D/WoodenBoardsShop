@@ -40,8 +40,8 @@ const BoardAnalyzer = () => {
       setResult(data);
 
     } catch (err) {
-      console.error('Ошибка анализа изображения:', err);
-      setError(err instanceof Error ? err.message : 'Произошла ошибка при анализе');
+      console.error('Ошибка подсчета досок:', err);
+      setError(err instanceof Error ? err.message : 'Произошла ошибка при подсчете');
     } finally {
       setLoading(false);
     }
