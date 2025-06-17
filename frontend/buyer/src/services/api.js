@@ -785,40 +785,6 @@ export const apiService = {
     }
   },
 
-  // Get wooden boards statistics by product
-  async getProductBoardsStats(productId) {
-    try {
-      const response = await api.get(`/api/v1/products/${productId}/boards/stats`);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to get product boards stats:', error);
-      throw error;
-    }
-  },
-
-  // Get wooden boards by product (if needed for detailed view)
-  async getWoodenBoardsByProduct(productId, page = 0, size = 20) {
-    try {
-      const response = await api.get(`/api/v1/products/${productId}/wooden-boards?page=${page}&size=${size}`);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to get wooden boards by product:', error);
-      // Fallback to stats if detailed endpoint doesn't exist
-      try {
-        const stats = await this.getProductBoardsStats(productId);
-        return {
-          data: [],
-          total: stats.data?.total_count || 0,
-          offset: page * size,
-          limit: size
-        };
-      } catch (statsError) {
-        console.error('Fallback to stats also failed:', statsError);
-        throw error;
-      }
-    }
-  },
-
   // Wooden board analysis (Prosto Board integration)
   async analyzeWoodenBoard(imageFile, boardHeight = 0.0, boardLength = 0.0) {
     try {

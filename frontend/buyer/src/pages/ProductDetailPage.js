@@ -6,7 +6,7 @@ import { formatCurrencyRu } from '../utils/localization';
 import { apiService } from '../services/api';
 import ProductImageWithBoards from '../components/ProductImageWithBoards';
 import ProductChat from '../components/ProductChat';
-import ProductAnalyzer from '../components/ProductAnalyzer';
+
 // eslint-disable-next-line no-unused-vars
 import { getCurrentBuyerKeycloakId } from '../utils/auth';
 
@@ -276,14 +276,7 @@ const ProductDetailPage = () => {
               />
             </div>
 
-            {/* Анализ товара */}
-            <ProductAnalyzer
-              product={product}
-              onAnalysisComplete={(result) => {
-                console.log('Анализ товара завершен:', result);
-                // Можно добавить дополнительную логику обработки результатов
-              }}
-            />
+
           </div>
 
           {/* Правая колонка - Информация */}
