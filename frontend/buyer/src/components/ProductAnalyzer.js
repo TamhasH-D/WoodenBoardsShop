@@ -21,6 +21,7 @@ const ProductAnalyzer = ({ product, onAnalysisComplete }) => {
     if (product?.id) {
       loadBoardsStats();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.id]);
 
   // Функция для загрузки статистики досок

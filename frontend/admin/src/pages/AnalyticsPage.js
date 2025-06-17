@@ -189,6 +189,56 @@ const AnalyticsPage = () => {
         </Card>
       </div>
 
+      {/* Web Analytics */}
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Веб-аналитика</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            Статистика посещений и активности пользователей на сайте
+          </p>
+        </div>
+
+        <Card className="p-0 overflow-hidden">
+          <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ChartBarIcon className="h-5 w-5 text-gray-600" />
+                <h3 className="text-sm font-medium text-gray-900">
+                  Аналитика buyer.taruman.ru
+                </h3>
+              </div>
+              <a
+                href="https://umami.taruman.ru/share/EXW7Hzbt1vQxAoLu/buyer.taruman.ru"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-600 hover:text-blue-800 underline"
+              >
+                Открыть в новой вкладке
+              </a>
+            </div>
+          </div>
+
+          <div className="relative">
+            <iframe
+              src="https://umami.taruman.ru/share/EXW7Hzbt1vQxAoLu/buyer.taruman.ru"
+              width="100%"
+              height="600"
+              frameBorder="0"
+              title="Umami Analytics - buyer.taruman.ru"
+              className="w-full"
+              style={{ minHeight: '600px' }}
+            />
+
+            {/* Loading overlay */}
+            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center pointer-events-none opacity-0 transition-opacity duration-300">
+              <div className="text-center">
+                <LoadingSpinner />
+                <p className="mt-2 text-sm text-gray-600">Загрузка аналитики...</p>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
 
     </div>
   );
