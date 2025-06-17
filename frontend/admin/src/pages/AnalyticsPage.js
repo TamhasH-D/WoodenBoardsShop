@@ -198,46 +198,98 @@ const AnalyticsPage = () => {
           </p>
         </div>
 
-        <Card className="p-0 overflow-hidden">
-          <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ChartBarIcon className="h-5 w-5 text-gray-600" />
-                <h3 className="text-sm font-medium text-gray-900">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          {/* Buyer Analytics */}
+          <Card className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <ChartBarIcon className="h-8 w-8 text-blue-600" />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
                   Аналитика buyer.taruman.ru
                 </h3>
+                <p className="text-sm text-gray-600">
+                  Статистика посещений покупательского сайта
+                </p>
               </div>
+            </div>
+
+            <div className="space-y-3">
               <a
                 href="https://umami.taruman.ru/share/EXW7Hzbt1vQxAoLu/buyer.taruman.ru"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-blue-600 hover:text-blue-800 underline"
+                className="block w-full px-4 py-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors duration-200"
               >
-                Открыть в новой вкладке
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium text-blue-900">
+                      📊 Публичная аналитика
+                    </div>
+                    <div className="text-xs text-blue-700">
+                      Основные метрики и статистика посещений
+                    </div>
+                  </div>
+                  <div className="text-blue-600">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </div>
+                </div>
               </a>
             </div>
-          </div>
+          </Card>
 
-          <div className="relative">
-            <iframe
-              src="https://umami.taruman.ru/share/EXW7Hzbt1vQxAoLu/buyer.taruman.ru"
-              width="100%"
-              height="600"
-              frameBorder="0"
-              title="Umami Analytics - buyer.taruman.ru"
-              className="w-full"
-              style={{ minHeight: '600px' }}
-            />
-
-            {/* Loading overlay */}
-            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center pointer-events-none opacity-0 transition-opacity duration-300">
-              <div className="text-center">
-                <LoadingSpinner />
-                <p className="mt-2 text-sm text-gray-600">Загрузка аналитики...</p>
+          {/* Full Umami Analytics */}
+          <Card className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <ChartBarIcon className="h-8 w-8 text-purple-600" />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Полная аналитика Umami
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Расширенная статистика и детальные отчеты
+                </p>
               </div>
             </div>
-          </div>
-        </Card>
+
+            <div className="space-y-3">
+              <a
+                href="https://umami.taruman.ru"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full px-4 py-3 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors duration-200"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium text-purple-900">
+                      🔐 Административная панель
+                    </div>
+                    <div className="text-xs text-purple-700">
+                      Полный доступ ко всем метрикам и настройкам
+                    </div>
+                  </div>
+                  <div className="text-purple-600">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </div>
+                </div>
+              </a>
+
+              <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <strong>Примечание:</strong> Для доступа к полной аналитике требуется авторизация администратора в системе Umami.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
       </div>
 
     </div>
