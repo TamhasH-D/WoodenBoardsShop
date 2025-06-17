@@ -19,6 +19,9 @@ include:
   # Keycloak Authentication Service
   - path: ./keycloak/docker-compose.yaml
 
+  # Umami analitycs service
+  - path: ./umami/docker-compose.yaml
+
 
 networks:
   diplom_default:
