@@ -15,6 +15,13 @@ const BoardAnalyzer = () => {
   const [error, setError] = useState(null);
   const resultRef = useRef(null);
 
+  // Track page visit
+  useEffect(() => {
+    if (window.umami) {
+      window.umami.track('Board Analyzer - Page Visited');
+    }
+  }, []);
+
   // Автоскролл к результатам после анализа
   useEffect(() => {
     if (result && !loading && resultRef.current) {
@@ -27,6 +34,8 @@ const BoardAnalyzer = () => {
   }, [result, loading]);
 
   const handleAnalyze = async (file, height, length) => {
+    const startTime = Date.now();
+
     try {
       setLoading(true);
       setError(null);
@@ -39,9 +48,34 @@ const BoardAnalyzer = () => {
       const data = await apiService.analyzeWoodenBoard(file, height, length);
       setResult(data);
 
+      // Track successful analysis
+      if (window.umami) {
+        const duration = Date.now() - startTime;
+        window.umami.track('Board Analyzer - Analysis Completed', {
+          success: true,
+          duration: Math.round(duration / 1000), // seconds
+          boardCount: data.board_count || 0,
+          totalVolume: data.total_volume || 0,
+          height: height,
+          length: length
+        });
+      }
+
     } catch (err) {
       console.error('Ошибка подсчета досок:', err);
       setError(err instanceof Error ? err.message : 'Произошла ошибка при подсчете');
+
+      // Track failed analysis
+      if (window.umami) {
+        const duration = Date.now() - startTime;
+        window.umami.track('Board Analyzer - Analysis Failed', {
+          success: false,
+          duration: Math.round(duration / 1000), // seconds
+          error: err instanceof Error ? err.message : 'Unknown error',
+          height: height,
+          length: length
+        });
+      }
     } finally {
       setLoading(false);
     }

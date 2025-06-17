@@ -17,10 +17,18 @@ const ImageUpload = ({ onAnalyze }) => {
       setError('Размер файла должен быть менее 10MB');
       return;
     }
-    
+
     setSelectedFile(file);
     setPreview(URL.createObjectURL(file));
     setError(null);
+
+    // Track image upload event
+    if (window.umami) {
+      window.umami.track('Board Analyzer - Image Uploaded', {
+        fileSize: Math.round(file.size / 1024), // KB
+        fileType: file.type
+      });
+    }
   };
 
   const handleFileChange = (event) => {
@@ -66,6 +74,15 @@ const ImageUpload = ({ onAnalyze }) => {
     if (isNaN(length) || length <= 0) {
       setError('Пожалуйста, введите корректную длину');
       return;
+    }
+
+    // Track analysis start event
+    if (window.umami) {
+      window.umami.track('Board Analyzer - Analysis Started', {
+        height: height,
+        length: length,
+        fileSize: Math.round(selectedFile.size / 1024) // KB
+      });
     }
 
     // Конвертируем мм в метры перед отправкой
@@ -159,7 +176,7 @@ const ImageUpload = ({ onAnalyze }) => {
           <label className="form-label" style={{ marginBottom: '0.5rem' }}>
             Шаг 3: Загрузите изображение досок
           </label>
-          <div 
+          <div
             style={{
               position: 'relative',
               border: `2px dashed ${error ? '#ef4444' : selectedFile ? 'var(--color-primary)' : '#d1d5db'}`,
@@ -170,6 +187,7 @@ const ImageUpload = ({ onAnalyze }) => {
               backgroundColor: selectedFile ? '#dbeafe20' : 'transparent'
             }}
             onClick={() => fileInputRef.current?.click()}
+            data-umami-event="Board Analyzer - Upload Area Click"
             onDragOver={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -204,6 +222,7 @@ const ImageUpload = ({ onAnalyze }) => {
                     e.stopPropagation();
                     clearFile();
                   }}
+                  data-umami-event="Board Analyzer - Image Removed"
                   style={{
                     position: 'absolute',
                     top: '0.5rem',
@@ -284,6 +303,8 @@ const ImageUpload = ({ onAnalyze }) => {
           onClick={handleAnalyze}
           className={`btn ${selectedFile ? 'btn-primary' : ''}`}
           disabled={!selectedFile}
+          data-umami-event="Board Analyzer - Analyze Button Click"
+          data-umami-event-enabled={selectedFile ? 'true' : 'false'}
           style={{
             width: '100%',
             padding: '0.75rem 1rem',
