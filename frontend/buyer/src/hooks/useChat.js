@@ -44,8 +44,14 @@ export const useChat = (sellerId, productTitle) => {
     console.log('[useChat] WebSocket message received:', data);
 
     if (data.type === 'message') {
+      // Игнорируем собственные сообщения - они уже добавлены локально
+      if (data.sender_id === buyerId) {
+        console.log('[useChat] Ignoring own message from WebSocket');
+        return;
+      }
+
       const messageId = data.message_id || `ws-${Date.now()}`;
-      
+
       // Проверяем, не получали ли мы уже это сообщение
       if (messagesRef.current.has(messageId)) {
         console.log('[useChat] Duplicate message ignored:', messageId);
@@ -66,7 +72,7 @@ export const useChat = (sellerId, productTitle) => {
       };
 
       messagesRef.current.set(messageId, newMessage);
-      
+
       setMessages(prev => {
         // Проверяем еще раз в состоянии
         const exists = prev.some(msg => msg.id === messageId);
@@ -74,7 +80,7 @@ export const useChat = (sellerId, productTitle) => {
           console.log('[useChat] Message already in state:', messageId);
           return prev;
         }
-        
+
         console.log('[useChat] Adding new message to state:', messageId);
         return [...prev, newMessage];
       });
@@ -86,7 +92,7 @@ export const useChat = (sellerId, productTitle) => {
     } else if (data.type === 'user_left') {
       console.log('[useChat] User left:', data.sender_id);
     }
-  }, []);
+  }, [buyerId]);
 
   // Загрузка существующего чата
   const loadExistingChat = useCallback(async () => {
@@ -182,45 +188,59 @@ export const useChat = (sellerId, productTitle) => {
         const v = c === 'x' ? r : ((r & 0x3) | 0x8);
         return v.toString(16);
       });
-    
-    const messageData = {
-      id: messageId,
-      message: messageText.trim(),
-      is_read_by_buyer: true,
-      is_read_by_seller: false,
-      thread_id: currentThread.id,
-      buyer_id: buyerId,
-      seller_id: null
-    };
 
     try {
-      // Отправляем через API
+      // Добавляем сообщение локально сразу для лучшего UX
+      const tempMessage = {
+        id: messageId,
+        message: messageText.trim(),
+        buyer_id: buyerId,
+        seller_id: null,
+        thread_id: currentThread.id,
+        created_at: new Date().toISOString(),
+        is_read_by_buyer: true,
+        is_read_by_seller: false,
+        sending: true // Флаг для отображения статуса отправки
+      };
+
+      // Добавляем в ref и state
+      messagesRef.current.set(messageId, tempMessage);
+      setMessages(prev => [...prev, tempMessage]);
+
+      const messageData = {
+        id: messageId,
+        message: messageText.trim(),
+        is_read_by_buyer: true,
+        is_read_by_seller: false,
+        thread_id: currentThread.id,
+        buyer_id: buyerId,
+        seller_id: null
+      };
+
+      // Отправляем только через API (backend сам разошлет через WebSocket)
       console.log('[useChat] Sending message via API:', messageData);
       const result = await apiService.sendMessage(messageData);
 
       if (result) {
-        // Отправляем через WebSocket для real-time обновления
-        const wsMessage = {
-          type: 'message',
-          message: messageText.trim(),
-          message_id: messageId,
-          sender_id: buyerId,
-          sender_type: 'buyer',
-          thread_id: currentThread.id,
-          timestamp: new Date().toISOString()
-        };
+        // Обновляем локальное сообщение - убираем флаг отправки
+        setMessages(prev => prev.map(msg =>
+          msg.id === messageId
+            ? { ...msg, sending: false, created_at: result.data?.created_at || msg.created_at }
+            : msg
+        ));
 
-        const sent = websocketManager.sendMessage(currentThread.id, wsMessage);
-        if (!sent) {
-          console.warn('[useChat] Failed to send via WebSocket, message will appear when connection restored');
-        }
-
+        console.log('[useChat] Message sent successfully');
         return true;
       }
-      
+
       throw new Error('API call failed');
     } catch (err) {
       console.error('[useChat] Error sending message:', err);
+
+      // Удаляем неудачное сообщение из списка
+      messagesRef.current.delete(messageId);
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+
       throw err;
     }
   }, [thread, buyerId, createChat]);

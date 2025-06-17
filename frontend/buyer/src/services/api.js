@@ -35,7 +35,17 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error('API Response Error:', error.response?.status, error.response?.data);
+    // Более детальная обработка ошибок
+    const errorDetails = {
+      message: error.message,
+      code: error.code,
+      status: error.response?.status,
+      data: error.response?.data,
+      url: error.config?.url,
+      method: error.config?.method
+    };
+
+    console.error('API Response Error:', errorDetails);
 
     // Handle common error cases
     if (error.response?.status === 401) {
@@ -49,8 +59,12 @@ api.interceptors.response.use(
       console.error('Server error occurred');
     } else if (error.code === 'ECONNABORTED') {
       console.error('Request timeout');
-    } else if (error.code === 'ERR_NETWORK') {
+    } else if (error.code === 'ERR_NETWORK' || error.code === 'NETWORK_ERROR') {
       console.error('Network error - backend may be unavailable');
+      console.error('Check if backend is running and API_URL is correct:', API_BASE_URL);
+    } else if (error.message?.includes('ERR_SSL_PROTOCOL_ERROR')) {
+      console.error('SSL Protocol Error - check HTTPS configuration');
+      console.error('Consider using HTTP for local development');
     }
 
     return Promise.reject(error);
@@ -559,6 +573,8 @@ export const apiService = {
 
   async sendMessage(messageData) {
     try {
+      console.log('[API] Sending message:', messageData);
+
       // Ensure buyer exists before creating message
       if (messageData.buyer_id) {
         await this.ensureBuyerExists(messageData.buyer_id);
@@ -566,11 +582,35 @@ export const apiService = {
 
       // Генерируем UUID если не передан
       const payload = messageData.id ? messageData : withUUID(messageData, ENTITY_TYPES.CHAT_MESSAGE);
+
+      console.log('[API] Message payload:', payload);
+
       const response = await api.post('/api/v1/chat-messages/', payload);
-      return response.data;
+
+      console.log('[API] Message sent successfully:', response.data);
+
+      return {
+        success: true,
+        data: response.data
+      };
     } catch (error) {
-      console.error('Failed to send message:', error);
-      throw error;
+      console.error('[API] Failed to send message:', error);
+
+      // Более детальная информация об ошибке
+      const errorInfo = {
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        data: error.response?.data,
+        url: error.config?.url
+      };
+
+      console.error('[API] Error details:', errorInfo);
+
+      return {
+        success: false,
+        error: errorInfo
+      };
     }
   },
 

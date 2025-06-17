@@ -170,6 +170,10 @@ export const BUYER_TEXTS = {
   TOTAL_SELLERS: 'Всего продавцов',
   MEMBER_SINCE: 'Участник с',
   LAST_ACTIVE: 'Последняя активность',
+  PAGE: 'Страница',
+  PREVIOUS: 'Назад',
+  NEXT: 'Вперед',
+  SELLER: 'Продавец',
 
   // Health Check
   SYSTEM_STATUS: 'Состояние системы',
