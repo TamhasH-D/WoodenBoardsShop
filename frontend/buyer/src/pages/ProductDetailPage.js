@@ -30,6 +30,22 @@ const ProductDetailPage = () => {
     loadProductData();
   }, [productId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Track product page view
+  useEffect(() => {
+    if (product && window.umami) {
+      window.umami.track('Product - Page Viewed', {
+        productId: product.id,
+        productTitle: product.title || product.neme || 'Untitled',
+        price: product.price,
+        volume: product.volume,
+        sellerId: product.seller_id,
+        woodTypeId: product.wood_type_id,
+        deliveryPossible: product.delivery_possible,
+        hasPickupLocation: product.has_pickup_location
+      });
+    }
+  }, [product]);
+
   const loadProductData = async () => {
     try {
       setLoading(true);

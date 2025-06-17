@@ -86,6 +86,13 @@ const ProductCatalog = () => {
     }
   }, [filters, pagination.page, pagination.size]);
 
+  // Track catalog visit
+  useEffect(() => {
+    if (window.umami) {
+      window.umami.track('Catalog - Page Visited');
+    }
+  }, []);
+
   // Загружаем товары при изменении фильтров или пагинации
   useEffect(() => {
     loadProducts();

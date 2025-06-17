@@ -129,8 +129,20 @@ const ProductFilters = ({
           <input
             type="text"
             value={filters.search_query || ''}
-            onChange={(e) => onFiltersChange({ search_query: e.target.value })}
+            onChange={(e) => {
+              const query = e.target.value;
+              onFiltersChange({ search_query: query });
+
+              // Track search query
+              if (window.umami && query.length >= 3) {
+                window.umami.track('Catalog - Search Query', {
+                  query: query,
+                  queryLength: query.length
+                });
+              }
+            }}
             placeholder="Поиск по названию, описанию, типу древесины"
+            data-umami-event="Catalog - Search Input Focus"
             style={{
               width: '100%',
               padding: '10px 16px',
@@ -215,9 +227,22 @@ const ProductFilters = ({
                   </label>
                   <select
                     value={filters.wood_type_ids?.[0] || ''}
-                    onChange={(e) => onFiltersChange({
-                      wood_type_ids: e.target.value ? [e.target.value] : []
-                    })}
+                    onChange={(e) => {
+                      const woodTypeId = e.target.value;
+                      onFiltersChange({
+                        wood_type_ids: woodTypeId ? [woodTypeId] : []
+                      });
+
+                      // Track wood type filter
+                      if (window.umami) {
+                        const woodTypeName = woodTypes.find(wt => wt.id === woodTypeId)?.neme || 'All';
+                        window.umami.track('Catalog - Wood Type Filter', {
+                          woodTypeId: woodTypeId || 'all',
+                          woodTypeName: woodTypeName
+                        });
+                      }
+                    }}
+                    data-umami-event="Catalog - Wood Type Dropdown"
                     style={{
                       width: '100%',
                       padding: '12px 16px',
@@ -250,9 +275,22 @@ const ProductFilters = ({
                   </label>
                   <select
                     value={filters.seller_ids?.[0] || ''}
-                    onChange={(e) => onFiltersChange({
-                      seller_ids: e.target.value ? [e.target.value] : []
-                    })}
+                    onChange={(e) => {
+                      const sellerId = e.target.value;
+                      onFiltersChange({
+                        seller_ids: sellerId ? [sellerId] : []
+                      });
+
+                      // Track seller filter
+                      if (window.umami) {
+                        const sellerName = sellers.find(s => s.id === sellerId)?.neme || 'All';
+                        window.umami.track('Catalog - Seller Filter', {
+                          sellerId: sellerId || 'all',
+                          sellerName: sellerName
+                        });
+                      }
+                    }}
+                    data-umami-event="Catalog - Seller Dropdown"
                     style={{
                       width: '100%',
                       padding: '12px 16px',
@@ -296,7 +334,19 @@ const ProductFilters = ({
                       type="number"
                       placeholder="От"
                       value={filters.price_min || ''}
-                      onChange={(e) => onFiltersChange({ price_min: e.target.value })}
+                      onChange={(e) => {
+                        const priceMin = e.target.value;
+                        onFiltersChange({ price_min: priceMin });
+
+                        // Track price filter
+                        if (window.umami && priceMin) {
+                          window.umami.track('Catalog - Price Min Filter', {
+                            priceMin: parseFloat(priceMin) || 0,
+                            priceMax: parseFloat(filters.price_max) || null
+                          });
+                        }
+                      }}
+                      data-umami-event="Catalog - Price Min Input"
                       style={{
                         flex: 1,
                         padding: '12px 16px',
@@ -310,7 +360,19 @@ const ProductFilters = ({
                       type="number"
                       placeholder="До"
                       value={filters.price_max || ''}
-                      onChange={(e) => onFiltersChange({ price_max: e.target.value })}
+                      onChange={(e) => {
+                        const priceMax = e.target.value;
+                        onFiltersChange({ price_max: priceMax });
+
+                        // Track price filter
+                        if (window.umami && priceMax) {
+                          window.umami.track('Catalog - Price Max Filter', {
+                            priceMin: parseFloat(filters.price_min) || null,
+                            priceMax: parseFloat(priceMax) || 0
+                          });
+                        }
+                      }}
+                      data-umami-event="Catalog - Price Max Input"
                       style={{
                         flex: 1,
                         padding: '12px 16px',
@@ -456,7 +518,19 @@ const ProductFilters = ({
                   </label>
                   <select
                     value={filters.sort_by || 'created_at'}
-                    onChange={(e) => onFiltersChange({ sort_by: e.target.value })}
+                    onChange={(e) => {
+                      const sortBy = e.target.value;
+                      onFiltersChange({ sort_by: sortBy });
+
+                      // Track sort filter
+                      if (window.umami) {
+                        window.umami.track('Catalog - Sort Filter', {
+                          sortBy: sortBy,
+                          sortOrder: filters.sort_order || 'desc'
+                        });
+                      }
+                    }}
+                    data-umami-event="Catalog - Sort By Dropdown"
                     style={{
                       width: '100%',
                       padding: '12px 16px',
@@ -485,7 +559,19 @@ const ProductFilters = ({
                   </label>
                   <select
                     value={filters.sort_order || 'desc'}
-                    onChange={(e) => onFiltersChange({ sort_order: e.target.value })}
+                    onChange={(e) => {
+                      const sortOrder = e.target.value;
+                      onFiltersChange({ sort_order: sortOrder });
+
+                      // Track sort order filter
+                      if (window.umami) {
+                        window.umami.track('Catalog - Sort Order Filter', {
+                          sortBy: filters.sort_by || 'created_at',
+                          sortOrder: sortOrder
+                        });
+                      }
+                    }}
+                    data-umami-event="Catalog - Sort Order Dropdown"
                     style={{
                       width: '100%',
                       padding: '12px 16px',

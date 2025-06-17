@@ -49,25 +49,71 @@ const ProductCard = ({
 
   // Обработчики
   const handleClick = () => {
+    // Track product view
+    if (window.umami) {
+      window.umami.track('Product - Card Clicked', {
+        productId: product.id,
+        productTitle: product.title || product.neme || 'Untitled',
+        price: product.price,
+        volume: product.volume,
+        woodTypeName: woodTypeName,
+        sellerName: sellerName,
+        variant: variant,
+        pricePerCubicMeter: pricePerCubicMeter
+      });
+    }
+
     navigate(`/product/${product.id}`);
   };
 
   const handleStartChat = async (e) => {
     e.stopPropagation();
-    
+
+    // Track chat start attempt
+    if (window.umami) {
+      window.umami.track('Product - Chat Started', {
+        productId: product.id,
+        productTitle: product.title || product.neme || 'Untitled',
+        sellerId: sellerId,
+        sellerName: sellerName,
+        price: product.price,
+        variant: variant
+      });
+    }
+
     if (onChatStart) {
       onChatStart(product, sellerId);
       return;
     }
-    
+
     setIsStartingChat(true);
-    
+
     try {
       const buyerId = localStorage.getItem('buyerId') || 'test-buyer-id';
       const chatThread = await apiService.startChatWithSeller(buyerId, sellerId);
+
+      // Track successful chat creation
+      if (window.umami) {
+        window.umami.track('Product - Chat Created Successfully', {
+          productId: product.id,
+          sellerId: sellerId,
+          chatThreadId: chatThread.id
+        });
+      }
+
       navigate(`/chat/${chatThread.id}`);
     } catch (error) {
       console.error('Failed to start chat:', error);
+
+      // Track chat creation failure
+      if (window.umami) {
+        window.umami.track('Product - Chat Creation Failed', {
+          productId: product.id,
+          sellerId: sellerId,
+          error: error.message
+        });
+      }
+
       navigate('/chat');
     } finally {
       setIsStartingChat(false);
@@ -220,6 +266,8 @@ const ProductCard = ({
             <button
               onClick={handleStartChat}
               disabled={isStartingChat}
+              data-umami-event="Product Card - Chat Button Click"
+              data-umami-event-variant={variant}
               style={{
                 padding: '8px 16px',
                 backgroundColor: isStartingChat ? '#d97706' : '#059669',
@@ -416,6 +464,8 @@ const ProductCard = ({
                   e.stopPropagation();
                   handleClick();
                 }}
+                data-umami-event="Product Card - Details Button Click"
+                data-umami-event-variant={variant}
                 style={{
                   flex: 1,
                   padding: variant === 'grid' ? '6px 8px' : '8px 12px',
