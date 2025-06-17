@@ -166,9 +166,10 @@ frontend-rebuild: ## Rebuild and restart frontend services
 # ============================================================================
 
 .PHONY: add-data
-add-data: ## Generate synthetic data for database (large profile)
-	@echo "🚀 Generating synthetic data..."
-	cd data-generator && uvx --with requests --with faker --with python-dotenv --with tqdm python generate_data.py
+add-data: ## Generate synthetic data with YOLO analysis (v4.0 - requires YOLO service)
+	@echo "🚀 Generating synthetic data with YOLO analysis..."
+	@echo "⚠️  Requires YOLO service running on localhost:8001"
+	cd data-generator && uvx --with requests --with faker --with python-dotenv --with tqdm --with aiohttp --with aiofiles python generate_data.py
 
 .PHONY: add-data-small
 add-data-small: ## Generate small dataset for testing (957 records)
@@ -204,3 +205,13 @@ test-data-generator: ## Run data generator tests
 demo-alive-data: ## Demonstrate alive data generation features
 	@echo "🌟 Demonstrating alive data features..."
 	cd data-generator && uvx --with requests --with faker python demo_alive_data.py
+
+.PHONY: test-yolo-integration
+test-yolo-integration: ## Test YOLO service integration for data generator
+	@echo "🤖 Testing YOLO integration..."
+	cd data-generator && uvx --with requests --with faker --with python-dotenv --with tqdm python test_yolo_integration.py
+
+.PHONY: demo-yolo-features
+demo-yolo-features: ## Demonstrate new YOLO analysis features (v4.0)
+	@echo "🚀 Demonstrating YOLO analysis features..."
+	cd data-generator && uvx --with requests --with faker --with python-dotenv --with tqdm python demo_yolo_features.py

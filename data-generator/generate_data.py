@@ -3,6 +3,7 @@
 Генератор синтетических данных для WoodenBoardsShop
 """
 
+import asyncio
 import json
 import logging
 import os
@@ -192,6 +193,19 @@ class DataGenerator:
         self.logger.error("❌ API недоступен")
         return False
 
+    def check_yolo_service_health(self):
+        """Проверяет доступность YOLO сервиса"""
+        try:
+            # Получаем URL YOLO сервиса из настроек или используем по умолчанию
+            yolo_base_url = os.getenv('YOLO_SERVICE_URL', 'http://localhost:8001')
+            response = requests.get(f"{yolo_base_url}/healthcheck", timeout=10)
+            if response.status_code == 200:
+                self.logger.info("✅ YOLO сервис доступен и работает")
+                return True
+        except Exception as e:
+            self.logger.error(f"❌ YOLO сервис недоступен: {e}")
+            return False
+
     def make_request(self, method, endpoint, data=None, files=None):
         """Выполняет HTTP запрос к API с retry логикой"""
         url = f"{self.api_base}{endpoint}"
@@ -361,33 +375,146 @@ class DataGenerator:
 
         return base_address
 
-    def generate_products(self):
-        """Генерирует товары"""
-        print("📦 Создание товаров...")
+    async def create_product_with_yolo_analysis(
+        self,
+        seller_id: str,
+        wood_type_id: str,
+        title: str,
+        description: str,
+        board_height: float,
+        board_length: float,
+        volume: float,
+        price: float,
+        delivery_possible: bool,
+        pickup_location: str,
+        image_path: Path
+    ) -> bool:
+        """
+        Создает товар с реальным YOLO анализом изображения
+
+        Args:
+            seller_id: ID продавца
+            wood_type_id: ID типа древесины
+            title: Название товара
+            description: Описание товара
+            board_height: Высота доски в мм
+            board_length: Длина доски в мм
+            volume: Предварительный объем
+            price: Предварительная цена
+            delivery_possible: Возможность доставки
+            pickup_location: Адрес самовывоза
+            image_path: Путь к изображению
+
+        Returns:
+            bool: True если товар создан успешно
+        """
+        try:
+            import aiohttp
+            import aiofiles
+
+            # Подготавливаем form data
+            form_data = aiohttp.FormData()
+            form_data.add_field('seller_id', seller_id)
+            form_data.add_field('wood_type_id', wood_type_id)
+            form_data.add_field('title', title)
+            form_data.add_field('description', description or '')
+            form_data.add_field('board_height', str(board_height))
+            form_data.add_field('board_length', str(board_length))
+            form_data.add_field('volume', str(volume))
+            form_data.add_field('price', str(price))
+            form_data.add_field('delivery_possible', str(delivery_possible).lower())
+            if pickup_location:
+                form_data.add_field('pickup_location', pickup_location)
+
+            # Читаем изображение
+            async with aiofiles.open(image_path, 'rb') as f:
+                image_content = await f.read()
+
+            # Добавляем изображение в form data
+            form_data.add_field(
+                'image',
+                image_content,
+                filename=image_path.name,
+                content_type='image/jpeg' if image_path.suffix.lower() in ['.jpg', '.jpeg'] else 'image/png'
+            )
+
+            # Отправляем запрос с увеличенным таймаутом для YOLO анализа
+            url = f"{self.api_base}/products/with-image"
+            timeout = aiohttp.ClientTimeout(total=120)  # 2 минуты на YOLO анализ
+
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(url, data=form_data) as response:
+                    if response.status == 201:
+                        result = await response.json()
+
+                        # Сохраняем информацию о созданном товаре
+                        product_data = result.get('data', {})
+                        if product_data:
+                            self.generated_data['products'].append({
+                                'id': product_data.get('product_id'),
+                                'seller_id': seller_id
+                            })
+
+                            # Сохраняем информацию об изображении
+                            if product_data.get('image_id'):
+                                self.generated_data['images'].append({
+                                    'id': product_data.get('image_id'),
+                                    'image_path': product_data.get('image_path', ''),
+                                    'product_id': product_data.get('product_id')
+                                })
+
+                            # Сохраняем информацию о досках (из YOLO анализа)
+                            wooden_boards = product_data.get('wooden_boards', [])
+                            for board in wooden_boards:
+                                if board.get('id'):
+                                    self.generated_data['wooden_boards'].append(board.get('id'))
+
+                        return True
+                    else:
+                        error_text = await response.text()
+                        print(f"Ошибка создания товара: HTTP {response.status} - {error_text}")
+                        return False
+
+        except Exception as e:
+            print(f"Исключение при создании товара с YOLO анализом: {e}")
+            return False
+
+    def generate_products_with_yolo_analysis(self):
+        """Генерирует товары с реальным YOLO анализом изображений"""
+        print("📦 Создание товаров с YOLO анализом...")
 
         if not self.generated_data['sellers'] or not self.generated_data['wood_types']:
             print("❌ Сначала нужно создать продавцов и типы древесины")
             return
 
-        for _ in tqdm(range(self.counts['products'])):
-            product_id = str(uuid4())
+        # Получаем список доступных изображений
+        if not self.images_source.exists():
+            print(f"❌ Папка с изображениями не найдена: {self.images_source}")
+            return
+
+        image_files = list(self.images_source.glob('*.jpg')) + list(self.images_source.glob('*.png'))
+        if not image_files:
+            print("❌ Изображения не найдены")
+            return
+
+        print(f"Найдено {len(image_files)} изображений для анализа")
+
+        successful_products = 0
+        failed_products = 0
+
+        for i in tqdm(range(self.counts['products'])):
             seller_id = random.choice(self.generated_data['sellers'])
             wood_type = random.choice(self.generated_data['wood_types'])
 
-            # Генерируем размеры доски
+            # Генерируем размеры доски для YOLO анализа
             width, height = random.choice(BOARD_DIMENSIONS)
             length = random.choice(BOARD_LENGTHS)
 
-            # Рассчитываем объем (в м³)
-            volume = round((width * height * length) / 1_000_000_000, 4)
-
-            # Генерируем цену на основе типа древесины
-            wood_name = wood_type['neme']
-            price_range = WOOD_PRICE_RANGES.get(wood_name, (15000, 50000))
-            price_per_m3 = random.uniform(*price_range)
-            total_price = round(volume * price_per_m3, 2)
+            # Выбираем случайное изображение
+            source_image = random.choice(image_files)
 
             # Генерируем живое название товара
+            wood_name = wood_type['neme']
             title_template = random.choice(PRODUCT_TITLE_TEMPLATES)
             title = title_template.format(
                 wood_type=wood_name,
@@ -435,133 +562,45 @@ class DataGenerator:
             delivery_possible = random.choice([True, False])
             pickup_location = self.generate_pickup_address() if random.choice([True, False]) else None
 
-            payload = {
-                'id': product_id,
-                'volume': volume,
-                'price': total_price,
-                'title': title,
-                'descrioption': description,  # Сохраняем опечатку из API
-                'delivery_possible': delivery_possible,
-                'pickup_location': pickup_location,
-                'seller_id': seller_id,
-                'wood_type_id': wood_type['id']
-            }
+            # Генерируем цену на основе типа древесины (будет скорректирована после анализа)
+            price_range = WOOD_PRICE_RANGES.get(wood_name, (15000, 50000))
+            price_per_m3 = random.uniform(*price_range)
+
+            # Предварительный объем (будет заменен результатом YOLO анализа)
+            preliminary_volume = round((width * height * length) / 1_000_000_000, 4)
+            preliminary_price = round(preliminary_volume * price_per_m3, 2)
 
             try:
-                response = self.make_request('POST', '/products/', payload)
-                # Сохраняем связь товара с продавцом
-                self.generated_data['products'].append({
-                    'id': product_id,
-                    'seller_id': seller_id
-                })
-            except Exception as e:
-                print(f"Ошибка создания товара: {e}")
+                # Создаем товар с YOLO анализом через multipart/form-data
+                success = asyncio.run(self.create_product_with_yolo_analysis(
+                    seller_id=seller_id,
+                    wood_type_id=wood_type['id'],
+                    title=title,
+                    description=description,
+                    board_height=float(height),  # в мм
+                    board_length=float(length),  # в мм
+                    volume=preliminary_volume,
+                    price=preliminary_price,
+                    delivery_possible=delivery_possible,
+                    pickup_location=pickup_location,
+                    image_path=source_image
+                ))
 
-        self.save_progress()
-        print(f"✅ Создано {len(self.generated_data['products'])} товаров")
-
-    def copy_and_generate_images(self):
-        """Копирует изображения и создает записи в БД"""
-        print("🖼️ Создание изображений...")
-
-        if not self.generated_data['products'] or not self.generated_data['sellers']:
-            print("❌ Сначала нужно создать товары и продавцов")
-            return
-
-        # Получаем список доступных изображений
-        if not self.images_source.exists():
-            print(f"❌ Папка с изображениями не найдена: {self.images_source}")
-            return
-
-        image_files = list(self.images_source.glob('*.jpg')) + list(self.images_source.glob('*.png'))
-        if not image_files:
-            print("❌ Изображения не найдены")
-            return
-
-        print(f"Найдено {len(image_files)} изображений")
-
-        for product_data in tqdm(self.generated_data['products']):
-            # Получаем product_id и seller_id из сохраненных данных
-            product_id = product_data['id']
-            seller_id = product_data['seller_id']
-
-            # Выбираем случайное изображение
-            source_image = random.choice(image_files)
-
-            # Генерируем новое имя файла
-            image_id = str(uuid4())
-            file_extension = source_image.suffix
-            new_filename = f"{image_id}{file_extension}"
-
-            # Создаем структуру папок как в backend: /uploads/sellers/{seller_id}/products/{product_id}/
-            seller_dir = self.images_upload_base / "sellers" / seller_id
-            product_dir = seller_dir / "products" / product_id
-            product_dir.mkdir(parents=True, exist_ok=True)
-
-            target_path = product_dir / new_filename
-
-            # Путь для сохранения в БД (относительный от uploads/)
-            relative_image_path = str(target_path.relative_to(self.images_upload_base))
-
-            try:
-                # Копируем файл
-                shutil.copy2(source_image, target_path)
-
-                # Создаем запись в БД
-                payload = {
-                    'id': image_id,
-                    'image_path': relative_image_path,  # Используем правильный путь
-                    'product_id': product_id
-                }
-
-                response = self.make_request('POST', '/images/', payload)
-                self.generated_data['images'].append({
-                    'id': image_id,
-                    'image_path': relative_image_path,
-                    'product_id': product_id
-                })
+                if success:
+                    successful_products += 1
+                else:
+                    failed_products += 1
 
             except Exception as e:
-                print(f"Ошибка создания изображения: {e}")
+                print(f"Ошибка создания товара {i+1}: {e}")
+                failed_products += 1
 
         self.save_progress()
-        print(f"✅ Создано {len(self.generated_data['images'])} изображений")
+        print(f"✅ Создано {successful_products} товаров с YOLO анализом")
+        if failed_products > 0:
+            print(f"⚠️ Не удалось создать {failed_products} товаров")
 
-    def generate_wooden_boards(self):
-        """Генерирует записи деревянных досок"""
-        print("🪵 Создание записей деревянных досок...")
 
-        if not self.generated_data['images']:
-            print("❌ Сначала нужно создать изображения")
-            return
-
-        for image_data in tqdm(self.generated_data['images']):
-            # Генерируем 1-3 доски на изображение
-            boards_count = random.randint(1, 3)
-
-            for _ in range(boards_count):
-                board_id = str(uuid4())
-
-                # Генерируем размеры доски
-                width, height = random.choice(BOARD_DIMENSIONS)
-                length = random.choice(BOARD_LENGTHS)
-
-                payload = {
-                    'id': board_id,
-                    'height': float(height),
-                    'width': float(width),
-                    'lenght': float(length),  # Сохраняем опечатку из API
-                    'image_id': image_data['id']
-                }
-
-                try:
-                    response = self.make_request('POST', '/wooden-boards/', payload)
-                    self.generated_data['wooden_boards'].append(board_id)
-                except Exception as e:
-                    print(f"Ошибка создания доски: {e}")
-
-        self.save_progress()
-        print(f"✅ Создано {len(self.generated_data['wooden_boards'])} записей досок")
 
     def generate_chat_threads(self):
         """Генерирует потоки чата"""
@@ -733,15 +772,20 @@ class DataGenerator:
             print("❌ API недоступен. Проверьте, что backend запущен.")
             return
 
+        # Проверяем доступность YOLO сервиса
+        if not self.check_yolo_service_health():
+            print("❌ YOLO сервис недоступен. Проверьте, что YOLO backend запущен на порту 8001.")
+            print("💡 Для работы с реальным анализом изображений необходим YOLO сервис.")
+            return
+
         try:
             # Создаем данные в правильном порядке (учитывая зависимости)
             self.generate_wood_types()
             self.generate_wood_type_prices()
             self.generate_buyers()
             self.generate_sellers()
-            self.generate_products()
-            self.copy_and_generate_images()
-            self.generate_wooden_boards()
+            # Новый метод создает товары, изображения и доски одновременно через YOLO анализ
+            self.generate_products_with_yolo_analysis()
             self.generate_chat_threads()
             self.generate_chat_messages()
 
