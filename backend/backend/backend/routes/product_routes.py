@@ -25,7 +25,7 @@ from backend.dtos.product_with_image_dtos import (
     ProductWithImageUpdateDTO,
     ProductWithImageResponseDTO,
 )
-from backend.dtos.wooden_board_dtos import WoodenBoardInputDTO
+from backend.dtos.wooden_board_dtos import WoodenBoardInputDTO, WoodenBoardDTO
 from backend.services.product_image_service import product_image_service
 from backend.settings import settings
 
@@ -268,6 +268,63 @@ async def get_product_image(
     )
 
 
+@router.get("/{product_id}/boards/stats")
+async def get_product_boards_stats(
+    product_id: UUID,
+    daos: GetDAOs,
+) -> DataResponse[dict]:
+    """Get statistics for wooden boards of a specific product."""
+
+    # Check if product exists
+    product = await daos.product.filter_first(id=product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Товар не найден")
+
+    # Get all wooden boards for this product
+    # First get all images for this product
+    images = await daos.image.filter(product_id=product_id)
+
+    # Then get all wooden boards for these images
+    boards = []
+    for image in images:
+        image_boards = await daos.wooden_board.filter(image_id=image.id)
+        boards.extend(image_boards)
+
+    if not boards:
+        return DataResponse(data={
+            "total_count": 0,
+            "average_height": product.board_height / 1000 if product.board_height else None,  # Convert mm to m
+            "average_width": None,
+            "average_length": product.board_length / 1000 if product.board_length else None,  # Convert mm to m
+            "total_volume": 0.0
+        })
+
+    # Calculate statistics
+    total_count = len(boards)
+
+    # Calculate averages (filter out None values)
+    heights = [board.height for board in boards if board.height is not None and board.height > 0]
+    widths = [board.width for board in boards if board.width is not None and board.width > 0]
+    lengths = [board.lenght for board in boards if board.lenght is not None and board.lenght > 0]  # Note: lenght with typo
+
+    average_height = sum(heights) / len(heights) if heights else (product.board_height / 1000 if product.board_height else None)
+    average_width = sum(widths) / len(widths) if widths else None
+    average_length = sum(lengths) / len(lengths) if lengths else (product.board_length / 1000 if product.board_length else None)
+
+    # Calculate total volume (height * width * length for each board)
+    total_volume = 0.0
+    for board in boards:
+        if board.height and board.width and board.lenght and all(x > 0 for x in [board.height, board.width, board.lenght]):
+            board_volume = board.height * board.width * board.lenght
+            total_volume += board_volume
+
+    return DataResponse(data={
+        "total_count": total_count,
+        "average_height": round(average_height, 2) if average_height else None,
+        "average_width": round(average_width, 2) if average_width else None,
+        "average_length": round(average_length, 2) if average_length else None,
+        "total_volume": round(total_volume, 4)
+    })
 
 
 

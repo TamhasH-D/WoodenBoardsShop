@@ -709,6 +709,33 @@ export const apiService = {
     return `${API_BASE_URL}/api/v1/products/${productId}/image`;
   },
 
+  // Get product image as blob (for analysis)
+  async getProductImageBlob(productId) {
+    const response = await fetch(`${API_BASE_URL}/api/v1/products/${productId}/image`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Accept': 'image/*',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch product image: ${response.status}`);
+    }
+
+    return await response.blob();
+  },
+
+  // Get product boards statistics
+  async getProductBoardsStats(productId) {
+    const response = await fetch(`${API_BASE_URL}/api/v1/products/${productId}/boards/stats`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch boards stats: ${response.status}`);
+    }
+    const result = await response.json();
+    return result.data;
+  },
+
   // Get image file URL
   getImageFileUrl(imageId) {
     const baseUrl = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/+$/, '');

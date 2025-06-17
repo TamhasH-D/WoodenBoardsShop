@@ -8,7 +8,7 @@ services:
       DATABASE_TYPE: postgresql
       APP_SECRET: replace-me-with-a-random-string123
     depends_on:
-      db:
+      umami-db:
         condition: service_healthy
     init: true
     restart: always
@@ -17,6 +17,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - diplom_default
   umami-db:
     image: postgres:15-alpine
     environment:
@@ -31,6 +33,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - diplom_default
 volumes:
   umami-db-data:
 

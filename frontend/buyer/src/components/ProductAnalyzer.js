@@ -14,69 +14,47 @@ const ProductAnalyzer = ({ product, onAnalysisComplete }) => {
   const [boardHeight, setBoardHeight] = useState('0.05'); // 5 см по умолчанию
   const [boardLength, setBoardLength] = useState('2.0'); // 2 м по умолчанию
   const [loadingDimensions, setLoadingDimensions] = useState(false);
+  const [boardsStats, setBoardsStats] = useState(null);
 
   // Автоматически загружаем средние размеры досок при загрузке компонента
   useEffect(() => {
     if (product?.id) {
-      loadAverageBoardDimensions();
+      loadBoardsStats();
     }
   }, [product?.id]);
 
-  // Функция для загрузки средних размеров досок
-  const loadAverageBoardDimensions = async () => {
+  // Функция для загрузки статистики досок
+  const loadBoardsStats = async () => {
     if (!product?.id) return;
 
     setLoadingDimensions(true);
     try {
-      // Получаем все доски для данного товара с пагинацией
-      let allBoards = [];
-      let page = 0;
-      const size = 20;
-      let hasMore = true;
+      const stats = await apiService.getProductBoardsStats(product.id);
+      setBoardsStats(stats);
 
-      while (hasMore) {
-        try {
-          const response = await apiService.getWoodenBoardsByProduct(product.id, page, size);
-          const boards = response.data || [];
-
-          if (boards.length === 0) {
-            hasMore = false;
-          } else {
-            allBoards = [...allBoards, ...boards];
-            page++;
-
-            // Если получили меньше чем размер страницы, значит это последняя страница
-            if (boards.length < size) {
-              hasMore = false;
-            }
-          }
-        } catch (err) {
-          console.error(`Ошибка загрузки досок (страница ${page}):`, err);
-          hasMore = false;
-        }
+      // Устанавливаем размеры для анализа
+      if (stats.average_height && stats.average_height > 0) {
+        setBoardHeight(stats.average_height.toFixed(3));
+      } else if (product.board_height) {
+        setBoardHeight(product.board_height.toFixed(3));
       }
 
-      if (allBoards.length > 0) {
-        // Фильтруем доски с валидными размерами
-        const validBoards = allBoards.filter(board =>
-          board.height && board.height > 0 &&
-          board.length && board.length > 0
-        );
-
-        if (validBoards.length > 0) {
-          // Вычисляем средние значения
-          const avgHeight = validBoards.reduce((sum, board) => sum + board.height, 0) / validBoards.length;
-          const avgLength = validBoards.reduce((sum, board) => sum + board.length, 0) / validBoards.length;
-
-          setBoardHeight(avgHeight.toFixed(3));
-          setBoardLength(avgLength.toFixed(1));
-
-          console.log(`Загружены средние размеры досок: высота ${avgHeight.toFixed(3)}м, длина ${avgLength.toFixed(1)}м (из ${validBoards.length} досок)`);
-        }
+      if (stats.average_length && stats.average_length > 0) {
+        setBoardLength(stats.average_length.toFixed(1));
+      } else if (product.board_length) {
+        setBoardLength(product.board_length.toFixed(1));
       }
+
+      console.log('Загружена статистика досок:', stats);
     } catch (err) {
-      console.error('Ошибка загрузки средних размеров досок:', err);
-      // Оставляем значения по умолчанию
+      console.error('Ошибка загрузки статистики досок:', err);
+      // Используем размеры из товара как fallback
+      if (product.board_height) {
+        setBoardHeight(product.board_height.toFixed(3));
+      }
+      if (product.board_length) {
+        setBoardLength(product.board_length.toFixed(1));
+      }
     } finally {
       setLoadingDimensions(false);
     }
@@ -177,11 +155,9 @@ const ProductAnalyzer = ({ product, onAnalysisComplete }) => {
     setError(null);
 
     try {
-      // Получаем изображение товара как blob
-      const imageUrl = apiService.getProductImageUrl(product.id);
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      
+      // Получаем изображение товара как blob через API
+      const blob = await apiService.getProductImageBlob(product.id);
+
       // Создаем File объект из blob
       const file = new File([blob], `product-${product.id}.jpg`, { type: blob.type });
 
@@ -294,6 +270,104 @@ const ProductAnalyzer = ({ product, onAnalysisComplete }) => {
           💡 Размеры рассчитаны автоматически на основе средних значений досок данного товара
         </div>
       </div>
+
+      {/* Статистика досок товара */}
+      {boardsStats && (
+        <div style={{
+          padding: '16px',
+          backgroundColor: '#f0f9ff',
+          borderRadius: '12px',
+          border: '1px solid #0ea5e9',
+          marginBottom: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '12px'
+          }}>
+            <span style={{ fontSize: '16px' }}>📊</span>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#0369a1' }}>
+              Статистика досок товара
+            </span>
+          </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: window.innerWidth >= 768 ? 'repeat(4, 1fr)' : window.innerWidth >= 640 ? 'repeat(2, 1fr)' : '1fr',
+            gap: '12px'
+          }}>
+            <div style={{
+              padding: '8px 12px',
+              backgroundColor: 'white',
+              borderRadius: '6px',
+              border: '1px solid #bae6fd'
+            }}>
+              <div style={{ fontSize: '11px', color: '#0369a1', marginBottom: '2px' }}>
+                Количество
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#0c4a6e' }}>
+                {boardsStats.total_count} шт
+              </div>
+            </div>
+            <div style={{
+              padding: '8px 12px',
+              backgroundColor: 'white',
+              borderRadius: '6px',
+              border: '1px solid #bae6fd'
+            }}>
+              <div style={{ fontSize: '11px', color: '#0369a1', marginBottom: '2px' }}>
+                Ср. высота
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#0c4a6e' }}>
+                {boardsStats.average_height ? `${boardsStats.average_height} м` : 'Н/Д'}
+              </div>
+            </div>
+            <div style={{
+              padding: '8px 12px',
+              backgroundColor: 'white',
+              borderRadius: '6px',
+              border: '1px solid #bae6fd'
+            }}>
+              <div style={{ fontSize: '11px', color: '#0369a1', marginBottom: '2px' }}>
+                Ср. ширина
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#0c4a6e' }}>
+                {boardsStats.average_width ? `${boardsStats.average_width} м` : 'Н/Д'}
+              </div>
+            </div>
+            <div style={{
+              padding: '8px 12px',
+              backgroundColor: 'white',
+              borderRadius: '6px',
+              border: '1px solid #bae6fd'
+            }}>
+              <div style={{ fontSize: '11px', color: '#0369a1', marginBottom: '2px' }}>
+                Ср. длина
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#0c4a6e' }}>
+                {boardsStats.average_length ? `${boardsStats.average_length} м` : 'Н/Д'}
+              </div>
+            </div>
+          </div>
+          {boardsStats.total_volume > 0 && (
+            <div style={{
+              marginTop: '12px',
+              padding: '8px 12px',
+              backgroundColor: 'white',
+              borderRadius: '6px',
+              border: '1px solid #bae6fd',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '11px', color: '#0369a1', marginBottom: '2px' }}>
+                Общий объем досок
+              </div>
+              <div style={{ fontSize: '16px', fontWeight: '700', color: '#0c4a6e' }}>
+                {boardsStats.total_volume} м³
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Кнопка анализа */}
       <button
