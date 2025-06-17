@@ -88,23 +88,33 @@ class ChatService:
         # Отправляем WebSocket уведомление
         try:
             from backend.routes.websocket_routes import notify_new_message
+            import asyncio
+            import json
 
             # Определяем отправителя
             sender_id = message_input.buyer_id if message_input.buyer_id else message_input.seller_id
             sender_type = "buyer" if message_input.buyer_id else "seller"
 
-            # Создаем WebSocket сообщение
-            ws_message = self.create_websocket_message(
-                message_type="message",
-                thread_id=message_input.thread_id,
-                sender_id=sender_id,
-                sender_type=sender_type,
-                message=message_input.message,
-                message_id=message_input.id
-            )
+            # Создаем простое WebSocket сообщение как словарь
+            ws_message_data = {
+                "type": "message",
+                "thread_id": str(message_input.thread_id),
+                "sender_id": str(sender_id),
+                "sender_type": sender_type,
+                "message": message_input.message,
+                "message_id": str(message_input.id),
+                "timestamp": created_message.created_at.isoformat() if created_message.created_at else None
+            }
 
-            # Отправляем через WebSocket
-            await notify_new_message(str(message_input.thread_id), ws_message)
+            # Создаем простой объект для передачи
+            class SimpleWebSocketMessage:
+                def model_dump_json(self):
+                    return json.dumps(ws_message_data)
+
+            ws_message = SimpleWebSocketMessage()
+
+            # Отправляем через WebSocket асинхронно
+            asyncio.create_task(notify_new_message(str(message_input.thread_id), ws_message))
 
         except Exception as e:
             # Логируем ошибку, но не прерываем выполнение
