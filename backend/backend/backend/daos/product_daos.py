@@ -27,13 +27,15 @@ class ProductDAO(
         """
         Create and return a new product, checking for title uniqueness per seller.
         """
-        title = input_dto.title
-        seller_id = input_dto.seller_id
+        # title = input_dto.title # No longer needed
+        # seller_id = input_dto.seller_id # No longer needed
 
-        existing_product = await self.filter_first(
-            self.model.seller_id == seller_id,
-            sa.func.lower(self.model.title) == sa.func.lower(title),
+        query = sa.select(self.model).filter(
+            self.model.seller_id == input_dto.seller_id,
+            sa.func.lower(self.model.title) == sa.func.lower(input_dto.title)
         )
+        result = await self.session.execute(query)
+        existing_product = result.scalars().first()
 
         if existing_product:
             raise DuplicateEntryError(

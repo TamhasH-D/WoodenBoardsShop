@@ -20,10 +20,11 @@ class WoodTypeDAO(
         input_dto: WoodTypeInputDTO,
     ) -> WoodType:
         """Create and return a new wood type, checking for name uniqueness."""
-        name = input_dto.name
-        existing_wood_type = await self.filter_first(
-            sa.func.lower(self.model.name) == sa.func.lower(name)
-        )
+        # name = input_dto.name # No longer needed as input_dto.name is used directly
+        query = sa.select(self.model).filter(sa.func.lower(self.model.name) == sa.func.lower(input_dto.name))
+        result = await self.session.execute(query)
+        existing_wood_type = result.scalars().first()
+
         if existing_wood_type:
             raise DuplicateEntryError("A wood type with this name already exists.")
 
