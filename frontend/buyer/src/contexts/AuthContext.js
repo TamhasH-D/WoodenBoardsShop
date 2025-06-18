@@ -1,83 +1,87 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import Keycloak from 'keycloak-js';
-import { updateApiToken, getMyBuyerProfile } from '../services/api'; // Import API functions
+// Remove direct Keycloak import: import Keycloak from 'keycloak-js';
+import keycloakInstance from '../keycloak'; // Import the centralized Keycloak instance
+import { updateApiToken, getMyBuyerProfile } from '../services/api';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [keycloak, setKeycloak] = useState(null);
+  // The 'keycloak' state now refers to the imported instance.
+  // We don't use setKeycloak to change the instance itself, but can use it
+  // to trigger re-renders if needed, though direct use of keycloakInstance should be fine.
+  // For simplicity, we can remove the keycloak state if we always use keycloakInstance directly.
+  // Let's keep it for now to minimize structural changes to login/logout functions that check `if (keycloak)`
+  const [keycloak, setKeycloakState] = useState(keycloakInstance); // Store the imported instance in state
   const [keycloakAuthenticated, setKeycloakAuthenticated] = useState(false);
-  const [userInfo, setUserInfo] = useState(null); // Basic info from token (e.g. username, email from token)
+  const [userInfo, setUserInfo] = useState(null);
 
-  const [buyerProfile, setBuyerProfile] = useState(null); // Detailed profile from backend
-  const [profileLoading, setProfileLoading] = useState(true); // Start true until first auth check
+  const [buyerProfile, setBuyerProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState(null);
 
-  // This function replaces the old mocked fetchOrCreateBuyerProfile
-  const syncBuyerProfile = useCallback(async (kcInstance) => {
+  const syncBuyerProfile = useCallback(async (currentKcInstance) => {
     setProfileLoading(true);
     setProfileError(null);
     try {
       console.log("[AuthContext] Attempting to sync buyer profile...");
-      const profile = await getMyBuyerProfile(); // Uses token set by updateApiToken
+      const profile = await getMyBuyerProfile();
       setBuyerProfile(profile);
-      // Update basic userInfo from the definitive profile data
-      setUserInfo({
-        name: profile.name || kcInstance.tokenParsed?.name || kcInstance.tokenParsed?.preferred_username,
-        email: profile.email || kcInstance.tokenParsed?.email,
-        username: kcInstance.tokenParsed?.preferred_username, // Keep preferred_username from token
-        // any other essential fields for quick access, if different from profile
-      });
+      if (currentKcInstance?.tokenParsed) {
+        setUserInfo({
+          name: profile.name || currentKcInstance.tokenParsed.name || currentKcInstance.tokenParsed.preferred_username,
+          email: profile.email || currentKcInstance.tokenParsed.email,
+          username: currentKcInstance.tokenParsed.preferred_username,
+        });
+      } else {
+        // Fallback if tokenParsed is not available on currentKcInstance for some reason
+         setUserInfo({ name: profile.name, email: profile.email, username: profile.name });
+      }
       console.log("[AuthContext] Buyer profile synced successfully:", profile);
     } catch (error) {
       console.error("[AuthContext] Error syncing buyer profile:", error);
       setProfileError(error);
-      // Optional: Consider logging out if profile sync is critical and fails
-      // if (kcInstance) kcInstance.logout();
     } finally {
       setProfileLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    const keycloakInstance = new Keycloak('/keycloak.json');
+    // keycloakInstance is the imported singleton
 
     keycloakInstance.onTokenExpired = () => {
       console.log('[AuthContext] Keycloak token expired. Attempting to refresh...');
-      keycloakInstance.updateToken(30) // 30 seconds minimum validity
+      keycloakInstance.updateToken(30)
         .then(refreshed => {
           if (refreshed) {
             console.log('[AuthContext] Keycloak token refreshed successfully.');
             updateApiToken(keycloakInstance.token);
-            // Optionally re-sync profile if it might change or if this is a critical path
-            // syncBuyerProfile(keycloakInstance);
           } else {
             console.warn('[AuthContext] Keycloak token not refreshed, valid for %s seconds', Math.round(keycloakInstance.tokenParsed.exp + keycloakInstance.timeSkew - new Date().getTime() / 1000));
           }
         })
         .catch(() => {
           console.error('[AuthContext] Failed to refresh Keycloak token. Logging out.');
-          keycloakInstance.logout(); // Or clear session and prompt login
+          keycloakInstance.logout();
         });
     };
 
     keycloakInstance.init({ onLoad: 'check-sso', promiseType: 'native' })
       .then(authSuccess => {
-        setKeycloak(keycloakInstance);
+        // setKeycloakState(keycloakInstance); // Already set via useState initial value
         setKeycloakAuthenticated(authSuccess);
         if (authSuccess) {
           console.log("[AuthContext] Keycloak authenticated successfully.");
-          updateApiToken(keycloakInstance.token); // Set token for API calls
+          updateApiToken(keycloakInstance.token);
           const tokenParsed = keycloakInstance.tokenParsed;
-          setUserInfo({ // Set initial userInfo from token
+          setUserInfo({
             name: tokenParsed.name || tokenParsed.preferred_username,
             email: tokenParsed.email,
             username: tokenParsed.preferred_username,
           });
-          syncBuyerProfile(keycloakInstance); // Fetch/create buyer profile
+          syncBuyerProfile(keycloakInstance);
         } else {
           console.log("[AuthContext] Keycloak authentication check complete, user not authenticated.");
-          updateApiToken(null); // Clear token
+          updateApiToken(null);
           setBuyerProfile(null);
           setUserInfo(null);
           setProfileLoading(false);
@@ -85,46 +89,44 @@ export const AuthProvider = ({ children }) => {
       })
       .catch(error => {
         console.error("[AuthContext] Keycloak init error:", error);
-        updateApiToken(null); // Clear token
+        updateApiToken(null);
         setProfileError(error);
         setBuyerProfile(null);
         setUserInfo(null);
         setProfileLoading(false);
       });
 
-    // Cleanup Keycloak instance on unmount (optional, Keycloak handles much of this)
-    return () => {
-        // keycloakInstance.onTokenExpired = null; // Clear handlers if set directly
-        // if (keycloakInstance) {
-        //     console.log("[AuthContext] Clearing Keycloak instance (on unmount - though usually not needed)");
-        // }
-    };
-  }, [syncBuyerProfile]);
+    // The imported keycloakInstance persists throughout app lifecycle,
+    // so no specific cleanup in this useEffect is strictly needed for the instance itself.
+    // Event handlers like onTokenExpired are set on the singleton and will remain.
+  }, [syncBuyerProfile]); // syncBuyerProfile is stable due to useCallback
 
   const login = useCallback(() => {
-    if (keycloak) {
-      keycloak.login();
+    // Use the imported keycloakInstance directly
+    if (keycloakInstance) {
+      keycloakInstance.login();
     }
-  }, [keycloak]);
+  }, []);
 
   const logout = useCallback(() => {
-    if (keycloak) {
-      keycloak.logout(); // This will redirect, so state updates below might not be "seen" but are good practice
+    // Use the imported keycloakInstance directly
+    if (keycloakInstance) {
+      keycloakInstance.logout();
       updateApiToken(null);
+      // These state updates might not be fully processed if logout redirects immediately
       setKeycloakAuthenticated(false);
       setUserInfo(null);
       setBuyerProfile(null);
       setProfileError(null);
-      setProfileLoading(false); // Reset loading state
+      setProfileLoading(false);
     }
-  }, [keycloak]);
+  }, []);
 
-  // Derived state: profile is successfully loaded AND keycloak is authenticated
   const profileAndKeycloakAuthenticated = keycloakAuthenticated && !!buyerProfile && !profileError && !profileLoading;
 
   return (
     <AuthContext.Provider value={{
-      keycloak,
+      keycloak: keycloakInstance, // Provide the imported instance
       keycloakAuthenticated,
       login,
       logout,
@@ -132,7 +134,7 @@ export const AuthProvider = ({ children }) => {
       buyerProfile,
       profileLoading,
       profileError,
-      isAuthenticated: profileAndKeycloakAuthenticated // Main flag for "fully" authenticated
+      isAuthenticated: profileAndKeycloakAuthenticated
     }}>
       {children}
     </AuthContext.Provider>
