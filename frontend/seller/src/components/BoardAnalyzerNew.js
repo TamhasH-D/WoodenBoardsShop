@@ -57,17 +57,17 @@ const BoardAnalyzerNew = () => {
         </p>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      <div className="flex flex-col gap-8">
         <ImageUpload onAnalyze={handleAnalyze} />
 
         {loading && (
           <div className="card">
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <div className="text-center p-8">
               <div className="loading-spinner"></div>
-              <p style={{ marginTop: '1rem', color: 'var(--color-text)', fontWeight: '500' }}>
+              <p className="mt-4 text-slate-700 font-medium">
                 Анализируем изображение...
               </p>
-              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-light)', marginTop: '0.5rem' }}>
+              <p className="text-sm text-slate-500 mt-2">
                 Это может занять несколько секунд
               </p>
             </div>

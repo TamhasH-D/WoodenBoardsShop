@@ -47,9 +47,9 @@ function Profile() {
 
   return (
     <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2 sm:gap-0">
         <h2>{SELLER_TEXTS.SELLER_PROFILE}</h2>
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <div className="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-4">
           {!isEditing && (
             <button onClick={() => setIsEditing(true)} className="btn btn-primary">
               {SELLER_TEXTS.EDIT_PROFILE}
@@ -89,12 +89,12 @@ function Profile() {
                 <label className="form-label">{SELLER_TEXTS.SELLER_ID}</label>
                 <input
                   type="text"
-                  className="form-input"
+                  className="form-input bg-slate-100 cursor-not-allowed"
                   value={data?.data?.id || 'Loading...'}
                   disabled
-                  style={{ backgroundColor: '#f7fafc' }}
+                  // style prop removed
                 />
-                <small style={{ color: '#718096' }}>{SELLER_TEXTS.SELLER_ID_CANNOT_CHANGE}</small>
+                <small className="text-slate-500">{SELLER_TEXTS.SELLER_ID_CANNOT_CHANGE}</small>
               </div>
 
               <div className="form-group">
@@ -114,13 +114,13 @@ function Profile() {
                     type="checkbox"
                     checked={profileData.is_online}
                     onChange={(e) => setProfileData({...profileData, is_online: e.target.checked})}
-                    style={{ marginRight: '0.5rem' }}
+                    className="mr-2"
                   />
                   {SELLER_TEXTS.SHOW_ONLINE}
                 </label>
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem' }}>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-4">
                 <button type="submit" className="btn btn-success" disabled={mutating}>
                   {mutating ? SELLER_TEXTS.SAVING : SELLER_TEXTS.SAVE_CHANGES}
                 </button>
@@ -136,40 +136,37 @@ function Profile() {
             </form>
           ) : (
             <div>
-              <div className="grid grid-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3>{SELLER_TEXTS.BUSINESS_INFORMATION}</h3>
-                  <div style={{ marginBottom: '1rem' }}>
+                  <div className="mb-4">
                     <strong>{SELLER_TEXTS.SELLER_ID}:</strong>
                     <br />
-                    <code style={{ backgroundColor: '#f7fafc', padding: '0.25rem', borderRadius: '0.25rem' }}>
+                    <code className="bg-slate-100 px-1 py-0.5 rounded">
                       {data?.data?.id || 'Loading...'}
                     </code>
                   </div>
-                  <div style={{ marginBottom: '1rem' }}>
+                  <div className="mb-4">
                     <strong>{SELLER_TEXTS.KEYCLOAK_UUID}:</strong>
                     <br />
                     <span>{data?.data?.keycloak_uuid || 'Not set'}</span>
                   </div>
-                  <div style={{ marginBottom: '1rem' }}>
+                  <div className="mb-4">
                     <strong>{SELLER_TEXTS.ONLINE_STATUS}:</strong>
                     <br />
-                    <span style={{ 
-                      color: data?.data?.is_online ? '#10b981' : '#ef4444',
-                      fontWeight: 'bold'
-                    }}>
+                    <span className={`font-bold ${data?.data?.is_online ? 'text-emerald-500' : 'text-red-500'}`}>
                       {data?.data?.is_online ? 'Online' : 'Offline'}
                     </span>
                   </div>
                 </div>
                 <div>
                   <h3>Account Information</h3>
-                  <div style={{ marginBottom: '1rem' }}>
+                  <div className="mb-4">
                     <strong>{SELLER_TEXTS.ACCOUNT_CREATED}:</strong>
                     <br />
                     <span>{data?.data?.created_at ? new Date(data.data.created_at).toLocaleDateString('ru-RU') : 'Unknown'}</span>
                   </div>
-                  <div style={{ marginBottom: '1rem' }}>
+                  <div className="mb-4">
                     <strong>{SELLER_TEXTS.LAST_UPDATED}:</strong>
                     <br />
                     <span>{data?.data?.updated_at ? new Date(data.data.updated_at).toLocaleDateString('ru-RU') : 'Unknown'}</span>
@@ -177,9 +174,9 @@ function Profile() {
                 </div>
               </div>
 
-              <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#e6fffa', borderRadius: '0.375rem' }}>
+              <div className="mt-8 p-4 bg-emerald-50 rounded-md">
                 <h4>Seller Tips</h4>
-                <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
+                <ul className="list-disc list-inside ml-6 mt-2 text-sm text-slate-700">
                   <li>Keep your status online to receive buyer inquiries faster</li>
                   <li>Make sure your Keycloak UUID is correctly configured</li>
                   <li>Update your profile information to build trust with buyers</li>
