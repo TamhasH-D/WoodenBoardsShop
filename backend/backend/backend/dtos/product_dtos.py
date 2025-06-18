@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional # Added this line
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -74,3 +75,11 @@ class ProductFilterDTO(BaseModel):
     # Date range filters
     created_after: datetime | None = Field(None, description="Filter products created after this date")
     created_before: datetime | None = Field(None, description="Filter products created before this date")
+
+
+class ProductBoardStatsDTO(BaseModel):
+    total_count: int
+    average_height: Optional[float] = None
+    average_width: Optional[float] = None
+    average_length: Optional[float] = None
+    total_volume: float

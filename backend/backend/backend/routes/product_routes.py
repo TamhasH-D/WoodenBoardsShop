@@ -18,7 +18,7 @@ from backend.dtos import (
     PaginationParamsSortBy,
 )
 from backend.dtos.image_dtos import ImageDTO, ImageInputDTO
-from backend.dtos.product_dtos import ProductDTO, ProductFilterDTO, ProductInputDTO, ProductUpdateDTO
+from backend.dtos.product_dtos import ProductBoardStatsDTO, ProductDTO, ProductFilterDTO, ProductInputDTO, ProductUpdateDTO
 
 from backend.dtos.product_with_image_dtos import (
     ProductWithImageInputDTO,
@@ -272,7 +272,7 @@ async def get_product_image(
 async def get_product_boards_stats(
     product_id: UUID,
     daos: GetDAOs,
-) -> DataResponse[dict]:
+) -> DataResponse[ProductBoardStatsDTO]:
     """Get statistics for wooden boards of a specific product."""
 
     # Check if product exists
@@ -293,9 +293,9 @@ async def get_product_boards_stats(
     if not boards:
         return DataResponse(data={
             "total_count": 0,
-            "average_height": product.board_height / 1000 if product.board_height else None,  # Convert mm to m
+            "average_height": None,
             "average_width": None,
-            "average_length": product.board_length / 1000 if product.board_length else None,  # Convert mm to m
+            "average_length": None,
             "total_volume": 0.0
         })
 
@@ -307,9 +307,9 @@ async def get_product_boards_stats(
     widths = [board.width for board in boards if board.width is not None and board.width > 0]
     lengths = [board.lenght for board in boards if board.lenght is not None and board.lenght > 0]  # Note: lenght with typo
 
-    average_height = sum(heights) / len(heights) if heights else (product.board_height / 1000 if product.board_height else None)
+    average_height = sum(heights) / len(heights) if heights else None
     average_width = sum(widths) / len(widths) if widths else None
-    average_length = sum(lengths) / len(lengths) if lengths else (product.board_length / 1000 if product.board_length else None)
+    average_length = sum(lengths) / len(lengths) if lengths else None
 
     # Calculate total volume (height * width * length for each board)
     total_volume = 0.0
