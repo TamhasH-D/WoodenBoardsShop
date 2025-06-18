@@ -83,27 +83,43 @@ api.interceptors.response.use(
 );
 
 // --- Buyer Profile API ---
+
 export const getMyBuyerProfile = async (keycloak_id) => {
-  // TODO: Ensure backend /buyer/by-keycloak/{keycloak_id} handles GET for fetching
-  // and potentially POST (on a different or same endpoint with logic) for initial creation
-  // if a buyer record doesn't exist yet for the authenticated Keycloak user.
-  // This function assumes GET is sufficient for now (backend syncs/creates on GET if needed).
   try {
-    console.log(`[apiService] Attempting to fetch buyer profile from /buyer/by-keycloak/${keycloak_id}`);
-    // Token should be in default headers via updateApiToken called from AuthContext
-    const response = await api.get(`/buyer/by-keycloak/${keycloak_id}`);
+    console.log(`[apiService] Attempting to fetch buyer profile from /api/v1/buyers/by-keycloak/${keycloak_id}`);
+    const response = await api.get(`/api/v1/buyers/by-keycloak/${keycloak_id}`);
     console.log('[apiService] Buyer profile fetched successfully:', response.data);
     return response.data;
   } catch (error) {
-    console.error(`[apiService] Error fetching buyer profile from /buyer/by-keycloak/${keycloak_id}:`, error.response ? error.response.data : error.message);
+    console.error(`[apiService] Error fetching buyer profile from /api/v1/buyers/by-keycloak/${keycloak_id}:`, error.response ? error.response.data : error.message);
     if (error.response) {
       console.error('[apiService] Error response details:', {
         status: error.response.status,
         headers: error.response.headers,
         data: error.response.data,
       });
+      if (error.response.status === 404) {
+        console.log(`[apiService] Buyer with keycloak_id ${keycloak_id} not found. Attempting to create...`);
+        try {
+          const newBuyerId = generateEntityUUID(ENTITY_TYPES.BUYER);
+          const createResponse = await api.post('/api/v1/buyers/', {
+            id: newBuyerId,
+            keycloak_uuid: keycloak_id,
+            is_online: true,
+          });
+          console.log('[apiService] Buyer created successfully:', createResponse.data);
+          // Attempt to fetch the profile again after creation
+          console.log(`[apiService] Attempting to fetch buyer profile again from /api/v1/buyers/by-keycloak/${keycloak_id}`);
+          const retryResponse = await api.get(`/api/v1/buyers/by-keycloak/${keycloak_id}`);
+          console.log('[apiService] Buyer profile fetched successfully after creation:', retryResponse.data);
+          return retryResponse.data;
+        } catch (createError) {
+          console.error('[apiService] Error creating buyer:', createError.response ? createError.response.data : createError.message);
+          throw createError; // Re-throw creation error
+        }
+      }
     }
-    throw error; // Re-throw to be caught by AuthContext or other calling function
+    throw error; // Re-throw original error if not 404 or if creation fails
   }
 };
 
