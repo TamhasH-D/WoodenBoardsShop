@@ -1,12 +1,13 @@
 from collections.abc import Sequence
-from typing import Any, Generic, TypeVar, Union, get_args, get_origin
+from typing import Any, Generic, TypeVar, Union, get_args, get_origin, Optional
 from uuid import UUID
 
 import sqlalchemy as sa
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
-from backend.db import Base
+from backend.cache_manager import cache_manager
+from backend.db import Base # Assuming Base model has an 'id' attribute
 from backend.dtos import (
     OffsetPaginationMetadata,
     OffsetResults,
@@ -17,22 +18,23 @@ from backend.dtos import (
 PaginationType = Union[PaginationParams, PaginationParamsSortBy]
 QueryType = Union[sa.Select[Any], sa.Update, sa.Delete]
 
-Model = TypeVar('Model', bound=Base)
+Model = TypeVar('Model', bound=Base) # Model is bound to Base, expecting 'id'
 InputDTO = TypeVar('InputDTO', bound=BaseModel)
 UpdateDTO = TypeVar('UpdateDTO', bound=BaseModel)
+OutDTO = TypeVar('OutDTO', bound=BaseModel)
 
 
-class BaseDAO(Generic[Model, InputDTO, UpdateDTO]):
+class BaseDAO(Generic[Model, InputDTO, UpdateDTO, OutDTO]):
     """
     Base class for all Data Access Objects (DAOs).
 
     Inherit from this class to create a new DAO that provides CRUD operations
-    for a specific model.
+    for a specific model. Assumes models have an 'id' attribute for PK.
 
     Example:
         To create a new DAO for a model called `User`, define a new class like so:
 
-        >>> class UserDAO(BaseDAO[User, UserInputDTO, UserUpdateDTO]):
+        >>> class UserDAO(BaseDAO[User, UserInputDTO, UserUpdateDTO, UserOutDTO]):
         >>>     ...
 
     """
@@ -42,7 +44,6 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO]):
     def __init_subclass__(
         cls,
     ) -> None:
-        # Get the model type from the generic base class
         for base in cls.__orig_bases__:
             if get_origin(base) is BaseDAO:
                 cls.model = get_args(base)[0]
@@ -61,10 +62,9 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO]):
     def _apply_param_filters(
         self, query: QueryType, **filter_params: Any
     ) -> QueryType:
-        """Apply filters to query."""
         for key, value in filter_params.items():
             if hasattr(self.model, key):
-                query = query.filter(getattr(self.model, key) == value)  # type: ignore
+                query = query.filter(getattr(self.model, key) == value)
             else:
                 raise ValueError(f"Invalid filter parameter: {key}")
         return query
@@ -75,7 +75,6 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO]):
         loads: Union[list[Any], None] = None,
         **filter_params: Any,
     ) -> sa.Select[tuple[Model]]:
-        """Get records by filter parameters."""
         if query is None:
             query = sa.select(self.model)
         query = self._apply_param_filters(query, **filter_params)
@@ -89,14 +88,10 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO]):
         sort_by: str,
         sort_order: str,
     ) -> sa.Select[tuple[Model]]:
-        """Apply sorting to query."""
-        # Validate sort field exists on model
         if not hasattr(self.model, sort_by):
             print(f"Warning: Invalid sort parameter '{sort_by}' for model {self.model.__name__}.")
-            # Use default sorting instead of raising error
             sort_by = 'created_at' if hasattr(self.model, 'created_at') else 'id'
 
-        # Normalize sort_order and apply correct SQLAlchemy function
         sort_order = sort_order.lower() if sort_order else 'asc'
         if sort_order not in ['asc', 'desc']:
             print(f"Warning: Invalid sort order '{sort_order}'. Using 'asc' instead.")
@@ -110,19 +105,16 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO]):
                 return query.order_by(sa.asc(column))
         except Exception as e:
             print(f"Error applying sort: {e}. Using default sorting.")
-            # Fallback to default sorting
-            if hasattr(self.model, 'created_at'):
-                return query.order_by(sa.desc(self.model.created_at))
-            elif hasattr(self.model, 'id'):
-                return query.order_by(sa.desc(self.model.id))
-            else:
-                return query  # No sorting if no suitable field found
+            default_sort_col = getattr(self.model, 'created_at', getattr(self.model, 'id', None))
+            if default_sort_col is not None:
+                 return query.order_by(sa.desc(default_sort_col)) # type: ignore
+            return query
+
 
     async def _compute_offset_pagination(
         self,
         query: sa.Select[tuple[Model]],
     ) -> OffsetPaginationMetadata:
-        """Compute offset pagination metadata."""
         count_query = sa.select(sa.func.count()).select_from(query.subquery())
         result = await self.session.execute(count_query)
         total = result.scalar_one_or_none() or 0
@@ -136,7 +128,6 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO]):
         self,
         input_dto: InputDTO,
     ) -> Model:
-        """Create and return a new record."""
         record = self.model(
             **input_dto.model_dump(),
         )
@@ -144,12 +135,28 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO]):
         await self.session.flush()
         return record
 
+    async def get_by_id(self, item_id: Union[UUID, int, str], out_dto_class: type[OutDTO]) -> Optional[OutDTO]:
+        """Get a single record by its ID and map to out_dto_class."""
+        cache_key = f"{self.model.__name__}:{item_id}"
+        cached_item = await cache_manager.get(cache_key, out_dto_class)
+        if cached_item:
+            return cached_item
+
+        query = sa.select(self.model).filter(self.model.id == item_id) # Changed PK access
+        result = await self.session.execute(query)
+        instance = result.scalar_one_or_none()
+
+        if instance:
+            dto_instance = out_dto_class.model_validate(instance)
+            await cache_manager.set(cache_key, dto_instance)
+            return dto_instance
+        return None
+
     async def filter(
         self,
         loads: Union[list[Any], None] = None,
         **filter_params: Any,
     ) -> Union[Sequence[Model], None]:
-        """Get records by filter parameters."""
         query = self._apply_base_filter(loads=loads, **filter_params)
         result = await self.session.execute(query)
         return result.scalars().all()
@@ -159,7 +166,6 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO]):
         loads: Union[list[Any], None] = None,
         **filter_params: Any,
     ) -> Union[Model, None]:
-        """Get a single record by filter parameters."""
         query = self._apply_base_filter(loads=loads, **filter_params)
         query = query.limit(1)
         result = await self.session.execute(query)
@@ -167,42 +173,60 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO]):
 
     async def update(
         self,
-        id: UUID,
+        item_id: Union[UUID, int, str],
         update_dto: UpdateDTO,
-    ) -> None:
-        """Update a record by ID."""
-        update_dict = update_dto.model_dump(exclude_none=True)
+        out_dto_class: type[OutDTO]
+    ) -> Optional[OutDTO]:
+        """Update a record by ID and return the updated DTO."""
+        update_dict = update_dto.model_dump(exclude_none=True, mode='python')
         if not update_dict:
-            return
-        query = (
+            return None
+
+        stmt = (
             sa.update(self.model)
-            .where(self.model.get_primary_key_column() == id)
-            .values(
-                **update_dict,
-            )
+            .where(self.model.id == item_id) # Changed PK access
+            .values(**update_dict)
+            .returning(self.model)
         )
-        await self.session.execute(query)
+        result = await self.session.execute(stmt)
+        updated_instance = result.scalar_one_or_none()
+
+        if updated_instance:
+            await self.session.flush()
+            cache_key = f"{self.model.__name__}:{item_id}"
+            await cache_manager.delete(cache_key)
+            return out_dto_class.model_validate(updated_instance)
+
+        await self.session.rollback()
+        return None
+
 
     async def delete(
         self,
-        **filter_params: Any,
-    ) -> None:
-        """Delete records by filter parameters."""
-        query = sa.delete(self.model)
-        query = self._apply_param_filters(query, **filter_params)
-        await self.session.execute(query)
+        item_id: Union[UUID, int, str],
+    ) -> bool:
+        """Delete a record by its ID."""
+        query = sa.delete(self.model).where(self.model.id == item_id) # Changed PK access
+        result = await self.session.execute(query)
+
+        if result.rowcount > 0:
+            await self.session.flush()
+            cache_key = f"{self.model.__name__}:{item_id}"
+            await cache_manager.delete(cache_key)
+            return True
+
+        await self.session.rollback()
+        return False
 
     async def get_offset_results(
         self,
-        out_dto: type[BaseModel],
+        out_dto: type[OutDTO],
         pagination: PaginationType,
         query: Union[sa.sql.Select[tuple[Model]], None] = None,
-    ) -> OffsetResults[BaseModel]:
-        """Get offset paginated results."""
+    ) -> OffsetResults[OutDTO]:
         if query is None:
             query = sa.select(self.model)
 
-        # Apply sorting BEFORE pagination if provided
         if isinstance(pagination, PaginationParamsSortBy):
             query = self._apply_sort(
                 query,
