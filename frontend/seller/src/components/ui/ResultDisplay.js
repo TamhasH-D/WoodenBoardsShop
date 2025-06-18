@@ -234,36 +234,36 @@ const ResultDisplay = ({ imageUrl, result }) => {
         {hoveredBoard && hoverPosition && (
           <div
             style={getTooltipStyle()}
-            className="bg-white/95 backdrop-blur-md p-3 sm:p-4 md:p-6 rounded-xl shadow-2xl border border-slate-200/50 opacity-100 scale-100 transition-all duration-200 ease-in-out max-w-[90vw] md:max-w-xs min-w-[260px] fixed sm:absolute bottom-4 left-1/2 -translate-x-1/2 sm:left-auto sm:bottom-auto sm:-translate-x-1/2"
+            className="bg-white/95 backdrop-blur-md p-2 sm:p-3 md:p-4 rounded-xl shadow-2xl border border-slate-200/50 opacity-100 scale-100 transition-all duration-200 ease-in-out max-w-[90vw] md:max-w-xs min-w-[260px] fixed sm:absolute bottom-4 left-1/2 -translate-x-1/2 sm:left-auto sm:bottom-auto sm:transform-none"
           >
-            <div className="flex flex-col gap-2 sm:gap-3 md:gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 md:gap-x-4 md:gap-y-6">
+            <div className="flex flex-col gap-1 sm:gap-2 md:gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-1 sm:gap-2 md:gap-x-3 md:gap-y-4">
                 <div>
-                  <p className="text-sm font-medium text-blue-600 m-0 mb-1">Объем</p>
-                  <p className="text-base md:text-lg font-semibold m-0">{hoveredBoard.volume.toFixed(4)} м³</p>
+                  <p className="text-xs sm:text-sm font-medium text-blue-600 m-0 mb-0.5">Объем</p>
+                  <p className="text-sm sm:text-base md:text-lg font-semibold m-0 break-words">{hoveredBoard.volume.toFixed(4)} м³</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-blue-600 m-0 mb-1">Ширина</p>
-                  <p className="text-base md:text-lg font-semibold m-0">{mToCm(hoveredBoard.width).toFixed(1)} см</p>
+                  <p className="text-xs sm:text-sm font-medium text-blue-600 m-0 mb-0.5">Ширина</p>
+                  <p className="text-sm sm:text-base md:text-lg font-semibold m-0 break-words">{mToCm(hoveredBoard.width).toFixed(1)} см</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-blue-600 m-0 mb-1">Высота</p>
-                  <p className="text-base md:text-lg font-semibold m-0">{mToCm(hoveredBoard.height).toFixed(1)} см</p>
+                  <p className="text-xs sm:text-sm font-medium text-blue-600 m-0 mb-0.5">Высота</p>
+                  <p className="text-sm sm:text-base md:text-lg font-semibold m-0 break-words">{mToCm(hoveredBoard.height).toFixed(1)} см</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-blue-600 m-0 mb-1">Длина</p>
-                  <p className="text-base md:text-lg font-semibold m-0">{mToCm(hoveredBoard.length).toFixed(1)} см</p>
+                  <p className="text-xs sm:text-sm font-medium text-blue-600 m-0 mb-0.5">Длина</p>
+                  <p className="text-sm sm:text-base md:text-lg font-semibold m-0 break-words">{mToCm(hoveredBoard.length).toFixed(1)} см</p>
                 </div>
               </div>
               <div className="pt-2 border-t border-slate-200/50">
-                <p className="text-sm font-medium text-blue-600 m-0 mb-1">Уверенность</p>
+                <p className="text-xs sm:text-sm font-medium text-blue-600 m-0 mb-0.5">Уверенность</p>
                 <div className="mt-1 w-full bg-slate-200 rounded-full h-2">
                   <div
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-in-out"
                     style={{ width: `${hoveredBoard.detection.confidence * 100}%` }}
                   />
                 </div>
-                <p className="text-right text-sm text-slate-500 mt-1 m-0">
+                <p className="text-right text-xs sm:text-sm text-slate-500 mt-0.5 m-0">
                   {(hoveredBoard.detection.confidence * 100).toFixed(1)}%
                 </p>
               </div>
