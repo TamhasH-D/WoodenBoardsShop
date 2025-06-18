@@ -1,21 +1,16 @@
-import { MOCK_IDS } from './constants';
+import keycloak from '../../keycloak'; // Adjust path if necessary
 import { apiService } from '../services/api';
 
-// Singleton warning to prevent spam across all components
-let mockAuthWarningShown = false;
-
 /**
- * Get current seller's Keycloak ID
- * TODO: Replace with real authentication
+ * Get current seller's Keycloak ID (subject)
  */
 export const getCurrentSellerKeycloakId = () => {
-  // Временно используем mock ID для разработки
-  // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
-  if (!mockAuthWarningShown && process.env.NODE_ENV === 'development') {
-    console.warn('Using mock seller keycloak ID for development - implement real authentication');
-    mockAuthWarningShown = true;
+  if (keycloak && keycloak.authenticated && keycloak.subject) {
+    return keycloak.subject;
   }
-  return MOCK_IDS.SELLER_ID;
+  // This case should ideally not be reached if 'login-required' is effective
+  console.warn('Attempted to get Keycloak ID, but user is not authenticated or Keycloak not initialized.');
+  return null;
 };
 
 /**
@@ -24,17 +19,19 @@ export const getCurrentSellerKeycloakId = () => {
 export const getCurrentSellerId = async () => {
   try {
     const keycloakId = getCurrentSellerKeycloakId();
+    if (!keycloakId) {
+      throw new Error("Keycloak user ID not available.");
+    }
     const sellerResponse = await apiService.getSellerProfileByKeycloakId(keycloakId);
     return sellerResponse.data.id;
   } catch (error) {
-    console.error('Failed to get seller_id:', error);
+    console.error('Failed to get internal seller_id:', error);
+    // Potentially, you might want to handle this by logging the user out
+    // or showing a specific error message to the user.
+    // For now, re-throwing the error.
     throw error;
   }
 };
 
-/**
- * Reset the warning flag (useful for testing)
- */
-export const resetMockAuthWarning = () => {
-  mockAuthWarningShown = false;
-};
+// Removed resetMockAuthWarning as mock logic is gone.
+// Removed MOCK_IDS import as it's no longer used.
