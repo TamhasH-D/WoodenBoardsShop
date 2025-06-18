@@ -1,0 +1,702 @@
+/* Global animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Base text colors */
+:root {
+  --primary-text-color: #333333;
+  --secondary-text-color: #555555;
+  --accent-brown: #795548;
+  --accent-teal-bg: #e0f2f1;
+  --accent-teal-text: #00796b;
+  --light-gray-bg: #f8f8f8; /* Slightly adjusted from f8fafc for items */
+  --container-bg: white;
+  --border-color-soft: #eeeeee;
+  --border-color-medium: #e0e0e0; /* For items like characteristics */
+  --shadow-soft: 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-medium: 0 4px 12px rgba(0,0,0,0.08);
+  --offline-badge-bg: #f5f5f5;
+  --offline-badge-text: #757575;
+}
+
+/* Loading state styles */
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  background-color: #fdfdfd; /* Updated page background */
+}
+
+.loadingSpinnerContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loadingSpinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e0e0e0; /* Lighter border */
+  border-top: 4px solid var(--accent-brown); /* Updated accent */
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loadingText {
+  color: var(--secondary-text-color);
+  font-size: 18px;
+}
+
+/* Error state styles */
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  background-color: #fdfdfd; /* Updated page background */
+  padding: 20px;
+}
+
+.errorContent {
+  background-color: var(--container-bg);
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-medium);
+  border: 1px solid var(--border-color-soft);
+  text-align: center;
+  max-width: 500px;
+}
+
+.errorIcon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  color: var(--accent-brown); /* Use accent for visual cue */
+}
+
+.errorTitle {
+  margin: 0 0 16px 0;
+  color: var(--primary-text-color);
+  font-weight: 600; /* Slightly less than h1 for differentiation */
+}
+
+.errorMessage {
+  margin: 0 0 24px 0;
+  color: var(--secondary-text-color);
+}
+
+.errorButton {
+  padding: 12px 24px;
+  background-color: var(--accent-brown);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(121, 85, 72, 0.3); /* Shadow from new brown */
+}
+
+.errorButton:hover {
+  background-color: #5d4037; /* Darker shade of new brown */
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(121, 85, 72, 0.4);
+}
+
+/* Main page layout */
+.pageContainer {
+  background-color: #fdfdfd; /* Updated */
+  min-height: 100vh;
+  padding: 24px 0;
+  color: var(--primary-text-color); /* Default text color for page */
+}
+
+.pageContainerResponsive {
+  padding: 16px 0;
+}
+
+.contentWrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.contentWrapperResponsive {
+  padding: 0 16px;
+}
+
+/* Breadcrumbs */
+.breadcrumbsNav {
+  margin-bottom: 24px;
+  font-size: 14px;
+  color: var(--secondary-text-color);
+  padding: 16px 20px;
+  background-color: var(--container-bg);
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border-color-soft);
+}
+
+.breadcrumbsInner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.breadcrumbButton {
+  background: none;
+  border: none;
+  color: var(--accent-brown); /* Updated */
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.breadcrumbButton:hover {
+  background-color: #efebe9; /* Lighter shade of new brown for hover */
+  text-decoration: underline;
+}
+
+.breadcrumbSeparator {
+  color: #bdbdbd; /* Lighter separator */
+  font-size: 16px;
+}
+
+.breadcrumbCurrentPage {
+  color: var(--primary-text-color);
+  font-weight: 600;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Product Info Grid */
+.productGrid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 30px;
+  margin-bottom: 40px;
+}
+
+.productGridMd {
+  grid-template-columns: 1fr 1fr;
+}
+
+.productGridSm {
+  grid-template-columns: 1fr;
+}
+
+/* Left Column (Image) */
+.imageColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.imageContainer {
+  background-color: var(--container-bg);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow-medium);
+  border: 1px solid var(--border-color-soft);
+}
+
+.productImageStyle {
+  width: 100%;
+  border-radius: 12px;
+}
+
+/* Right Column (Info) */
+.infoColumn {
+  background-color: var(--container-bg);
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: var(--shadow-medium);
+  border: 1px solid var(--border-color-soft);
+  height: fit-content;
+}
+
+.infoHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.productTitle {
+  margin: 0;
+  font-size: 30px; /* Slightly reduced for balance */
+  font-weight: 700; /* Bold for title */
+  color: var(--primary-text-color);
+  line-height: 1.3; /* Adjusted line height */
+  flex: 1;
+}
+
+.productTitleSm {
+  font-size: 26px; /* Adjusted for smaller screens */
+}
+
+.deliveryTag {
+  background-color: var(--accent-teal-bg); /* Updated */
+  color: var(--accent-teal-text); /* Updated */
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 16px;
+  white-space: nowrap;
+}
+
+.priceSection {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 20px;
+  background-color: var(--light-gray-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border-color-medium); /* Use medium border */
+}
+
+.productPrice {
+  font-size: 36px;
+  font-weight: 700; /* Bolder for price */
+  color: var(--accent-brown); /* Updated */
+}
+
+.pricePerUnitContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pricePerUnit {
+  font-size: 16px;
+  color: var(--secondary-text-color);
+  font-weight: 500;
+}
+
+.priceUnitLabel {
+  font-size: 14px;
+  color: #757575; /* Lighter gray for less emphasis */
+}
+
+.descriptionSection {
+  margin-bottom: 28px;
+}
+
+.sectionTitle {
+  margin: 0 0 16px 0;
+  font-size: 22px; /* Consistent section title size */
+  font-weight: 600; /* Semi-bold */
+  color: var(--primary-text-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.descriptionContent {
+  padding: 20px;
+  background-color: var(--light-gray-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border-color-medium);
+}
+
+.descriptionText {
+  margin: 0;
+  color: var(--secondary-text-color);
+  line-height: 1.7;
+  font-size: 16px;
+}
+
+/* Characteristics Section */
+.characteristicsSection {
+  margin-bottom: 28px;
+}
+
+.characteristicsTitle {
+  margin: 0 0 20px 0;
+  font-size: 22px; /* Consistent section title size */
+  font-weight: 600; /* Semi-bold */
+  color: var(--primary-text-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.characteristicsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+.characteristicsGridSm {
+  grid-template-columns: 1fr;
+}
+
+.characteristicItemCommon { /* Common styles for all characteristic items */
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid var(--border-color-medium);
+}
+
+.characteristicLabelCommon { /* Common styles for all characteristic labels */
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--secondary-text-color);
+}
+
+.characteristicValueCommon { /* Common styles for all characteristic values */
+  font-size: 20px;
+  font-weight: 600; /* Bolder for values */
+  color: var(--primary-text-color);
+}
+
+.characteristicItem {
+  composes: characteristicItemCommon;
+  background-color: var(--light-gray-bg);
+}
+
+.characteristicLabel {
+  composes: characteristicLabelCommon;
+}
+
+.characteristicValue {
+  composes: characteristicValueCommon;
+}
+
+.boardCountItem {
+  composes: characteristicItemCommon;
+  background-color: var(--light-gray-bg);
+}
+
+.boardCountLabel {
+  composes: characteristicLabelCommon;
+}
+
+.boardCountValue {
+  composes: characteristicValueCommon;
+}
+
+.woodTypeItem {
+  composes: characteristicItemCommon;
+  background-color: #e8f5e9; /* Lighter green, closer to new teal theme */
+  border-color: #c8e6c9;
+  grid-column: 1 / -1;
+}
+.woodTypeItemSm {
+   grid-column: auto;
+}
+
+.woodTypeLabel {
+  composes: characteristicLabelCommon;
+  color: #2e7d32; /* Darker green for label */
+}
+
+.woodTypeValue {
+  composes: characteristicValueCommon;
+  color: #1b5e20; /* Even darker green for value */
+}
+
+.pickupLocationItem {
+  composes: characteristicItemCommon;
+  background-color: #fffde7; /* Lighter yellow */
+  border-color: #fff9c4;
+  grid-column: 1 / -1;
+}
+.pickupLocationItemSm {
+  grid-column: auto;
+}
+
+.pickupLocationLabel {
+  composes: characteristicLabelCommon;
+  color: #f57f17; /* Darker yellow/orange for label */
+}
+
+.pickupLocationValue {
+  composes: characteristicValueCommon;
+  color: #e65100; /* Even darker orange for value */
+  font-size: 16px; /* Slightly smaller for addresses if too long */
+}
+
+/* Action Buttons Section */
+.actionsContainer {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  margin-top: 16px; /* Add some space above buttons */
+}
+.actionsContainerSm {
+  flex-direction: column;
+}
+
+.chatButton {
+  flex: 1;
+  padding: 16px 24px; /* Slightly adjusted padding */
+  background: var(--accent-teal-bg); /* Updated to teal */
+  color: var(--accent-teal-text);
+  border: 1px solid var(--accent-teal-text); /* Added border */
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600; /* Adjusted weight */
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-soft);
+  transform: translateY(0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px; /* Increased gap */
+}
+
+.chatButton:hover {
+  background: #b2dfdb; /* Lighter teal for hover */
+  color: #004d40; /* Darker teal text for hover */
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+}
+
+.allChatsButton {
+  flex: 1;
+  padding: 16px 24px; /* Slightly adjusted padding */
+  background-color: transparent;
+  color: var(--accent-brown); /* Updated */
+  border: 2px solid var(--accent-brown); /* Updated */
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600; /* Adjusted weight */
+  cursor: pointer;
+  transition: all 0.3s ease;
+  transform: translateY(0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px; /* Increased gap */
+}
+
+.allChatsButton:hover {
+  background-color: var(--accent-brown); /* Updated */
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(121, 85, 72, 0.3);
+}
+
+/* Seller Info Section */
+.sellerInfoContainer {
+  background-color: var(--container-bg);
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 40px;
+  box-shadow: var(--shadow-medium);
+  border: 1px solid var(--border-color-soft);
+}
+
+.sellerInfoHeader {
+  margin: 0 0 24px 0;
+  font-size: 24px; /* Consistent with other section titles */
+  font-weight: 600; /* Semi-bold */
+  color: var(--primary-text-color);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sellerDetails {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.sellerAvatarContainer {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  box-shadow: var(--shadow-soft);
+  position: relative;
+  /* background-color set dynamically by other classes */
+}
+
+.sellerAvatarOnline {
+  background-color: var(--accent-teal-bg); /* Updated */
+}
+
+.sellerAvatarOffline {
+  background-color: var(--offline-badge-bg); /* Updated */
+}
+
+.onlineIndicator {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  /* background-color set dynamically by other classes */
+}
+
+.onlineIndicatorOnline {
+  background-color: var(--accent-teal-text); /* Updated */
+}
+
+.onlineIndicatorOffline {
+  background-color: #9e9e9e; /* Neutral gray for offline indicator */
+}
+
+.sellerMeta {
+  flex: 1;
+}
+
+.sellerNameContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.sellerName {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600; /* Semi-bold */
+  color: var(--primary-text-color);
+}
+
+.sellerStatusBadge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sellerStatusOnline {
+  background-color: var(--accent-teal-bg); /* Updated */
+  color: var(--accent-teal-text); /* Updated */
+}
+
+.sellerStatusOffline {
+  background-color: var(--offline-badge-bg); /* Updated */
+  color: var(--offline-badge-text); /* Updated */
+}
+
+.sellerStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+.sellerStatsGridSm {
+  grid-template-columns: 1fr;
+}
+
+.sellerStatItem {
+  padding: 12px 16px;
+  background-color: var(--light-gray-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color-medium);
+}
+
+.sellerStatLabel {
+  font-size: 12px;
+  color: var(--secondary-text-color);
+  margin-bottom: 4px;
+}
+
+.sellerStatValue {
+  font-size: 14px;
+  font-weight: 600; /* Slightly bolder */
+  color: var(--primary-text-color);
+}
+
+.sellerStatValueMonospace {
+  font-family: monospace;
+}
+
+/* Seller Advice Section */
+.sellerAdviceContainer {
+  padding: 16px;
+  background-color: #e3f2fd; /* Lighter blue */
+  border-radius: 12px;
+  border: 1px solid #bbdefb; /* Softer blue border */
+}
+
+.sellerAdviceHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sellerAdviceIcon {
+  font-size: 18px; /* Slightly larger icon */
+  color: #1976d2; /* Blue for icon */
+}
+
+.sellerAdviceTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1565c0; /* Darker blue for title */
+}
+
+.sellerAdviceText {
+  margin: 0;
+  font-size: 14px;
+  color: #1e88e5; /* Medium blue for text */
+  line-height: 1.6; /* Improved line height */
+}
+
+/* Responsive adjustments using media queries */
+@media (max-width: 1023px) {
+  .productGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  .pageContainer {
+    padding: 16px 0;
+  }
+  .contentWrapper {
+    padding: 0 16px;
+  }
+  .productGrid {
+    grid-template-columns: 1fr;
+  }
+  .productTitle {
+    font-size: 26px; /* Ensure sm size is applied */
+  }
+}
+
+@media (max-width: 639px) {
+  .characteristicsGrid {
+    grid-template-columns: 1fr;
+  }
+  .woodTypeItem, .pickupLocationItem { /* Apply Sm styles for these items */
+    grid-column: auto;
+  }
+  .actionsContainer {
+    flex-direction: column;
+  }
+  .sellerStatsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.productImageStyle {}
+/* .chatSectionRef {} - No direct style needed */

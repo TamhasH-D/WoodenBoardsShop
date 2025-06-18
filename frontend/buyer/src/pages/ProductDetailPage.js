@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import styles from './ProductDetailPage.module.css'; // Import CSS module
 import { useApp } from '../contexts/AppContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { formatCurrencyRu } from '../utils/localization';
@@ -114,28 +115,10 @@ const ProductDetailPage = () => {
 
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '60vh',
-        backgroundColor: '#f8fafc'
-      }}>
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '16px'
-        }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            border: '4px solid #e5e7eb',
-            borderTop: '4px solid #8B4513',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite'
-          }} />
-          <p style={{ color: '#6b7280', fontSize: '18px' }}>Загрузка товара...</p>
+      <div className={styles.loadingContainer}>
+        <div className={styles.loadingSpinnerContainer}>
+          <div className={styles.loadingSpinner} />
+          <p className={styles.loadingText}>Загрузка товара...</p>
         </div>
       </div>
     );
@@ -143,52 +126,16 @@ const ProductDetailPage = () => {
 
   if (error || !product) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '60vh',
-        backgroundColor: '#f8fafc',
-        padding: '20px'
-      }}>
-        <div style={{
-          backgroundColor: 'white',
-          padding: '40px',
-          borderRadius: '12px',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-          textAlign: 'center',
-          maxWidth: '500px'
-        }}>
-          <div style={{ fontSize: '64px', marginBottom: '20px' }}>😞</div>
-          <h2 style={{ margin: '0 0 16px 0', color: '#374151' }}>Товар не найден</h2>
-          <p style={{ margin: '0 0 24px 0', color: '#6b7280' }}>
+      <div className={styles.errorContainer}>
+        <div className={styles.errorContent}>
+          <div className={styles.errorIcon}>😞</div>
+          <h2 className={styles.errorTitle}>Товар не найден</h2>
+          <p className={styles.errorMessage}>
             Возможно, товар был удален или ссылка неверна
           </p>
           <button
             onClick={() => navigate('/products')}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: '#8B4513',
-              color: 'white',
-              border: 'none',
-              borderRadius: '12px',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 4px 16px rgba(139, 69, 19, 0.3)'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#A0522D';
-              e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = '0 8px 24px rgba(139, 69, 19, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#8B4513';
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 4px 16px rgba(139, 69, 19, 0.3)';
-            }}
+            className={styles.errorButton}
           >
             Вернуться к каталогу
           </button>
@@ -198,207 +145,81 @@ const ProductDetailPage = () => {
   }
 
   const pricePerCubicMeter = product.volume > 0 ? (product.price / product.volume).toFixed(0) : 0;
+  const isLgScreen = window.innerWidth >= 1024;
+  const isMdScreen = window.innerWidth >= 768;
+  const isSmScreen = window.innerWidth >= 640;
+
 
   return (
-    <div style={{
-      backgroundColor: '#f8fafc',
-      minHeight: '100vh',
-      padding: window.innerWidth >= 768 ? '24px 0' : '16px 0'
-    }}>
-      <div style={{
-        maxWidth: '1400px',
-        margin: '0 auto',
-        padding: window.innerWidth >= 768 ? '0 24px' : '0 16px'
-      }}>
+    <div className={`${styles.pageContainer} ${!isMdScreen ? styles.pageContainerResponsive : ''}`}>
+      <div className={`${styles.contentWrapper} ${!isMdScreen ? styles.contentWrapperResponsive : ''}`}>
         {/* Хлебные крошки */}
-        <nav style={{
-          marginBottom: '24px',
-          fontSize: '14px',
-          color: '#64748b',
-          padding: '16px 20px',
-          backgroundColor: 'white',
-          borderRadius: '12px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-          border: '1px solid rgba(0,0,0,0.05)'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            flexWrap: 'wrap'
-          }}>
+        <nav className={styles.breadcrumbsNav}>
+          <div className={styles.breadcrumbsInner}>
             <button
               onClick={() => navigate('/products')}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#8B4513',
-                cursor: 'pointer',
-                textDecoration: 'none',
-                fontWeight: '500',
-                padding: '4px 8px',
-                borderRadius: '6px',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#f4f1eb';
-                e.target.style.textDecoration = 'underline';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = 'transparent';
-                e.target.style.textDecoration = 'none';
-              }}
+              className={styles.breadcrumbButton}
             >
               🏠 Каталог товаров
             </button>
-            <span style={{ color: '#cbd5e1', fontSize: '16px' }}>→</span>
-            <span style={{
-              color: '#1f2937',
-              fontWeight: '600',
-              maxWidth: '300px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}>
+            <span className={styles.breadcrumbSeparator}>→</span>
+            <span className={styles.breadcrumbCurrentPage}>
               {product.title || product.neme || 'Товар'}
             </span>
           </div>
         </nav>
 
         {/* Основная информация о товаре */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: window.innerWidth >= 1024 ? '1.2fr 1fr' : window.innerWidth >= 768 ? '1fr 1fr' : '1fr',
-          gap: '30px',
-          marginBottom: '40px'
-        }}>
+        <div className={`
+          ${styles.productGrid}
+          ${!isLgScreen && isMdScreen ? styles.productGridMd : ''}
+          ${!isMdScreen ? styles.productGridSm : ''}
+        `}>
           {/* Левая колонка - Изображение и анализ */}
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '20px'
-          }}>
+          <div className={styles.imageColumn}>
             {/* Изображение */}
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '16px',
-              padding: '24px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-              border: '1px solid rgba(0,0,0,0.05)'
-            }}>
+            <div className={styles.imageContainer}>
               <ProductImageWithBoards
                 product={product}
-                style={{ width: '100%', borderRadius: '12px' }}
+                className={styles.productImageStyle} // Pass className instead of style
               />
             </div>
-
-
           </div>
 
           {/* Правая колонка - Информация */}
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            padding: '32px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-            border: '1px solid rgba(0,0,0,0.05)',
-            height: 'fit-content'
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-              marginBottom: '24px'
-            }}>
-              <h1 style={{
-                margin: 0,
-                fontSize: window.innerWidth >= 768 ? '32px' : '28px',
-                fontWeight: '700',
-                color: '#1f2937',
-                lineHeight: '1.2',
-                flex: 1
-              }}>
+          <div className={styles.infoColumn}>
+            <div className={styles.infoHeader}>
+              <h1 className={`${styles.productTitle} ${!isMdScreen ? styles.productTitleSm : ''}`}>
                 {product.title || product.neme || 'Товар'}
               </h1>
               {product.delivery_possible && (
-                <div style={{
-                  backgroundColor: '#dcfce7',
-                  color: '#166534',
-                  padding: '6px 12px',
-                  borderRadius: '20px',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  marginLeft: '16px',
-                  whiteSpace: 'nowrap'
-                }}>
+                <div className={styles.deliveryTag}>
                   🚚 Доставка
                 </div>
               )}
             </div>
 
-            <div style={{
-              display: 'flex',
-              alignItems: 'baseline',
-              gap: '16px',
-              marginBottom: '24px',
-              padding: '20px',
-              backgroundColor: '#f8fafc',
-              borderRadius: '12px',
-              border: '2px solid #e2e8f0'
-            }}>
-              <span style={{
-                fontSize: '36px',
-                fontWeight: '800',
-                color: '#8B4513'
-              }}>
+            <div className={styles.priceSection}>
+              <span className={styles.productPrice}>
                 {formatCurrencyRu(product.price || 0)}
               </span>
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '4px'
-              }}>
-                <span style={{
-                  fontSize: '16px',
-                  color: '#64748b',
-                  fontWeight: '500'
-                }}>
+              <div className={styles.pricePerUnitContainer}>
+                <span className={styles.pricePerUnit}>
                   {pricePerCubicMeter} ₽/м³
                 </span>
-                <span style={{
-                  fontSize: '14px',
-                  color: '#94a3b8'
-                }}>
+                <span className={styles.priceUnitLabel}>
                   за кубический метр
                 </span>
               </div>
             </div>
 
             {product.descrioption && (
-              <div style={{ marginBottom: '28px' }}>
-                <h3 style={{
-                  margin: '0 0 16px 0',
-                  fontSize: '20px',
-                  fontWeight: '600',
-                  color: '#1f2937',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
+              <div className={styles.descriptionSection}>
+                <h3 className={styles.sectionTitle}>
                   📝 Описание
                 </h3>
-                <div style={{
-                  padding: '20px',
-                  backgroundColor: '#f8fafc',
-                  borderRadius: '12px',
-                  border: '1px solid #e2e8f0'
-                }}>
-                  <p style={{
-                    margin: 0,
-                    color: '#475569',
-                    lineHeight: '1.7',
-                    fontSize: '16px'
-                  }}>
+                <div className={styles.descriptionContent}>
+                  <p className={styles.descriptionText}>
                     {product.descrioption}
                   </p>
                 </div>
@@ -406,117 +227,43 @@ const ProductDetailPage = () => {
             )}
 
             {/* Характеристики */}
-            <div style={{ marginBottom: '28px' }}>
-              <h3 style={{
-                margin: '0 0 20px 0',
-                fontSize: '20px',
-                fontWeight: '600',
-                color: '#1f2937',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
+            <div className={styles.characteristicsSection}>
+              <h3 className={styles.characteristicsTitle}>
                 📊 Характеристики
               </h3>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: window.innerWidth >= 640 ? 'repeat(2, 1fr)' : '1fr',
-                gap: '16px'
-              }}>
-                <div style={{
-                  padding: '20px',
-                  backgroundColor: '#f1f5f9',
-                  borderRadius: '12px',
-                  border: '1px solid #cbd5e1',
-                  textAlign: 'center'
-                }}>
-                  <div style={{
-                    fontSize: '14px',
-                    color: '#64748b',
-                    fontWeight: '500',
-                    marginBottom: '8px'
-                  }}>
+              <div className={`${styles.characteristicsGrid} ${!isSmScreen ? styles.characteristicsGridSm : ''}`}>
+                <div className={styles.characteristicItem}>
+                  <div className={styles.characteristicLabel}>
                     📦 Объем
                   </div>
-                  <div style={{
-                    fontSize: '20px',
-                    fontWeight: '700',
-                    color: '#1e293b'
-                  }}>
+                  <div className={styles.characteristicValue}>
                     {product.volume?.toFixed(4) || '0'} м³
                   </div>
                 </div>
-                {/* <div style={{
-                  padding: '20px',
-                  backgroundColor: '#f1f5f9',
-                  borderRadius: '12px',
-                  border: '1px solid #cbd5e1',
-                  textAlign: 'center'
-                }}>
-                  <div style={{
-                    fontSize: '14px',
-                    color: '#64748b',
-                    fontWeight: '500',
-                    marginBottom: '8px'
-                  }}>
+                <div className={styles.boardCountItem}>
+                  <div className={styles.boardCountLabel}>
                     🪵 Количество досок
                   </div>
-                  <div style={{
-                    fontSize: '20px',
-                    fontWeight: '700',
-                    color: '#1e293b'
-                  }}>
+                  <div className={styles.boardCountValue}>
                     {boardsCount !== null ? boardsCount : 'Загрузка...'}
                   </div>
-                </div> */}
+                </div>
                 {woodType && (
-                  <div style={{
-                    padding: '20px',
-                    backgroundColor: '#f0fdf4',
-                    borderRadius: '12px',
-                    border: '1px solid #bbf7d0',
-                    gridColumn: window.innerWidth >= 640 ? '1 / -1' : 'auto',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{
-                      fontSize: '14px',
-                      color: '#15803d',
-                      fontWeight: '500',
-                      marginBottom: '8px'
-                    }}>
+                  <div className={`${styles.woodTypeItem} ${!isSmScreen ? styles.woodTypeItemSm : ''}`}>
+                    <div className={styles.woodTypeLabel}>
                       🌳 Тип древесины
                     </div>
-                    <div style={{
-                      fontSize: '20px',
-                      fontWeight: '700',
-                      color: '#14532d'
-                    }}>
+                    <div className={styles.woodTypeValue}>
                       {woodType.neme || woodType.name || 'Не указан'}
                     </div>
                   </div>
                 )}
                 {product.pickup_location && (
-                  <div style={{
-                    padding: '20px',
-                    backgroundColor: '#fef3c7',
-                    borderRadius: '12px',
-                    border: '1px solid #fcd34d',
-                    gridColumn: window.innerWidth >= 640 ? '1 / -1' : 'auto',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{
-                      fontSize: '14px',
-                      color: '#92400e',
-                      fontWeight: '500',
-                      marginBottom: '8px'
-                    }}>
+                  <div className={`${styles.pickupLocationItem} ${!isSmScreen ? styles.pickupLocationItemSm : ''}`}>
+                    <div className={styles.pickupLocationLabel}>
                       📍 Адрес самовывоза
                     </div>
-                    <div style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#78350f'
-                    }}>
+                    <div className={styles.pickupLocationValue}>
                       {product.pickup_location}
                     </div>
                   </div>
@@ -525,41 +272,10 @@ const ProductDetailPage = () => {
             </div>
 
             {/* Действия */}
-            <div style={{
-              display: 'flex',
-              flexDirection: window.innerWidth >= 640 ? 'row' : 'column',
-              gap: '16px'
-            }}>
+            <div className={`${styles.actionsContainer} ${!isSmScreen ? styles.actionsContainerSm : ''}`}>
               <button
                 onClick={handleStartChat}
-                style={{
-                  flex: 1,
-                  padding: '18px 24px',
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)',
-                  transform: 'translateY(0)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 8px 24px rgba(16, 185, 129, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 4px 16px rgba(16, 185, 129, 0.3)';
-                }}
+                className={styles.chatButton}
               >
                 <span>💬</span>
                 <span>Написать продавцу</span>
@@ -567,35 +283,7 @@ const ProductDetailPage = () => {
 
               <button
                 onClick={() => navigate('/chats')}
-                style={{
-                  flex: 1,
-                  padding: '18px 24px',
-                  backgroundColor: 'transparent',
-                  color: '#2563eb',
-                  border: '2px solid #2563eb',
-                  borderRadius: '12px',
-                  fontSize: '16px',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  transform: 'translateY(0)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#2563eb';
-                  e.target.style.color = 'white';
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 8px 24px rgba(37, 99, 235, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = 'transparent';
-                  e.target.style.color = '#2563eb';
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = 'none';
-                }}
+                className={styles.allChatsButton}
               >
                 <span>📋</span>
                 <span>Все чаты</span>
@@ -606,112 +294,48 @@ const ProductDetailPage = () => {
 
         {/* Информация о продавце */}
         {seller && (
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            padding: '32px',
-            marginBottom: '40px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-            border: '1px solid rgba(0,0,0,0.05)'
-          }}>
-            <h2 style={{
-              margin: '0 0 24px 0',
-              fontSize: '26px',
-              fontWeight: '700',
-              color: '#1f2937',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
-            }}>
+          <div className={styles.sellerInfoContainer}>
+            <h2 className={styles.sellerInfoHeader}>
               🏪 О продавце
             </h2>
-            <div style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '20px',
-              marginBottom: '24px'
-            }}>
-              <div style={{
-                width: '80px',
-                height: '80px',
-                borderRadius: '50%',
-                backgroundColor: seller.is_online ? '#10b981' : '#6b7280',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '32px',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-                position: 'relative'
-              }}>
+            <div className={styles.sellerDetails}>
+              <div className={`
+                ${styles.sellerAvatarContainer}
+                ${seller.is_online ? styles.sellerAvatarOnline : styles.sellerAvatarOffline}
+              `}>
                 🏪
                 {/* Индикатор онлайн статуса */}
-                <div style={{
-                  position: 'absolute',
-                  bottom: '4px',
-                  right: '4px',
-                  width: '20px',
-                  height: '20px',
-                  borderRadius: '50%',
-                  backgroundColor: seller.is_online ? '#10b981' : '#6b7280',
-                  border: '3px solid white',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-                }} />
+                <div className={`
+                  ${styles.onlineIndicator}
+                  ${seller.is_online ? styles.onlineIndicatorOnline : styles.onlineIndicatorOffline}
+                `} />
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  marginBottom: '8px'
-                }}>
-                  <h3 style={{
-                    margin: 0,
-                    fontSize: '22px',
-                    fontWeight: '700',
-                    color: '#1f2937'
-                  }}>
+              <div className={styles.sellerMeta}>
+                <div className={styles.sellerNameContainer}>
+                  <h3 className={styles.sellerName}>
                     {seller.neme || seller.name || 'Продавец'}
                   </h3>
-                  <span style={{
-                    padding: '4px 12px',
-                    borderRadius: '20px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    backgroundColor: seller.is_online ? '#dcfce7' : '#f3f4f6',
-                    color: seller.is_online ? '#166534' : '#6b7280'
-                  }}>
+                  <span className={`
+                    ${styles.sellerStatusBadge}
+                    ${seller.is_online ? styles.sellerStatusOnline : styles.sellerStatusOffline}
+                  `}>
                     {seller.is_online ? '🟢 Онлайн' : '⚫ Офлайн'}
                   </span>
                 </div>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: window.innerWidth >= 640 ? 'repeat(2, 1fr)' : '1fr',
-                  gap: '12px',
-                  marginTop: '16px'
-                }}>
-                  <div style={{
-                    padding: '12px 16px',
-                    backgroundColor: '#f8fafc',
-                    borderRadius: '8px',
-                    border: '1px solid #e2e8f0'
-                  }}>
-                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
+                <div className={`${styles.sellerStatsGrid} ${!isSmScreen ? styles.sellerStatsGridSm : ''}`}>
+                  <div className={styles.sellerStatItem}>
+                    <div className={styles.sellerStatLabel}>
                       ID продавца
                     </div>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', fontFamily: 'monospace' }}>
+                    <div className={`${styles.sellerStatValue} ${styles.sellerStatValueMonospace}`}>
                       {seller.id?.substring(0, 8)}...
                     </div>
                   </div>
-                  <div style={{
-                    padding: '12px 16px',
-                    backgroundColor: '#f8fafc',
-                    borderRadius: '8px',
-                    border: '1px solid #e2e8f0'
-                  }}>
-                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>
+                  <div className={styles.sellerStatItem}>
+                    <div className={styles.sellerStatLabel}>
                       Участник с
                     </div>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>
+                    <div className={styles.sellerStatValue}>
                       {new Date(seller.created_at).toLocaleDateString('ru-RU', {
                         year: 'numeric',
                         month: 'long'
@@ -723,37 +347,20 @@ const ProductDetailPage = () => {
             </div>
 
             {/* Дополнительная информация */}
-            <div style={{
-              padding: '16px',
-              backgroundColor: '#f0f9ff',
-              borderRadius: '12px',
-              border: '1px solid #0ea5e9'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginBottom: '8px'
-              }}>
-                <span style={{ fontSize: '16px' }}>💡</span>
-                <span style={{ fontSize: '14px', fontWeight: '600', color: '#0c4a6e' }}>
+            <div className={styles.sellerAdviceContainer}>
+              <div className={styles.sellerAdviceHeader}>
+                <span className={styles.sellerAdviceIcon}>💡</span>
+                <span className={styles.sellerAdviceTitle}>
                   Совет
                 </span>
               </div>
-              <p style={{
-                margin: 0,
-                fontSize: '14px',
-                color: '#0369a1',
-                lineHeight: '1.5'
-              }}>
+              <p className={styles.sellerAdviceText}>
                 Свяжитесь с продавцом через чат ниже, чтобы уточнить детали товара,
                 условия доставки или договориться о цене.
               </p>
             </div>
           </div>
         )}
-
-
 
         {/* Чат с продавцом */}
         <div ref={chatRef}>
@@ -764,13 +371,6 @@ const ProductDetailPage = () => {
           />
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };
