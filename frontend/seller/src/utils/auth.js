@@ -1,4 +1,4 @@
-import keycloak from '../../keycloak'; // Adjust path if necessary
+import keycloak from './keycloak'; // Adjust path if necessary
 import { apiService } from '../services/api';
 
 /**

@@ -13,7 +13,7 @@ import {
   X
 } from 'lucide-react';
 import { SELLER_TEXTS } from '../../utils/localization';
-import keycloak from '../../../keycloak'; // Import Keycloak instance
+import keycloak from '../../utils/keycloak'; // Import Keycloak instance
 
 const Sidebar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
