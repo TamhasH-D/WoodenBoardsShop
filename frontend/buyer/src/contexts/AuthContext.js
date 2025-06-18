@@ -24,7 +24,11 @@ export const AuthProvider = ({ children }) => {
     setProfileError(null);
     try {
       console.log("[AuthContext] Attempting to sync buyer profile...");
-      const profile = await getMyBuyerProfile();
+      const keycloak_id = currentKcInstance?.tokenParsed?.sub;
+      if (!keycloak_id) {
+        throw new Error("Keycloak ID not found in token.");
+      }
+      const profile = await getMyBuyerProfile(keycloak_id);
       setBuyerProfile(profile);
       if (currentKcInstance?.tokenParsed) {
         setUserInfo({

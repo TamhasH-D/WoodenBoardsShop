@@ -22,7 +22,6 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider> {/* AuthProvider is the outermost context provider */}
-        <ProfileErrorDisplay /> {/* This component now correctly uses useAuth from the AuthProvider above */}
         <AppProvider>
           <NotificationProvider>
             <Router>

@@ -482,25 +482,6 @@ const ProductCard = ({
                 Подробнее
               </button>
               
-              <button
-                onClick={handleStartChat}
-                disabled={isStartingChat}
-                style={{
-                  flex: 1,
-                  padding: variant === 'grid' ? '6px 8px' : '8px 12px',
-                  backgroundColor: isStartingChat ? '#A0522D' : '#8B4513',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '12px',
-                  fontSize: variant === 'grid' ? '0.75rem' : '0.875rem',
-                  fontWeight: '600',
-                  cursor: isStartingChat ? 'wait' : 'pointer',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 2px 8px rgba(139, 69, 19, 0.3)'
-                }}
-              >
-                {isStartingChat ? (variant === 'grid' ? '...' : 'Подключение...') : 'Написать'}
-              </button>
             </div>
           )}
         </div>
