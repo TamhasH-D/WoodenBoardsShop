@@ -174,6 +174,21 @@ BACKEND_PG_PASSWORD=your_secure_password
 # Keycloak
 KEYCLOAK_ADMIN=admin
 KEYCLOAK_ADMIN_PASSWORD=admin
+
+# Variables for automatic Keycloak setup (realms, clients, test users)
+# The script keycloak/scripts/setup-universal.sh uses these variables
+# to configure Keycloak realms, clients, and test users automatically
+# every time the Keycloak container starts.
+# Changes to these variables in your .env file will be applied upon Keycloak's (re)start.
+# --- Admin Realm and Client Example ---
+# KEYCLOAK_REALM_ADMIN_NAME=AdminRealm
+# KEYCLOAK_CLIENT_ADMIN_ID=admin-frontend
+# KEYCLOAK_CLIENT_ADMIN_REDIRECT_URIS=http://localhost:8080/*,https://admin.taruman.ru/*  # Comma-separated
+# KEYCLOAK_CLIENT_ADMIN_WEB_ORIGINS=+                                                    # Comma-separated
+# KEYCLOAK_USER_ADMIN_USERNAME=admin@test.com
+# KEYCLOAK_USER_ADMIN_EMAIL=admin@test.com
+# KEYCLOAK_USER_ADMIN_PASSWORD=admin123
+# (Similar variables exist for BuyerRealm and SellerRealm - see .env.example for the full list and defaults)
 ```
 
 ## ✨ Особенности системы

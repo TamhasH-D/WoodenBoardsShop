@@ -21,19 +21,12 @@ warn() {
 # Function to run setup in background
 run_setup() {
     log "Starting Keycloak universal setup in background..."
+    # Ensure the setup script is executable
+    chmod +x /opt/keycloak/scripts/setup-universal.sh
     /opt/keycloak/scripts/setup-universal.sh &
     local setup_pid=$!
     log "Setup process started with PID: $setup_pid"
 }
-
-# Check if this is the first run
-if [ ! -f "/opt/keycloak/data/.setup_completed" ]; then
-    log "First run detected - will configure Keycloak after startup"
-    FIRST_RUN=true
-else
-    log "Keycloak already configured - skipping setup"
-    FIRST_RUN=false
-fi
 
 # Start Keycloak in background
 log "Starting Keycloak server..."
@@ -42,17 +35,15 @@ KEYCLOAK_PID=$!
 
 log "Keycloak started with PID: $KEYCLOAK_PID"
 
-# If first run, start setup process
-if [ "$FIRST_RUN" = true ]; then
-    # Wait a bit for Keycloak to start
-    log "Waiting 30 seconds for Keycloak to fully start..."
-    sleep 30
-    run_setup
+# Wait a bit for Keycloak to start before running setup
+log "Waiting 30 seconds for Keycloak to fully start..."
+sleep 30
 
-    # Create marker file to indicate setup was attempted
-    mkdir -p /opt/keycloak/data
-    touch /opt/keycloak/data/.setup_completed
-fi
+# Run the setup script unconditionally
+log "Attempting to run Keycloak setup script..."
+run_setup
 
-# Wait for Keycloak process
+# Wait for Keycloak process to exit
+log "Keycloak entrypoint script finished. Waiting for Keycloak process (PID: $KEYCLOAK_PID) to terminate."
 wait $KEYCLOAK_PID
+log "Keycloak process has terminated. Exiting entrypoint."

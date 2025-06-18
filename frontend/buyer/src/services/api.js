@@ -1,5 +1,5 @@
-
 import axios from 'axios';
+import KeycloakService from './keycloak'; // Assuming keycloak.js is in the same directory
 import { withUUID, ENTITY_TYPES, generateEntityUUID } from '../utils/uuid';
 
 // Get API URL from environment variables or use default
@@ -14,16 +14,34 @@ const api = axios.create({
   },
 });
 
-
-
-// Request interceptor for logging
+// Request interceptor for logging and token injection
 api.interceptors.request.use(
-  (config) => {
+  async (config) => { // Make the interceptor async
     console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+
+    if (KeycloakService.isLoggedIn()) {
+      try {
+        const refreshed = await KeycloakService.updateToken(30); // Update if token expires in 30s
+        if (refreshed) {
+          console.log('API Interceptor: Token was refreshed.');
+        }
+        const token = KeycloakService.getToken();
+        if (token) {
+          config.headers.Authorization = 'Bearer ' + token;
+          // console.log('API Interceptor: Authorization header set.');
+        } else {
+          console.warn('API Interceptor: User is logged in but no token found.');
+        }
+      } catch (error) {
+        console.error('API Interceptor: Failed to refresh token or user session expired.', error);
+        // Optional: Force logout if token refresh fails critically
+        // KeycloakService.logout();
+      }
+    }
     return config;
   },
   (error) => {
-    console.error('API Request Error:', error);
+    console.error('API Request Error Setup:', error); // Changed log slightly for distinction
     return Promise.reject(error);
   }
 );

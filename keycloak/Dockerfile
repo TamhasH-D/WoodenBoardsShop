@@ -1,1 +1,1 @@
-FROM quay.io/keycloak/keycloak:22.0.0
+FROM quay.io/keycloak/keycloak:26.2.5

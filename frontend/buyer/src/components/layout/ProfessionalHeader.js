@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import KeycloakService from '../../../services/keycloak'; // Adjusted path
 
-const ProfessionalHeader = () => {
+const ProfessionalHeader = ({ isAuthenticated }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const location = useLocation();
@@ -125,8 +126,30 @@ const ProfessionalHeader = () => {
                 </Link>
               ))}
             </nav>
-
-
+            {/* Desktop Auth Section */}
+            <div className="auth-section" style={{ display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: '1rem', marginLeft: 'auto' }}>
+              {isAuthenticated ? (
+                <>
+                  <span style={{ color: '#374151', fontSize: '0.875rem' }}>
+                    Hi, {KeycloakService.getUsername()}
+                  </span>
+                  <Link to="/profile" style={{ color: '#374151', textDecoration: 'none', fontSize: '0.875rem', fontWeight: '500' }}>Profile</Link>
+                  <button
+                      onClick={() => KeycloakService.logout()}
+                      style={{ color: '#374151', background: 'none', border: '1px solid #d1d5db', borderRadius: '0.375rem', padding: '0.4rem 0.8rem', cursor: 'pointer', fontSize: '0.875rem', fontWeight: '500' }}
+                  >
+                      Logout
+                  </button>
+                </>
+              ) : (
+                <button
+                    onClick={() => KeycloakService.login()}
+                    style={{ color: '#374151', background: 'none', border: '1px solid #d1d5db', borderRadius: '0.375rem', padding: '0.4rem 0.8rem', cursor: 'pointer', fontSize: '0.875rem', fontWeight: '500' }}
+                >
+                    Login
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Mobile Menu Button */}
@@ -213,8 +236,47 @@ const ProfessionalHeader = () => {
                   {item.label}
                 </Link>
               ))}
-
-
+              {/* Mobile Auth Section */}
+              {!isAuthenticated && (
+                <button
+                  onClick={() => { KeycloakService.login(); setMobileMenuOpen(false); }}
+                  style={{
+                    width: '100%', textAlign: 'left', padding: '0.75rem 1rem', fontSize: '0.875rem', fontWeight: '500',
+                    color: '#374151', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '0.375rem'
+                  }}
+                  onMouseOver={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+                  onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                    Login
+                </button>
+              )}
+              {isAuthenticated && (
+                <>
+                  <Link
+                    to="/profile"
+                    onClick={() => setMobileMenuOpen(false)}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left', padding: '0.75rem 1rem', fontSize: '0.875rem', fontWeight: '500',
+                      color: '#374151', textDecoration: 'none', borderRadius: '0.375rem'
+                    }}
+                    onMouseOver={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+                    onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                  >
+                    Profile ({KeycloakService.getUsername()})
+                  </Link>
+                  <button
+                    onClick={() => { KeycloakService.logout(); setMobileMenuOpen(false); }}
+                    style={{
+                      width: '100%', textAlign: 'left', padding: '0.75rem 1rem', fontSize: '0.875rem', fontWeight: '500',
+                      color: '#374151', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '0.375rem'
+                    }}
+                    onMouseOver={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+                    onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
             </nav>
           </div>
         )}
