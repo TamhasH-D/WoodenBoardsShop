@@ -1,333 +1,80 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { apiClient } from '../utils/api/client';
-import { toast } from 'react-hot-toast';
+// import { toast } from 'react-hot-toast'; // Keep if toasts are still relevant for Keycloak events
 
-/**
- * Enterprise-grade authentication store with persistence
- */
 export const useAuthStore = create(
   persist(
     (set, get) => ({
       // State
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      isLoading: false,
-      error: null,
-      permissions: [],
-      lastActivity: null,
+      user: null, // Will be derived from keycloak.tokenParsed
+      token: null, // Will be keycloak.token
+      isAuthenticated: false, // Will be keycloak.authenticated
+      keycloakInstance: null, // To store the Keycloak instance
 
       // Actions
-      login: async (credentials) => {
-        set({ isLoading: true, error: null });
-        
-        try {
-          const response = await apiClient.post('/auth/login/', credentials);
-          const { user, token, permissions } = response;
-
-          // Store token in localStorage for API client
-          localStorage.setItem('auth_token', token);
-
+      // This action would be called from a component that has access to the keycloak instance
+      syncKeycloakState: (keycloak) => {
+        if (keycloak) {
           set({
-            user,
-            token,
-            permissions: permissions || [],
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-            lastActivity: new Date().toISOString(),
+            user: keycloak.tokenParsed,
+            token: keycloak.token,
+            isAuthenticated: keycloak.authenticated,
+            keycloakInstance: keycloak, // Optionally store the instance
           });
-
-          toast.success(`Welcome back, ${user.first_name}!`);
-          return { success: true, user };
-        } catch (error) {
-          set({
-            isLoading: false,
-            error: error.message,
-            isAuthenticated: false,
-            user: null,
-            token: null,
-          });
-          
-          toast.error(error.message || 'Login failed');
-          return { success: false, error: error.message };
-        }
-      },
-
-      logout: async () => {
-        set({ isLoading: true });
-        
-        try {
-          // Call logout endpoint to invalidate token on server
-          await apiClient.post('/auth/logout/');
-        } catch (error) {
-          // Continue with logout even if API call fails
-          console.error('Logout API error:', error);
-        }
-
-        // Clear local storage
-        localStorage.removeItem('auth_token');
-
-        // Reset state
-        set({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: null,
-          permissions: [],
-          lastActivity: null,
-        });
-
-        toast.success('Logged out successfully');
-      },
-
-      register: async (userData) => {
-        set({ isLoading: true, error: null });
-        
-        try {
-          const response = await apiClient.post('/auth/register/', userData);
-          const { user, token, permissions } = response;
-
-          localStorage.setItem('auth_token', token);
-
-          set({
-            user,
-            token,
-            permissions: permissions || [],
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-            lastActivity: new Date().toISOString(),
-          });
-
-          toast.success('Account created successfully!');
-          return { success: true, user };
-        } catch (error) {
-          set({
-            isLoading: false,
-            error: error.message,
-          });
-          
-          toast.error(error.message || 'Registration failed');
-          return { success: false, error: error.message };
-        }
-      },
-
-      forgotPassword: async (email) => {
-        set({ isLoading: true, error: null });
-        
-        try {
-          await apiClient.post('/auth/forgot-password/', { email });
-          
-          set({ isLoading: false });
-          toast.success('Password reset instructions sent to your email');
-          return { success: true };
-        } catch (error) {
-          set({
-            isLoading: false,
-            error: error.message,
-          });
-          
-          toast.error(error.message || 'Failed to send reset instructions');
-          return { success: false, error: error.message };
-        }
-      },
-
-      resetPassword: async (token, password) => {
-        set({ isLoading: true, error: null });
-        
-        try {
-          await apiClient.post('/auth/reset-password/', { token, password });
-          
-          set({ isLoading: false });
-          toast.success('Password reset successfully');
-          return { success: true };
-        } catch (error) {
-          set({
-            isLoading: false,
-            error: error.message,
-          });
-          
-          toast.error(error.message || 'Password reset failed');
-          return { success: false, error: error.message };
-        }
-      },
-
-      changePassword: async (currentPassword, newPassword) => {
-        set({ isLoading: true, error: null });
-        
-        try {
-          await apiClient.post('/auth/change-password/', {
-            current_password: currentPassword,
-            new_password: newPassword,
-          });
-          
-          set({ isLoading: false });
-          toast.success('Password changed successfully');
-          return { success: true };
-        } catch (error) {
-          set({
-            isLoading: false,
-            error: error.message,
-          });
-          
-          toast.error(error.message || 'Password change failed');
-          return { success: false, error: error.message };
-        }
-      },
-
-      updateProfile: async (profileData) => {
-        set({ isLoading: true, error: null });
-        
-        try {
-          const response = await apiClient.patch('/auth/profile/', profileData);
-          const { user } = response;
-
-          set({
-            user,
-            isLoading: false,
-            error: null,
-            lastActivity: new Date().toISOString(),
-          });
-
-          toast.success('Profile updated successfully');
-          return { success: true, user };
-        } catch (error) {
-          set({
-            isLoading: false,
-            error: error.message,
-          });
-          
-          toast.error(error.message || 'Profile update failed');
-          return { success: false, error: error.message };
-        }
-      },
-
-      refreshToken: async () => {
-        const { token } = get();
-        if (!token) return false;
-
-        try {
-          const response = await apiClient.post('/auth/refresh/', { token });
-          const { token: newToken, user, permissions } = response;
-
-          localStorage.setItem('auth_token', newToken);
-
-          set({
-            token: newToken,
-            user,
-            permissions: permissions || [],
-            lastActivity: new Date().toISOString(),
-          });
-
-          return true;
-        } catch (error) {
-          console.error('Token refresh failed:', error);
-          get().logout();
-          return false;
-        }
-      },
-
-      checkAuth: async () => {
-        const token = localStorage.getItem('auth_token');
-        if (!token) {
-          set({ isAuthenticated: false });
-          return false;
-        }
-
-        set({ isLoading: true });
-
-        try {
-          const response = await apiClient.get('/auth/me/');
-          const { user, permissions } = response;
-
-          set({
-            user,
-            token,
-            permissions: permissions || [],
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-            lastActivity: new Date().toISOString(),
-          });
-
-          return true;
-        } catch (error) {
-          console.error('Auth check failed:', error);
-          localStorage.removeItem('auth_token');
-          
+        } else {
+          // Handle case where keycloak is not available (e.g., logged out)
           set({
             user: null,
             token: null,
             isAuthenticated: false,
-            isLoading: false,
-            permissions: [],
+            keycloakInstance: null,
           });
-
-          return false;
         }
       },
 
-      updateLastActivity: () => {
-        set({ lastActivity: new Date().toISOString() });
+      // keycloak.logout() would be called directly from UI.
+      // This function is a placeholder if a store-initiated logout is ever needed.
+      logout: () => {
+        const keycloak = get().keycloakInstance;
+        if (keycloak && keycloak.authenticated) {
+          keycloak.logout();
+          // Keycloak handles redirect; state will update via event listeners or route protection logic
+          // After logout, syncKeycloakState(null) or syncKeycloakState(keycloak) should be called
+          // by the component handling Keycloak events to update the store.
+        }
       },
 
-      clearError: () => {
-        set({ error: null });
-      },
+      // Utility functions (can be adapted or removed)
+      getUser: () => get().user,
+      getToken: () => get().token,
+      getIsAuthenticated: () => get().isAuthenticated,
 
-      // Utility functions
-      hasPermission: (permission) => {
-        const { permissions, user } = get();
-        
-        // Super admin has all permissions
-        if (user?.is_superuser) return true;
-        
-        // Check if user has specific permission
-        return permissions.includes(permission);
-      },
-
+      // Permissions will be handled based on Keycloak roles
+      // Example: hasRole: (role) => get().user?.realm_access?.roles.includes(role)
+      // This can be added back/adjusted based on specific needs later.
+      // hasPermission: (permission) => { ... }
       hasRole: (role) => {
-        const { user } = get();
-        return user?.role === role;
-      },
-
-      isAdmin: () => {
-        const { user } = get();
-        return user?.is_staff || user?.is_superuser;
-      },
-
-      getUser: () => {
-        return get().user;
-      },
-
-      getToken: () => {
-        return get().token;
-      },
-
-      isSessionExpired: () => {
-        const { lastActivity } = get();
-        if (!lastActivity) return true;
-
-        const now = new Date();
-        const lastActivityDate = new Date(lastActivity);
-        const diffInHours = (now - lastActivityDate) / (1000 * 60 * 60);
-
-        // Session expires after 24 hours of inactivity
-        return diffInHours > 24;
-      },
+        const user = get().user;
+        if (user && user.realm_access && user.realm_access.roles) {
+          return user.realm_access.roles.includes(role);
+        }
+        return false;
+      }
     }),
     {
-      name: 'auth-storage',
+      name: 'auth-storage', // Keep persistence
       storage: createJSONStorage(() => localStorage),
+      // Define what to persist. Keycloak manages its own token storage.
+      // We might persist very little or rely on syncKeycloakState on load.
       partialize: (state) => ({
-        user: state.user,
-        token: state.token,
-        isAuthenticated: state.isAuthenticated,
-        permissions: state.permissions,
-        lastActivity: state.lastActivity,
+        // Persisting user and isAuthenticated can be useful for initial UI rendering
+        // before Keycloak is fully initialized and syncKeycloakState is called.
+        // However, this might lead to displaying stale data if Keycloak session ended.
+        // For now, let's not persist them to rely on Keycloak as the source of truth.
+        // user: state.user,
+        // isAuthenticated: state.isAuthenticated,
+
+        // keycloakInstance should not be persisted as it's a live object.
       }),
     }
   )

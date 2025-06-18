@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useKeycloak } from '@react-keycloak/web';
 import {
+  ArrowRightOnRectangleIcon, // For logout icon
   HomeIcon,
   UsersIcon,
   CubeIcon,
@@ -11,6 +13,7 @@ import {
   ChatBubbleLeftRightIcon,
   PhotoIcon,
 } from '@heroicons/react/24/outline';
+
 import { cn } from '../../utils/helpers';
 
 const navigation = [
@@ -31,6 +34,68 @@ const navigation = [
 export default function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { keycloak, initialized } = useKeycloak(); // Get keycloak instance
+
+  const handleLogout = () => {
+    if (initialized && keycloak && keycloak.authenticated) {
+      keycloak.logout();
+    }
+  };
+
+  const currentNavigation = [
+    ...navigation,
+    {
+      name: 'Выход',
+      href: '#', // href can be '#' as logout is an action
+      icon: ArrowRightOnRectangleIcon,
+      current: false,
+      action: handleLogout
+    }
+  ];
+
+  const renderNavItem = (item) => {
+    if (item.action) {
+      return (
+        <button
+          key={item.name}
+          onClick={item.action}
+          className={cn(
+            'group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 w-full',
+            'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+          )}
+        >
+          <item.icon
+            className={cn(
+              'mr-3 h-5 w-5 flex-shrink-0',
+              'text-gray-400 group-hover:text-gray-500'
+            )}
+          />
+          {item.name}
+        </button>
+      );
+    }
+    return (
+      <Link
+        key={item.name}
+        to={item.href}
+        className={cn(
+          'group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150',
+          location.pathname === item.href
+            ? 'bg-accent-50 text-accent-700 border-r-2 border-accent-600'
+            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+        )}
+        onClick={() => item.href !== '#' && sidebarOpen && setSidebarOpen(false)} // Close sidebar on mobile nav click
+      >
+        <item.icon
+          className={cn(
+            'mr-3 h-5 w-5 flex-shrink-0',
+            location.pathname === item.href ? 'text-accent-600' : 'text-gray-400 group-hover:text-gray-500'
+          )}
+        />
+        {item.name}
+      </Link>
+    );
+  };
 
   return (
     <div className="flex h-screen bg-surface-secondary">
@@ -54,27 +119,7 @@ export default function AdminLayout({ children }) {
               <h1 className="text-lg font-semibold text-gray-900">Админ панель</h1>
             </div>
             <nav className="mt-8 space-y-1 px-3">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={cn(
-                    'group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150',
-                    location.pathname === item.href
-                      ? 'bg-accent-50 text-accent-700 border-r-2 border-accent-600'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  )}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <item.icon
-                    className={cn(
-                      'mr-3 h-5 w-5 flex-shrink-0',
-                      location.pathname === item.href ? 'text-accent-600' : 'text-gray-400'
-                    )}
-                  />
-                  {item.name}
-                </Link>
-              ))}
+              {currentNavigation.map(renderNavItem)}
             </nav>
           </div>
         </div>
@@ -88,26 +133,7 @@ export default function AdminLayout({ children }) {
               <h1 className="text-lg font-semibold text-gray-900">Админ панель</h1>
             </div>
             <nav className="mt-8 flex-1 space-y-1 px-3">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={cn(
-                    'group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150',
-                    location.pathname === item.href
-                      ? 'bg-accent-50 text-accent-700 border-r-2 border-accent-600'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  )}
-                >
-                  <item.icon
-                    className={cn(
-                      'mr-3 h-5 w-5 flex-shrink-0',
-                      location.pathname === item.href ? 'text-accent-600' : 'text-gray-400'
-                    )}
-                  />
-                  {item.name}
-                </Link>
-              ))}
+              {currentNavigation.map(renderNavItem)}
             </nav>
           </div>
         </div>
