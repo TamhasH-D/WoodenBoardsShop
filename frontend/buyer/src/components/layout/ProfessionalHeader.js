@@ -155,7 +155,7 @@ const ProfessionalHeader = () => {
                     onMouseOver={(e) => e.target.style.backgroundColor = '#dc2626'}
                     onMouseOut={(e) => e.target.style.backgroundColor = '#ef4444'}
                   >
-                    Logout
+                    Выйти
                   </button>
                 </>
               ) : ( // Only show Login if not even Keycloak authenticated
@@ -175,7 +175,7 @@ const ProfessionalHeader = () => {
                   onMouseOver={(e) => e.target.style.backgroundColor = '#1d4ed8'}
                   onMouseOut={(e) => e.target.style.backgroundColor = '#2563eb'}
                 >
-                  Login
+                  Войти
                 </button>
               )}
             </div>
@@ -298,7 +298,7 @@ const ProfessionalHeader = () => {
                       onMouseOver={(e) => e.target.style.backgroundColor = '#dc2626'}
                       onMouseOut={(e) => e.target.style.backgroundColor = '#ef4444'}
                     >
-                      Logout
+                      Выйти
                     </button>
                   </>
                 ) : ( // Only show Login if not even Keycloak authenticated
@@ -321,7 +321,7 @@ const ProfessionalHeader = () => {
                     onMouseOver={(e) => e.target.style.backgroundColor = '#1d4ed8'}
                     onMouseOut={(e) => e.target.style.backgroundColor = '#2563eb'}
                   >
-                    Login
+                    Войти
                   </button>
                 )}
               </div>

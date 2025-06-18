@@ -17,33 +17,6 @@ import HealthPage from './pages/HealthPage';
 import NotificationContainer from './components/ui/NotificationContainer';
 import './index.css';
 
-// Global Profile Error Display Component
-// It uses useAuth(), so it must be rendered within AuthProvider's component tree.
-const ProfileErrorDisplay = () => {
-  const { profileError } = useAuth();
-
-  if (!profileError) {
-    return null;
-  }
-
-  return (
-    <div style={{
-      backgroundColor: '#ef4444', // Red background
-      color: 'white',
-      padding: '1rem',
-      textAlign: 'center',
-      position: 'sticky',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 9999,
-      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-    }}>
-      <strong>Profile Error:</strong> {profileError.message || 'Could not load your user profile. Some features may be unavailable. Please try refreshing the page or contacting support if the issue persists.'}
-    </div>
-  );
-};
-
 // Main App component
 function App() {
   return (
