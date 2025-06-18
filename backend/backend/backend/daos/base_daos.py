@@ -1,5 +1,6 @@
+import json # Added
 from collections.abc import Sequence
-from typing import Any, Generic, TypeVar, Union, get_args, get_origin, Optional
+from typing import Any, Generic, TypeVar, Union, get_args, get_origin, Optional, Type # Added Type
 from uuid import UUID
 
 import sqlalchemy as sa
@@ -133,6 +134,7 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO, OutDTO]):
         )
         self.session.add(record)
         await self.session.flush()
+        await cache_manager.delete(f"{self.model.__name__}:all") # Invalidate "all items" cache
         return record
 
     async def get_by_id(self, item_id: Union[UUID, int, str], out_dto_class: type[OutDTO]) -> Optional[OutDTO]:
@@ -142,7 +144,7 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO, OutDTO]):
         if cached_item:
             return cached_item
 
-        query = sa.select(self.model).filter(self.model.id == item_id) # Changed PK access
+        query = sa.select(self.model).filter(self.model.id == item_id)
         result = await self.session.execute(query)
         instance = result.scalar_one_or_none()
 
@@ -151,6 +153,37 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO, OutDTO]):
             await cache_manager.set(cache_key, dto_instance)
             return dto_instance
         return None
+
+    async def get_all_cached(self, out_dto_class: Type[OutDTO]) -> list[OutDTO]: # Changed type to Type
+        cache_key = f"{self.model.__name__}:all"
+
+        cached_data_str = await cache_manager.get_raw(cache_key)
+        if cached_data_str:
+            try:
+                items_data = json.loads(cached_data_str)
+                return [out_dto_class.model_validate(item_data) for item_data in items_data]
+            except json.JSONDecodeError:
+                # Optionally log this error
+                pass # Proceed to fetch from DB
+
+        # If not in cache or deserialization error, fetch from DB
+        query = sa.select(self.model)
+        result = await self.session.execute(query)
+        instances = result.scalars().all()
+
+        dto_list = [out_dto_class.model_validate(instance) for instance in instances]
+
+        # Store the JSON string of the list in cache
+        # Convert DTOs to dicts before serializing the list to JSON
+        try:
+            list_of_dicts = [dto.model_dump() for dto in dto_list]
+            await cache_manager.set_raw(cache_key, json.dumps(list_of_dicts))
+        except Exception as e:
+            # Optionally log this error if serialization/caching fails
+            print(f"Error caching 'all items' for {self.model.__name__}: {e}")
+            pass
+
+        return dto_list
 
     async def filter(
         self,
@@ -175,7 +208,7 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO, OutDTO]):
         self,
         item_id: Union[UUID, int, str],
         update_dto: UpdateDTO,
-        out_dto_class: type[OutDTO]
+        out_dto_class: type[OutDTO] # Changed type to Type
     ) -> Optional[OutDTO]:
         """Update a record by ID and return the updated DTO."""
         update_dict = update_dto.model_dump(exclude_none=True, mode='python')
@@ -184,7 +217,7 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO, OutDTO]):
 
         stmt = (
             sa.update(self.model)
-            .where(self.model.id == item_id) # Changed PK access
+            .where(self.model.id == item_id)
             .values(**update_dict)
             .returning(self.model)
         )
@@ -195,6 +228,7 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO, OutDTO]):
             await self.session.flush()
             cache_key = f"{self.model.__name__}:{item_id}"
             await cache_manager.delete(cache_key)
+            await cache_manager.delete(f"{self.model.__name__}:all") # Invalidate "all items" cache
             return out_dto_class.model_validate(updated_instance)
 
         await self.session.rollback()
@@ -206,13 +240,14 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO, OutDTO]):
         item_id: Union[UUID, int, str],
     ) -> bool:
         """Delete a record by its ID."""
-        query = sa.delete(self.model).where(self.model.id == item_id) # Changed PK access
+        query = sa.delete(self.model).where(self.model.id == item_id)
         result = await self.session.execute(query)
 
         if result.rowcount > 0:
             await self.session.flush()
             cache_key = f"{self.model.__name__}:{item_id}"
             await cache_manager.delete(cache_key)
+            await cache_manager.delete(f"{self.model.__name__}:all") # Invalidate "all items" cache
             return True
 
         await self.session.rollback()
@@ -220,7 +255,7 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO, OutDTO]):
 
     async def get_offset_results(
         self,
-        out_dto: type[OutDTO],
+        out_dto: type[OutDTO], # Changed type to Type
         pagination: PaginationType,
         query: Union[sa.sql.Select[tuple[Model]], None] = None,
     ) -> OffsetResults[OutDTO]:
