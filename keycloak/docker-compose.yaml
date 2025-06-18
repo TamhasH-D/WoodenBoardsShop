@@ -21,9 +21,10 @@ services:
     image: quay.io/keycloak/keycloak:26.2.5
     container_name: ${KEYCLOAK_CONTAINER:-keycloak-prod}
     environment:
-      # Админ пользователь и пароль
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin_password}
+      # Admin user and password for initial Keycloak setup (KC_BOOTSTRAP_*)
+      # These are now also used by the setup-universal.sh script.
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-admin_password}
       # База данных
       KC_DB: postgres
       KC_DB_USERNAME: ${POSTGRES_USER:-keycloak}
@@ -38,8 +39,8 @@ services:
     depends_on:
       keycloak-postgres:
         condition: service_healthy
-    command:
-      - start
+    # command: # Removed, as entrypoint.sh in Dockerfile now handles the start command
+    #   - start
     networks:
       - diplom_default
     healthcheck:

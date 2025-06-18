@@ -76,8 +76,8 @@ get_admin_token() {
     local response
     response=$(curl -s -X POST "$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
         -H "Content-Type: application/x-www-form-urlencoded" \
-        -d "username=${KEYCLOAK_ADMIN:-admin}" \
-        -d "password=${KEYCLOAK_ADMIN_PASSWORD:-admin}" \
+        -d "username=${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}" \
+        -d "password=${KC_BOOTSTRAP_ADMIN_PASSWORD:-admin_password}" \
         -d "grant_type=password" \
         -d "client_id=admin-cli" 2>/dev/null)
     
@@ -326,7 +326,7 @@ create_test_user() {
 main() {
     log "🚀 Starting Keycloak Setup..."
     log "🌐 Keycloak URL: $KEYCLOAK_URL"
-    log "👤 Admin User: ${KEYCLOAK_ADMIN:-admin}" # Log effective admin user
+    log "👤 Admin User for script: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}" # Log effective admin user for the script
     log "🌍 Environment: ${NODE_ENV:-development}"
     
     # Wait for Keycloak
@@ -376,7 +376,7 @@ main() {
     log ""
     log "🌐 Access URLs:"
     log "   Admin Console: $KEYCLOAK_URL/admin"
-    log "   Admin credentials: ${KEYCLOAK_ADMIN:-admin} / ${KEYCLOAK_ADMIN_PASSWORD:-admin}"
+    log "   Admin credentials for console: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin} / {KC_BOOTSTRAP_ADMIN_PASSWORD}" # Password not logged for security
     log ""
     log "👥 Test users created (default credentials):"
     log "   $REALM_ADMIN_NAME: $USER_ADMIN_USERNAME / $USER_ADMIN_PASSWORD"
