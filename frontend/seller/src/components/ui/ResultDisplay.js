@@ -219,7 +219,7 @@ const ResultDisplay = ({ imageUrl, result }) => {
     return style;
   };
 
-  const isMobile = window.innerWidth <= 768;
+  // const isMobile = window.innerWidth <= 768; // Removed
 
   return (
     <div className="w-full max-w-5xl mx-auto flex flex-col gap-6">
@@ -234,10 +234,10 @@ const ResultDisplay = ({ imageUrl, result }) => {
         {hoveredBoard && hoverPosition && (
           <div
             style={getTooltipStyle()}
-            className="bg-white/95 backdrop-blur-md p-4 md:p-6 rounded-xl shadow-2xl border border-slate-200/50 opacity-100 scale-100 transition-all duration-200 ease-in-out max-w-[90vw] md:max-w-xs min-w-[280px] fixed sm:absolute bottom-4 left-1/2 sm:left-auto sm:bottom-auto sm:-translate-x-1/2"
+            className="bg-white/95 backdrop-blur-md p-3 sm:p-4 md:p-6 rounded-xl shadow-2xl border border-slate-200/50 opacity-100 scale-100 transition-all duration-200 ease-in-out max-w-[90vw] md:max-w-xs min-w-[260px] fixed sm:absolute bottom-4 left-1/2 -translate-x-1/2 sm:left-auto sm:bottom-auto sm:-translate-x-1/2"
           >
-            <div className="flex flex-col gap-3 md:gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-x-4 md:gap-y-6">
+            <div className="flex flex-col gap-2 sm:gap-3 md:gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 md:gap-x-4 md:gap-y-6">
                 <div>
                   <p className="text-sm font-medium text-blue-600 m-0 mb-1">Объем</p>
                   <p className="text-base md:text-lg font-semibold m-0">{hoveredBoard.volume.toFixed(4)} м³</p>

@@ -134,7 +134,7 @@ const ChatContainer = memo(({
         </div>
       )}
 
-      <div className="h-screen max-h-[800px] flex bg-white rounded-2xl overflow-hidden shadow-2xl border border-slate-200">
+      <div className="h-[80vh] flex bg-white rounded-2xl overflow-hidden shadow-2xl border border-slate-200">
         <div className={`h-full transition-all duration-300 ease-in-out overflow-hidden w-full md:w-[400px] md:min-w-[350px] ${selectedThread ? 'hidden md:block' : 'block'}`}>
           <ChatSidebar
             threads={threads}

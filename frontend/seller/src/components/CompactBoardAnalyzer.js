@@ -150,9 +150,15 @@ const CompactBoardAnalyzer = ({
     const img = new Image();
 
     img.onload = () => {
-      // Фиксированные размеры canvas для предотвращения прыжков
-      const containerWidth = 280;
-      const containerHeight = 180;
+      // Get actual dimensions of the canvas parent for responsiveness
+      const parentElement = canvas.parentElement;
+      if (!parentElement) return;
+
+      const containerWidth = parentElement.clientWidth;
+      const containerHeight = parentElement.clientHeight;
+
+      canvas.width = containerWidth;
+      canvas.height = containerHeight;
 
       // Вычисляем масштаб для сохранения пропорций
       const scaleX = containerWidth / img.width;
@@ -166,12 +172,8 @@ const CompactBoardAnalyzer = ({
       const offsetX = (containerWidth - scaledWidth) / 2;
       const offsetY = (containerHeight - scaledHeight) / 2;
 
-      // Устанавливаем фиксированные размеры canvas
-      canvas.width = containerWidth;
-      canvas.height = containerHeight;
-
       // Очищаем canvas
-      ctx.fillStyle = '#f8fafc';
+      ctx.fillStyle = '#f8fafc'; // or use a Tailwind bg color if applied to parent
       ctx.fillRect(0, 0, containerWidth, containerHeight);
 
       // Отрисовка изображения по центру
@@ -184,7 +186,7 @@ const CompactBoardAnalyzer = ({
     };
 
     img.src = imageUrl;
-  }, [imageUrl, result]);
+  }, [imageUrl, result]); // Removed drawBoardOutlines from dependency array as it's defined in component scope
 
   // Отрисовка контуров досок с учетом смещения
   const drawBoardOutlines = (ctx, boards, scaledWidth, scaledHeight, originalWidth, originalHeight, offsetX, offsetY) => {
@@ -237,24 +239,24 @@ const CompactBoardAnalyzer = ({
   };
 
   return (
-    <div className="compact-board-analyzer">
+    <div className="bg-white border border-slate-200 rounded-lg p-5 mb-6"> {/* Replaced compact-board-analyzer */}
       {/* Заголовок */}
-      <div className="analyzer-header">
-        <div className="analyzer-icon">📸</div>
-        <div className="analyzer-title">
-          <h4>Анализ досок</h4>
-          <p>Автоматический расчет объема по фотографии</p>
+      <div className="flex items-center gap-3 mb-5 pb-4 border-b border-slate-200"> {/* Replaced analyzer-header */}
+        <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg flex items-center justify-center text-xl flex-shrink-0 text-white">📸</div> {/* Replaced analyzer-icon */}
+        <div> {/* Replaced analyzer-title */}
+          <h4 className="text-lg font-semibold text-slate-800 m-0 mb-1">Анализ досок</h4>
+          <p className="text-sm text-slate-500 m-0">Автоматический расчет объема по фотографии</p>
         </div>
       </div>
 
       {/* Основной контент */}
-      <div className={`analyzer-content ${disabled ? 'disabled' : ''}`}>
-        <div className="analyzer-layout">
+      <div className={`${disabled ? 'opacity-60 pointer-events-none' : ''}`}> {/* Replaced analyzer-content and disabled class effect */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6 items-start">
           {/* Левая часть - поля ввода и кнопки */}
-          <div className="controls-section">
-            <div className="dimensions-row">
-              <div className="dimension-input">
-                <label>Высота (мм)</label>
+          <div className="flex flex-col gap-4"> {/* Replaced controls-section */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"> {/* Replaced dimensions-row */}
+              <div className="flex flex-col gap-1"> {/* Replaced dimension-input */}
+                <label className="text-sm font-medium text-slate-700">Высота (мм)</label>
                 <input
                   type="number"
                   value={boardHeight}
@@ -263,10 +265,11 @@ const CompactBoardAnalyzer = ({
                   min="1"
                   max="1000"
                   disabled={analyzing}
+                  className="form-input py-2 px-3 border-slate-300 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
-              <div className="dimension-input">
-                <label>Длина (мм)</label>
+              <div className="flex flex-col gap-1"> {/* Replaced dimension-input */}
+                <label className="text-sm font-medium text-slate-700">Длина (мм)</label>
                 <input
                   type="number"
                   value={boardLength}
@@ -275,22 +278,23 @@ const CompactBoardAnalyzer = ({
                   min="1"
                   max="10000"
                   disabled={analyzing}
+                  className="form-input py-2 px-3 border-slate-300 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
             </div>
 
-            <div className="action-buttons">
+            <div className="flex flex-wrap gap-2"> {/* Replaced action-buttons */}
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 onChange={handleFileSelect}
-                style={{ display: 'none' }}
+                className="hidden" // Replaced style={{ display: 'none' }}
               />
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="btn btn-secondary btn-sm"
+                className="btn btn-secondary btn-sm" // Assuming btn-sm provides adequate padding/text size
                 disabled={analyzing}
               >
                 📁 Загрузить
@@ -299,7 +303,7 @@ const CompactBoardAnalyzer = ({
                 <button
                   type="button"
                   onClick={handleAnalyze}
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-sm" // Assuming btn-sm provides adequate padding/text size
                   disabled={analyzing || !boardHeight || !boardLength}
                 >
                   {analyzing ? '⏳ Анализ...' : '🔍 Анализировать'}
@@ -309,7 +313,7 @@ const CompactBoardAnalyzer = ({
                 <button
                   type="button"
                   onClick={handleClear}
-                  className="btn btn-ghost btn-sm"
+                  className="btn btn-ghost btn-sm" // Assuming btn-sm provides adequate padding/text size
                   disabled={analyzing}
                 >
                   🗑️ Очистить
@@ -318,48 +322,49 @@ const CompactBoardAnalyzer = ({
             </div>
 
             {selectedFile && (
-              <div className="file-info">
+              <div className="text-xs text-slate-500 p-2 bg-slate-100 rounded-md border-l-4 border-blue-500 mt-2"> {/* Replaced file-info */}
                 📎 {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
               </div>
             )}
 
             {error && (
-              <div className="error-message fade-in">
+              <div className="p-3 bg-red-100 border border-red-200 text-red-700 text-sm rounded-md mt-2 fade-in"> {/* Replaced error-message */}
                 ⚠️ {error}
               </div>
             )}
           </div>
 
           {/* Правая часть - изображение с фиксированными размерами */}
-          <div className="image-section-fixed">
+          <div className="relative w-full md:w-[300px] h-[200px] bg-slate-100 border-2 border-dashed border-slate-300 rounded-lg overflow-hidden transition-all duration-300 ease-in-out">
             {imageUrl && (
-              <div className="image-container-fixed">
+              <div className="h-full w-full flex items-center justify-center"> {/* Replaced image-container-fixed basic behavior */}
                 <canvas
                   ref={canvasRef}
-                  className="analysis-canvas-fixed"
+                  className="block max-w-full max-h-full" // Replaced analysis-canvas-fixed basic behavior
                 />
               </div>
             )}
 
             {!imageUrl && (
-              <div className="image-placeholder-fixed">
-                <div className="placeholder-icon-large">🖼️</div>
-                <p className="placeholder-text">Изображение появится здесь</p>
-                <p className="placeholder-hint">Загрузите фото досок для подсчета</p>
+              <div className="flex flex-col items-center justify-center gap-1 text-slate-500 text-center h-full p-4"> {/* Replaced image-placeholder-fixed */}
+                <div className="text-4xl text-slate-400 opacity-60 mb-1">🖼️</div> {/* Replaced placeholder-icon-large */}
+                <p className="text-sm font-medium">Изображение появится здесь</p> {/* Replaced placeholder-text */}
+                <p className="text-xs opacity-80">Загрузите фото досок для подсчета</p> {/* Replaced placeholder-hint */}
               </div>
             )}
           </div>
 
           {/* Полоса загрузки и результаты под изображением */}
-          <div className="analysis-status-bar">
+          {/* Added md:col-start-2 to align with the image column on medium+ screens and w-full for small screens */}
+          <div className="mt-3 min-h-[50px] flex items-center w-full md:col-start-2"> {/* Replaced analysis-status-bar */}
             {analyzing && (
-              <div className="loading-bar-container fade-in">
-                <div className="loading-bar-text">
+              <div className="w-full p-3 bg-slate-100 rounded-lg border border-slate-200 text-center fade-in"> {/* Replaced loading-bar-container */}
+                <div className="text-sm text-slate-700 font-medium mb-2"> {/* Replaced loading-bar-text */}
                   🔢 Подсчитываем доски...
                 </div>
-                <div className="progress-bar-horizontal">
+                <div className="w-full h-2 bg-slate-300 rounded-full overflow-hidden"> {/* Replaced progress-bar-horizontal */}
                   <div
-                    className="progress-fill-horizontal"
+                    className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300 ease-in-out shadow-sm" // Replaced progress-fill-horizontal
                     style={{ width: `${loadingProgress}%` }}
                   ></div>
                 </div>
@@ -367,9 +372,9 @@ const CompactBoardAnalyzer = ({
             )}
 
             {result && !analyzing && (
-              <div className="results-bar-container fade-in">
-                <div className="results-text">
-                  ✅ Обнаружено досок: <strong>{result.wooden_boards?.length || 0}</strong>
+              <div className="w-full p-3 bg-green-50 rounded-lg border border-green-200 text-center fade-in"> {/* Replaced results-bar-container */}
+                <div className="text-sm text-green-700 font-medium"> {/* Replaced results-text */}
+                  ✅ Обнаружено досок: <span className="font-bold">{result.wooden_boards?.length || 0}</span>
                 </div>
               </div>
             )}
