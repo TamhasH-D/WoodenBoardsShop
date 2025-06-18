@@ -83,19 +83,19 @@ api.interceptors.response.use(
 );
 
 // --- Buyer Profile API ---
-export const getMyBuyerProfile = async () => {
-  // TODO: Ensure backend /api/v1/buyers/me/profile handles GET for fetching
+export const getMyBuyerProfile = async (keycloak_id) => {
+  // TODO: Ensure backend /buyer/by-keycloak/{keycloak_id} handles GET for fetching
   // and potentially POST (on a different or same endpoint with logic) for initial creation
   // if a buyer record doesn't exist yet for the authenticated Keycloak user.
   // This function assumes GET is sufficient for now (backend syncs/creates on GET if needed).
   try {
-    console.log('[apiService] Attempting to fetch buyer profile from /api/v1/buyers/me/profile');
+    console.log(`[apiService] Attempting to fetch buyer profile from /buyer/by-keycloak/${keycloak_id}`);
     // Token should be in default headers via updateApiToken called from AuthContext
-    const response = await api.get('/api/v1/buyers/me/profile');
+    const response = await api.get(`/buyer/by-keycloak/${keycloak_id}`);
     console.log('[apiService] Buyer profile fetched successfully:', response.data);
     return response.data;
   } catch (error) {
-    console.error('[apiService] Error fetching buyer profile from /api/v1/buyers/me/profile:', error.response ? error.response.data : error.message);
+    console.error(`[apiService] Error fetching buyer profile from /buyer/by-keycloak/${keycloak_id}:`, error.response ? error.response.data : error.message);
     if (error.response) {
       console.error('[apiService] Error response details:', {
         status: error.response.status,
