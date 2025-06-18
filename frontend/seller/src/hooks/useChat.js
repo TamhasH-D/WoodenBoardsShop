@@ -46,11 +46,11 @@ export const useChat = () => {
       try {
         const profile = await apiService.getSellerProfileByKeycloakId(keycloakId);
         console.log('[useChat Init] Seller profile fetched:', profile);
-        if (profile && profile.data && profile.data.id) { // CORRECTED LINE
+        if (profile && profile.data && profile.data.id) {
           setSellerId(profile.data.id);
-          console.log('[useChat Init] sellerId set to:', profile.data.id); // Ensure this log uses profile.data.id
+          console.log('[useChat Init] sellerId set to:', profile.data.id);
         } else {
-          console.error('[useChat Init] Fetched profile is invalid or missing ID, or data property is missing. Profile object received:', profile); // Adjusted error log
+          console.error('[useChat Init] Fetched profile is invalid or missing ID, or data property is missing. Profile object received:', profile);
           setError('Ошибка загрузки профиля продавца: неверные данные профиля');
         }
       } catch (err) {
@@ -62,13 +62,13 @@ export const useChat = () => {
     initializeSeller();
   }, [keycloakId, setError]);
 
-  // WebSocket message handler
+  // WebSocket message handler for selected threads
   const handleWebSocketMessage = useCallback((data, threadId) => {
-    console.log('[useChat] WebSocket message received:', data);
+    console.log('[useChat] WebSocket message received for selected thread:', data, 'threadId:', threadId);
 
     if (data.type === 'message') {
       if (data.sender_id === sellerId) {
-        console.log('[useChat] Ignoring own message from WebSocket');
+        console.log('[useChat handleWebSocketMessage] Ignoring own message from WebSocket');
         return;
       }
 
@@ -126,7 +126,8 @@ export const useChat = () => {
         }
       }
     }
-  }, [sellerId, notifyNewMessage]);
+  }, [sellerId, notifyNewMessage, setMessages, setThreads, setIsTyping, messagesRef, typingTimeoutRef]);
+
 
   // Load chat threads
   const loadThreads = useCallback(async () => {
@@ -137,11 +138,11 @@ export const useChat = () => {
     console.log(`[useChat loadThreads] Starting for sellerId: ${sellerId}`);
 
     setLoading(true);
-    setError(null); // Reset error before new attempt
+    setError(null);
 
     try {
       console.log(`[useChat loadThreads] Attempting to call apiService.getSellerChats for sellerId: ${sellerId}`);
-      const response = await apiService.getSellerChats(sellerId); // THE CALL
+      const response = await apiService.getSellerChats(sellerId);
       console.log('[useChat loadThreads] Raw response from apiService.getSellerChats:', response);
 
       const threadsData = response && response.data ? response.data : [];
@@ -160,12 +161,13 @@ export const useChat = () => {
     } catch (err) {
       console.error('[useChat loadThreads] CRITICAL: Error during apiService.getSellerChats call or processing:', err);
       setError(err.message || 'Ошибка загрузки чатов');
-      setThreads([]); // Clear threads on error
+      setThreads([]);
     } finally {
       setLoading(false);
       console.log(`[useChat loadThreads] Finished for sellerId: ${sellerId}. Loading: false.`);
     }
   }, [sellerId, setLoading, setError, setThreads]);
+
 
   // Load messages for a thread
   const loadMessages = useCallback(async (threadId) => {
@@ -189,7 +191,8 @@ export const useChat = () => {
     } finally {
       setMessagesLoading(false);
     }
-  }, []); // setError can be added if specific error handling for this is needed
+  }, [setMessages, setMessagesLoading, setError, messagesRef]);
+
 
   // Select thread and connect WebSocket
   const selectThread = useCallback(async (thread) => {
@@ -236,7 +239,12 @@ export const useChat = () => {
     loadMessages,
     notifyConnection,
     setThreads,
+    setSelectedThread,
+    setIsConnected,
+    setIsTyping,
+    setMessages
   ]);
+
 
   // Send message
   const sendMessage = useCallback(async (messageText) => {
@@ -337,6 +345,7 @@ export const useChat = () => {
     }
   }, [selectedThread, sellerId]);
 
+
   // Load threads when seller ID is available
   useEffect(() => {
     if (sellerId) {
@@ -347,69 +356,77 @@ export const useChat = () => {
     }
   }, [sellerId, loadThreads]);
 
+
+  // Handler for global WebSocket messages
+  const handleGlobalMessage = useCallback((data) => {
+    console.log('[useChat handleGlobalMessage] Received data:', data);
+    if (data.type === 'new_thread' && data.thread) {
+      setThreads(prev => {
+        if (prev.some(t => t.id === data.thread.id)) return prev;
+        return [...prev, data.thread].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)); // Sort by most recent
+      });
+    } else if (data.type === 'buyer_message' && data.thread) {
+      setThreads(prev => prev.map(t =>
+        t.id === data.thread.id
+          ? {
+              ...t,
+              last_message: data.message,
+              updated_at: data.timestamp || new Date().toISOString(),
+              unread_count: (selectedThread && selectedThread.id === data.thread.id)
+                              ? t.unread_count // Don't increment if current thread is selected (handled by markAsRead)
+                              : (t.unread_count || 0) + 1
+            }
+          : t
+      ).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))); // Sort by most recent
+
+      const buyerMsg = {
+        id: data.message_id || Date.now(),
+        message: data.message,
+        sender_id: data.sender_id,
+        sender_type: 'buyer',
+        created_at: data.timestamp || new Date().toISOString(),
+        thread_id: data.thread.id,
+        buyer_id: data.sender_id,
+        seller_id: null,
+        is_read_by_buyer: false,
+        is_read_by_seller: false
+      };
+
+      // Update message cache for the thread, regardless of selection
+      const cachedMessages = messagesRef.current.get(data.thread.id) || [];
+      if (!cachedMessages.some(msg => msg.id === buyerMsg.id)) {
+        messagesRef.current.set(data.thread.id, [...cachedMessages, buyerMsg].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
+      }
+
+      // If the message is for a non-selected thread, show a notification
+      if (!(selectedThread && selectedThread.id === data.thread.id) && data.sender_type === 'buyer') {
+        notifyNewMessage('Покупатель', data.message, data.thread.id);
+      }
+    }
+  }, [setThreads, selectedThread, messagesRef, notifyNewMessage]);
+
+
   // Connect to global WebSocket channel for new threads and buyer messages
   useEffect(() => {
     if (sellerId) {
-      console.log('[useChat] Connecting to Global WebSocket channel for new threads');
-      const globalHandler = (data) => {
-        if (data.type === 'new_thread' && data.thread) {
-          setThreads(prev => {
-            if (prev.some(t => t.id === data.thread.id)) return prev;
-            return [...prev, data.thread];
-          });
-        } else if (data.type === 'buyer_message' && data.thread) {
-          setThreads(prev => prev.map(t =>
-            t.id === data.thread.id
-              ? {
-                  ...t,
-                  last_message: data.message,
-                  updated_at: data.timestamp || new Date().toISOString(),
-                  unread_count: (t.unread_count || 0) + 1
-                }
-              : t
-          ));
-          const buyerMsg = {
-            id: data.message_id || Date.now(),
-            message: data.message,
-            sender_id: data.sender_id,
-            sender_type: 'buyer',
-            created_at: data.timestamp || new Date().toISOString(),
-            thread_id: data.thread.id,
-            buyer_id: data.sender_id,
-            seller_id: null,
-            is_read_by_buyer: false,
-            is_read_by_seller: false
-          };
+      const globalChannelId = `global_${sellerId}`;
+      console.log(`[useChat] Setting up Global WebSocket channel: ${globalChannelId}`);
 
-          if (selectedThread && selectedThread.id === data.thread.id) {
-            console.log('[useChat] Global handler ignoring buyer_message for selected thread, as it will be handled by specific thread WS.');
-            const currentMessagesForSelectedThread = messagesRef.current.get(data.thread.id) || [];
-            if (!currentMessagesForSelectedThread.some(msg => msg.id === buyerMsg.id)) {
-                messagesRef.current.set(data.thread.id, [...currentMessagesForSelectedThread, buyerMsg].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
-            }
-          } else {
-            const cachedForOtherThread = messagesRef.current.get(data.thread.id) || [];
-            if (!cachedForOtherThread.some(msg => msg.id === buyerMsg.id)) {
-              messagesRef.current.set(data.thread.id, [...cachedForOtherThread, buyerMsg].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
-            }
-            if (data.sender_type === 'buyer') {
-              notifyNewMessage('Покупатель', data.message, data.thread.id);
-            }
-          }
-        }
-      };
-      websocketManager.addMessageHandler(`global_${sellerId}`, globalHandler);
-      websocketManager.connect(`global_${sellerId}`, sellerId, 'seller', (connected) => {
-        console.log(`[useChat] Global WebSocket connection status:`, connected);
+      websocketManager.addMessageHandler(globalChannelId, handleGlobalMessage);
+      websocketManager.connect(globalChannelId, sellerId, 'seller', (connected) => {
+        console.log(`[useChat] Global WebSocket (${globalChannelId}) connection status:`, connected);
+        // Optionally, refresh threads on successful global connection if desired
+        // if (connected) loadThreads();
       });
+
       return () => {
-        if (sellerId) {
-          websocketManager.removeMessageHandler(`global_${sellerId}`, globalHandler);
-          websocketManager.disconnect(`global_${sellerId}`);
-        }
+        console.log(`[useChat] Cleaning up Global WebSocket channel: ${globalChannelId}`);
+        websocketManager.removeMessageHandler(globalChannelId, handleGlobalMessage);
+        websocketManager.disconnect(globalChannelId);
       };
     }
-  }, [sellerId, selectedThread, notifyNewMessage, setThreads]);
+  }, [sellerId, handleGlobalMessage]); // Dependencies are sellerId and the memoized handleGlobalMessage
+
 
   // Cleanup on unmount
   useEffect(() => {
