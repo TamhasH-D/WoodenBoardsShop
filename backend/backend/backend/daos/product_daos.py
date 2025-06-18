@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from backend.daos.base_daos import BaseDAO, PaginationType
 from backend.dtos import OffsetPaginationMetadata, OffsetResults, PaginationParamsSortBy
 from backend.dtos.product_dtos import ProductFilterDTO, ProductInputDTO, ProductUpdateDTO
+from backend.exceptions import DuplicateEntryError  # Added
 from backend.models.product_models import Product
 
 
@@ -18,6 +19,28 @@ class ProductDAO(
     ]
 ):
     """Product DAO."""
+
+    async def create(  # Overridden method
+        self,
+        input_dto: ProductInputDTO,
+    ) -> Product:
+        """
+        Create and return a new product, checking for title uniqueness per seller.
+        """
+        title = input_dto.title
+        seller_id = input_dto.seller_id
+
+        existing_product = await self.filter_first(
+            self.model.seller_id == seller_id,
+            sa.func.lower(self.model.title) == sa.func.lower(title),
+        )
+
+        if existing_product:
+            raise DuplicateEntryError(
+                "A product with this title already exists for this seller."
+            )
+
+        return await super().create(input_dto)
 
     def _apply_advanced_filters(
         self,

@@ -1,10 +1,12 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request  # Request Added
+from fastapi.responses import JSONResponse  # JSONResponse Added
 from loguru import logger
 
 from backend.db import db_lifetime
+from backend.exceptions import DuplicateEntryError  # DuplicateEntryError Added
 from backend.middleware import add_middleware
 from backend.routes import base_router
 from backend.routes.websocket_routes import router as websocket_router
@@ -37,4 +39,13 @@ def get_app() -> FastAPI:
     add_middleware(app)
     app.include_router(base_router)
     app.include_router(websocket_router)  # WebSocket router на корневом уровне
+
+    # Add exception handler for DuplicateEntryError
+    @app.exception_handler(DuplicateEntryError)
+    async def duplicate_entry_exception_handler(request: Request, exc: DuplicateEntryError):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+        )
+
     return app

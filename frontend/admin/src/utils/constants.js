@@ -42,6 +42,8 @@ export const ERROR_MESSAGES = {
   FORBIDDEN: 'Доступ запрещен.',
   NOT_FOUND: 'Ресурс не найден.',
   TIMEOUT: 'Превышено время ожидания.',
+  CONFLICT_ERROR: 'Конфликт. Ресурс уже может существовать или данные нарушают ограничения уникальности.', // Added
+  UNKNOWN_ERROR: 'Произошла неизвестная ошибка.', // Added for completeness, as it was used in api.js
 };
 
 // Success Messages (Russian)

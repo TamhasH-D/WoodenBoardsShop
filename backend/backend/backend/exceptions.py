@@ -26,6 +26,14 @@ class Http404(HTTPException):
         self.detail = detail
 
 
+class DuplicateEntryError(HTTPException):
+    """Conflict 409."""
+
+    def __init__(self, detail: str = "Entry already exists."):
+        self.status_code = status.HTTP_409_CONFLICT
+        self.detail = detail
+
+
 class Http500(HTTPException):
     """Internal server error 500."""
 

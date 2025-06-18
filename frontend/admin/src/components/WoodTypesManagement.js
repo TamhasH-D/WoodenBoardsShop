@@ -38,6 +38,7 @@ const WoodTypesManagement = React.memo(() => {
   const [page, setPage] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showAddPriceForm, setShowAddPriceForm] = useState(false);
+  const [formError, setFormError] = useState(null); // Added state for form error
 
   // Toast notifications
   const toast = useToastContext();
@@ -85,37 +86,45 @@ const WoodTypesManagement = React.memo(() => {
 
   // Wood type form handlers
   const handleAddWoodType = async (data) => {
+    setFormError(null); // Clear previous form errors
     try {
       await toast.promise(
         mutate(() => apiService.createWoodType(data)),
         {
           loading: 'Создание типа древесины...',
           success: 'Тип древесины успешно создан',
-          error: 'Ошибка при создании типа древесины',
+          error: (err) => err.userMessage || 'Ошибка при создании типа древесины', // Use userMessage from error
         }
       );
 
       woodTypeForm.reset();
       setShowAddForm(false);
       refetchTypes();
-      // Refresh all wood types for dropdown
+      // Refresh all wood types for dropdown (consider a less disruptive update)
+      // This might be better handled by refetching allWoodTypes or managing state globally
       setTimeout(() => {
-        window.location.reload();
+        // A more targeted refetch would be:
+        // if (allWoodTypesApiFunction) allWoodTypesApiFunction.refetch();
+        // For now, keeping existing logic.
+        window.location.reload(); // Potentially disruptive, consider alternatives
       }, 1000);
     } catch (error) {
-      // Error handled by toast.promise
+      setFormError(error.userMessage || 'An unexpected error occurred.');
+      // Error already handled by toast.promise if it throws, this catches other potential issues
+      // or if toast.promise itself fails or doesn't throw as expected.
     }
   };
 
   // Price form handlers
   const handleAddPrice = async (data) => {
+    setFormError(null); // Clear previous form errors
     try {
       await toast.promise(
         mutate(() => apiService.createWoodTypePrice(data)),
         {
           loading: 'Добавление цены...',
           success: 'Цена успешно добавлена',
-          error: 'Ошибка при добавлении цены',
+          error: (err) => err.userMessage || 'Ошибка при добавлении цены', // Use userMessage from error
         }
       );
 
@@ -123,7 +132,7 @@ const WoodTypesManagement = React.memo(() => {
       setShowAddPriceForm(false);
       refetchPrices();
     } catch (error) {
-      // Error handled by toast.promise
+      setFormError(error.userMessage || 'An unexpected error occurred.');
     }
   };
 
@@ -134,6 +143,7 @@ const WoodTypesManagement = React.memo(() => {
         refetchTypes();
       } catch (error) {
         console.error('Delete failed:', error);
+        toast.error(error.userMessage || 'Failed to delete wood type');
       }
     }
   };
@@ -145,6 +155,7 @@ const WoodTypesManagement = React.memo(() => {
         refetchPrices();
       } catch (error) {
         console.error('Delete failed:', error);
+        toast.error(error.userMessage || 'Failed to delete price');
       }
     }
   };
@@ -153,6 +164,8 @@ const WoodTypesManagement = React.memo(() => {
   // const currentData = activeTab === 'types' ? woodTypes : prices;
   // const currentLoading = activeTab === 'types' ? typesLoading : pricesLoading;
   // const currentError = activeTab === 'types' ? typesError : pricesError;
+  // The mutationError and success states seem unused or part of a different hook pattern.
+  // For this task, we are focusing on formError.
 
   return (
     <div>
@@ -177,28 +190,17 @@ const WoodTypesManagement = React.memo(() => {
         </button>
       </div>
 
-      {/* Error and Success Messages */}
-      {mutationError && (
+      {/* These global error/success messages might be for other operations (e.g., delete) */}
+      {/* {mutationError && (
         <div className="error mb-4">
           <strong>Operation failed:</strong> {mutationError}
-          <br />
-          <small>
-            This may be due to validation errors. Please check that all required fields are filled correctly.
-            {mutationError.includes('422') && (
-              <span>
-                <br />
-                <strong>Validation Error (422):</strong> The server rejected the request due to invalid data format.
-              </span>
-            )}
-          </small>
         </div>
       )}
-
       {success && (
         <div className="success mb-4">
           <strong>Success:</strong> Operation completed successfully!
         </div>
-      )}
+      )} */}
 
       {activeTab === 'types' && (
         <div className="card mb-6">
@@ -212,7 +214,7 @@ const WoodTypesManagement = React.memo(() => {
             </div>
             <div className="flex gap-4">
               <Button
-                onClick={() => setShowAddForm(!showAddForm)}
+                onClick={() => { setShowAddForm(!showAddForm); setFormError(null); woodTypeForm.reset(); }}
                 variant={showAddForm ? 'secondary' : 'primary'}
               >
                 {showAddForm ? 'Отмена' : 'Добавить тип древесины'}
@@ -252,12 +254,15 @@ const WoodTypesManagement = React.memo(() => {
                   {...woodTypeForm.register('description')}
                 />
 
+                {/* Display form-specific error */}
+                {formError && <p className="text-red-500 text-sm mt-2">{formError}</p>}
+
                 <div className="flex gap-4 pt-4">
                   <Button
                     type="submit"
                     variant="primary"
                     loading={mutating}
-                    disabled={!woodTypeForm.formState.isValid}
+                    disabled={!woodTypeForm.formState.isValid || mutating}
                   >
                     {mutating ? 'Создание...' : 'Создать тип древесины'}
                   </Button>
@@ -267,6 +272,7 @@ const WoodTypesManagement = React.memo(() => {
                     onClick={() => {
                       setShowAddForm(false);
                       woodTypeForm.reset();
+                      setFormError(null); // Clear error on cancel
                     }}
                   >
                     Отмена
@@ -280,7 +286,7 @@ const WoodTypesManagement = React.memo(() => {
           
           {typesError && (
             <div className="error">
-              <strong>Failed to load wood types:</strong> {typesError}
+              <strong>Failed to load wood types:</strong> {typesError.userMessage || typesError.message || 'Unknown error'}
             </div>
           )}
 
@@ -342,15 +348,17 @@ const WoodTypesManagement = React.memo(() => {
               </div>
             </div>
           ) : (
-            <div className="text-center">
-              <p>No wood types found.</p>
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="btn btn-primary mt-4"
-              >
-                Add Your First Wood Type
-              </button>
-            </div>
+            !typesLoading && (
+              <div className="text-center">
+                <p>No wood types found.</p>
+                <button
+                  onClick={() => { setShowAddForm(true); setFormError(null); woodTypeForm.reset(); }}
+                  className="btn btn-primary mt-4"
+                >
+                  Add Your First Wood Type
+                </button>
+              </div>
+            )
           )}
         </div>
       )}
@@ -367,7 +375,7 @@ const WoodTypesManagement = React.memo(() => {
             </div>
             <div className="flex gap-4">
               <Button
-                onClick={() => setShowAddPriceForm(!showAddPriceForm)}
+                onClick={() => { setShowAddPriceForm(!showAddPriceForm); setFormError(null); priceForm.reset(); }}
                 variant={showAddPriceForm ? 'secondary' : 'primary'}
               >
                 {showAddPriceForm ? 'Отмена' : 'Добавить цену'}
@@ -408,15 +416,16 @@ const WoodTypesManagement = React.memo(() => {
 
                 {allWoodTypesError && (
                   <div className="text-sm text-red-600">
-                    Ошибка загрузки типов древесины: {allWoodTypesError}
+                    Ошибка загрузки типов древесины: {allWoodTypesError.userMessage || allWoodTypesError.message}
                   </div>
                 )}
 
-                {allWoodTypes?.data?.length > 0 && (
+                {/* Removed the success message for dropdown loading as it's less critical than errors */}
+                {/* {allWoodTypes?.data?.length > 0 && (
                   <div className="text-sm text-green-600">
                     ✅ Доступно {allWoodTypes.data.length} типов древесины
                   </div>
-                )}
+                )} */}
 
                 <FormField
                   label="Цена за м³ (₽)"
@@ -430,12 +439,15 @@ const WoodTypesManagement = React.memo(() => {
                   {...priceForm.register('price_per_m3', { valueAsNumber: true })}
                 />
 
+                {/* Display form-specific error */}
+                {formError && <p className="text-red-500 text-sm mt-2">{formError}</p>}
+
                 <div className="flex gap-4 pt-4">
                   <Button
                     type="submit"
                     variant="primary"
                     loading={mutating}
-                    disabled={!priceForm.formState.isValid}
+                    disabled={!priceForm.formState.isValid || mutating}
                   >
                     {mutating ? 'Добавление...' : 'Добавить цену'}
                   </Button>
@@ -445,6 +457,7 @@ const WoodTypesManagement = React.memo(() => {
                     onClick={() => {
                       setShowAddPriceForm(false);
                       priceForm.reset();
+                      setFormError(null); // Clear error on cancel
                     }}
                   >
                     Отмена
@@ -458,7 +471,7 @@ const WoodTypesManagement = React.memo(() => {
           
           {pricesError && (
             <div className="error">
-              <strong>Failed to load prices:</strong> {pricesError}
+              <strong>Failed to load prices:</strong> {pricesError.userMessage || pricesError.message || 'Unknown error'}
             </div>
           )}
 
@@ -480,8 +493,13 @@ const WoodTypesManagement = React.memo(() => {
                       <td>
                         <strong>{price.id.substring(0, 8)}...</strong>
                       </td>
-                      <td>{price.wood_type_id?.substring(0, 8)}...</td>
-                      <td>€{price.price_per_m3?.toFixed(2) || 0}</td>
+                      {/* Find wood type name from allWoodTypes for better display */}
+                      <td>
+                        {allWoodTypes?.data?.find(wt => wt.id === price.wood_type_id)?.neme ||
+                         allWoodTypes?.data?.find(wt => wt.id === price.wood_type_id)?.name ||
+                         price.wood_type_id?.substring(0, 8) + '...'}
+                      </td>
+                      <td>₽{price.price_per_m3?.toFixed(2) || '0.00'}</td> {/* Assuming Rubles from schema */}
                       <td>
                         {new Date(price.created_at).toLocaleDateString()}
                       </td>
@@ -520,9 +538,17 @@ const WoodTypesManagement = React.memo(() => {
               </div>
             </div>
           ) : (
-            <div className="text-center">
-              <p>No prices found.</p>
-            </div>
+            !pricesLoading && (
+              <div className="text-center">
+                <p>No prices found.</p>
+                 <button
+                  onClick={() => { setShowAddPriceForm(true); setFormError(null); priceForm.reset();}}
+                  className="btn btn-primary mt-4"
+                >
+                  Add Your First Price
+                </button>
+              </div>
+            )
           )}
         </div>
       )}

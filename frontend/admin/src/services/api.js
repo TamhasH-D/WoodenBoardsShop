@@ -78,31 +78,40 @@ api.interceptors.response.use(
     console.error(`[${config?.requestId}] API Error: ${error.response?.status || 'Network'} ${config?.url} (${duration}ms)`, error.response?.data);
 
     // Enhanced error handling with user-friendly messages
-    let userMessage = ERROR_MESSAGES.UNKNOWN_ERROR;
+    let userMessage = ERROR_MESSAGES.UNKNOWN_ERROR; // Default to UNKNOWN_ERROR
 
     if (error.code === 'ECONNABORTED') {
       userMessage = ERROR_MESSAGES.TIMEOUT;
     } else if (error.code === 'ERR_NETWORK') {
       userMessage = ERROR_MESSAGES.NETWORK_ERROR;
     } else if (error.response) {
-      switch (error.response.status) {
-        case 400:
-          userMessage = ERROR_MESSAGES.VALIDATION_ERROR;
-          break;
-        case 401:
-          userMessage = ERROR_MESSAGES.UNAUTHORIZED;
-          break;
-        case 404:
-          userMessage = ERROR_MESSAGES.NOT_FOUND;
-          break;
-        case 500:
-        case 502:
-        case 503:
-        case 504:
-          userMessage = ERROR_MESSAGES.SERVER_ERROR;
-          break;
-        default:
-          userMessage = error.response.data?.message || ERROR_MESSAGES.UNKNOWN_ERROR;
+      // Check for 409 Conflict first
+      if (error.response.status === 409) {
+        userMessage = error.response.data?.detail || ERROR_MESSAGES.CONFLICT_ERROR;
+      } else { // Existing switch case for other statuses
+        switch (error.response.status) {
+          case 400:
+            userMessage = error.response.data?.detail || ERROR_MESSAGES.VALIDATION_ERROR; // Prefer detail if available
+            break;
+          case 401:
+            userMessage = ERROR_MESSAGES.UNAUTHORIZED;
+            break;
+          case 403: // Added for completeness as it's a common error
+            userMessage = ERROR_MESSAGES.FORBIDDEN;
+            break;
+          case 404:
+            userMessage = ERROR_MESSAGES.NOT_FOUND;
+            break;
+          case 500:
+          case 502:
+          case 503:
+          case 504:
+            userMessage = ERROR_MESSAGES.SERVER_ERROR;
+            break;
+          default:
+            // Use detail if available, then message, then unknown
+            userMessage = error.response.data?.detail || error.response.data?.message || ERROR_MESSAGES.UNKNOWN_ERROR;
+        }
       }
     }
 

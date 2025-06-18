@@ -4,6 +4,7 @@ from uuid import UUID
 
 import sqlalchemy as sa
 from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError  # Added
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from backend.db import Base
@@ -13,6 +14,7 @@ from backend.dtos import (
     PaginationParams,
     PaginationParamsSortBy,
 )
+from backend.exceptions import DuplicateEntryError  # Added
 
 PaginationType = Union[PaginationParams, PaginationParamsSortBy]
 QueryType = Union[sa.Select[Any], sa.Update, sa.Delete]
@@ -135,13 +137,27 @@ class BaseDAO(Generic[Model, InputDTO, UpdateDTO]):
     async def create(
         self,
         input_dto: InputDTO,
+        unique_check_params: dict[str, Any] | None = None,  # Modified
     ) -> Model:
         """Create and return a new record."""
+        # Added unique check
+        if unique_check_params:
+            existing_record = await self.filter_first(**unique_check_params)
+            if existing_record:
+                raise DuplicateEntryError("An entry with these details already exists.")
+
         record = self.model(
             **input_dto.model_dump(),
         )
-        self.session.add(record)
-        await self.session.flush()
+        try:  # Added try-except block
+            self.session.add(record)
+            await self.session.flush()
+        except IntegrityError as e:
+            # Consider logging the original error e for debugging purposes
+            # For example: logger.error(f"Database integrity violation: {e}")
+            raise DuplicateEntryError(
+                "Database integrity violation: A record with conflicting unique values already exists."
+            ) from e
         return record
 
     async def filter(
