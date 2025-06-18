@@ -27,38 +27,30 @@ function Chats() {
     refreshThreads();
   }, [refreshThreads]);
 
-  // Poll for new threads/messages every 5 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      console.log("Polling refreshThreads");
-      refreshThreads();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [refreshThreads]);
+  // Polling useEffect has been removed.
 
   useEffect(() => {
     console.log("Chat connection status:", isConnected);
   }, [isConnected]);
-  
+
   useEffect(() => {
     if (isConnected) {
       refreshThreads();
     }
   }, [isConnected, refreshThreads]);
-  
+
   const handleThreadSelect = (thread) => {
     selectThread(thread);
   };
 
   const handleSendMessage = async (messageText) => {
     const success = await sendMessage(messageText);
-    if (success) {
-      // Refresh threads to load the latest messages.
-      refreshThreads();
-    } else {
-      // Handle error - could show toast notification
-      console.error('Failed to send message');
+    if (!success) {
+      // Handle error - could show toast notification or rely on error state from useChat
+      // The error state is set within useChat's sendMessage if it fails.
+      console.error('Failed to send message (error should be set in useChat state)');
     }
+    // No explicit refreshThreads() here; rely on optimistic update and WebSocket.
   };
 
   const handleTyping = (isTyping) => {

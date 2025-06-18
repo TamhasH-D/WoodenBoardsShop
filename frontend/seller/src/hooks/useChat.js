@@ -130,7 +130,7 @@ export const useChat = () => {
         }
       }
     }
-  }, [sellerId]);
+  }, [sellerId, notifyNewMessage]); // Added notifyNewMessage
 
   // Load chat threads
   const loadThreads = useCallback(async () => {
@@ -205,7 +205,8 @@ export const useChat = () => {
     websocketManager.connect(thread.id, sellerId, 'seller', (connected) => {
       setIsConnected(connected);
       // Notify connection status change
-      if (selectedThread?.id === thread.id) {
+      // selectedThread has been updated to `thread` prior to this callback.
+      if (thread) { // Check if current thread (which is `thread`) is not null
         notifyConnection(connected);
       }
     });
@@ -222,8 +223,17 @@ export const useChat = () => {
       );
     } catch (err) {
       console.error('Failed to mark messages as read:', err);
+      // Optionally set an error state here if needed
     }
-  }, [sellerId, selectedThread, handleWebSocketMessage, loadMessages]);
+  }, [
+    sellerId,
+    selectedThread,
+    handleWebSocketMessage,
+    loadMessages,
+    notifyConnection, // Added
+    setThreads,       // Added
+    // setIsConnected, setMessages, setSelectedThread, setIsTyping are stable setters
+  ]);
 
   // Send message
   const sendMessage = useCallback(async (messageText) => {
@@ -301,7 +311,7 @@ export const useChat = () => {
       notifyError(errorMessage);
       return false;
     }
-  }, [selectedThread, sellerId, notifyError, notifyMessageSent]);
+  }, [selectedThread, sellerId, notifyError, notifyMessageSent, selectThread, setError]);
 
   // Send typing indicator
   const sendTypingIndicator = useCallback((isTyping) => {
@@ -339,11 +349,11 @@ export const useChat = () => {
           // Update thread with buyer message info
           setThreads(prev => prev.map(t =>
             t.id === data.thread.id
-              ? { 
-                  ...t, 
-                  last_message: data.message, 
-                  updated_at: data.timestamp || new Date().toISOString(), 
-                  unread_count: (t.unread_count || 0) + 1 
+              ? {
+                  ...t,
+                  last_message: data.message,
+                  updated_at: data.timestamp || new Date().toISOString(),
+                  unread_count: (t.unread_count || 0) + 1
                 }
               : t
           ));
@@ -356,21 +366,46 @@ export const useChat = () => {
             created_at: data.timestamp || new Date().toISOString(),
             thread_id: data.thread.id,
             buyer_id: data.sender_id,
-            seller_id: null,
-            is_read_by_buyer: false,
-            is_read_by_seller: false
+            seller_id: null, // Seller ID is null for buyer messages
+            is_read_by_buyer: false, // Buyer just sent it
+            is_read_by_seller: false // Seller hasn't read it yet
           };
-          // Update messages state if the thread is selected
+
+          // If this message is for the currently selected thread,
+          // handleWebSocketMessage (connected to the specific thread's WebSocket)
+          // will take care of updating messages, thread details, and notifications.
+          // So, the global handler should only process it if it's for a non-selected thread.
           if (selectedThread && selectedThread.id === data.thread.id) {
-            setMessages(prev => {
-              if (prev.some(msg => msg.id === buyerMsg.id)) return prev;
-              return [...prev, buyerMsg].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-            });
-          }
-          // Update messages cache regardless of selection
-          const cached = messagesRef.current.get(data.thread.id) || [];
-          if (!cached.some(msg => msg.id === buyerMsg.id)) {
-            messagesRef.current.set(data.thread.id, [...cached, buyerMsg].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
+            console.log('[useChat] Global handler ignoring buyer_message for selected thread, as it will be handled by specific thread WS.');
+            // We still need to update the message cache for the selected thread if the global handler gets it first.
+            // handleWebSocketMessage also updates messagesRef.current upon updating setMessages.
+            // To ensure robustness, let's update cache here too, guarded by a duplicate check.
+            const currentMessagesForSelectedThread = messagesRef.current.get(data.thread.id) || [];
+            if (!currentMessagesForSelectedThread.some(msg => msg.id === buyerMsg.id)) {
+                messagesRef.current.set(data.thread.id, [...currentMessagesForSelectedThread, buyerMsg].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
+            }
+          } else {
+            // Message is for a non-selected thread
+            setThreads(prev => prev.map(t =>
+              t.id === data.thread.id
+                ? {
+                    ...t,
+                    last_message: data.message,
+                    updated_at: data.timestamp || new Date().toISOString(),
+                    unread_count: (t.unread_count || 0) + 1
+                  }
+                : t
+            ));
+
+            // Update messages cache for this non-selected thread
+            const cachedForOtherThread = messagesRef.current.get(data.thread.id) || [];
+            if (!cachedForOtherThread.some(msg => msg.id === buyerMsg.id)) {
+              messagesRef.current.set(data.thread.id, [...cachedForOtherThread, buyerMsg].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
+            }
+
+            if (data.sender_type === 'buyer') {
+              notifyNewMessage('Покупатель', data.message, data.thread.id);
+            }
           }
         }
       });
@@ -384,87 +419,7 @@ export const useChat = () => {
         websocketManager.disconnect(`global_${sellerId}`);
       }
     };
-  }, [sellerId]);
-
-  // Connect to WebSocket for all threads when threads are loaded
-  useEffect(() => {
-    if (sellerId && threads.length > 0) {
-      console.log('[useChat] Connecting to WebSocket for all threads:', threads.length);
-
-      // Подключаемся ко всем чатам для получения уведомлений
-      threads.forEach(thread => {
-        if (!websocketManager.isConnected(thread.id)) {
-          console.log(`[useChat] Connecting to WebSocket for thread ${thread.id}`);
-
-          // Добавляем обработчик сообщений для каждого треда
-          websocketManager.addMessageHandler(thread.id, (data, threadId) => {
-            console.log(`[useChat] Global message received for thread ${threadId}:`, data);
-
-            if (data.type === 'message') {
-              // Игнорируем собственные сообщения
-              if (data.sender_id === sellerId) {
-                console.log('[useChat] Ignoring own message from WebSocket');
-                return;
-              }
-
-              const newMessage = {
-                id: data.message_id || Date.now(),
-                message: data.message,
-                sender_id: data.sender_id,
-                sender_type: data.sender_type,
-                created_at: data.timestamp || new Date().toISOString(),
-                thread_id: threadId,
-                buyer_id: data.sender_type === 'buyer' ? data.sender_id : null,
-                seller_id: data.sender_type === 'seller' ? data.sender_id : null,
-                is_read_by_buyer: data.sender_type === 'buyer',
-                is_read_by_seller: data.sender_type === 'seller'
-              };
-
-              // Обновляем сообщения только если это выбранный тред
-              if (selectedThread?.id === threadId) {
-                setMessages(prevMessages => {
-                  const exists = prevMessages.some(msg => msg.id === newMessage.id);
-                  if (exists) return prevMessages;
-
-                  const updated = [...prevMessages, newMessage].sort(
-                    (a, b) => new Date(a.created_at) - new Date(b.created_at)
-                  );
-
-                  return updated;
-                });
-              }
-
-              // Обновляем список тредов с новым сообщением
-              setThreads(prevThreads =>
-                prevThreads.map(t =>
-                  t.id === threadId
-                    ? {
-                        ...t,
-                        last_message: newMessage.message,
-                        updated_at: newMessage.created_at,
-                        unread_count: newMessage.sender_type === 'buyer'
-                          ? (t.unread_count || 0) + 1
-                          : t.unread_count
-                      }
-                    : t
-                )
-              );
-
-              // Показываем уведомление для новых сообщений от покупателя
-              if (newMessage.sender_type === 'buyer') {
-                notifyNewMessage('Покупатель', newMessage.message, threadId);
-              }
-            }
-          });
-
-          // Подключаемся к WebSocket
-          websocketManager.connect(thread.id, sellerId, 'seller', (connected) => {
-            console.log(`[useChat] WebSocket connection status for thread ${thread.id}:`, connected);
-          });
-        }
-      });
-    }
-  }, [sellerId, threads, selectedThread, notifyNewMessage]);
+  }, [sellerId, selectedThread, notifyNewMessage]); // Added selectedThread, notifyNewMessage
 
   // Cleanup on unmount
   useEffect(() => {
