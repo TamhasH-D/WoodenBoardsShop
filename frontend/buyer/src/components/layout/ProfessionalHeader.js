@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import KeycloakService from '../../../services/keycloak'; // Adjusted path
+import KeycloakService from '../../services/keycloak'; // Corrected path
 
 const ProfessionalHeader = ({ isAuthenticated }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
