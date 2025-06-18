@@ -305,7 +305,7 @@ async def get_product_boards_stats(
     # Calculate averages (filter out None values)
     heights = [board.height for board in boards if board.height is not None and board.height > 0]
     widths = [board.width for board in boards if board.width is not None and board.width > 0]
-    lengths = [board.lenght for board in boards if board.lenght is not None and board.lenght > 0]  # Note: lenght with typo
+    lengths = [board.length for board in boards if board.length is not None and board.length > 0]  # Corrected
 
     average_height = sum(heights) / len(heights) if heights else (product.board_height / 1000 if product.board_height else None)
     average_width = sum(widths) / len(widths) if widths else None
@@ -314,8 +314,8 @@ async def get_product_boards_stats(
     # Calculate total volume (height * width * length for each board)
     total_volume = 0.0
     for board in boards:
-        if board.height and board.width and board.lenght and all(x > 0 for x in [board.height, board.width, board.lenght]):
-            board_volume = board.height * board.width * board.lenght
+        if board.height and board.width and board.length and all(x > 0 for x in [board.height, board.width, board.length]): # Corrected
+            board_volume = board.height * board.width * board.length # Corrected
             total_volume += board_volume
 
     return DataResponse(data={

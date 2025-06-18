@@ -17,7 +17,7 @@ class WoodenBoard(Base):
     )
     height: Mapped[float] = mapped_column(sa.Float)
     width: Mapped[float] = mapped_column(sa.Float)
-    lenght: Mapped[float] = mapped_column(sa.Float)
+    length: Mapped[float] = mapped_column(sa.Float)
     image_id: Mapped[UUID] = mapped_column(
         sa.UUID(as_uuid=True), sa.ForeignKey("image.id", ondelete="CASCADE"), index=True
     )

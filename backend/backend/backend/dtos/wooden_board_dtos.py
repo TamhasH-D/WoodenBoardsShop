@@ -11,7 +11,7 @@ class WoodenBoardDTO(BaseOrmModel):
     id: UUID
     height: float
     width: float
-    lenght: float
+    length: float
     image_id: UUID
 
 
@@ -21,7 +21,7 @@ class WoodenBoardInputDTO(BaseModel):
     id: UUID
     height: float
     width: float
-    lenght: float
+    length: float
     image_id: UUID
 
 
@@ -30,5 +30,5 @@ class WoodenBoardUpdateDTO(BaseModel):
 
     height: float | None = None
     width: float | None = None
-    lenght: float | None = None
+    length: float | None = None
     image_id: UUID | None = None

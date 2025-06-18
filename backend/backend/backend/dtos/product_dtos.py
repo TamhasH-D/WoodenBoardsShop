@@ -1,9 +1,11 @@
 from datetime import datetime
 from uuid import UUID
+from typing import List, Optional # Added/Ensured
 
 from pydantic import BaseModel, Field
 
 from backend.dtos import BaseOrmModel
+from .image_dtos import ImageDTO # Added
 
 
 class ProductDTO(BaseOrmModel):
@@ -20,6 +22,7 @@ class ProductDTO(BaseOrmModel):
     updated_at: datetime
     seller_id: UUID
     wood_type_id: UUID
+    images: Optional[List[ImageDTO]] = None # New field
 
 
 class ProductInputDTO(BaseModel):

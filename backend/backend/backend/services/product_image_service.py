@@ -202,7 +202,7 @@ class ProductImageService:
                     id=uuid4(),
                     height=board_data.get("height", product_data.board_height),
                     width=board_data.get("width", 0.0),
-                    lenght=board_data.get("length", product_data.board_length),
+                    length=board_data.get("length", product_data.board_length),
                     image_id=image_id,
                 )
                 await daos.wooden_board.create(board_dto)
@@ -323,7 +323,7 @@ class ProductImageService:
                         id=uuid4(),
                         height=board_data.get("height", product_data.board_height or 50.0),
                         width=board_data.get("width", 0.0),
-                        lenght=board_data.get("length", product_data.board_length or 1000.0),
+                        length=board_data.get("length", product_data.board_length or 1000.0),
                         image_id=new_image_id,
                     )
                     await daos.wooden_board.create(board_dto)
