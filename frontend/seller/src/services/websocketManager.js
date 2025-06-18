@@ -1,6 +1,5 @@
 /**
- * WebSocket менеджер (Seller Frontend)
- * Поддерживает соединения для чатов и глобальных уведомлений продавца.
+ * WebSocket менеджер для чата (Seller Frontend)
  */
 
 // WebSocket состояния
@@ -11,260 +10,261 @@ export const WS_STATES = {
   CLOSED: 3
 };
 
-// Типы сообщений (могут быть расширены для глобальных уведомлений)
+// Типы сообщений
 export const WS_MESSAGE_TYPES = {
-  // Chat specific
   MESSAGE: 'message',
   TYPING: 'typing',
   USER_JOINED: 'user_joined',
   USER_LEFT: 'user_left',
-  // Global/Shared
   PING: 'ping',
   PONG: 'pong',
-  ERROR: 'error',
-  // Seller global notifications (примеры)
-  NEW_CHAT_THREAD: 'new_chat_thread',
-  NEW_CHAT_MESSAGE: 'new_chat_message', // Уведомление о новом сообщении в существующем треде
-  NEW_ORDER: 'new_order',
-  // другие типы глобальных уведомлений...
-};
-
-const getWsBaseUrl = () => {
-  const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-  if (apiBaseUrl.startsWith('https://')) {
-    return apiBaseUrl.replace('https://', 'wss://');
-  }
-  if (apiBaseUrl.startsWith('http://')) {
-    return apiBaseUrl.replace('http://', 'ws://');
-  }
-  return `ws://${apiBaseUrl}`; // Fallback
+  ERROR: 'error'
 };
 
 /**
  * Получить WebSocket URL для чата
  */
 export const getChatWebSocketUrl = (threadId, userId, userType) => {
-  const wsBaseUrl = getWsBaseUrl();
-  return `${wsBaseUrl}/ws/chat/${threadId}?user_id=${userId}&user_type=${userType}`;
-};
+  const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
-/**
- * Получить WebSocket URL для глобальных уведомлений продавца
- */
-export const getSellerNotificationsWebSocketUrl = (sellerId) => {
-  const wsBaseUrl = getWsBaseUrl();
-  return `${wsBaseUrl}/ws/seller/${sellerId}/notifications`;
+  // Правильное преобразование HTTP/HTTPS в WS/WSS
+  let wsBaseUrl;
+  if (apiBaseUrl.startsWith('https://')) {
+    wsBaseUrl = apiBaseUrl.replace('https://', 'wss://');
+  } else if (apiBaseUrl.startsWith('http://')) {
+    wsBaseUrl = apiBaseUrl.replace('http://', 'ws://');
+  } else {
+    // Fallback для случаев без протокола
+    wsBaseUrl = `ws://${apiBaseUrl}`;
+  }
+
+  return `${wsBaseUrl}/ws/chat/${threadId}?user_id=${userId}&user_type=${userType}`;
 };
 
 /**
  * Информация о соединении
  */
 class ConnectionInfo {
-  constructor(ws, connectionKey, wsUrl, onStatusChange, connectionType = 'chat') {
+  constructor(ws, threadId, userId, userType, onStatusChange) {
     this.ws = ws;
-    this.connectionKey = connectionKey; // Может быть threadId или sellerId
-    this.wsUrl = wsUrl; // Сохраняем URL для переподключения
+    this.threadId = threadId;
+    this.userId = userId;
+    this.userType = userType;
     this.onStatusChange = onStatusChange;
-    this.connectionType = connectionType; // 'chat' or 'seller_global'
     this.reconnectAttempts = 0;
-    this.lastPingTime = Date.now(); // Инициализируем при создании
-    this.pingIntervalId = null; // ID для setInterval
-    this.reconnectTimeoutId = null; // ID для setTimeout
+    this.isConnecting = false;
+    this.lastPingTime = Date.now();
+    this.pingInterval = null;
+    this.reconnectTimeout = null;
   }
 }
 
 /**
- * Централизованный WebSocket менеджер
+ * Централизованный WebSocket менеджер для чата
  */
 class WebSocketManager {
   constructor() {
-    this.connections = new Map(); // connectionKey -> ConnectionInfo
-    this.messageHandlers = new Map(); // connectionKey -> Set of handlers
-    this.globalHandlers = new Set(); // Глобальные обработчики для ВСЕХ сообщений со всех каналов
+    this.connections = new Map(); // threadId -> ConnectionInfo
+    this.messageHandlers = new Map(); // threadId -> Set of handlers
+    this.globalHandlers = new Set(); // Global message handlers
     this.maxReconnectAttempts = 5;
-    this.baseReconnectDelay = 1000;
-    this.maxReconnectDelay = 30000;
-    this.pingFrequency = 30000; // Частота отправки ping
-    // Таймаут для pong не нужен здесь, т.к. сервер должен отключить если не получает ping
+    this.baseReconnectDelay = 1000; // 1 секунда
+    this.maxReconnectDelay = 30000; // 30 секунд
+    this.pingInterval = 30000; // 30 секунд
+    this.pongTimeout = 10000; // 10 секунд
   }
 
-  _connect(connectionKey, wsUrl, onStatusChange, connectionType) {
-    console.log(`[WebSocketManager] Connecting to ${connectionKey} (${connectionType}) at ${wsUrl}`);
+  /**
+   * Подключиться к WebSocket
+   */
+  connect(threadId, userId, userType, onStatusChange) {
+    console.log(`[WebSocketManager] Connecting to ${threadId}:`, { userId, userType });
 
-    if (this.connections.has(connectionKey)) {
-      console.warn(`[WebSocketManager] Connection for ${connectionKey} already exists. Disconnecting old one.`);
-      this.disconnect(connectionKey, true); // true to prevent immediate reconnect
-    }
+    // Закрываем существующее соединение если есть
+    this.disconnect(threadId);
+
+    const wsUrl = getChatWebSocketUrl(threadId, userId, userType);
+    console.log(`[WebSocketManager] WebSocket URL:`, wsUrl);
 
     try {
       const ws = new WebSocket(wsUrl);
-      const connectionInfo = new ConnectionInfo(ws, connectionKey, wsUrl, onStatusChange, connectionType);
-      this.connections.set(connectionKey, connectionInfo);
+      const connectionInfo = new ConnectionInfo(ws, threadId, userId, userType, onStatusChange);
+
+      this.connections.set(threadId, connectionInfo);
       this.setupWebSocketHandlers(connectionInfo);
+
       return true;
     } catch (error) {
-      console.error(`[WebSocketManager] Failed to create WebSocket for ${connectionKey}:`, error);
-      onStatusChange && onStatusChange(WS_STATES.CLOSED, connectionKey); // Уведомляем о неудаче
+      console.error(`[WebSocketManager] Failed to create WebSocket for ${threadId}:`, error);
+      onStatusChange && onStatusChange(false);
       return false;
     }
   }
 
-  connectChatChannel(threadId, userId, userType, onStatusChange) {
-    const wsUrl = getChatWebSocketUrl(threadId, userId, userType);
-    // Для чатов connectionKey - это threadId
-    return this._connect(threadId, wsUrl, onStatusChange, 'chat');
-  }
-
-  connectGlobalSellerChannel(sellerId, onStatusChange) {
-    const wsUrl = getSellerNotificationsWebSocketUrl(sellerId);
-    // Для глобального канала продавца connectionKey - это sellerId
-    return this._connect(sellerId, wsUrl, onStatusChange, 'seller_global');
-  }
-
-  disconnect(connectionKey, isInternalDisconnect = false) {
-    const connectionInfo = this.connections.get(connectionKey);
+  /**
+   * Отключиться от WebSocket
+   */
+  disconnect(threadId) {
+    const connectionInfo = this.connections.get(threadId);
     if (!connectionInfo) return;
 
-    console.log(`[WebSocketManager] Disconnecting from ${connectionKey}`);
+    console.log(`[WebSocketManager] Disconnecting from ${threadId}`);
+
+    // Останавливаем ping
     this.stopPing(connectionInfo);
 
-    if (connectionInfo.reconnectTimeoutId) {
-      clearTimeout(connectionInfo.reconnectTimeoutId);
-      connectionInfo.reconnectTimeoutId = null;
+    // Останавливаем переподключение
+    if (connectionInfo.reconnectTimeout) {
+      clearTimeout(connectionInfo.reconnectTimeout);
+      connectionInfo.reconnectTimeout = null;
     }
 
+    // Закрываем WebSocket
     if (connectionInfo.ws && connectionInfo.ws.readyState !== WS_STATES.CLOSED) {
-      // Убираем обработчик onclose перед закрытием, чтобы избежать логики переподключения
-      if (isInternalDisconnect) {
-        connectionInfo.ws.onclose = null;
-      }
-      connectionInfo.ws.close(1000); // Нормальное закрытие
+      connectionInfo.ws.close();
     }
 
-    // onStatusChange может быть вызван из ws.onclose, если не isInternalDisconnect
-    if (isInternalDisconnect && connectionInfo.onStatusChange) {
-        connectionInfo.onStatusChange(WS_STATES.CLOSED, connectionKey);
-    }
-
-    this.connections.delete(connectionKey);
-    // Не удаляем обработчики сообщений, они могут быть нужны при переподключении
+    this.connections.delete(threadId);
   }
 
-  sendMessage(connectionKey, message) {
-    const connectionInfo = this.connections.get(connectionKey);
+  /**
+   * Отправить сообщение
+   */
+  sendMessage(threadId, message) {
+    const connectionInfo = this.connections.get(threadId);
     if (!connectionInfo || connectionInfo.ws.readyState !== WS_STATES.OPEN) {
-      console.warn(`[WebSocketManager] Cannot send message to ${connectionKey}: not connected or not open.`);
+      console.warn(`[WebSocketManager] Cannot send message to ${threadId}: not connected`);
       return false;
     }
 
     try {
       const messageData = typeof message === 'string' ? { message } : message;
       connectionInfo.ws.send(JSON.stringify(messageData));
-      // console.log(`[WebSocketManager] Message sent to ${connectionKey}:`, messageData);
+      console.log(`[WebSocketManager] Message sent to ${threadId}:`, messageData);
       return true;
     } catch (error) {
-      console.error(`[WebSocketManager] Failed to send message to ${connectionKey}:`, error);
+      console.error(`[WebSocketManager] Failed to send message to ${threadId}:`, error);
       return false;
     }
   }
 
-  addMessageHandler(connectionKey, handler) {
-    if (!this.messageHandlers.has(connectionKey)) {
-      this.messageHandlers.set(connectionKey, new Set());
+  /**
+   * Добавить обработчик сообщений для треда
+   */
+  addMessageHandler(threadId, handler) {
+    if (!this.messageHandlers.has(threadId)) {
+      this.messageHandlers.set(threadId, new Set());
     }
-    this.messageHandlers.get(connectionKey).add(handler);
-    console.log(`[WebSocketManager] Message handler added for ${connectionKey}`);
+    this.messageHandlers.get(threadId).add(handler);
+    console.log(`[WebSocketManager] Message handler added for ${threadId}`);
   }
 
-  removeMessageHandler(connectionKey, handler) {
-    const handlers = this.messageHandlers.get(connectionKey);
+  /**
+   * Удалить обработчик сообщений для треда
+   */
+  removeMessageHandler(threadId, handler) {
+    const handlers = this.messageHandlers.get(threadId);
     if (handlers) {
       handlers.delete(handler);
       if (handlers.size === 0) {
-        this.messageHandlers.delete(connectionKey);
+        this.messageHandlers.delete(threadId);
       }
-      console.log(`[WebSocketManager] Message handler removed for ${connectionKey}`);
+      console.log(`[WebSocketManager] Message handler removed for ${threadId}`);
     }
   }
 
+  /**
+   * Добавить глобальный обработчик сообщений
+   */
   addGlobalHandler(handler) {
     this.globalHandlers.add(handler);
-    console.log('[WebSocketManager] Global message handler added.');
   }
 
+  /**
+   * Удалить глобальный обработчик сообщений
+   */
   removeGlobalHandler(handler) {
     this.globalHandlers.delete(handler);
-    console.log('[WebSocketManager] Global message handler removed.');
   }
 
-  getConnectionState(connectionKey) {
-    const connectionInfo = this.connections.get(connectionKey);
-    return connectionInfo ? connectionInfo.ws.readyState : WS_STATES.CLOSED;
+  /**
+   * Получить статус соединения
+   */
+  isConnected(threadId) {
+    const connectionInfo = this.connections.get(threadId);
+    return connectionInfo && connectionInfo.ws.readyState === WS_STATES.OPEN;
   }
 
-  getActiveConnectionsDetails() {
+  /**
+   * Получить все активные соединения
+   */
+  getActiveConnections() {
     const active = [];
-    for (const [key, info] of this.connections) {
-      if (info.ws.readyState === WS_STATES.OPEN) {
+    for (const [threadId, connectionInfo] of this.connections) {
+      if (connectionInfo.ws.readyState === WS_STATES.OPEN) {
         active.push({
-          connectionKey: key,
-          type: info.connectionType,
-          url: info.wsUrl,
+          threadId,
+          userId: connectionInfo.userId,
+          userType: connectionInfo.userType
         });
       }
     }
     return active;
   }
 
+  /**
+   * Очистить все соединения
+   */
   cleanup() {
     console.log('[WebSocketManager] Cleaning up all connections');
-    for (const connectionKey of this.connections.keys()) {
-      this.disconnect(connectionKey, true); // true for internal disconnect
+    for (const threadId of this.connections.keys()) {
+      this.disconnect(threadId);
     }
-    this.messageHandlers.clear();
-    this.globalHandlers.clear();
   }
 
+  /**
+   * Настроить обработчики WebSocket событий
+   */
   setupWebSocketHandlers(connectionInfo) {
-    const { ws, connectionKey, onStatusChange } = connectionInfo;
+    const { ws, threadId, onStatusChange } = connectionInfo;
 
     ws.onopen = () => {
-      console.log(`[WebSocketManager] ✅ Connected to ${connectionKey} (${connectionInfo.connectionType})`);
+      console.log(`[WebSocketManager] ✅ Connected to ${threadId}`);
       connectionInfo.reconnectAttempts = 0;
-      if (connectionInfo.reconnectTimeoutId) { // Очищаем таймаут переподключения если он был
-          clearTimeout(connectionInfo.reconnectTimeoutId);
-          connectionInfo.reconnectTimeoutId = null;
-      }
+      connectionInfo.isConnecting = false;
       connectionInfo.lastPingTime = Date.now();
+
+      // Запускаем ping
       this.startPing(connectionInfo);
-      onStatusChange && onStatusChange(WS_STATES.OPEN, connectionKey);
+
+      // Уведомляем о подключении
+      onStatusChange && onStatusChange(true);
     };
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        // console.log(`[WebSocketManager] Message received from ${connectionKey}:`, data);
+        console.log(`[WebSocketManager] Message received from ${threadId}:`, data);
 
+        // Обрабатываем ping/pong
         if (data.type === WS_MESSAGE_TYPES.PING) {
-          // console.log(`[WebSocketManager] Ping received on ${connectionKey}. Sending Pong.`);
-          this.sendPong(connectionKey);
+          this.sendPong(threadId);
           return;
         }
 
         if (data.type === WS_MESSAGE_TYPES.PONG) {
-          // console.log(`[WebSocketManager] Pong received on ${connectionKey}.`);
           connectionInfo.lastPingTime = Date.now();
           return;
         }
 
-        // Вызываем обработчики для конкретного connectionKey
-        const specificHandlers = this.messageHandlers.get(connectionKey);
-        if (specificHandlers) {
-          specificHandlers.forEach(handler => {
+        // Вызываем обработчики для треда
+        const threadHandlers = this.messageHandlers.get(threadId);
+        if (threadHandlers) {
+          threadHandlers.forEach(handler => {
             try {
-              handler(data, connectionKey, connectionInfo.connectionType);
+              handler(data, threadId);
             } catch (error) {
-              console.error(`[WebSocketManager] Handler error for ${connectionKey}:`, error);
+              console.error(`[WebSocketManager] Handler error for ${threadId}:`, error);
             }
           });
         }
@@ -272,113 +272,116 @@ class WebSocketManager {
         // Вызываем глобальные обработчики
         this.globalHandlers.forEach(handler => {
           try {
-            // Передаем connectionKey и connectionType глобальным обработчикам
-            handler(data, connectionKey, connectionInfo.connectionType);
+            handler(data, threadId);
           } catch (error) {
-            console.error('[WebSocketManager] Global handler error:', error);
+            console.error(`[WebSocketManager] Global handler error:`, error);
           }
         });
 
       } catch (error) {
-        console.error(`[WebSocketManager] Error parsing message from ${connectionKey}:`, error, event.data);
+        console.error(`[WebSocketManager] Error parsing message from ${threadId}:`, error);
       }
     };
 
     ws.onclose = (event) => {
-      console.log(`[WebSocketManager] ❌ Disconnected from ${connectionKey} (${connectionInfo.connectionType}): Code ${event.code}, Reason: ${event.reason || 'N/A'}`);
-      this.stopPing(connectionInfo);
-      onStatusChange && onStatusChange(WS_STATES.CLOSED, connectionKey, event.code, event.reason);
+      console.log(`[WebSocketManager] ❌ Disconnected from ${threadId}:`, event.code, event.reason);
 
-      // Пытаемся переподключиться если это не намеренное закрытие (код 1000)
-      // и не было превышено количество попыток
+      // Останавливаем ping
+      this.stopPing(connectionInfo);
+
+      // Уведомляем о отключении
+      onStatusChange && onStatusChange(false);
+
+      // Пытаемся переподключиться если это не намеренное закрытие
       if (event.code !== 1000 && connectionInfo.reconnectAttempts < this.maxReconnectAttempts) {
         this.scheduleReconnect(connectionInfo);
-      } else if (event.code === 1000) {
-        console.log(`[WebSocketManager] Normal closure for ${connectionKey}. No reconnect.`);
-        this.connections.delete(connectionKey); // Удаляем из активных соединений
-      } else {
-         console.log(`[WebSocketManager] Max reconnect attempts reached or unrecoverable error for ${connectionKey}.`);
-         this.connections.delete(connectionKey); // Удаляем из активных соединений
       }
     };
 
     ws.onerror = (error) => {
-      console.error(`[WebSocketManager] WebSocket error for ${connectionKey} (${connectionInfo.connectionType}):`, error);
-      // onStatusChange будет вызван через onclose, который обычно следует за onerror
-      // Однако, если onclose не вызывается, можно добавить onStatusChange(WS_STATES.CLOSED, connectionKey, 'error');
+      console.error(`[WebSocketManager] WebSocket error for ${threadId}:`, error);
+      onStatusChange && onStatusChange(false);
     };
   }
 
+  /**
+   * Запустить ping для поддержания соединения
+   */
   startPing(connectionInfo) {
     this.stopPing(connectionInfo); // Останавливаем предыдущий ping если есть
-    // console.log(`[WebSocketManager] Starting ping for ${connectionInfo.connectionKey}`);
-    connectionInfo.pingIntervalId = setInterval(() => {
-      if (connectionInfo.ws.readyState === WS_STATES.OPEN) {
-        // Проверяем время последнего pong'а (или последнего успешного ping'а, если сервер не шлет pong)
-        // Это более сложная логика проверки живости, для простоты пока оставим только отправку ping
-        // if (Date.now() - connectionInfo.lastPingTime > this.pingFrequency + this.pongTimeout) {
-        //   console.warn(`[WebSocketManager] Pong timeout for ${connectionInfo.connectionKey}. Closing connection.`);
-        //   connectionInfo.ws.close(); // Это вызовет onclose и логику реконнекта
-        //   return;
-        // }
 
-        const pingMessage = { type: WS_MESSAGE_TYPES.PING, timestamp: new Date().toISOString() };
+    connectionInfo.pingInterval = setInterval(() => {
+      if (connectionInfo.ws.readyState === WS_STATES.OPEN) {
+        const pingMessage = {
+          type: WS_MESSAGE_TYPES.PING,
+          timestamp: new Date().toISOString()
+        };
+
         try {
           connectionInfo.ws.send(JSON.stringify(pingMessage));
-          // console.log(`[WebSocketManager] Ping sent to ${connectionInfo.connectionKey}`);
+          console.log(`[WebSocketManager] Ping sent to ${connectionInfo.threadId}`);
         } catch (error) {
-          console.error(`[WebSocketManager] Error sending ping to ${connectionInfo.connectionKey}:`, error);
-          // Ошибка отправки ping может означать проблемы с соединением, можно инициировать закрытие
-          connectionInfo.ws.close();
+          console.error(`[WebSocketManager] Error sending ping to ${connectionInfo.threadId}:`, error);
+          this.disconnect(connectionInfo.threadId);
         }
       }
-    }, this.pingFrequency);
+    }, this.pingInterval);
   }
 
+  /**
+   * Остановить ping
+   */
   stopPing(connectionInfo) {
-    if (connectionInfo.pingIntervalId) {
-      clearInterval(connectionInfo.pingIntervalId);
-      connectionInfo.pingIntervalId = null;
-      // console.log(`[WebSocketManager] Stopped ping for ${connectionInfo.connectionKey}`);
+    if (connectionInfo.pingInterval) {
+      clearInterval(connectionInfo.pingInterval);
+      connectionInfo.pingInterval = null;
     }
   }
 
-  sendPong(connectionKey) {
-    const pongMessage = { type: WS_MESSAGE_TYPES.PONG, timestamp: new Date().toISOString() };
-    this.sendMessage(connectionKey, pongMessage);
-    // console.log(`[WebSocketManager] Pong sent to ${connectionKey}`);
+  /**
+   * Отправить pong ответ
+   */
+  sendPong(threadId) {
+    const pongMessage = {
+      type: WS_MESSAGE_TYPES.PONG,
+      timestamp: new Date().toISOString()
+    };
+    this.sendMessage(threadId, pongMessage);
   }
 
+  /**
+   * Запланировать переподключение
+   */
   scheduleReconnect(connectionInfo) {
-    if (connectionInfo.reconnectTimeoutId) { // Если уже запланировано, не дублируем
-        return;
+    if (connectionInfo.reconnectTimeout) {
+      clearTimeout(connectionInfo.reconnectTimeout);
     }
+
     connectionInfo.reconnectAttempts++;
     const delay = Math.min(
-      this.baseReconnectDelay * Math.pow(2, connectionInfo.reconnectAttempts -1), // Экспоненциальная задержка
+      this.baseReconnectDelay * Math.pow(2, connectionInfo.reconnectAttempts - 1),
       this.maxReconnectDelay
     );
 
-    console.log(`[WebSocketManager] Scheduling reconnect for ${connectionInfo.connectionKey} (${connectionInfo.connectionType}) in ${delay}ms (attempt ${connectionInfo.reconnectAttempts})`);
+    console.log(`[WebSocketManager] Scheduling reconnect for ${connectionInfo.threadId} in ${delay}ms (attempt ${connectionInfo.reconnectAttempts})`);
 
-    connectionInfo.reconnectTimeoutId = setTimeout(() => {
-      connectionInfo.reconnectTimeoutId = null; // Очищаем ID перед попыткой
-      // Проверяем, что соединение все еще требует переподключения и не было подключено иным способом
-      if (this.connections.has(connectionInfo.connectionKey) &&
-          this.connections.get(connectionInfo.connectionKey) === connectionInfo &&
-          connectionInfo.ws.readyState !== WS_STATES.OPEN &&
-          connectionInfo.ws.readyState !== WS_STATES.CONNECTING) {
-
-        console.log(`[WebSocketManager] Attempting to reconnect to ${connectionInfo.connectionKey} using URL ${connectionInfo.wsUrl}`);
-        // Используем сохраненный URL и тип для переподключения
-        this._connect(connectionInfo.connectionKey, connectionInfo.wsUrl, connectionInfo.onStatusChange, connectionInfo.connectionType);
-      } else {
-        console.log(`[WebSocketManager] Skipping scheduled reconnect for ${connectionInfo.connectionKey}, state has changed or connection removed.`);
+    connectionInfo.reconnectTimeout = setTimeout(() => {
+      if (connectionInfo.reconnectAttempts <= this.maxReconnectAttempts) {
+        console.log(`[WebSocketManager] Attempting to reconnect to ${connectionInfo.threadId}`);
+        this.connect(
+          connectionInfo.threadId,
+          connectionInfo.userId,
+          connectionInfo.userType,
+          connectionInfo.onStatusChange
+        );
       }
     }, delay);
   }
 
-  sendTypingIndicator(threadId, isTyping) { // threadId здесь используется как connectionKey для чата
+  /**
+   * Отправить индикатор печатания
+   */
+  sendTypingIndicator(threadId, isTyping) {
     const typingMessage = {
       type: WS_MESSAGE_TYPES.TYPING,
       is_typing: isTyping,
@@ -388,29 +391,24 @@ class WebSocketManager {
   }
 }
 
+// Создаем единственный экземпляр менеджера
 const websocketManager = new WebSocketManager();
 
+// Отключаем все WebSocket соединения при закрытии вкладки
 window.addEventListener('beforeunload', () => {
   websocketManager.cleanup();
 });
 
-// Опционально: обработка online/offline для более быстрого восстановления
-// window.addEventListener('online', () => {
-//   console.log('[WebSocketManager] Network connection restored.');
-//   for (const [key, info] of websocketManager.connections) {
-//     if (info.ws.readyState === WS_STATES.CLOSED || info.ws.readyState === WS_STATES.CLOSING) {
-//       console.log(`[WebSocketManager] Attempting to reconnect ${key} due to network restoration.`);
-//       // Сбрасываем попытки переподключения, чтобы сразу попробовать
-//       info.reconnectAttempts = 0;
-//       if (info.reconnectTimeoutId) clearTimeout(info.reconnectTimeoutId);
-//       info.reconnectTimeoutId = null;
-//       websocketManager.scheduleReconnect(info);
-//     }
-//   }
-// });
+// Обрабатываем потерю/восстановление соединения с интернетом
+window.addEventListener('online', () => {
+  console.log('[WebSocketManager] Network connection restored, checking connections');
+  // Можно добавить логику для проверки и восстановления соединений
+});
 
-// window.addEventListener('offline', () => {
-//   console.log('[WebSocketManager] Network connection lost. Connections will attempt to reconnect as per their schedule.');
-// });
+window.addEventListener('offline', () => {
+  console.log('[WebSocketManager] Network connection lost');
+});
 
 export default websocketManager;
+
+
