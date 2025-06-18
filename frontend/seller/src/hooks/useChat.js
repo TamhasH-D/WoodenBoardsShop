@@ -10,6 +10,8 @@ import { useNotifications } from './useNotifications';
 export const useChat = () => {
   const [threads, setThreads] = useState([]);
   const [selectedThread, setSelectedThread] = useState(null);
+  const selectedThreadRef = useRef(selectedThread); // ADDED: Ref for selectedThread
+
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(false);
@@ -32,6 +34,11 @@ export const useChat = () => {
 
   // Get seller profile
   const keycloakId = getCurrentSellerKeycloakId();
+
+  // Sync selectedThread with selectedThreadRef
+  useEffect(() => {
+    selectedThreadRef.current = selectedThread;
+  }, [selectedThread]);
 
   // Initialize seller profile
   useEffect(() => {
@@ -198,12 +205,12 @@ export const useChat = () => {
   const selectThread = useCallback(async (thread) => {
     if (!sellerId) return;
 
-    if (selectedThread) {
-      websocketManager.removeMessageHandler(selectedThread.id, handleWebSocketMessage);
-      websocketManager.disconnect(selectedThread.id);
+    if (selectedThreadRef.current) { // Use ref for cleanup comparison
+      websocketManager.removeMessageHandler(selectedThreadRef.current.id, handleWebSocketMessage);
+      websocketManager.disconnect(selectedThreadRef.current.id);
     }
 
-    setSelectedThread(thread);
+    setSelectedThread(thread); // This will trigger the useEffect to update selectedThreadRef
     setIsConnected(false);
     setIsTyping(false);
 
@@ -234,7 +241,7 @@ export const useChat = () => {
     }
   }, [
     sellerId,
-    selectedThread,
+    // selectedThread is removed, selectedThreadRef is used indirectly via its update effect
     handleWebSocketMessage,
     loadMessages,
     notifyConnection,
@@ -249,7 +256,7 @@ export const useChat = () => {
   // Send message
   const sendMessage = useCallback(async (messageText) => {
     if (!sellerId || !messageText.trim()) return false;
-    let threadToUse = selectedThread;
+    let threadToUse = selectedThreadRef.current; // Use ref
 
     if (!threadToUse) {
       try {
@@ -261,6 +268,8 @@ export const useChat = () => {
             notifyError('Ошибка создания нового чата: неверные данные');
             return false;
         }
+        // Calling selectThread will update selectedThread state, and thus selectedThreadRef.current via its useEffect.
+        // For immediate use in this function, we directly use the 'threadToUse' object.
         await selectThread(threadToUse);
       } catch (err) {
         console.error('Failed to create chat thread:', err);
@@ -271,6 +280,9 @@ export const useChat = () => {
       }
     }
 
+    // Re-check threadToUse as selectThread might have been called if it was initially null
+    // However, selectThread is async, so for this send operation, we rely on threadToUse from above.
+    // If threadToUse was just created, its .id should be valid.
     if (!threadToUse || !threadToUse.id) {
         console.error('[useChat sendMessage] No valid thread selected or created to send message.');
         setError('Нет активного чата для отправки сообщения.');
@@ -327,23 +339,24 @@ export const useChat = () => {
       notifyError(errorMessage);
       return false;
     }
-  }, [selectedThread, sellerId, notifyError, notifyMessageSent, selectThread, setError, setMessages, notifyNewMessage]);
+  }, [sellerId, notifyError, notifyMessageSent, selectThread, setError, setMessages, notifyNewMessage]); // selectedThread removed, selectedThreadRef is used
 
 
   // Send typing indicator
   const sendTypingIndicator = useCallback((isTypingStatus) => {
-    if (!selectedThread || !sellerId) return;
+    const currentSelectedThread = selectedThreadRef.current; // Use ref
+    if (!currentSelectedThread || !sellerId) return;
 
-    if (websocketManager.isConnected(selectedThread.id)) {
-      websocketManager.sendMessage(selectedThread.id, {
+    if (websocketManager.isConnected(currentSelectedThread.id)) {
+      websocketManager.sendMessage(currentSelectedThread.id, {
         type: 'typing',
         is_typing: isTypingStatus,
         sender_id: sellerId,
         sender_type: 'seller',
-        thread_id: selectedThread.id
+        thread_id: currentSelectedThread.id
       });
     }
-  }, [selectedThread, sellerId]);
+  }, [sellerId]); // selectedThread removed
 
 
   // Load threads when seller ID is available
@@ -360,26 +373,29 @@ export const useChat = () => {
   // Handler for global WebSocket messages
   const handleGlobalMessage = useCallback((data) => {
     console.log('[useChat handleGlobalMessage] Received data:', data);
+    const currentSelectedThread = selectedThreadRef.current; // Use ref
+
     if (data.type === 'new_thread' && data.thread) {
       setThreads(prev => {
         if (prev.some(t => t.id === data.thread.id)) return prev;
-        return [...prev, data.thread].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)); // Sort by most recent
+        return [...prev, data.thread].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
       });
     } else if (data.type === 'buyer_message' && data.thread) {
+      const messageIsForSelectedThread = currentSelectedThread && currentSelectedThread.id === data.thread.id;
+
       setThreads(prev => prev.map(t =>
         t.id === data.thread.id
           ? {
               ...t,
               last_message: data.message,
               updated_at: data.timestamp || new Date().toISOString(),
-              unread_count: (selectedThread && selectedThread.id === data.thread.id)
-                              ? t.unread_count // Don't increment if current thread is selected (handled by markAsRead)
-                              : (t.unread_count || 0) + 1
+              // Only increment unread_count if the message is not for the currently selected thread
+              unread_count: messageIsForSelectedThread ? t.unread_count : (t.unread_count || 0) + 1,
             }
           : t
-      ).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))); // Sort by most recent
+      ).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)));
 
-      const buyerMsg = {
+      const buyerMsg = { /* ... construct buyerMsg ... */
         id: data.message_id || Date.now(),
         message: data.message,
         sender_id: data.sender_id,
@@ -387,7 +403,7 @@ export const useChat = () => {
         created_at: data.timestamp || new Date().toISOString(),
         thread_id: data.thread.id,
         buyer_id: data.sender_id,
-        seller_id: null,
+        seller_id: null, // Correct for buyer message
         is_read_by_buyer: false,
         is_read_by_seller: false
       };
@@ -398,12 +414,14 @@ export const useChat = () => {
         messagesRef.current.set(data.thread.id, [...cachedMessages, buyerMsg].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
       }
 
-      // If the message is for a non-selected thread, show a notification
-      if (!(selectedThread && selectedThread.id === data.thread.id) && data.sender_type === 'buyer') {
+      // If the message is for the selected thread, handleWebSocketMessage will also receive it
+      // and update the UI message list and call notifyNewMessage.
+      // So, global handler only calls notifyNewMessage for non-selected threads.
+      if (!messageIsForSelectedThread && data.sender_type === 'buyer') {
         notifyNewMessage('Покупатель', data.message, data.thread.id);
       }
     }
-  }, [setThreads, selectedThread, messagesRef, notifyNewMessage]);
+  }, [setThreads, messagesRef, notifyNewMessage]); // selectedThread removed
 
 
   // Connect to global WebSocket channel for new threads and buyer messages
@@ -415,8 +433,6 @@ export const useChat = () => {
       websocketManager.addMessageHandler(globalChannelId, handleGlobalMessage);
       websocketManager.connect(globalChannelId, sellerId, 'seller', (connected) => {
         console.log(`[useChat] Global WebSocket (${globalChannelId}) connection status:`, connected);
-        // Optionally, refresh threads on successful global connection if desired
-        // if (connected) loadThreads();
       });
 
       return () => {
@@ -425,23 +441,24 @@ export const useChat = () => {
         websocketManager.disconnect(globalChannelId);
       };
     }
-  }, [sellerId, handleGlobalMessage]); // Dependencies are sellerId and the memoized handleGlobalMessage
+  }, [sellerId, handleGlobalMessage]);
 
 
-  // Cleanup on unmount
+  // Cleanup on unmount (for selected thread's WebSocket)
   useEffect(() => {
-    const currentSelectedThread = selectedThread;
-    const currentHandler = handleWebSocketMessage;
+    const currentSelectedThreadForUnmount = selectedThreadRef.current; // Use ref for unmount cleanup
+    const currentHandlerForUnmount = handleWebSocketMessage;
     return () => {
-      if (currentSelectedThread) {
-        websocketManager.removeMessageHandler(currentSelectedThread.id, currentHandler);
-        websocketManager.disconnect(currentSelectedThread.id);
+      if (currentSelectedThreadForUnmount) {
+        console.log(`[useChat Unmount] Cleaning up WebSocket for selected thread ${currentSelectedThreadForUnmount.id}`);
+        websocketManager.removeMessageHandler(currentSelectedThreadForUnmount.id, currentHandlerForUnmount);
+        websocketManager.disconnect(currentSelectedThreadForUnmount.id);
       }
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [selectedThread, handleWebSocketMessage]);
+  }, [handleWebSocketMessage]); // Re-run only if handleWebSocketMessage changes (which is rare)
 
   return {
     threads,
