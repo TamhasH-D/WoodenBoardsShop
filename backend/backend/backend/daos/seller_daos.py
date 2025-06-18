@@ -1,16 +1,15 @@
 from uuid import UUID
-from typing import Type, TypeVar, Optional # Added Type, TypeVar, Optional
-from pydantic import BaseModel # Added BaseModel for OutDTO bound
+from typing import Type, TypeVar, Optional
+from pydantic import BaseModel
 
 from backend.daos.base_daos import BaseDAO
-# Assuming SellerOutDTO exists for return types and BaseDAO's OutDTO
-from backend.dtos.seller_dtos import SellerInputDTO, SellerUpdateDTO, SellerOutDTO
+# Changed SellerOutDTO to SellerDTO
+from backend.dtos.seller_dtos import SellerInputDTO, SellerUpdateDTO, SellerDTO
 from backend.models.seller_models import Seller
-from backend.cache_manager import cache_manager # Added
+from backend.cache_manager import cache_manager
 
-# Define OutDTO for use in this DAO, specific to Seller outputs
-# This aligns with how BaseDAO is now structured.
-_SellerOutDTO = TypeVar('_SellerOutDTO', bound=SellerOutDTO)
+# Define DTO TypeVar for use in this DAO, now bound to SellerDTO
+_SellerDTO = TypeVar('_SellerDTO', bound=SellerDTO) # Renamed TypeVar and changed bound type
 
 
 class SellerDAO(
@@ -18,7 +17,7 @@ class SellerDAO(
         Seller,
         SellerInputDTO,
         SellerUpdateDTO,
-        SellerOutDTO, # Specified SellerOutDTO as the fourth generic type for BaseDAO
+        SellerDTO, # Changed from SellerOutDTO to SellerDTO
     ]
 ):
     """Seller DAO."""
@@ -26,21 +25,20 @@ class SellerDAO(
     async def get_by_keycloak_uuid(
         self,
         keycloak_uuid: UUID,
-        out_dto_class: Type[_SellerOutDTO] # Use the bound TypeVar for output DTO class
-    ) -> Optional[_SellerOutDTO]:
+        out_dto_class: Type[_SellerDTO] # Use the renamed TypeVar
+    ) -> Optional[_SellerDTO]: # Return type uses the renamed TypeVar
         """Get seller by keycloak_uuid with caching."""
         cache_key = f"Seller_keycloak:{keycloak_uuid}"
 
+        # The out_dto_class parameter (which is _SellerDTO, effectively SellerDTO)
+        # is passed to cache_manager.get for validation.
         cached_item = await cache_manager.get(cache_key, out_dto_class)
         if cached_item:
             return cached_item
 
-        # Cache miss, fetch from DB
-        # filter_first returns a Model instance (Seller)
         instance = await self.filter_first(keycloak_uuid=keycloak_uuid)
 
         if instance:
-            # Validate/convert to DTO
             dto_instance = out_dto_class.model_validate(instance)
             await cache_manager.set(cache_key, dto_instance)
             return dto_instance
