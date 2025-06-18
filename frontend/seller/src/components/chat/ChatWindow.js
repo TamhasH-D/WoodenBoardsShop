@@ -159,7 +159,7 @@ const ChatWindow = memo(({
 
   return (
     <>
-      <div className="h-full flex flex-col bg-white">
+      <div className="h-full w-full flex flex-col bg-white">
         <div className="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-base text-white">
