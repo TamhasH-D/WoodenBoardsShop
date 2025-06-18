@@ -327,10 +327,10 @@ function WoodTypesManager() {
             <p>{SELLER_TEXTS.TOTAL} {SELLER_TEXTS.WOOD_TYPES}: {woodTypes?.data?.length || 0}</p>
             {pricesLoading && <p style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-sm)' }}>{SELLER_TEXTS.LOADING} данных о ценах...</p>}
           </div>
-          <div className="flex flex-wrap sm:flex-nowrap gap-2">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
             <button
               onClick={() => setShowAddForm(!showAddForm)}
-              className={`btn ${showAddForm ? 'btn-secondary' : 'btn-primary'}`}
+              className={`btn ${showAddForm ? 'btn-secondary' : 'btn-primary'} w-full sm:w-auto`}
             >
               {showAddForm ? SELLER_TEXTS.CANCEL : `${SELLER_TEXTS.ADD} ${SELLER_TEXTS.WOOD_TYPE}`}
             </button>
@@ -339,7 +339,7 @@ function WoodTypesManager() {
                 refetchTypes();
                 refetchPrices();
               }}
-              className="btn btn-secondary"
+              className="btn btn-secondary w-full sm:w-auto"
               disabled={typesLoading || pricesLoading}
             >
               {typesLoading || pricesLoading ? `${SELLER_TEXTS.LOADING}...` : SELLER_TEXTS.REFRESH}
@@ -414,11 +414,11 @@ function WoodTypesManager() {
                 </small>
               </div>
 
-              <div className="flex gap-4" style={{ marginTop: 'var(--space-6)' }}>
-                <button type="submit" className="btn btn-primary" disabled={mutating}>
+              <div className="flex flex-col sm:flex-row gap-4" style={{ marginTop: 'var(--space-6)' }}>
+                <button type="submit" className="btn btn-primary w-full sm:w-auto" disabled={mutating}>
                   {mutating ? SELLER_TEXTS.CREATING : SELLER_TEXTS.CREATE_WOOD_TYPE}
                 </button>
-                <button type="button" className="btn btn-secondary" onClick={resetForm} disabled={mutating}>
+                <button type="button" className="btn btn-secondary w-full sm:w-auto" onClick={resetForm} disabled={mutating}>
                   {SELLER_TEXTS.CANCEL}
                 </button>
               </div>
@@ -431,8 +431,8 @@ function WoodTypesManager() {
 
         {/* Wood Types Table with Integrated Pricing */}
         {woodTypes && woodTypes.data && woodTypes.data.length > 0 ? (
-          <table className="table">
-            <thead>
+          <table className="w-full table">
+            <thead className="hidden md:table-header-group">
               <tr>
                 <th>{SELLER_TEXTS.WOOD_TYPE}</th>
                 <th>{SELLER_TEXTS.DESCRIPTION}</th>
@@ -449,52 +449,63 @@ function WoodTypesManager() {
                 const isUpdatingPrice = updatingPrice[type.id];
 
                 return (
-                  <tr key={type.id}>
+                  <tr key={type.id} className="block md:table-row mb-4 md:mb-0 border md:border-0 border-gray-200 md:border-none rounded-lg md:rounded-none shadow-md md:shadow-none p-2 md:p-0">
                     {/* Wood Type Name */}
-                    <td>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          value={editingType.neme}
-                          onChange={(e) => setEditingType({...editingType, neme: e.target.value})}
-                          className="form-input"
-                          style={{ margin: 0 }}
-                          placeholder={SELLER_TEXTS.WOOD_TYPE_NAME_PLACEHOLDER}
-                        />
-                      ) : (
+                    <td className="block md:table-cell py-2 px-1 md:py-2 md:px-4 border-b md:border-b-gray-200 md:border-0">
+                      <div className="flex justify-between text-sm">
+                        <span className="font-semibold md:hidden">{SELLER_TEXTS.WOOD_TYPE}:</span>
                         <div>
-                          <strong>{type.neme || SELLER_TEXTS.UNNAMED_TYPE}</strong>
-                          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-light)', marginTop: '0.25rem' }}>
-                            ID: {type.id.substring(0, 8)}...
-                          </div>
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editingType.neme}
+                              onChange={(e) => setEditingType({...editingType, neme: e.target.value})}
+                              className="form-input"
+                              style={{ margin: 0 }}
+                              placeholder={SELLER_TEXTS.WOOD_TYPE_NAME_PLACEHOLDER}
+                            />
+                          ) : (
+                            <div>
+                              <strong>{type.neme || SELLER_TEXTS.UNNAMED_TYPE}</strong>
+                              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-light)', marginTop: '0.25rem' }}>
+                                ID: {type.id.substring(0, 8)}...
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </td>
 
                     {/* Description */}
-                    <td>
-                      {isEditing ? (
-                        <textarea
-                          value={editingType.description || ''}
-                          onChange={(e) => setEditingType({...editingType, description: e.target.value})}
-                          className="form-input"
-                          style={{ margin: 0 }}
-                          rows="2"
-                          placeholder={SELLER_TEXTS.DESCRIPTION_PLACEHOLDER}
-                        />
-                      ) : (
+                    <td className="block md:table-cell py-2 px-1 md:py-2 md:px-4 border-b md:border-b-gray-200 md:border-0">
+                      <div className="flex justify-between text-sm">
+                        <span className="font-semibold md:hidden">{SELLER_TEXTS.DESCRIPTION}:</span>
                         <div>
-                          {type.description ? (
-                            <span>{type.description.length > 100 ? `${type.description.substring(0, 100)}...` : type.description}</span>
+                          {isEditing ? (
+                            <textarea
+                              value={editingType.description || ''}
+                              onChange={(e) => setEditingType({...editingType, description: e.target.value})}
+                              className="form-input"
+                              style={{ margin: 0 }}
+                              rows="2"
+                              placeholder={SELLER_TEXTS.DESCRIPTION_PLACEHOLDER}
+                            />
                           ) : (
-                            <em style={{ color: 'var(--color-text-light)' }}>{SELLER_TEXTS.NO_DESCRIPTION}</em>
+                            <div>
+                              {type.description ? (
+                                <span>{type.description.length > 100 ? `${type.description.substring(0, 100)}...` : type.description}</span>
+                              ) : (
+                                <em style={{ color: 'var(--color-text-light)' }}>{SELLER_TEXTS.NO_DESCRIPTION}</em>
+                              )}
+                            </div>
                           )}
                         </div>
-                      )}
+                      </div>
                     </td>
 
                     {/* Current Price with Inline Update */}
-                    <td>
+                    <td className="block md:table-cell py-2 px-1 md:py-2 md:px-4 border-b md:border-b-gray-200 md:border-0">
+                      <span className="font-semibold md:hidden pr-2">{SELLER_TEXTS.CURRENT_PRICE}:</span>
                       {isUpdatingPrice ? (
                         <div style={{ position: 'relative' }}>
                           <input
@@ -634,7 +645,8 @@ function WoodTypesManager() {
                     </td>
 
                     {/* Price History */}
-                    <td>
+                    <td className="block md:table-cell py-2 px-1 md:py-2 md:px-4 border-b md:border-b-gray-200 md:border-0">
+                      <span className="font-semibold md:hidden pr-2">{SELLER_TEXTS.PRICE_HISTORY}:</span>
                       {priceHistory.length > 0 ? (
                         <div>
                           <div style={{ fontSize: 'var(--font-size-sm)', marginBottom: '0.5rem' }}>
@@ -675,13 +687,14 @@ function WoodTypesManager() {
                     </td>
 
                     {/* Actions */}
-                    <td>
-                      <div className="flex gap-2">
+                    <td className="block md:table-cell py-2 px-1 md:py-2 md:px-4">
+                      <span className="font-semibold md:hidden mb-1 block pr-2">{SELLER_TEXTS.ACTIONS}:</span>
+                      <div className="flex flex-col sm:flex-row sm:gap-2 mt-2 sm:mt-0">
                         {isEditing ? (
                           <>
                             <button
                               onClick={handleUpdateType}
-                              className="btn btn-primary"
+                              className="btn btn-primary w-full sm:w-auto"
                               disabled={mutating}
                               style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
                             >
@@ -689,7 +702,7 @@ function WoodTypesManager() {
                             </button>
                             <button
                               onClick={() => setEditingType(null)}
-                              className="btn btn-secondary"
+                              className="btn btn-secondary w-full sm:w-auto"
                               style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
                             >
                               {SELLER_TEXTS.CANCEL}
@@ -699,14 +712,14 @@ function WoodTypesManager() {
                           <>
                             <button
                               onClick={() => setEditingType(type)}
-                              className="btn btn-secondary"
+                              className="btn btn-secondary w-full sm:w-auto"
                               style={{ fontSize: '0.8em', padding: '0.25rem 0.5rem' }}
                             >
                               {SELLER_TEXTS.EDIT}
                             </button>
                             <button
                               onClick={() => handleDeleteType(type.id)}
-                              className="btn btn-secondary"
+                              className="btn btn-secondary w-full sm:w-auto"
                               disabled={mutating}
                               style={{
                                 fontSize: '0.8em',
