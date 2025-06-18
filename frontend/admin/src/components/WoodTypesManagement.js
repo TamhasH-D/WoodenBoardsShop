@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -8,19 +8,7 @@ import { apiService } from '../services/api';
 import FormField from './ui/FormField';
 import Button from './ui/Button';
 
-// Validation schemas
-const woodTypeSchema = yup.object({
-  name: yup
-    .string()
-    .required('Название типа древесины обязательно')
-    .min(2, 'Название должно содержать минимум 2 символа')
-    .max(100, 'Название не должно превышать 100 символов'),
-  description: yup
-    .string()
-    .max(500, 'Описание не должно превышать 500 символов')
-    .nullable(),
-});
-
+// Price validation schema (can stay outside if it doesn't need component scope)
 const priceSchema = yup.object({
   wood_type_id: yup
     .string()
@@ -41,6 +29,50 @@ const WoodTypesManagement = React.memo(() => {
 
   // Toast notifications
   const toast = useToastContext();
+
+  // API hooks for all wood types (for dropdown and validation)
+  const allWoodTypesApiFunction = useMemo(() => () => apiService.getAllWoodTypes(), []);
+  const { data: allWoodTypes, loading: allWoodTypesLoading, error: allWoodTypesError } = useApi(
+    allWoodTypesApiFunction,
+    []
+  );
+
+  // Log error for allWoodTypes
+  useEffect(() => {
+    if (allWoodTypesError) {
+      console.error("Error fetching all wood types:", allWoodTypesError);
+    }
+  }, [allWoodTypesError]);
+
+  // Wood type validation schema
+  const woodTypeSchema = useMemo(() => yup.object({
+    name: yup
+      .string()
+      .required('Название типа древесины обязательно')
+      .min(2, 'Название должно содержать минимум 2 символа')
+      .max(100, 'Название не должно превышать 100 символов')
+      .test(
+        'is-unique',
+        'Тип древесины с таким названием уже существует',
+        function (value) {
+          if (!value) { // If value is empty, required rule will handle it
+            return true;
+          }
+          if (!allWoodTypes || !allWoodTypes.data) {
+            // If data isn't loaded yet, pass validation
+            return true;
+          }
+          const lowercasedValue = value.toLowerCase();
+          return !allWoodTypes.data.some(
+            (type) => (type.neme || type.name)?.toLowerCase() === lowercasedValue
+          );
+        }
+      ),
+    description: yup
+      .string()
+      .max(500, 'Описание не должно превышать 500 символов')
+      .nullable(),
+  }), [allWoodTypes]);
 
   // Wood type form
   const woodTypeForm = useForm({
@@ -65,13 +97,6 @@ const WoodTypesManagement = React.memo(() => {
   const { data: woodTypes, loading: typesLoading, error: typesError, refetch: refetchTypes } = useApi(
     woodTypesApiFunction,
     [page]
-  );
-
-  // API hooks for all wood types (for dropdown)
-  const allWoodTypesApiFunction = useMemo(() => () => apiService.getAllWoodTypes(), []);
-  const { data: allWoodTypes, loading: allWoodTypesLoading, error: allWoodTypesError } = useApi(
-    allWoodTypesApiFunction,
-    []
   );
 
   // API hooks for prices

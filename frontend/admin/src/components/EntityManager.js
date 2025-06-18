@@ -353,12 +353,79 @@ function EntityManager({ entityType }) {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Specific validation for woodTypes name update
+    if (editingItem && config.api.update && entityType === 'woodTypes') {
+      const originalName = (editingItem.neme || '').toLowerCase();
+      const newName = (formData.neme || '').toLowerCase();
+
+      if (newName && newName !== originalName) {
+        const isDuplicate = referenceData.woodTypes.some(wt =>
+          wt.id !== editingItem.id && (wt.neme || '').toLowerCase() === newName
+        );
+
+        if (isDuplicate) {
+          toast.error('Тип древесины с таким названием уже существует');
+          return; // Prevent form submission
+        }
+      }
+    }
+
+    // Specific validation for products title update
+    if (editingItem && config.api.update && entityType === 'products') {
+      const originalTitle = (editingItem.title || '').toLowerCase();
+      const newTitle = (formData.title || '').toLowerCase();
+
+      if (newTitle && newTitle !== originalTitle) {
+        const isDuplicate = referenceData.products.some(product =>
+          product.id !== editingItem.id && (product.title || '').toLowerCase() === newTitle
+        );
+
+        if (isDuplicate) {
+          toast.error('Продукт с таким названием уже существует');
+          return; // Prevent form submission
+        }
+      }
+    }
+
     try {
       if (editingItem) {
+        // Ensure that we use config.api.update for the update operation
         await mutate(() => config.api.update(editingItem.id, formData));
         toast.success('Запись обновлена успешно');
         setShowEditModal(false);
       } else {
+        // Create operation
+        // Specific validation for woodTypes name create
+        if (entityType === 'woodTypes') {
+          const newName = (formData.neme || '').toLowerCase();
+          if (newName) { // Only proceed if newName is not empty
+            const isDuplicate = referenceData.woodTypes.some(
+              wt => (wt.neme || '').toLowerCase() === newName
+            );
+
+            if (isDuplicate) {
+              toast.error('Тип древесины с таким названием уже существует');
+              return; // Prevent form submission
+            }
+          }
+        }
+
+        // Specific validation for products title create
+        if (entityType === 'products') {
+          const newTitle = (formData.title || '').toLowerCase();
+          if (newTitle) { // Only proceed if newTitle is not empty
+            const isDuplicate = referenceData.products.some(
+              product => (product.title || '').toLowerCase() === newTitle
+            );
+
+            if (isDuplicate) {
+              toast.error('Продукт с таким названием уже существует');
+              return; // Prevent form submission
+            }
+          }
+        }
+
         // Generate UUID if not provided
         const dataToSubmit = { ...formData };
         if (!dataToSubmit.id) {
