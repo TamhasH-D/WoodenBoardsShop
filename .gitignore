@@ -171,3 +171,6 @@ user_media/
 data-generator/uploaded_images/*
 **/uploaded_images/*
 !**/uploaded_images/.gitkeep
+
+# Keycloak configuration files that might be specific to an environment
+/frontend/buyer/public/keycloak.json

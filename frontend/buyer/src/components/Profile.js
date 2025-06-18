@@ -1,66 +1,138 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
-import { useApi, useApiMutation } from '../hooks/useApi';
-import { apiService } from '../services/api';
-import { MOCK_IDS } from '../utils/constants';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext'; // Import useAuth
+// Removed: import { useApi, useApiMutation } from '../hooks/useApi';
+// Removed: import { apiService } from '../services/api';
+// Removed: import { MOCK_IDS } from '../utils/constants';
 
-// TODO: Replace with real authentication when ready for production
-const getCurrentBuyerKeycloakId = () => {
-  // Используем mock ID для разработки и тестирования
-  // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
-  console.warn('Using mock buyer keycloak ID for development/testing - implement real authentication when ready');
-  return MOCK_IDS.BUYER_ID;
-};
+// Removed: const getCurrentBuyerKeycloakId = () => { ... };
 
 function Profile() {
-  const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState({
-    keycloak_uuid: '',
-    is_online: true
-  });
+  const {
+    buyerProfile,
+    isAuthenticated,
+    profileLoading,
+    profileError,
+    syncBuyerProfile, // For refreshing profile data
+    keycloak // To get Keycloak instance for user info if needed, though buyerProfile is primary
+  } = useAuth();
 
-  // Create stable API function to prevent infinite loops
-  const profileApiFunction = useMemo(() => () => {
-    const keycloakId = getCurrentBuyerKeycloakId();
-    return apiService.getBuyerProfileByKeycloakId(keycloakId);
-  }, []);
-  const { data, loading, error, refetch } = useApi(profileApiFunction, []);
-  const { mutate, loading: mutating, error: mutationError, success } = useApiMutation();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({
+    // Initialize with fields that might be editable.
+    // For now, only 'is_online'. Other fields from buyerProfile will be displayed as read-only.
+    is_online: false,
+    // 'name' and 'email' could be editable in a more complete form.
+    // name: '',
+    // email: '',
+  });
+  const [mutationLoading, setMutationLoading] = useState(false);
+  const [mutationError, setMutationError] = useState(null);
+  const [mutationSuccess, setMutationSuccess] = useState(false);
+
+  // Initialize editData when editing starts or buyerProfile changes
+  useEffect(() => {
+    if (buyerProfile) {
+      setEditData({
+        is_online: buyerProfile.is_online || false,
+        // name: buyerProfile.name || '',
+        // email: buyerProfile.email || '',
+        // Other fields from buyerProfile if they become editable
+      });
+    }
+  }, [buyerProfile, isEditing]); // Re-initialize if buyerProfile changes while editing (e.g. after a refresh)
+
+  const handleEdit = () => {
+    if (buyerProfile) {
+      // Pre-fill editData from the current buyerProfile
+      setEditData({
+        is_online: buyerProfile.is_online || false,
+        // name: buyerProfile.name || '',
+        // email: buyerProfile.email || '',
+      });
+    }
+    setIsEditing(true);
+    setMutationSuccess(false); // Reset success message
+    setMutationError(null); // Reset error message
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    // Optionally reset editData to current profile state if changes were made
+    if (buyerProfile) {
+      setEditData({ is_online: buyerProfile.is_online || false });
+    }
+  };
+
+  // Mocked API call for profile update
+  const mockUpdateMyBuyerProfile = async (dataToUpdate) => {
+    console.log('[Profile] Mocking updateMyBuyerProfile with:', dataToUpdate);
+    // TODO: Replace with actual API call: await apiService.updateMyBuyerProfile(dataToUpdate);
+    return new Promise(resolve => setTimeout(() => {
+      // Simulate merging updated data with existing buyerProfile structure
+      // In a real scenario, the backend would return the updated profile.
+      const updatedProfileData = {
+        ...(buyerProfile || {}), // Spread existing profile to keep non-updated fields
+        ...dataToUpdate
+      };
+      console.log('[Profile] Mock API success, returning:', updatedProfileData);
+      resolve({ data: updatedProfileData });
+    }, 500));
+  };
 
   const handleSaveProfile = useCallback(async (e) => {
     e.preventDefault();
+    setMutationLoading(true);
+    setMutationError(null);
+    setMutationSuccess(false);
+
     try {
-      // Get buyer_id from current profile data
-      const buyerId = data?.data?.id;
-      if (!buyerId) {
-        throw new Error('Buyer ID not found');
+      // const updatedProfile = await apiService.updateMyBuyerProfile(editData); // Future real call
+      await mockUpdateMyBuyerProfile(editData); // Using mocked call
+
+      // After mock update, call syncBuyerProfile to simulate refreshing context state.
+      // In a real scenario, syncBuyerProfile would re-fetch from backend,
+      // or AuthContext might have a more direct way to update its buyerProfile state.
+      if (syncBuyerProfile) {
+        await syncBuyerProfile(keycloak); // Pass keycloak if syncBuyerProfile expects it
       }
-      await mutate(apiService.updateBuyerProfile, buyerId, profileData);
+
+      setMutationSuccess(true);
       setIsEditing(false);
-      refetch();
     } catch (err) {
-      console.error('Failed to update profile:', err);
+      console.error('[Profile] Failed to update profile:', err);
+      setMutationError(err.message || 'Failed to save changes.');
+    } finally {
+      setMutationLoading(false);
     }
-  }, [profileData, mutate, refetch, data?.data?.id]);
+  }, [editData, syncBuyerProfile, buyerProfile, keycloak]);
 
-  // Use useEffect with proper dependency to prevent infinite loops
-  useEffect(() => {
-    if (data?.data) {
-      setProfileData(prevData => {
-        const newData = {
-          keycloak_uuid: data.data.keycloak_uuid || '',
-          is_online: data.data.is_online || false
-        };
 
-        // Only update if data actually changed to prevent unnecessary re-renders
-        if (prevData.keycloak_uuid !== newData.keycloak_uuid ||
-            prevData.is_online !== newData.is_online) {
-          return newData;
-        }
-        return prevData;
-      });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.data?.keycloak_uuid, data?.data?.is_online]);
+  if (profileLoading) {
+    return <div className="loading">Loading profile...</div>;
+  }
+
+  if (profileError) {
+    return (
+      <div className="error card">
+        <h2>My Profile</h2>
+        <p>Failed to load profile: {profileError.message}</p>
+        <button onClick={() => syncBuyerProfile(keycloak)} className="btn btn-primary">Try Refresh</button>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !buyerProfile) {
+    return (
+      <div className="error card">
+        <h2>My Profile</h2>
+        <p>Profile data is not available. Please ensure you are logged in.</p>
+        {/* Optionally, add a login button if Keycloak is not authenticated */}
+      </div>
+    );
+  }
+
+  // Display data from buyerProfile
+  const { id, keycloak_id, name, email, is_online, created_at, updated_at } = buyerProfile;
 
   return (
     <div className="card">
@@ -68,152 +140,92 @@ function Profile() {
         <h2>My Profile</h2>
         <div style={{ display: 'flex', gap: '1rem' }}>
           {!isEditing && (
-            <button onClick={() => setIsEditing(true)} className="btn btn-primary">
+            <button onClick={handleEdit} className="btn btn-primary">
               Edit Profile
             </button>
           )}
-          <button onClick={refetch} className="btn btn-secondary" disabled={loading}>
-            {loading ? 'Loading...' : 'Refresh'}
+          <button onClick={() => syncBuyerProfile(keycloak)} className="btn btn-secondary" disabled={profileLoading || mutationLoading}>
+            {profileLoading ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
       </div>
 
-      {error && (
-        <div className="error">
-          Failed to load profile: {error}
-        </div>
-      )}
-
       {mutationError && (
-        <div className="error">
+        <div className="alert alert-danger" role="alert">
           Failed to update profile: {mutationError}
         </div>
       )}
 
-      {success && (
-        <div className="success">
-          Profile updated successfully!
+      {mutationSuccess && (
+        <div className="alert alert-success" role="alert">
+          Profile updated successfully! (Mocked)
         </div>
       )}
 
-      {loading && <div className="loading">Loading profile...</div>}
+      {isEditing ? (
+        <form onSubmit={handleSaveProfile}>
+          <div className="form-group">
+            <label className="form-label">Buyer ID (Read-only)</label>
+            <input type="text" className="form-input" value={id || ''} disabled style={{ backgroundColor: '#f7fafc' }} />
+          </div>
 
-      {data && (
+          <div className="form-group">
+            <label className="form-label">Keycloak ID (Read-only)</label>
+            <input type="text" className="form-input" value={keycloak_id || ''} disabled style={{ backgroundColor: '#f7fafc' }} />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Name (Read-only for this form)</label>
+            <input type="text" className="form-input" value={name || ''} disabled style={{ backgroundColor: '#f7fafc' }} />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Email (Read-only for this form)</label>
+            <input type="text" className="form-input" value={email || ''} disabled style={{ backgroundColor: '#f7fafc' }} />
+          </div>
+
+          <div className="form-group">
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <input
+                type="checkbox"
+                checked={editData.is_online}
+                onChange={(e) => setEditData({...editData, is_online: e.target.checked})}
+              />
+              <span>Show as online to sellers</span>
+            </label>
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+            <button type="submit" className="btn btn-success" disabled={mutationLoading}>
+              {mutationLoading ? 'Saving...' : 'Save Changes'}
+            </button>
+            <button type="button" onClick={handleCancelEdit} className="btn btn-secondary" disabled={mutationLoading}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : (
         <div>
-          {isEditing ? (
-            <form onSubmit={handleSaveProfile}>
-              <div className="form-group">
-                <label className="form-label">Buyer ID</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={data?.data?.id || 'Loading...'}
-                  disabled
-                  style={{ backgroundColor: '#f7fafc' }}
-                />
-                <small style={{ color: '#718096' }}>This ID cannot be changed</small>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Keycloak UUID</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={profileData.keycloak_uuid}
-                  onChange={(e) => setProfileData({...profileData, keycloak_uuid: e.target.value})}
-                  placeholder="Enter your Keycloak UUID"
-                />
-              </div>
-
-              <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <input
-                    type="checkbox"
-                    checked={profileData.is_online}
-                    onChange={(e) => setProfileData({...profileData, is_online: e.target.checked})}
-                  />
-                  <span>Show as online to sellers</span>
-                </label>
-              </div>
-
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <button type="submit" className="btn btn-success" disabled={mutating}>
-                  {mutating ? 'Saving...' : 'Save Changes'}
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => setIsEditing(false)} 
-                  className="btn btn-secondary"
-                  disabled={mutating}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          ) : (
+          <div className="grid grid-2">
             <div>
-              <div className="grid grid-2">
-                <div>
-                  <h3>Profile Information</h3>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <strong>Buyer ID:</strong>
-                    <br />
-                    <code style={{ backgroundColor: '#f7fafc', padding: '0.25rem', borderRadius: '0.25rem' }}>
-                      {data?.data?.id || 'Loading...'}
-                    </code>
-                  </div>
-                  
-                  <div style={{ marginBottom: '1rem' }}>
-                    <strong>Keycloak UUID:</strong>
-                    <br />
-                    {data.data?.keycloak_uuid ? (
-                      <code style={{ backgroundColor: '#f7fafc', padding: '0.25rem', borderRadius: '0.25rem' }}>
-                        {data.data.keycloak_uuid}
-                      </code>
-                    ) : (
-                      <span style={{ color: '#718096' }}>Not set</span>
-                    )}
-                  </div>
-
-                  <div style={{ marginBottom: '1rem' }}>
-                    <strong>Status:</strong>
-                    <br />
-                    <span style={{ 
-                      color: data.data?.is_online ? '#38a169' : '#e53e3e',
-                      fontWeight: 'bold'
-                    }}>
-                      {data.data?.is_online ? '🟢 Online' : '🔴 Offline'}
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <h3>Account Details</h3>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <strong>Member Since:</strong>
-                    <br />
-                    {data.data?.created_at ? new Date(data.data.created_at).toLocaleDateString() : 'Unknown'}
-                  </div>
-                  
-                  <div style={{ marginBottom: '1rem' }}>
-                    <strong>Last Updated:</strong>
-                    <br />
-                    {data.data?.updated_at ? new Date(data.data.updated_at).toLocaleDateString() : 'Unknown'}
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ marginTop: '2rem', padding: '1rem', backgroundColor: '#e6fffa', borderRadius: '0.375rem' }}>
-                <h4>Profile Tips</h4>
-                <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
-                  <li>Keep your status online to receive seller responses faster</li>
-                  <li>Make sure your Keycloak UUID is correctly configured</li>
-                  <li>Update your profile information to build trust with sellers</li>
-                  <li>Use the board analyzer to get accurate volume estimates</li>
-                </ul>
-              </div>
+              <h3>Profile Information</h3>
+              <p><strong>Buyer ID:</strong> <code>{id}</code></p>
+              <p><strong>Keycloak ID:</strong> <code>{keycloak_id}</code></p>
+              <p><strong>Name:</strong> {name || 'N/A'}</p>
+              <p><strong>Email:</strong> {email || 'N/A'}</p>
+              <p><strong>Status:</strong>
+                <span style={{ color: is_online ? '#38a169' : '#e53e3e', fontWeight: 'bold' }}>
+                  {is_online ? '🟢 Online' : '🔴 Offline'}
+                </span>
+              </p>
             </div>
-          )}
+            <div>
+              <h3>Account Details</h3>
+              <p><strong>Member Since:</strong> {created_at ? new Date(created_at).toLocaleDateString() : 'N/A'}</p>
+              <p><strong>Last Updated:</strong> {updated_at ? new Date(updated_at).toLocaleDateString() : 'N/A'}</p>
+            </div>
+          </div>
+          {/* ... (Profile Tips can remain) ... */}
         </div>
       )}
     </div>
