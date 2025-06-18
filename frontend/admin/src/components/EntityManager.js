@@ -239,6 +239,7 @@ function EntityManager({ entityType }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [isDuplicateNameError, setIsDuplicateNameError] = useState(false);
 
   // Initialize form data
   const getInitialFormData = useCallback(() => {
@@ -353,6 +354,7 @@ function EntityManager({ entityType }) {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsDuplicateNameError(false); // Reset error state on new submission
 
     // Specific validation for woodTypes name update
     if (editingItem && config.api.update && entityType === 'woodTypes') {
@@ -366,6 +368,7 @@ function EntityManager({ entityType }) {
 
         if (isDuplicate) {
           toast.error('Тип древесины с таким названием уже существует');
+          setIsDuplicateNameError(true);
           return; // Prevent form submission
         }
       }
@@ -406,6 +409,7 @@ function EntityManager({ entityType }) {
 
             if (isDuplicate) {
               toast.error('Тип древесины с таким названием уже существует');
+              setIsDuplicateNameError(true);
               return; // Prevent form submission
             }
           }
@@ -656,6 +660,7 @@ function EntityManager({ entityType }) {
             <Button
               onClick={handleSubmit}
               loading={mutating}
+              disabled={mutating || (entityType === 'woodTypes' && isDuplicateNameError)}
             >
               Создать
             </Button>
@@ -697,6 +702,7 @@ function EntityManager({ entityType }) {
             <Button
               onClick={handleSubmit}
               loading={mutating}
+              disabled={mutating || (entityType === 'woodTypes' && isDuplicateNameError)}
             >
               Сохранить
             </Button>
