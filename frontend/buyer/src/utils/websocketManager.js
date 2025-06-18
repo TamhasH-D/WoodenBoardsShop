@@ -56,6 +56,8 @@ class ConnectionInfo {
     this.lastPingTime = Date.now();
     this.pingInterval = null;
     this.reconnectTimeout = null;
+    this.reconnectTimestamps = []; // Added
+    this.maxTrackedReconnects = 5; // Added
   }
 }
 
@@ -70,7 +72,7 @@ class WebSocketManager {
     this.maxReconnectAttempts = 5;
     this.baseReconnectDelay = 1000; // 1 секунда
     this.maxReconnectDelay = 30000; // 30 секунд
-    this.pingInterval = 30000; // 30 секунд
+    this.pingInterval = 20000; // Changed to 20 секунд
     this.pongTimeout = 10000; // 10 секунд
   }
 
@@ -230,7 +232,16 @@ class WebSocketManager {
 
     ws.onopen = () => {
       console.log(`[WebSocketManager] ✅ Connected to ${threadId}`);
-      connectionInfo.reconnectAttempts = 0;
+
+      // Record timestamp if this was a successful reconnection attempt
+      if (connectionInfo.reconnectAttempts > 0) {
+        connectionInfo.reconnectTimestamps.push(Date.now());
+        if (connectionInfo.reconnectTimestamps.length > connectionInfo.maxTrackedReconnects) {
+          connectionInfo.reconnectTimestamps.shift();
+        }
+      }
+
+      connectionInfo.reconnectAttempts = 0; // Reset after checking
       connectionInfo.isConnecting = false;
       connectionInfo.lastPingTime = Date.now();
 
@@ -284,6 +295,10 @@ class WebSocketManager {
     };
 
     ws.onclose = (event) => {
+      if (event.code === 1006) {
+        const timeSinceLastPong = Date.now() - connectionInfo.lastPingTime;
+        console.warn(`[WebSocketManager] ⚠️ Abnormal closure (1006) for ${threadId}. Reason: "${event.reason || 'No reason provided'}". Time since last pong: ${timeSinceLastPong}ms.`);
+      }
       console.log(`[WebSocketManager] ❌ Disconnected from ${threadId}:`, event.code, event.reason);
 
       // Останавливаем ping
@@ -394,6 +409,19 @@ class WebSocketManager {
       timestamp: new Date().toISOString()
     };
     return this.sendMessage(threadId, typingMessage);
+  }
+
+  /**
+   * Получить количество недавних переподключений для треда
+   */
+  getRecentReconnectCount(threadId, timeWindowSeconds = 60) {
+    const connectionInfo = this.connections.get(threadId);
+    if (!connectionInfo || !connectionInfo.reconnectTimestamps) {
+      return 0;
+    }
+    const now = Date.now();
+    const threshold = now - timeWindowSeconds * 1000;
+    return connectionInfo.reconnectTimestamps.filter(ts => ts > threshold).length;
   }
 }
 

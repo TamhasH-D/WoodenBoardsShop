@@ -17,6 +17,7 @@ const ChatWindow = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isWsConnecting, setIsWsConnecting] = useState(true); // For WebSocket connection attempts specifically
+  const [isConnectionUnstable, setIsConnectionUnstable] = useState(false);
   const [sending, setSending] = useState(false);
   const [buyerId, setBuyerId] = useState(null);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
@@ -309,6 +310,23 @@ const ChatWindow = () => {
     };
   }, [threadId]);
 
+  useEffect(() => {
+    if (isConnected && threadId) {
+        const recentReconnects = websocketManager.getRecentReconnectCount(threadId, 60); // Check in last 60 seconds
+        if (recentReconnects >= 2) {
+            console.log('[ChatWindow] Connection is unstable, recent reconnects:', recentReconnects);
+            setIsConnectionUnstable(true);
+            const timer = setTimeout(() => {
+                setIsConnectionUnstable(false);
+            }, 5000); // Show unstable indicator for 5 seconds
+            return () => clearTimeout(timer);
+        }
+    } else if (!isConnected) {
+        // If connection drops, reset unstable state immediately.
+        // It will be re-evaluated upon next successful connection.
+        setIsConnectionUnstable(false);
+    }
+  }, [isConnected, threadId]);
 
 
   if (isLoading) {
@@ -349,21 +367,31 @@ const ChatWindow = () => {
   let pulseAnimation = 'none';
 
   if (isConnected) {
-    statusText = 'Подключен';
-    dotColor = '#10b981'; // Tailwind green-500
-    containerBgColor = '#dcfce7'; // Tailwind green-100
-    borderColorAttribute = '#bbf7d0'; // Tailwind green-200
-    pulseAnimation = 'pulse 2s infinite';
+    if (isConnectionUnstable) {
+        statusText = 'Соединение нестабильно';
+        dotColor = '#f59e0b'; // Amber-500 (Orange/Yellow)
+        containerBgColor = '#fef3c7'; // Amber-100
+        borderColorAttribute = '#fcd34d'; // Amber-300
+        pulseAnimation = 'pulse 1s infinite'; // Faster pulse
+    } else {
+        statusText = 'Подключен';
+        dotColor = '#10b981'; // Green-500
+        containerBgColor = '#dcfce7'; // Green-100
+        borderColorAttribute = '#bbf7d0'; // Green-200
+        pulseAnimation = 'pulse 2s infinite'; // Normal pulse
+    }
   } else if (!isLoading && !isWsConnecting) { // Disconnected state: Initial data load finished, and WS is not trying to connect.
     statusText = 'Ошибка подключения';
     dotColor = '#ef4444'; // Tailwind red-500
     containerBgColor = '#fee2e2'; // Tailwind red-100
     borderColorAttribute = '#fca5a5'; // Tailwind red-300
+    pulseAnimation = 'none';
   } else { // Connecting state: Either initial data is loading OR WS is actively trying to connect.
     statusText = 'Подключение...';
     dotColor = '#f59e0b'; // Tailwind amber-500
     containerBgColor = '#fef3c7'; // Tailwind amber-100
     borderColorAttribute = '#fcd34d'; // Tailwind amber-300
+    pulseAnimation = 'none'; // Or a specific connecting animation if desired
   }
 
   // Define textarea placeholder based on connection state
