@@ -34,46 +34,23 @@ const ErrorToast = React.memo(({ error, onDismiss, autoHide = true, duration = 5
 
   return (
     <div 
-      className={`error-toast ${isVisible ? 'error-toast-visible' : 'error-toast-hidden'}`}
-      style={{
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        zIndex: 9999,
-        maxWidth: '400px',
-        backgroundColor: '#fee2e2',
-        border: '1px solid #fecaca',
-        borderRadius: '8px',
-        padding: '12px 16px',
-        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
-        transform: isVisible ? 'translateX(0)' : 'translateX(100%)',
-        transition: 'transform 0.3s ease-in-out',
-        fontSize: '14px',
-        lineHeight: '1.4'
-      }}
+      className={`error-toast ${isVisible ? 'error-toast-visible' : 'error-toast-hidden'} fixed top-5 right-5 z-[9999] max-w-md bg-red-50 border border-red-300 rounded-lg px-4 py-3 shadow-lg text-sm leading-normal transition-transform duration-300 ease-in-out`}
+      // The transform and transition properties might be overridden by error-toast-visible/hidden classes if they also define transform/transition
+      // style prop removed
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-        <span style={{ color: '#dc2626', fontSize: '16px', flexShrink: 0 }}>⚠️</span>
-        <div style={{ flex: 1, color: '#7f1d1d' }}>
-          <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+      <div className="flex items-start gap-2">
+        <span className="text-red-600 text-base flex-shrink-0">⚠️</span>
+        <div className="flex-1 text-red-800">
+          <div className="font-semibold mb-1">
             Ошибка подключения
           </div>
-          <div style={{ fontSize: '13px', opacity: 0.8 }}>
+          <div className="text-[13px] opacity-80">
             {typeof error === 'string' ? error : 'Не удается подключиться к серверу'}
           </div>
         </div>
         <button
           onClick={handleDismiss}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: '#7f1d1d',
-            cursor: 'pointer',
-            fontSize: '18px',
-            lineHeight: 1,
-            padding: '0',
-            flexShrink: 0
-          }}
+          className="bg-transparent border-none text-red-800 cursor-pointer text-lg leading-none p-0 flex-shrink-0 hover:text-red-900"
           aria-label="Закрыть"
         >
           ×
