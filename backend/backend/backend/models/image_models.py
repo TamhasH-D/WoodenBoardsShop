@@ -29,6 +29,7 @@ class Image(Base):
     product: Mapped[Product] = relationship(
         foreign_keys=[product_id], back_populates="image", uselist=False
     )
-    wooden_board: Mapped["WoodenBoard"] = relationship(
-        back_populates="image", uselist=False
+    wooden_boards: Mapped[list["WoodenBoard"]] = relationship( # Renamed to plural for clarity
+        back_populates="image"
+        # uselist=True is implied by Mapped[list[...]]
     )

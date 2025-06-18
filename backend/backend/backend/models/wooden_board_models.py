@@ -23,5 +23,5 @@ class WoodenBoard(Base):
     )
 
     image: Mapped[Image] = relationship(
-        foreign_keys=[image_id], back_populates="wooden_board", uselist=False
+        foreign_keys=[image_id], back_populates="wooden_boards", uselist=False # Changed back_populates
     )
