@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext'; // Import useAuth
 
 const ProfessionalHeader = () => {
+  // isAuthenticated is the comprehensive flag: Keycloak auth + profile loaded
+  // keycloakAuthenticated is just Keycloak's own auth status
+  // profileLoading indicates if the buyer profile is being fetched
+  const { isAuthenticated, login, logout, userInfo, keycloakAuthenticated, profileLoading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const location = useLocation();
@@ -94,7 +99,7 @@ const ProfessionalHeader = () => {
               style={{
                 display: isMobile ? 'none' : 'flex',
                 alignItems: 'center',
-                gap: '2rem'
+                gap: '1.5rem' // Adjusted gap for new elements
               }}
             >
               {navigationItems.map((item) => (
@@ -126,7 +131,54 @@ const ProfessionalHeader = () => {
               ))}
             </nav>
 
-
+            {/* Auth Buttons - Desktop */}
+            <div style={{ display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: '1rem' }}>
+              {keycloakAuthenticated ? ( // Show user info area if Keycloak login is done
+                <>
+                  <span style={{ fontSize: '0.875rem', color: '#374151' }}>
+                    {profileLoading ? "Загрузка..." : (userInfo?.username || 'User')}
+                  </span>
+                  <button
+                    onClick={logout}
+                    disabled={profileLoading} // Optionally disable logout while profile is loading
+                    style={{
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: '#ffffff',
+                      backgroundColor: '#ef4444', // Red for logout
+                      border: 'none',
+                      borderRadius: '0.375rem',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s ease'
+                    }}
+                    onMouseOver={(e) => e.target.style.backgroundColor = '#dc2626'}
+                    onMouseOut={(e) => e.target.style.backgroundColor = '#ef4444'}
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : ( // Only show Login if not even Keycloak authenticated
+                <button
+                  onClick={login}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    color: '#ffffff',
+                    backgroundColor: '#2563eb', // Blue for login
+                    border: 'none',
+                    borderRadius: '0.375rem',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s ease'
+                  }}
+                  onMouseOver={(e) => e.target.style.backgroundColor = '#1d4ed8'}
+                  onMouseOut={(e) => e.target.style.backgroundColor = '#2563eb'}
+                >
+                  Login
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Mobile Menu Button */}
@@ -213,8 +265,66 @@ const ProfessionalHeader = () => {
                   {item.label}
                 </Link>
               ))}
-
-
+              {/* Auth Buttons - Mobile */}
+              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
+                {keycloakAuthenticated ? ( // Show user info area if Keycloak login is done
+                  <>
+                    <span style={{
+                      display: 'block',
+                      padding: '0.75rem 1rem',
+                      fontSize: '0.875rem',
+                      color: '#374151',
+                      textAlign: 'center'
+                    }}>
+                      {profileLoading ? "Загрузка..." : (userInfo?.username || 'User')}
+                    </span>
+                    <button
+                      onClick={() => { logout(); setMobileMenuOpen(false); }}
+                      disabled={profileLoading} // Optionally disable logout
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        padding: '0.75rem 1rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: '#ffffff',
+                        backgroundColor: '#ef4444',
+                        border: 'none',
+                        borderRadius: '0.375rem',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        transition: 'background-color 0.2s ease'
+                      }}
+                      onMouseOver={(e) => e.target.style.backgroundColor = '#dc2626'}
+                      onMouseOut={(e) => e.target.style.backgroundColor = '#ef4444'}
+                    >
+                      Logout
+                    </button>
+                  </>
+                ) : ( // Only show Login if not even Keycloak authenticated
+                  <button
+                    onClick={() => { login(); setMobileMenuOpen(false); }}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: '#ffffff',
+                      backgroundColor: '#2563eb',
+                      border: 'none',
+                      borderRadius: '0.375rem',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      transition: 'background-color 0.2s ease'
+                    }}
+                    onMouseOver={(e) => e.target.style.backgroundColor = '#1d4ed8'}
+                    onMouseOut={(e) => e.target.style.backgroundColor = '#2563eb'}
+                  >
+                    Login
+                  </button>
+                )}
+              </div>
             </nav>
           </div>
         )}
