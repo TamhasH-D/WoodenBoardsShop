@@ -301,6 +301,12 @@ class WebSocketManager {
     ws.onerror = (error) => {
       console.error(`[WebSocketManager] WebSocket error for ${threadId}:`, error);
       onStatusChange && onStatusChange(false);
+
+      // Пытаемся переподключиться если это не намеренное закрытие
+      if (connectionInfo.reconnectAttempts < this.maxReconnectAttempts) {
+        console.log(`[WebSocketManager] Scheduling reconnect for ${threadId} due to WebSocket error`);
+        this.scheduleReconnect(connectionInfo);
+      }
     };
   }
 
@@ -402,7 +408,15 @@ window.addEventListener('beforeunload', () => {
 // Обрабатываем потерю/восстановление соединения с интернетом
 window.addEventListener('online', () => {
   console.log('[WebSocketManager] Network connection restored, checking connections');
-  // Можно добавить логику для проверки и восстановления соединений
+  for (const connectionInfo of websocketManager.connections.values()) {
+    if (
+      connectionInfo.ws.readyState !== WS_STATES.OPEN &&
+      connectionInfo.reconnectAttempts < websocketManager.maxReconnectAttempts
+    ) {
+      console.log(`[WebSocketManager] Attempting to reconnect ${connectionInfo.threadId} due to "online" event`);
+      websocketManager.scheduleReconnect(connectionInfo);
+    }
+  }
 });
 
 window.addEventListener('offline', () => {

@@ -5,7 +5,7 @@ import { apiService } from '../../services/api';
 import websocketManager from '../../utils/websocketManager';
 import { getCurrentBuyerId } from '../../utils/auth';
 
-
+// TODO: For improved maintainability and cleaner JSX, consider refactoring inline styles into CSS classes (e.g., using CSS Modules or a global stylesheet).
 const ChatWindow = () => {
   const { threadId } = useParams();
   const { showError, showInfo } = useNotifications();
@@ -16,6 +16,7 @@ const ChatWindow = () => {
   const [newMessage, setNewMessage] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isWsConnecting, setIsWsConnecting] = useState(true); // For WebSocket connection attempts specifically
   const [sending, setSending] = useState(false);
   const [buyerId, setBuyerId] = useState(null);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
@@ -127,13 +128,26 @@ const ChatWindow = () => {
 
       // Подключаемся к WebSocket
       websocketManager.addMessageHandler(threadId, handleWebSocketMessage);
-      websocketManager.connect(threadId, buyerId, 'buyer', setIsConnected);
+      const handleWsStatusChange = (status) => {
+        setIsConnected(status);
+        setIsWsConnecting(!status); // If connected, not "connecting". If disconnects, it means connection attempt ended.
+        if (status) {
+          console.log('[ChatWindow] WebSocket now connected.');
+        } else {
+          console.log('[ChatWindow] WebSocket now disconnected/failed to connect.');
+        }
+      };
+      // Indicate that a WebSocket connection attempt is starting.
+      setIsWsConnecting(true);
+      websocketManager.connect(threadId, buyerId, 'buyer', handleWsStatusChange);
 
     } catch (error) {
       console.error('[ChatWindow] Error loading chat data:', error);
       showError('Не удалось загрузить чат');
+      setIsWsConnecting(false); // If data loading (or initial WS connection attempt within it) fails.
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Finished attempting to load initial data.
+      // isWsConnecting is managed by handleWsStatusChange or the catch block.
     }
   };
 
@@ -284,6 +298,9 @@ const ChatWindow = () => {
       if (threadId) {
         websocketManager.removeMessageHandler(threadId, handleWebSocketMessage);
         websocketManager.disconnect(threadId);
+        // Explicitly set connection states on component unmount for cleanup
+        setIsConnected(false);
+        setIsWsConnecting(false);
       }
 
       if (typingTimeoutRef.current) {
@@ -323,6 +340,47 @@ const ChatWindow = () => {
       </div>
     );
   }
+
+  // Define connection status variables for UI
+  let statusText;
+  let dotColor;
+  let containerBgColor;
+  let borderColorAttribute; // Renamed to avoid conflict with style prop: border-color
+  let pulseAnimation = 'none';
+
+  if (isConnected) {
+    statusText = 'Подключен';
+    dotColor = '#10b981'; // Tailwind green-500
+    containerBgColor = '#dcfce7'; // Tailwind green-100
+    borderColorAttribute = '#bbf7d0'; // Tailwind green-200
+    pulseAnimation = 'pulse 2s infinite';
+  } else if (!isLoading && !isWsConnecting) { // Disconnected state: Initial data load finished, and WS is not trying to connect.
+    statusText = 'Ошибка подключения';
+    dotColor = '#ef4444'; // Tailwind red-500
+    containerBgColor = '#fee2e2'; // Tailwind red-100
+    borderColorAttribute = '#fca5a5'; // Tailwind red-300
+  } else { // Connecting state: Either initial data is loading OR WS is actively trying to connect.
+    statusText = 'Подключение...';
+    dotColor = '#f59e0b'; // Tailwind amber-500
+    containerBgColor = '#fef3c7'; // Tailwind amber-100
+    borderColorAttribute = '#fcd34d'; // Tailwind amber-300
+  }
+
+  // Define textarea placeholder based on connection state
+  let textareaPlaceholder;
+  if (isConnected) {
+    textareaPlaceholder = "Напишите сообщение...";
+  } else if (!isLoading && !isWsConnecting) { // Same disconnected state as above
+    textareaPlaceholder = "Ошибка подключения. Попробуйте обновить страницу.";
+  } else { // Connecting or initial loading
+    textareaPlaceholder = "Подключение к чату...";
+  }
+
+  // Determine if interaction should be fully disabled (during loading or ws connection attempts)
+  const isInteractionDisabled = isLoading || isWsConnecting;
+  // Determine if truly disconnected (after load and ws attempts failed or were not initiated)
+  const isTrulyDisconnected = !isConnected && !isLoading && !isWsConnecting;
+
 
   return (
     <div style={{
@@ -378,14 +436,16 @@ const ChatWindow = () => {
               width: '48px',
               height: '48px',
               borderRadius: '16px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              backgroundColor: '#4b5563', // Tailwind gray-600
+              color: 'white',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '20px',
-              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+              fontSize: '18px', // Adjusted for two letters
+              fontWeight: 'bold',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' // Softer shadow
             }}>
-              🏪
+              {threadInfo && threadInfo.seller_id ? threadInfo.seller_id.substring(0, 2).toUpperCase() : 'S'}
             </div>
             <div>
               <h2 style={{
@@ -410,29 +470,29 @@ const ChatWindow = () => {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             {/* Connection Status */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '8px 16px',
-              borderRadius: '20px',
-              backgroundColor: isConnected ? '#dcfce7' : '#fef3c7',
-              border: `1px solid ${isConnected ? '#bbf7d0' : '#fcd34d'}`
-            }}>
+            <div
+              title={statusText}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center', // Center the dot
+                padding: '8px', // Adjusted padding
+                width: '36px', // Fixed width for circular shape
+                height: '36px', // Fixed height for circular shape
+                borderRadius: '50%', // Make it a circle
+                backgroundColor: containerBgColor,
+                border: `1px solid ${borderColorAttribute}`,
+                cursor: 'default'
+              }}
+            >
               <div style={{
-                width: '8px',
-                height: '8px',
+                width: '10px',
+                height: '10px',
                 borderRadius: '50%',
-                backgroundColor: isConnected ? '#10b981' : '#f59e0b',
-                animation: isConnected ? 'pulse 2s infinite' : 'none'
+                backgroundColor: dotColor,
+                animation: pulseAnimation,
               }} />
-              <span style={{
-                fontSize: '14px',
-                fontWeight: '600',
-                color: isConnected ? '#065f46' : '#92400e'
-              }}>
-                {isConnected ? 'Подключен' : 'Подключение...'}
-              </span>
+              {/* Text span removed */}
             </div>
 
             {/* Typing indicator */}
@@ -545,18 +605,18 @@ const ChatWindow = () => {
                 }}
                 onMouseEnter={(e) => {
                   if (!loadingMore) {
-                    e.target.style.backgroundColor = '#f8fafc';
-                    e.target.style.borderColor = '#2563eb';
-                    e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)';
+                    e.target.style.backgroundColor = '#f0f9ff'; // Tailwind blue-50
+                    e.target.style.borderColor = '#bae6fd'; // Tailwind sky-200
+                    // e.target.style.transform = 'translateY(-2px)'; // Removed
+                    // e.target.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)'; // Removed
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!loadingMore) {
                     e.target.style.backgroundColor = 'white';
                     e.target.style.borderColor = '#e5e7eb';
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                    // e.target.style.transform = 'translateY(0)'; // Removed
+                    // e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'; // Removed
                   }
                 }}
               >
@@ -573,9 +633,7 @@ const ChatWindow = () => {
                     Загрузка истории...
                   </>
                 ) : (
-                  <>
-                    ⬆️ Загрузить предыдущие сообщения
-                  </>
+                  'Загрузить еще'
                 )}
               </button>
             </div>
@@ -591,10 +649,10 @@ const ChatWindow = () => {
               textAlign: 'center'
             }}>
               <div style={{
-                fontSize: '64px',
+                fontSize: '48px', // Reduced font size
                 marginBottom: '24px',
-                opacity: 0.6,
-                animation: 'float 3s ease-in-out infinite'
+                opacity: 0.6
+                // animation: 'float 3s ease-in-out infinite' // Removed animation
               }}>
                 💬
               </div>
@@ -746,7 +804,7 @@ const ChatWindow = () => {
               );
             })
           )}
-          
+
           {otherUserTyping && (
             <div style={{
               display: 'flex',
@@ -765,7 +823,7 @@ const ChatWindow = () => {
               </div>
             </div>
           )}
-          
+
           <div ref={messagesEndRef} />
           </div>
 
@@ -788,7 +846,7 @@ const ChatWindow = () => {
                       setNewMessage(e.target.value);
                       handleTyping();
                     }}
-                    placeholder={isConnected ? "Напишите сообщение..." : "Подключение к чату..."}
+                    placeholder={textareaPlaceholder}
                     rows={1}
                     style={{
                       width: '100%',
@@ -800,7 +858,7 @@ const ChatWindow = () => {
                       transition: 'all 0.3s ease',
                       resize: 'none',
                       fontFamily: 'inherit',
-                      backgroundColor: isConnected ? 'white' : '#f9fafb',
+                      backgroundColor: isInteractionDisabled ? '#f9fafb' : 'white',
                       minHeight: '56px',
                       maxHeight: '120px',
                       lineHeight: '1.5'
@@ -809,10 +867,14 @@ const ChatWindow = () => {
                       if (isConnected) {
                         e.target.style.borderColor = '#2563eb';
                         e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)';
+                      } else if (isTrulyDisconnected) {
+                        e.target.style.borderColor = '#ef4444'; // Red border for disconnected
+                        e.target.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
                       }
+                      // No special focus style if isInteractionDisabled but not isTrulyDisconnected (i.e. connecting)
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = '#e5e7eb';
+                      e.target.style.borderColor = '#e5e7eb'; // Reset border color
                       e.target.style.boxShadow = 'none';
                     }}
                     onKeyDown={(e) => {
@@ -821,7 +883,7 @@ const ChatWindow = () => {
                         handleSendMessage(e);
                       }
                     }}
-                    disabled={false}
+                    disabled={isInteractionDisabled}
                   />
 
                   {/* Character counter */}
@@ -838,40 +900,40 @@ const ChatWindow = () => {
 
                 <button
                   type="submit"
-                  disabled={!newMessage.trim() || !isConnected || newMessage.length > 1000}
+                  disabled={!newMessage.trim() || !isConnected || isInteractionDisabled || newMessage.length > 1000}
                   style={{
                     width: '56px',
                     height: '56px',
-                    backgroundColor: (!newMessage.trim() || !isConnected) ? '#9ca3af' : '#2563eb',
+                    backgroundColor: (!newMessage.trim() || !isConnected || isInteractionDisabled) ? '#9ca3af' : '#2563eb',
                     color: 'white',
                     border: 'none',
                     borderRadius: '50%',
                     fontSize: '20px',
-                    cursor: (!newMessage.trim() || !isConnected) ? 'not-allowed' : 'pointer',
+                    cursor: (!newMessage.trim() || !isConnected || isInteractionDisabled) ? 'not-allowed' : 'pointer',
                     transition: 'all 0.3s ease',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: (!newMessage.trim() || !isConnected) ? 'none' : '0 4px 16px rgba(37, 99, 235, 0.3)',
+                    boxShadow: (!newMessage.trim() || !isConnected || isInteractionDisabled) ? 'none' : '0 4px 16px rgba(37, 99, 235, 0.3)',
                     transform: 'scale(1)',
                     flexShrink: 0
                   }}
                   onMouseEnter={(e) => {
-                    if (newMessage.trim() && isConnected) {
-                      e.target.style.backgroundColor = '#1d4ed8';
-                      e.target.style.transform = 'scale(1.05)';
-                      e.target.style.boxShadow = '0 8px 24px rgba(37, 99, 235, 0.4)';
+                    if (newMessage.trim() && isConnected && !isInteractionDisabled) {
+                      e.target.style.backgroundColor = '#1d4ed8'; // Darker blue on hover
+                      // e.target.style.transform = 'scale(1.05)'; // Removed
+                      // e.target.style.boxShadow = '0 8px 24px rgba(37, 99, 235, 0.4)'; // Removed
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (newMessage.trim() && isConnected) {
+                    if (newMessage.trim() && isConnected && !isInteractionDisabled) {
                       e.target.style.backgroundColor = '#2563eb';
-                      e.target.style.transform = 'scale(1)';
-                      e.target.style.boxShadow = '0 4px 16px rgba(37, 99, 235, 0.3)';
+                      // e.target.style.transform = 'scale(1)'; // Removed
+                      // e.target.style.boxShadow = '0 4px 16px rgba(37, 99, 235, 0.3)'; // Removed
                     }
                   }}
                 >
-                  {(!newMessage.trim() || !isConnected) ? '✉️' : '🚀'}
+                  {isInteractionDisabled ? '⏳' : '➤'}
                 </button>
               </div>
 
