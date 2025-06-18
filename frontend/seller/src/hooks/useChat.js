@@ -1,407 +1,505 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiService } from '../services/api';
-import websocketManager, { WS_STATES, WS_MESSAGE_TYPES } from '../services/websocketManager';
+import websocketManager from '../services/websocketManager';
 import { getCurrentSellerKeycloakId } from '../utils/auth';
 import { useNotifications } from './useNotifications';
 
+/**
+ * Enhanced chat hook for seller frontend
+ */
 export const useChat = () => {
   const [threads, setThreads] = useState([]);
   const [selectedThread, setSelectedThread] = useState(null);
-  const [messages, setMessages] = useState([]); // Messages for the selectedThread
-  const [loading, setLoading] = useState(false); // For loading threads
-  const [messagesLoading, setMessagesLoading] = useState(false); // For loading messages of selectedThread
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const [chatChannelStatus, setChatChannelStatus] = useState(WS_STATES.CLOSED); // For selected chat thread
-  const [globalChannelStatus, setGlobalChannelStatus] = useState(WS_STATES.CLOSED); // For seller's global notifications
-
-  const [isTyping, setIsTyping] = useState(false); // Typing indicator for selectedThread
+  const [isConnected, setIsConnected] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const [sellerId, setSellerId] = useState(null);
 
-  const messagesCacheRef = useRef(new Map()); // Cache messages per threadId: threadId -> [messages]
+  // Refs for stable references
+  const messagesRef = useRef(new Map());
   const typingTimeoutRef = useRef(null);
 
-  const { notifyNewMessage: showUINotification, notifyError, notifyInfo } = useNotifications();
+  // Notifications hook
+  const {
+    notifyNewMessage,
+    notifyMessageSent,
+    notifyConnection,
+    notifyError
+  } = useNotifications();
 
+  // Get seller profile
+  const keycloakId = getCurrentSellerKeycloakId();
+
+  // Initialize seller profile
   useEffect(() => {
     const initializeSeller = async () => {
-      const keycloakId = getCurrentSellerKeycloakId();
       if (!keycloakId) {
-        setError('Не удалось получить ID продавца.');
+        setError('Не удалось получить ID продавца');
         return;
       }
+
       try {
-        setLoading(true);
         const profile = await apiService.getSellerProfileByKeycloakId(keycloakId);
         setSellerId(profile.id);
       } catch (err) {
         console.error('Failed to get seller profile:', err);
-        setError('Ошибка загрузки профиля продавца.');
-        notifyError('Ошибка загрузки профиля продавца.');
-      } finally {
-        setLoading(false);
+        setError('Ошибка загрузки профиля продавца');
       }
     };
+
     initializeSeller();
-  }, [notifyError]);
+  }, [keycloakId]);
 
-  // --- WebSocket Message Handlers ---
+  // WebSocket message handler
+  const handleWebSocketMessage = useCallback((data, threadId) => {
+    console.log('[useChat] WebSocket message received:', data);
 
-  const handleChatChannelMessage = useCallback((data, connectionKey) => {
-    // This handler is for messages from the currently selected chat thread's WebSocket
-    console.log(`[useChat] CHAT (${connectionKey}) message:`, data);
-    if (connectionKey !== selectedThread?.id) return; // Ensure it's for the selected thread
-
-    switch (data.type) {
-      case WS_MESSAGE_TYPES.MESSAGE:
-        // Ignore own messages if backend echoes them; API call already adds local message
-        if (data.sender_id === sellerId && data.message_id) { // message_id indicates it's a confirmed message
-             // Potentially update local message if server provides new info (e.g. confirmed timestamp)
-             setMessages(prev => prev.map(m => m.id === data.message_id ? {...m, ...data, sending: false} : m));
-             return;
-        }
-        if (data.sender_id === sellerId) return;
-
-
-        const newMessage = {
-          id: data.message_id || `ws_${Date.now()}`,
-          thread_id: data.thread_id,
-          message: data.message,
-          sender_id: data.sender_id,
-          sender_type: data.sender_type,
-          created_at: data.timestamp || new Date().toISOString(),
-          is_read_by_seller: true, // Seller is viewing this thread
-        };
-
-        setMessages(prev => {
-          const exists = prev.some(msg => msg.id === newMessage.id);
-          return exists ? prev : [...prev, newMessage].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-        });
-        messagesCacheRef.current.set(data.thread_id, messages); // Update cache
-
-        // Update thread's last message in the list, but don't increment unread_count as we are "in" the thread
-        setThreads(prevThreads =>
-          prevThreads.map(t =>
-            t.id === data.thread_id
-              ? { ...t, last_message: newMessage.message, updated_at: newMessage.created_at }
-              : t
-          )
-        );
-        // No UI notification as user is actively in this chat
-        break;
-      case WS_MESSAGE_TYPES.TYPING:
-        if (data.sender_type === 'buyer') {
-          setIsTyping(data.is_typing);
-          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-          if (data.is_typing) {
-            typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 3000);
-          }
-        }
-        break;
-      default:
-        console.log(`[useChat] CHAT (${connectionKey}) unhandled message type:`, data.type);
-    }
-  }, [selectedThread, sellerId, messages]);
-
-  const handleGlobalSellerMessage = useCallback((data, connectionKey) => {
-    // This handler is for messages from the seller's global notification channel
-    console.log(`[useChat] GLOBAL (${connectionKey}) message:`, data);
-
-    switch (data.type) {
-      case WS_MESSAGE_TYPES.NEW_CHAT_THREAD:
-        // A buyer started a new chat with this seller
-        const newThreadData = {
-          id: data.thread_id,
-          buyer_id: data.buyer_id,
-          seller_id: sellerId, // Should be this seller
-          // Assuming backend sends some initial thread info like buyer details, last_message placeholder
-          buyer_name: data.buyer_name || `Покупатель ${data.buyer_id.substring(0, 4)}`,
-          last_message: data.initial_message || "Новый чат создан",
-          updated_at: data.timestamp || new Date().toISOString(),
-          unread_count: data.initial_message ? 1 : 0, // If there's an initial message
-        };
-        setThreads(prev => {
-          if (prev.some(t => t.id === newThreadData.id)) return prev;
-          return [newThreadData, ...prev]; // Add to top
-        });
-        showUINotification(
-          'Новый чат!',
-          `${newThreadData.buyer_name} начал(а) новый чат.`,
-          newThreadData.id
-        );
-        break;
-
-      case WS_MESSAGE_TYPES.NEW_CHAT_MESSAGE:
-        // A new message arrived in one of the seller's threads
-        // This is crucial for updating threads list (unread count, last message)
-        // And for showing notifications if the thread is not currently selected
-        setThreads(prevThreads =>
-          prevThreads.map(t =>
-            t.id === data.thread_id
-              ? {
-                  ...t,
-                  last_message: data.message_preview || data.message || t.last_message,
-                  updated_at: data.timestamp || new Date().toISOString(),
-                  unread_count: (selectedThread?.id === data.thread_id && chatChannelStatus === WS_STATES.OPEN)
-                                ? t.unread_count // Don't increment if user is viewing and connected to this chat
-                                : (t.unread_count || 0) + 1,
-                }
-              : t
-          )
-        );
-        // Add to message cache if not selected thread
-        if (selectedThread?.id !== data.thread_id) {
-            const cachedMsgs = messagesCacheRef.current.get(data.thread_id) || [];
-            const globalMsgExists = cachedMsgs.some(m => m.id === data.message_id);
-            if (!globalMsgExists) {
-                 const globalNewMsg = {
-                    id: data.message_id,
-                    thread_id: data.thread_id,
-                    message: data.message || data.message_preview, // Full message might not be sent globally
-                    sender_id: data.sender_id,
-                    sender_type: 'buyer', // Assuming global new_chat_message is for buyer's messages
-                    created_at: data.timestamp || new Date().toISOString(),
-                 };
-                 messagesCacheRef.current.set(data.thread_id, [...cachedMsgs, globalNewMsg].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
-            }
-        }
-
-
-        if (selectedThread?.id !== data.thread_id) {
-          const relevantThread = threads.find(t => t.id === data.thread_id);
-          showUINotification(
-            `Новое сообщение от ${relevantThread?.buyer_name || 'Покупатель'}`,
-            data.message_preview || data.message,
-            data.thread_id
-          );
-        }
-        break;
-
-      case WS_MESSAGE_TYPES.NEW_ORDER: // Example of another global notification
-        notifyInfo("Новый заказ!", `Получен новый заказ: ${data.order_id}`);
-        // Potentially fetch updated orders list or specific order
-        break;
-
-      default:
-        console.log(`[useChat] GLOBAL (${connectionKey}) unhandled message type:`, data.type);
-    }
-  }, [sellerId, threads, selectedThread, chatChannelStatus, showUINotification, notifyInfo]);
-
-
-  // --- WebSocket Connection Management ---
-
-  // Connect to Global Seller Notification Channel
-  useEffect(() => {
-    if (!sellerId) return;
-
-    const connectionKey = sellerId; // Global channel is keyed by sellerId
-    console.log(`[useChat] Attempting to connect to Global Seller Channel for seller: ${sellerId}`);
-    websocketManager.addMessageHandler(connectionKey, handleGlobalSellerMessage);
-    websocketManager.connectGlobalSellerChannel(sellerId, (status, key) => {
-      if (key === connectionKey) { // Ensure status is for this connection
-        setGlobalChannelStatus(status);
-        console.log(`[useChat] Global Seller Channel (${key}) status: ${status === WS_STATES.OPEN ? 'OPEN' : 'CLOSED/OTHER'}`);
-         if (status === WS_STATES.OPEN) notifyInfo("Подключено к каналу уведомлений.");
-         // else if (status === WS_STATES.CLOSED) notifyError("Отключено от канала уведомлений.");
+    if (data.type === 'message') {
+      // Игнорируем собственные сообщения - они уже добавлены локально
+      if (data.sender_id === sellerId) {
+        console.log('[useChat] Ignoring own message from WebSocket');
+        return;
       }
-    });
 
-    return () => {
-      console.log(`[useChat] Disconnecting from Global Seller Channel: ${connectionKey}`);
-      websocketManager.removeMessageHandler(connectionKey, handleGlobalSellerMessage);
-      websocketManager.disconnect(connectionKey);
-    };
-  }, [sellerId, handleGlobalSellerMessage, notifyInfo, notifyError]);
+      const newMessage = {
+        id: data.message_id || Date.now(),
+        message: data.message,
+        sender_id: data.sender_id,
+        sender_type: data.sender_type,
+        created_at: data.timestamp || new Date().toISOString(),
+        thread_id: threadId,
+        buyer_id: data.sender_type === 'buyer' ? data.sender_id : null,
+        seller_id: data.sender_type === 'seller' ? data.sender_id : null,
+        is_read_by_buyer: data.sender_type === 'buyer',
+        is_read_by_seller: data.sender_type === 'seller'
+      };
 
+      // Update messages for the specific thread
+      setMessages(prevMessages => {
+        // Avoid duplicates
+        const exists = prevMessages.some(msg => msg.id === newMessage.id);
+        if (exists) return prevMessages;
 
-  // --- Actions ---
+        const updated = [...prevMessages, newMessage].sort(
+          (a, b) => new Date(a.created_at) - new Date(b.created_at)
+        );
 
+        // Update messages cache
+        messagesRef.current.set(threadId, updated);
+
+        return updated;
+      });
+
+      // Update thread's last message
+      setThreads(prevThreads =>
+        prevThreads.map(thread =>
+          thread.id === threadId
+            ? {
+                ...thread,
+                last_message: newMessage.message,
+                updated_at: newMessage.created_at,
+                unread_count: newMessage.sender_type === 'buyer'
+                  ? (thread.unread_count || 0) + 1
+                  : thread.unread_count
+              }
+            : thread
+        )
+      );
+
+      // Show notification for new message from buyer
+      if (newMessage.sender_type === 'buyer') {
+        notifyNewMessage('Покупатель', newMessage.message, threadId);
+      }
+    } else if (data.type === 'typing') {
+      if (data.sender_type === 'buyer') {
+        setIsTyping(data.is_typing);
+
+        // Clear typing timeout
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+
+        // Auto-clear typing indicator after 3 seconds
+        if (data.is_typing) {
+          typingTimeoutRef.current = setTimeout(() => {
+            setIsTyping(false);
+          }, 3000);
+        }
+      }
+    }
+  }, [sellerId]);
+
+  // Load chat threads
   const loadThreads = useCallback(async () => {
     if (!sellerId) return;
+
     setLoading(true);
     setError(null);
+
     try {
       const response = await apiService.getSellerChats(sellerId);
-      setThreads(response.data || []);
+      const threadsData = response.data || [];
+      setThreads(threadsData);
     } catch (err) {
       console.error('Failed to load threads:', err);
-      setError('Ошибка загрузки чатов.');
-      notifyError('Ошибка загрузки чатов.');
+      setError('Ошибка загрузки чатов');
     } finally {
       setLoading(false);
     }
-  }, [sellerId, notifyError]);
+  }, [sellerId]);
 
+  // Load messages for a thread
+  const loadMessages = useCallback(async (threadId) => {
+    if (!threadId) return;
+
+    // Check cache first
+    const cachedMessages = messagesRef.current.get(threadId);
+    if (cachedMessages) {
+      setMessages(cachedMessages);
+      return;
+    }
+
+    setMessagesLoading(true);
+
+    try {
+      const response = await apiService.getChatMessages(threadId);
+      const messagesData = response.data || [];
+      
+      setMessages(messagesData);
+      messagesRef.current.set(threadId, messagesData);
+    } catch (err) {
+      console.error('Failed to load messages:', err);
+      setError('Ошибка загрузки сообщений');
+    } finally {
+      setMessagesLoading(false);
+    }
+  }, []);
+
+  // Select thread and connect WebSocket
+  const selectThread = useCallback(async (thread) => {
+    if (!sellerId) return;
+
+    // Disconnect from previous thread
+    if (selectedThread) {
+      websocketManager.removeMessageHandler(selectedThread.id, handleWebSocketMessage);
+      websocketManager.disconnect(selectedThread.id);
+    }
+
+    setSelectedThread(thread);
+    setIsConnected(false);
+    setIsTyping(false);
+
+    if (!thread) {
+      setMessages([]);
+      return;
+    }
+
+    // Load messages
+    await loadMessages(thread.id);
+
+    // Connect WebSocket
+    websocketManager.addMessageHandler(thread.id, handleWebSocketMessage);
+    websocketManager.connect(thread.id, sellerId, 'seller', (connected) => {
+      setIsConnected(connected);
+      // Notify connection status change
+      if (selectedThread?.id === thread.id) {
+        notifyConnection(connected);
+      }
+    });
+
+    // Mark messages as read
+    try {
+      await apiService.markMessagesAsRead(thread.id, sellerId, 'seller');
+      
+      // Update thread unread count
+      setThreads(prevThreads => 
+        prevThreads.map(t => 
+          t.id === thread.id ? { ...t, unread_count: 0 } : t
+        )
+      );
+    } catch (err) {
+      console.error('Failed to mark messages as read:', err);
+    }
+  }, [sellerId, selectedThread, handleWebSocketMessage, loadMessages]);
+
+  // Send message
+  const sendMessage = useCallback(async (messageText) => {
+    if (!sellerId || !messageText.trim()) return false;
+    let thread = selectedThread;
+    if (!thread) {
+      try {
+        const response = await apiService.createSellerChatThread(sellerId);
+        thread = response.data;
+        await selectThread(thread);
+      } catch (err) {
+        console.error('Failed to create chat thread:', err);
+        const errorMessage = 'Ошибка создания чата';
+        setError(errorMessage);
+        notifyError(errorMessage);
+        return false;
+      }
+    }
+
+    // Генерируем UUID для сообщения
+    const messageId = crypto.randomUUID ? crypto.randomUUID() : `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    try {
+      // Добавляем сообщение локально сразу для лучшего UX
+      const tempMessage = {
+        id: messageId,
+        message: messageText.trim(),
+        buyer_id: null,
+        seller_id: sellerId,
+        thread_id: thread.id,
+        created_at: new Date().toISOString(),
+        is_read_by_buyer: false,
+        is_read_by_seller: true,
+        sending: true // Флаг для отображения статуса отправки
+      };
+
+      setMessages(prev => [...prev, tempMessage]);
+
+      const messageData = {
+        id: messageId,
+        thread_id: thread.id,
+        message: messageText.trim(),
+        is_read_by_buyer: false,
+        is_read_by_seller: true,
+        buyer_id: null,
+        seller_id: sellerId
+      };
+
+      // Отправляем только через API (backend сам разошлет через WebSocket)
+      const result = await apiService.sendMessage(messageData);
+
+      if (result) {
+        // Обновляем локальное сообщение - убираем флаг отправки
+        setMessages(prev => prev.map(msg =>
+          msg.id === messageId
+            ? { ...msg, sending: false, created_at: result.data?.created_at || msg.created_at }
+            : msg
+        ));
+
+        // Notify message sent
+        notifyMessageSent();
+
+        return true;
+      } else {
+        throw new Error('API call failed');
+      }
+    } catch (err) {
+      console.error('Failed to send message:', err);
+
+      // Удаляем неудачное сообщение из списка
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+
+      const errorMessage = 'Ошибка отправки сообщения';
+      setError(errorMessage);
+      notifyError(errorMessage);
+      return false;
+    }
+  }, [selectedThread, sellerId, notifyError, notifyMessageSent]);
+
+  // Send typing indicator
+  const sendTypingIndicator = useCallback((isTyping) => {
+    if (!selectedThread || !sellerId) return;
+
+    if (websocketManager.isConnected(selectedThread.id)) {
+      websocketManager.sendMessage(selectedThread.id, {
+        type: 'typing',
+        is_typing: isTyping,
+        sender_id: sellerId,
+        sender_type: 'seller',
+        thread_id: selectedThread.id
+      });
+    }
+  }, [selectedThread, sellerId]);
+
+  // Load threads when seller ID is available
   useEffect(() => {
     if (sellerId) {
       loadThreads();
     }
   }, [sellerId, loadThreads]);
 
-  const loadMessagesForThread = useCallback(async (threadId) => {
-    if (!threadId) return [];
-    const cached = messagesCacheRef.current.get(threadId);
-    if (cached) return cached;
-
-    setMessagesLoading(true);
-    try {
-      const response = await apiService.getChatMessages(threadId);
-      const messagesData = response.data || [];
-      messagesCacheRef.current.set(threadId, messagesData);
-      return messagesData;
-    } catch (err) {
-      console.error('Failed to load messages for thread:', threadId, err);
-      setError(`Ошибка загрузки сообщений для треда ${threadId}.`);
-      notifyError(`Ошибка загрузки сообщений.`);
-      return [];
-    } finally {
-      setMessagesLoading(false);
-    }
-  }, [notifyError]);
-
-  const selectThread = useCallback(async (thread) => {
-    if (!sellerId) return;
-
-    // Disconnect from previously selected thread's chat channel
-    if (selectedThread?.id && selectedThread.id !== thread?.id) {
-      console.log(`[useChat] Disconnecting from chat channel: ${selectedThread.id}`);
-      websocketManager.removeMessageHandler(selectedThread.id, handleChatChannelMessage);
-      websocketManager.disconnect(selectedThread.id);
-      setChatChannelStatus(WS_STATES.CLOSED);
-    }
-
-    setIsTyping(false); // Reset typing indicator
-
-    if (!thread) {
-      setSelectedThread(null);
-      setMessages([]);
-      return;
-    }
-
-    setSelectedThread(thread);
-    const currentMessages = await loadMessagesForThread(thread.id);
-    setMessages(currentMessages);
-
-    // Connect to the new thread's specific chat channel
-    const chatConnectionKey = thread.id;
-    console.log(`[useChat] Attempting to connect to Chat Channel: ${chatConnectionKey}`);
-    websocketManager.addMessageHandler(chatConnectionKey, handleChatChannelMessage);
-    websocketManager.connectChatChannel(thread.id, sellerId, 'seller', (status, key) => {
-       if (key === chatConnectionKey) { // Ensure status is for THIS connection
-            setChatChannelStatus(status);
-            console.log(`[useChat] Chat Channel (${key}) status: ${status === WS_STATES.OPEN ? 'OPEN' : 'CLOSED/OTHER'}`);
-            if (status === WS_STATES.OPEN && thread.unread_count > 0) {
-                 // Mark messages as read if connection is successful and there are unread messages
-                apiService.markMessagesAsRead(thread.id, sellerId, 'seller')
-                .then(() => {
-                    setThreads(prev => prev.map(t => t.id === thread.id ? { ...t, unread_count: 0 } : t));
-                })
-                .catch(err => console.error('Failed to mark messages as read:', err));
-            }
-       }
-    });
-
-    // If there were unread messages and we are not connected yet, mark them optimistically or wait for connection
-     if (thread.unread_count > 0 && chatChannelStatus !== WS_STATES.OPEN) {
-        try {
-            await apiService.markMessagesAsRead(thread.id, sellerId, 'seller');
-            setThreads(prev => prev.map(t => t.id === thread.id ? { ...t, unread_count: 0 } : t));
-        } catch (err) {
-            console.error('Failed to mark messages as read on select (pre-connect):', err);
+  // Connect to global WebSocket channel for new threads and buyer messages
+  useEffect(() => {
+    if (sellerId) {
+      console.log('[useChat] Connecting to Global WebSocket channel for new threads');
+      websocketManager.addMessageHandler(`global_${sellerId}`, (data) => {
+        if (data.type === 'new_thread' && data.thread) {
+          setThreads(prev => {
+            if (prev.some(t => t.id === data.thread.id)) return prev;
+            return [...prev, data.thread];
+          });
+        } else if (data.type === 'buyer_message' && data.thread) {
+          // Update thread with buyer message info
+          setThreads(prev => prev.map(t =>
+            t.id === data.thread.id
+              ? { 
+                  ...t, 
+                  last_message: data.message, 
+                  updated_at: data.timestamp || new Date().toISOString(), 
+                  unread_count: (t.unread_count || 0) + 1 
+                }
+              : t
+          ));
+          // Create buyer message object
+          const buyerMsg = {
+            id: data.message_id || Date.now(),
+            message: data.message,
+            sender_id: data.sender_id,
+            sender_type: 'buyer',
+            created_at: data.timestamp || new Date().toISOString(),
+            thread_id: data.thread.id,
+            buyer_id: data.sender_id,
+            seller_id: null,
+            is_read_by_buyer: false,
+            is_read_by_seller: false
+          };
+          // Update messages state if the thread is selected
+          if (selectedThread && selectedThread.id === data.thread.id) {
+            setMessages(prev => {
+              if (prev.some(msg => msg.id === buyerMsg.id)) return prev;
+              return [...prev, buyerMsg].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            });
+          }
+          // Update messages cache regardless of selection
+          const cached = messagesRef.current.get(data.thread.id) || [];
+          if (!cached.some(msg => msg.id === buyerMsg.id)) {
+            messagesRef.current.set(data.thread.id, [...cached, buyerMsg].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
+          }
         }
-    }
-
-  }, [sellerId, selectedThread, handleChatChannelMessage, loadMessagesForThread, chatChannelStatus]);
-
-  const sendMessage = useCallback(async (messageText) => {
-    if (!sellerId || !selectedThread?.id || !messageText.trim()) return false;
-
-    const tempId = `temp_${Date.now()}`;
-    const messagePayload = {
-      id: tempId, // Temporary ID for local display
-      thread_id: selectedThread.id,
-      message: messageText.trim(),
-      seller_id: sellerId, // API expects seller_id for messages from seller
-      buyer_id: null,      // And null for buyer_id
-      created_at: new Date().toISOString(),
-      is_read_by_seller: true,
-      is_read_by_buyer: false, // Will be updated by backend/buyer
-      sending: true,
-    };
-
-    setMessages(prev => [...prev, messagePayload]);
-    messagesCacheRef.current.set(selectedThread.id, messages); // Update cache
-
-    try {
-      // API call sends the message, backend handles WebSocket broadcast to chat participants
-      const response = await apiService.sendMessage({
-        id: tempId, // Send tempId to backend for it to use or replace
-        thread_id: messagePayload.thread_id,
-        message: messagePayload.message,
-        seller_id: messagePayload.seller_id,
       });
-
-      const confirmedMessage = response.data; // Backend should return the confirmed message
-
-      // Update local message with confirmed data from backend (e.g., actual ID, confirmed timestamp)
-      setMessages(prev => prev.map(m => (m.id === tempId ? { ...confirmedMessage, sending: false } : m)));
-      messagesCacheRef.current.set(selectedThread.id, messages); // Update cache again
-
-      // Update thread list with last message
-       setThreads(prevThreads =>
-        prevThreads.map(t =>
-          t.id === selectedThread.id
-            ? { ...t, last_message: confirmedMessage.message, updated_at: confirmedMessage.created_at }
-            : t
-        )
-      );
-      return true;
-    } catch (err) {
-      console.error('Failed to send message:', err);
-      setError('Ошибка отправки сообщения.');
-      notifyError('Ошибка отправки сообщения.');
-      setMessages(prev => prev.filter(m => m.id !== tempId)); // Remove temp message on failure
-      messagesCacheRef.current.set(selectedThread.id, messages); // Update cache
-      return false;
+      websocketManager.connect(`global_${sellerId}`, sellerId, 'seller', (connected) => {
+        console.log(`[useChat] Global WebSocket connection status:`, connected);
+      });
     }
-  }, [selectedThread, sellerId, notifyError, messages]);
+    return () => {
+      if (sellerId) {
+        websocketManager.removeMessageHandler(`global_${sellerId}`);
+        websocketManager.disconnect(`global_${sellerId}`);
+      }
+    };
+  }, [sellerId]);
 
-  const sendTypingIndicator = useCallback((isTypingStatus) => {
-    if (!selectedThread?.id || chatChannelStatus !== WS_STATES.OPEN) return;
-    websocketManager.sendTypingIndicator(selectedThread.id, isTypingStatus);
-  }, [selectedThread, chatChannelStatus]);
+  // Connect to WebSocket for all threads when threads are loaded
+  useEffect(() => {
+    if (sellerId && threads.length > 0) {
+      console.log('[useChat] Connecting to WebSocket for all threads:', threads.length);
+
+      // Подключаемся ко всем чатам для получения уведомлений
+      threads.forEach(thread => {
+        if (!websocketManager.isConnected(thread.id)) {
+          console.log(`[useChat] Connecting to WebSocket for thread ${thread.id}`);
+
+          // Добавляем обработчик сообщений для каждого треда
+          websocketManager.addMessageHandler(thread.id, (data, threadId) => {
+            console.log(`[useChat] Global message received for thread ${threadId}:`, data);
+
+            if (data.type === 'message') {
+              // Игнорируем собственные сообщения
+              if (data.sender_id === sellerId) {
+                console.log('[useChat] Ignoring own message from WebSocket');
+                return;
+              }
+
+              const newMessage = {
+                id: data.message_id || Date.now(),
+                message: data.message,
+                sender_id: data.sender_id,
+                sender_type: data.sender_type,
+                created_at: data.timestamp || new Date().toISOString(),
+                thread_id: threadId,
+                buyer_id: data.sender_type === 'buyer' ? data.sender_id : null,
+                seller_id: data.sender_type === 'seller' ? data.sender_id : null,
+                is_read_by_buyer: data.sender_type === 'buyer',
+                is_read_by_seller: data.sender_type === 'seller'
+              };
+
+              // Обновляем сообщения только если это выбранный тред
+              if (selectedThread?.id === threadId) {
+                setMessages(prevMessages => {
+                  const exists = prevMessages.some(msg => msg.id === newMessage.id);
+                  if (exists) return prevMessages;
+
+                  const updated = [...prevMessages, newMessage].sort(
+                    (a, b) => new Date(a.created_at) - new Date(b.created_at)
+                  );
+
+                  return updated;
+                });
+              }
+
+              // Обновляем список тредов с новым сообщением
+              setThreads(prevThreads =>
+                prevThreads.map(t =>
+                  t.id === threadId
+                    ? {
+                        ...t,
+                        last_message: newMessage.message,
+                        updated_at: newMessage.created_at,
+                        unread_count: newMessage.sender_type === 'buyer'
+                          ? (t.unread_count || 0) + 1
+                          : t.unread_count
+                      }
+                    : t
+                )
+              );
+
+              // Показываем уведомление для новых сообщений от покупателя
+              if (newMessage.sender_type === 'buyer') {
+                notifyNewMessage('Покупатель', newMessage.message, threadId);
+              }
+            }
+          });
+
+          // Подключаемся к WebSocket
+          websocketManager.connect(thread.id, sellerId, 'seller', (connected) => {
+            console.log(`[useChat] WebSocket connection status for thread ${thread.id}:`, connected);
+          });
+        }
+      });
+    }
+  }, [sellerId, threads, selectedThread, notifyNewMessage]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      // Disconnect from selected chat channel if any
-      if (selectedThread?.id) {
-        websocketManager.removeMessageHandler(selectedThread.id, handleChatChannelMessage);
+      if (selectedThread) {
+        websocketManager.removeMessageHandler(selectedThread.id, handleWebSocketMessage);
         websocketManager.disconnect(selectedThread.id);
       }
-      // Global channel disconnection is handled by its own useEffect when sellerId changes/unmounts
+      
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
-      // websocketManager.cleanup(); // This would disconnect ALL channels, including global for other hooks/parts if any
     };
-  }, [selectedThread, handleChatChannelMessage]); // Rerun if selectedThread changes to disconnect old
+  }, [selectedThread, handleWebSocketMessage]);
 
   return {
+    // State
     threads,
     selectedThread,
     messages,
     loading,
     messagesLoading,
     error,
-    isChatConnected: chatChannelStatus === WS_STATES.OPEN,
-    isGlobalConnected: globalChannelStatus === WS_STATES.OPEN,
+    isConnected,
     isTyping,
     sellerId,
+
+    // Actions
+    loadThreads,
     selectThread,
     sendMessage,
     sendTypingIndicator,
+    
+    // Utils
     refreshThreads: loadThreads,
-    clearError: () => setError(null),
+    clearError: () => setError(null)
   };
 };
