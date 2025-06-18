@@ -13,6 +13,7 @@ import {
   X
 } from 'lucide-react';
 import { SELLER_TEXTS } from '../../utils/localization';
+import keycloak from '../../utils/keycloak'; // Import Keycloak instance
 
 const Sidebar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -65,12 +66,13 @@ const Sidebar = () => {
   ];
 
   const handleLogout = () => {
-    // Очистка локального хранилища
-    localStorage.clear();
-    sessionStorage.clear();
+    // Очистка локального хранилища - Keycloak handles session cleanup
+    // localStorage.clear();
+    // sessionStorage.clear();
 
-    // Перенаправление на страницу входа или главную страницу
-    window.location.href = '/';
+    // Перенаправление на страницу входа или главную страницу - Keycloak handles redirection
+    // window.location.href = '/';
+    keycloak.logout();
   };
 
   return (
@@ -177,7 +179,7 @@ const Sidebar = () => {
             </div>
             <button
               onClick={() => {
-                handleLogout();
+                handleLogout(); // This will now call keycloak.logout()
                 if (isMobileMenuOpen) setIsMobileMenuOpen(false);
               }}
               className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
