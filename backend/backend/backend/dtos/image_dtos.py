@@ -1,8 +1,10 @@
+from typing import Optional, List
 from uuid import UUID
 
 from pydantic import BaseModel
 
 from backend.dtos import BaseOrmModel
+from backend.dtos.wooden_board_dtos import WoodenBoardDTO # Added import
 
 
 class ImageDTO(BaseOrmModel):
@@ -11,6 +13,7 @@ class ImageDTO(BaseOrmModel):
     id: UUID
     image_path: str
     product_id: UUID
+    wooden_boards: Optional[List[WoodenBoardDTO]] = None # Added field
 
 
 class ImageInputDTO(BaseModel):
