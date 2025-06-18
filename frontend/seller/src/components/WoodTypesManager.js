@@ -327,7 +327,7 @@ function WoodTypesManager() {
             <p>{SELLER_TEXTS.TOTAL} {SELLER_TEXTS.WOOD_TYPES}: {woodTypes?.data?.length || 0}</p>
             {pricesLoading && <p style={{ color: 'var(--color-text-light)', fontSize: 'var(--font-size-sm)' }}>{SELLER_TEXTS.LOADING} данных о ценах...</p>}
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap sm:flex-nowrap gap-2">
             <button
               onClick={() => setShowAddForm(!showAddForm)}
               className={`btn ${showAddForm ? 'btn-secondary' : 'btn-primary'}`}

@@ -71,32 +71,14 @@ function Chats() {
   };
 
   return (
-    <div style={{
-      maxWidth: '1400px',
-      margin: '0 auto',
-      padding: '20px',
-      backgroundColor: '#f8fafc',
-      minHeight: '100vh'
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        padding: '30px',
-        borderRadius: '24px',
-        marginBottom: '30px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-        border: '1px solid #e2e8f0'
-      }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '30px'
-        }}>
+    <div className="max-w-7xl mx-auto p-5 bg-slate-50 min-h-screen">
+      <div className="bg-white p-7 md:p-8 rounded-2xl mb-8 shadow-xl border border-slate-200">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-8 gap-4 sm:gap-0">
           <div>
-            <h1 style={{ margin: 0, color: '#374151', fontSize: '32px', fontWeight: '700' }}>
+            <h1 className="m-0 text-slate-700 text-2xl sm:text-3xl font-bold">
               💬 {SELLER_TEXTS.CHATS || 'Чаты с покупателями'}
             </h1>
-            <p style={{ margin: '8px 0 0 0', color: '#6b7280', fontSize: '16px' }}>
+            <p className="mt-2 text-slate-500 text-base sm:text-lg">
               Профессиональное общение с покупателями о ваших товарах
             </p>
           </div>
