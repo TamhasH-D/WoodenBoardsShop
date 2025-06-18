@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNotifications } from '../contexts/NotificationContext';
 import { useChat } from '../hooks/useChat';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext'; // Corrected import path
 import { Link } from 'react-router-dom'; // For a potential login link/button
 
 const ProductChat = ({ productId, product, sellerId }) => {
