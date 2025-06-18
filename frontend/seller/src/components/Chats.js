@@ -21,44 +21,39 @@ function Chats() {
     clearError
   } = useChat();
 
-  // Refresh threads on component mount.
-  // Initial refresh on mount
-  useEffect(() => {
-    refreshThreads();
-  }, [refreshThreads]);
+  // Refresh threads on component mount - REMOVED.
+  // The useChat hook is now responsible for initial load when sellerId is available.
+  // useEffect(() => {
+  //   refreshThreads();
+  // }, [refreshThreads]);
 
-  // Poll for new threads/messages every 5 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      console.log("Polling refreshThreads");
-      refreshThreads();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [refreshThreads]);
+  // Polling useEffect has been removed in a previous step.
 
   useEffect(() => {
     console.log("Chat connection status:", isConnected);
   }, [isConnected]);
-  
-  useEffect(() => {
-    if (isConnected) {
-      refreshThreads();
-    }
-  }, [isConnected, refreshThreads]);
-  
+
+  // This useEffect is also a candidate for removal or re-evaluation.
+  // Commenting out to see if useChat's internal logic is sufficient.
+  // useEffect(() => {
+  //   if (isConnected) {
+  //     console.log('[Chats.js] Detected isConnected=true, calling refreshThreads.');
+  //     refreshThreads();
+  //   }
+  // }, [isConnected, refreshThreads]);
+
   const handleThreadSelect = (thread) => {
     selectThread(thread);
   };
 
   const handleSendMessage = async (messageText) => {
     const success = await sendMessage(messageText);
-    if (success) {
-      // Refresh threads to load the latest messages.
-      refreshThreads();
-    } else {
-      // Handle error - could show toast notification
-      console.error('Failed to send message');
+    if (!success) {
+      // Handle error - could show toast notification or rely on error state from useChat
+      // The error state is set within useChat's sendMessage if it fails.
+      console.error('Failed to send message (error should be set in useChat state)');
     }
+    // No explicit refreshThreads() here; rely on optimistic update and WebSocket.
   };
 
   const handleTyping = (isTyping) => {
@@ -67,8 +62,11 @@ function Chats() {
 
   const handleRefresh = () => {
     clearError();
-    refreshThreads();
+    refreshThreads(); // Keep this for manual refresh action
   };
+
+  // Log props for debugging
+  console.log('[Chats.js] Rendering. sellerId:', sellerId, 'loading:', loading, 'threads count:', threads.length, 'error:', error);
 
   return (
     <div style={{
@@ -109,7 +107,7 @@ function Chats() {
           onThreadSelect={handleThreadSelect}
           onSendMessage={handleSendMessage}
           onTyping={handleTyping}
-          onRefresh={handleRefresh}
+          onRefresh={handleRefresh} // Manual refresh button in UI will use this
           loading={loading}
           messagesLoading={messagesLoading}
           isConnected={isConnected}
