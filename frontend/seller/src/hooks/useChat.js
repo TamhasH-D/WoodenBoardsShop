@@ -46,11 +46,11 @@ export const useChat = () => {
       try {
         const profile = await apiService.getSellerProfileByKeycloakId(keycloakId);
         console.log('[useChat Init] Seller profile fetched:', profile);
-        if (profile && profile.id) {
-          setSellerId(profile.id);
-          console.log('[useChat Init] sellerId set to:', profile.id);
+        if (profile && profile.data && profile.data.id) { // CORRECTED LINE
+          setSellerId(profile.data.id);
+          console.log('[useChat Init] sellerId set to:', profile.data.id); // Ensure this log uses profile.data.id
         } else {
-          console.error('[useChat Init] Fetched profile is invalid or missing ID:', profile);
+          console.error('[useChat Init] Fetched profile is invalid or missing ID, or data property is missing. Profile object received:', profile); // Adjusted error log
           setError('Ошибка загрузки профиля продавца: неверные данные профиля');
         }
       } catch (err) {
@@ -236,7 +236,6 @@ export const useChat = () => {
     loadMessages,
     notifyConnection,
     setThreads,
-    // Removed stable setters like setSelectedThread, setIsConnected, etc. as they don't change
   ]);
 
   // Send message
@@ -247,14 +246,14 @@ export const useChat = () => {
     if (!threadToUse) {
       try {
         const response = await apiService.createSellerChatThread(sellerId);
-        threadToUse = response.data; // Assign to threadToUse
+        threadToUse = response.data;
         if (!threadToUse || !threadToUse.id) {
             console.error('[useChat sendMessage] Failed to create or retrieve valid thread:', threadToUse);
             setError('Ошибка создания нового чата: неверные данные');
             notifyError('Ошибка создания нового чата: неверные данные');
             return false;
         }
-        await selectThread(threadToUse); // Pass the newly created thread
+        await selectThread(threadToUse);
       } catch (err) {
         console.error('Failed to create chat thread:', err);
         const errorMessage = 'Ошибка создания чата';
@@ -264,14 +263,12 @@ export const useChat = () => {
       }
     }
 
-    // Ensure threadToUse is valid after potential creation
     if (!threadToUse || !threadToUse.id) {
         console.error('[useChat sendMessage] No valid thread selected or created to send message.');
         setError('Нет активного чата для отправки сообщения.');
         notifyError('Нет активного чата для отправки сообщения.');
         return false;
     }
-
 
     const messageId = crypto.randomUUID ? crypto.randomUUID() : `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
@@ -281,7 +278,7 @@ export const useChat = () => {
         message: messageText.trim(),
         buyer_id: null,
         seller_id: sellerId,
-        thread_id: threadToUse.id, // Use threadToUse
+        thread_id: threadToUse.id,
         created_at: new Date().toISOString(),
         is_read_by_buyer: false,
         is_read_by_seller: true,
@@ -292,7 +289,7 @@ export const useChat = () => {
 
       const messageData = {
         id: messageId,
-        thread_id: threadToUse.id, // Use threadToUse
+        thread_id: threadToUse.id,
         message: messageText.trim(),
         is_read_by_buyer: false,
         is_read_by_seller: true,
@@ -302,10 +299,10 @@ export const useChat = () => {
 
       const result = await apiService.sendMessage(messageData);
 
-      if (result && result.data) { // Check result.data
+      if (result && result.data) {
         setMessages(prev => prev.map(msg =>
           msg.id === messageId
-            ? { ...msg, ...result.data, id: result.data.id || messageId, sending: false } // Spread result.data
+            ? { ...msg, ...result.data, id: result.data.id || messageId, sending: false }
             : msg
         ));
         notifyMessageSent();
@@ -326,7 +323,7 @@ export const useChat = () => {
 
 
   // Send typing indicator
-  const sendTypingIndicator = useCallback((isTypingStatus) => { // Renamed to avoid conflict
+  const sendTypingIndicator = useCallback((isTypingStatus) => {
     if (!selectedThread || !sellerId) return;
 
     if (websocketManager.isConnected(selectedThread.id)) {
@@ -354,7 +351,7 @@ export const useChat = () => {
   useEffect(() => {
     if (sellerId) {
       console.log('[useChat] Connecting to Global WebSocket channel for new threads');
-      const globalHandler = (data) => { // Give the handler a name for clarity
+      const globalHandler = (data) => {
         if (data.type === 'new_thread' && data.thread) {
           setThreads(prev => {
             if (prev.some(t => t.id === data.thread.id)) return prev;
@@ -412,12 +409,12 @@ export const useChat = () => {
         }
       };
     }
-  }, [sellerId, selectedThread, notifyNewMessage, setThreads]); // Added setThreads
+  }, [sellerId, selectedThread, notifyNewMessage, setThreads]);
 
   // Cleanup on unmount
   useEffect(() => {
-    const currentSelectedThread = selectedThread; // Capture value for cleanup
-    const currentHandler = handleWebSocketMessage; // Capture value for cleanup
+    const currentSelectedThread = selectedThread;
+    const currentHandler = handleWebSocketMessage;
     return () => {
       if (currentSelectedThread) {
         websocketManager.removeMessageHandler(currentSelectedThread.id, currentHandler);
@@ -427,7 +424,7 @@ export const useChat = () => {
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [selectedThread, handleWebSocketMessage]); // Re-run if selectedThread or handler changes
+  }, [selectedThread, handleWebSocketMessage]);
 
   return {
     threads,
