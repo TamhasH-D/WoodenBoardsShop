@@ -332,10 +332,13 @@ export const useChat = (options = {}) => {
     setMessages(prev => [...prev, optimisticMessage]);
 
     try {
-      // Payload for the API should only include thread_id and message
+      // Re-add buyer_id and sender_type to the API payload.
+      // The 'buyerId' state variable is the validated DB ID.
       const messagePayloadForApi = {
         thread_id: threadToUse,
-        message: messageText, // Changed from content
+        message: messageText,
+        buyer_id: buyerId,
+        sender_type: 'buyer',
       };
       const response = await apiService.sendMessage(messagePayloadForApi);
 
