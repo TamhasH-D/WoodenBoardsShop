@@ -56,6 +56,7 @@ class ConnectionInfo {
     this.lastPingTime = Date.now(); // Initialized on new connection
     this.pingTimerId = null; // Changed from pingInterval
     this.reconnectTimeout = null;
+    this.intentionalDisconnect = false; // New property
   }
 }
 
@@ -129,7 +130,8 @@ class WebSocketManager {
     const connectionInfo = this.connections.get(threadId);
     if (!connectionInfo) return;
 
-    console.log(`[WebSocketManager] Disconnecting from ${threadId}`);
+    console.log(`[WebSocketManager] Intentionally disconnecting from ${threadId}`);
+    connectionInfo.intentionalDisconnect = true; // Set the flag
 
     // Останавливаем ping
     this.stopPing(connectionInfo);
@@ -142,7 +144,7 @@ class WebSocketManager {
 
     // Закрываем WebSocket
     if (connectionInfo.ws && connectionInfo.ws.readyState !== WS_STATES.CLOSED) {
-      connectionInfo.ws.close();
+      connectionInfo.ws.close(1000, "Intentional disconnect by client"); // Use normal closure code 1000
     }
 
     this.connections.delete(threadId);
@@ -313,9 +315,22 @@ class WebSocketManager {
       // Уведомляем о отключении
       onStatusChange && onStatusChange(false);
 
-      // Пытаемся переподключиться если это не намеренное закрытие
-      if (event.code !== 1000 && connectionInfo.reconnectAttempts < this.maxReconnectAttempts) {
-        this.scheduleReconnect(connectionInfo);
+      const wasIntentional = connectionInfo.intentionalDisconnect;
+      connectionInfo.intentionalDisconnect = false; // Reset flag
+
+      if (wasIntentional) {
+        console.log(`[WebSocketManager] Intentional disconnect for ${threadId} (code ${event.code}). Reconnection will not be attempted.`);
+        // Ensure it's removed from connections map if not already
+        this.connections.delete(threadId);
+      } else {
+        // Only attempt reconnect if it was not an intentional disconnect and not a normal closure by server (unless configured)
+        if (event.code !== 1000 && connectionInfo.reconnectAttempts < this.maxReconnectAttempts) {
+          this.scheduleReconnect(connectionInfo);
+        } else {
+          // If it's a normal close (1000) from server, or max attempts reached, or intentional (already handled)
+          // ensure it's removed from connections map.
+          this.connections.delete(threadId);
+        }
       }
     };
 

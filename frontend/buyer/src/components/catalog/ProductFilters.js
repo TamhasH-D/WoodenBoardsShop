@@ -208,12 +208,13 @@ const ProductFilters = ({
 
           {/* Содержимое табов */}
           <div style={{ padding: '24px' }}>
-            {/* {activeTab === 'basic' && (
+            {activeTab === 'basic' && (
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
                 gap: '20px'
               }}>
+                {/* Тип древесины */}
                 <div>
                   <label style={{
                     display: 'block',
@@ -261,6 +262,7 @@ const ProductFilters = ({
                   </select>
                 </div>
 
+                {/* Продавец */}
                 <div>
                   <label style={{
                     display: 'block',
@@ -308,7 +310,7 @@ const ProductFilters = ({
                   </select>
                 </div>
               </div>
-            )} */}
+            )}
 
             {activeTab === 'price' && (
               <div style={{
