@@ -28,22 +28,30 @@ export const AuthProvider = ({ children }) => {
       if (!keycloak_id) {
         throw new Error("Keycloak ID not found in token.");
       }
-      const profile = await getMyBuyerProfile(keycloak_id);
-      setBuyerProfile(profile);
+      // Assuming getMyBuyerProfile returns an object like { data: { actual_profile_fields } }
+      const response = await getMyBuyerProfile(keycloak_id);
+      const profileData = response.data; // Extract the actual profile data
+
+      setBuyerProfile(profileData); // Store the actual profile data object
+
       if (currentKcInstance?.tokenParsed) {
         setUserInfo({
-          name: profile.name || currentKcInstance.tokenParsed.name || currentKcInstance.tokenParsed.preferred_username,
-          email: profile.email || currentKcInstance.tokenParsed.email,
+          name: profileData.name || currentKcInstance.tokenParsed.name || currentKcInstance.tokenParsed.preferred_username,
+          email: profileData.email || currentKcInstance.tokenParsed.email,
           username: currentKcInstance.tokenParsed.preferred_username,
         });
       } else {
-        // Fallback if tokenParsed is not available on currentKcInstance for some reason
-         setUserInfo({ name: profile.name, email: profile.email, username: profile.name });
+         setUserInfo({
+           name: profileData.name,
+           email: profileData.email,
+           username: profileData.name // Or profileData.username if available
+         });
       }
-      console.log("[AuthContext] Buyer profile synced successfully:", profile);
+      console.log("[AuthContext] Buyer profile synced successfully (actual data):", profileData);
     } catch (error) {
       console.error("[AuthContext] Error syncing buyer profile:", error);
       setProfileError(error);
+      setBuyerProfile(null); // Add this line
     } finally {
       setProfileLoading(false);
     }
