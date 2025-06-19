@@ -6,6 +6,23 @@ import { apiService } from '../../services/api';
 import websocketManager from '../../utils/websocketManager';
 // Removed: import { getCurrentBuyerId } from '../../utils/auth';
 
+const formatTime = (createdAt) => {
+  if (!createdAt || typeof createdAt !== 'string') {
+    // console.warn('formatTime: received invalid createdAt type:', typeof createdAt, createdAt);
+    return 'Time N/A'; // Or some other suitable placeholder
+  }
+  try {
+    const dateObj = new Date(createdAt);
+    if (isNaN(dateObj.getTime())) {
+      // console.warn('formatTime: failed to parse date string:', createdAt);
+      return 'Invalid time'; // Fallback for invalid date after parsing attempt
+    }
+    return dateObj.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    // console.error('formatTime: error during date formatting:', createdAt, e);
+    return 'Time Error'; // Fallback for unexpected errors
+  }
+};
 
 const ChatWindow = () => {
   const { threadId } = useParams();
@@ -28,6 +45,7 @@ const ChatWindow = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [componentIsLoading, setComponentIsLoading] = useState(true); // Renamed from isLoading
   const [isSending, setIsSending] = useState(false); // Renamed from sending
+  const [chatDataError, setChatDataError] = useState(null);
 
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -105,13 +123,15 @@ const ChatWindow = () => {
 
       websocketManager.addMessageHandler(threadId, handleWebSocketMessage);
       websocketManager.connect(threadId, buyerId, 'buyer', setIsConnected);
+      setChatDataError(null); // Clear previous error on successful load
     } catch (error) {
       console.error('[ChatWindow] Error loading chat data:', error);
       showError('Не удалось загрузить данные чата.');
+      setChatDataError(error); // Set error state
     } finally {
       if (isInitialLoad) setComponentIsLoading(false);
     }
-  }, [threadId, buyerId, showError, handleWebSocketMessage, isAuthenticated]);
+  }, [threadId, buyerId, showError, handleWebSocketMessage, isAuthenticated]); // Note: setChatDataError is not needed here as it's a setter from useState
 
   const loadMoreMessages = useCallback(async () => {
     if (!threadId || loadingMore || !hasMoreMessages || !isAuthenticated) return;
@@ -202,13 +222,10 @@ const ChatWindow = () => {
   }, [messages]);
 
   useEffect(() => {
-    if (isAuthenticated && buyerId && threadId && !profileLoading) {
-      if (!isConnected) { // Only attempt to load data and connect if not already connected.
-        console.log('[ChatWindow] Conditions met and not connected. Calling loadChatData.');
-        loadChatData();
-      } else {
-        // Optional: console.log('[ChatWindow] Conditions met but already connected. Skipping loadChatData.');
-      }
+    if (isAuthenticated && buyerId && threadId && !profileLoading && !isConnected && !chatDataError) {
+      // Only attempt to load data and connect if not already connected and no prior load error.
+      console.log('[ChatWindow] Conditions met, not connected, no prior error. Calling loadChatData.');
+      loadChatData();
     } else if (!profileLoading) { // Profile loading is complete (or wasn't needed)
       setComponentIsLoading(false); // Stop chat-specific loading indicator for this component
 
@@ -221,7 +238,7 @@ const ChatWindow = () => {
 
       // Original error handling for missing auth/buyerId when not profileLoading and not connected
       // Ensure these errors are shown only if not connected, to avoid overriding valid connected state if other logic handles it.
-      if (!isConnected) {
+      if (!isConnected && !chatDataError) { // Also check for chatDataError here
           if (!isAuthenticated) {
             // Consider if showError is needed here or if page guards are sufficient.
             // console.warn('[ChatWindow] User not authenticated after profile check and not connected.');
@@ -232,7 +249,7 @@ const ChatWindow = () => {
       }
     }
     // If profileLoading is true, we do nothing here; existing UI should show profile loading.
-  }, [isAuthenticated, buyerId, threadId, loadChatData, profileLoading, showError, isConnected]); // Added isConnected
+  }, [isAuthenticated, buyerId, threadId, loadChatData, profileLoading, showError, isConnected, chatDataError]); // Added isConnected and chatDataError
 
   useEffect(() => {
     return () => { // Cleanup on unmount
@@ -315,7 +332,7 @@ const ChatWindow = () => {
                     <div style={{ padding: '16px 20px', borderRadius: isOwnMessage ? '20px 20px 4px 20px' : '20px 20px 20px 4px', backgroundColor: isOwnMessage ? '#2563eb' : 'white', color: isOwnMessage ? 'white' : '#374151', fontSize: '16px', lineHeight: '1.5', boxShadow: isOwnMessage ? '0 4px 16px rgba(37, 99, 235, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.1)', border: isOwnMessage ? 'none' : '1px solid #e5e7eb', position: 'relative', wordBreak: 'break-word' }}>
                       <div style={{ marginBottom: '8px' }}>{message.message}</div>
                       <div style={{ fontSize: '12px', opacity: 0.8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                        <span>{new Date(message.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span>{formatTime(message.created_at)}</span>
                         {isOwnMessage && (<div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>{message.sending ? (<div style={{width: '12px', height: '12px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite'}} />) : message.failed ? (<span style={{fontSize: '10px', opacity:0.8, color: '#ef4444'}}>❌</span>) : (<span style={{fontSize: '10px', opacity:0.8, color: message.is_read_by_seller ? '#10b981' : '#6b7280'}}>{message.is_read_by_seller ? '✓✓' : '✓'}</span>)}<span style={{fontSize: '8px', opacity: 0.6, color: message.failed ? '#ef4444' : 'inherit'}}>{message.sending ? 'отправка...' : message.failed ? 'ошибка' : message.is_read_by_seller ? 'прочитано' : 'доставлено'}</span></div>)}
                       </div>
                     </div>
