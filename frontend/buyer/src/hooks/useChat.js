@@ -332,16 +332,24 @@ export const useChat = (options = {}) => {
     setMessages(prev => [...prev, optimisticMessage]);
 
     try {
-      // Payload for the API should not include sender_id and sender_type
+      // Payload for the API should only include thread_id and content
       const messagePayloadForApi = {
-        id: optimisticMessageId,
         thread_id: threadToUse,
         content: messageText,
       };
       const response = await apiService.sendMessage(messagePayloadForApi);
 
       if (response.success && response.data) {
-        setMessages(prev => prev.map(msg => msg.id === optimisticMessageId ? { ...response.data, _optimistic: false } : msg));
+        const serverMessage = response.data;
+        // Ensure the server message has all necessary fields, including its own server-generated ID
+        // Update the local messages array by replacing the optimistic message with the server-confirmed one.
+        setMessages(prevMessages =>
+          prevMessages.map(msg =>
+            msg._optimisticId === optimisticMessageId
+              ? { ...serverMessage, _optimistic: false } // serverMessage already contains the final ID
+              : msg
+          )
+        );
         setThreads(prevThreads =>
           prevThreads.map(t =>
             t.id === threadToUse
