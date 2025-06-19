@@ -82,7 +82,7 @@ const ChatWindow = () => {
   }, [messages]);
 
   // Determine if the other user is typing
-  const otherUserIsTyping = typingUsers.some(userId => userId !== chatHookBuyerId);
+  const otherUserIsTypingDerived = typingUsers.some(userId => userId !== chatHookBuyerId);
 
   // ---- UI Rendering based on Auth State & Hook State ----
   if (profileLoading) {
@@ -126,8 +126,8 @@ const ChatWindow = () => {
               <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: isConnected ? '#10b981' : '#f59e0b', animation: isConnected ? 'pulse 2s infinite' : 'none' }} />
               <span style={{ fontSize: '14px', fontWeight: '600', color: isConnected ? '#065f46' : '#92400e' }}>{isConnected ? 'Подключен' : 'Подключение...'}</span>
             </div>
-            {/* Use otherUserIsTyping derived from useChat hook's typingUsers state */}
-            {otherUserIsTyping && (
+            {/* Use otherUserIsTypingDerived derived from useChat hook's typingUsers state */}
+            {otherUserIsTypingDerived && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px', backgroundColor: '#f0f9ff', border: '1px solid #bae6fd' }}>
                 <div style={{ display: 'flex', gap: '2px' }}><div style={{width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#0ea5e9', animation: 'typing 1.4s infinite ease-in-out'}} /><div style={{width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#0ea5e9', animation: 'typing 1.4s infinite ease-in-out 0.2s'}} /><div style={{width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#0ea5e9', animation: 'typing 1.4s infinite ease-in-out 0.4s'}} /></div>
                 <span style={{ fontSize: '12px', fontWeight: '600', color: '#0369a1' }}>печатает...</span>
@@ -166,7 +166,7 @@ const ChatWindow = () => {
                   {isOwnMessage && (<div style={{ width: '32px', flexShrink: 0 }} />)}
                 </div>);
             })}
-            {otherUserTyping && (<div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '16px' }}><div style={{ padding: '12px 16px', borderRadius: '18px', backgroundColor: '#f3f4f6', color: '#6b7280', fontSize: '14px', fontStyle: 'italic' }}>Продавец печатает...</div></div>)}
+            {otherUserIsTypingDerived && (<div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '16px' }}><div style={{ padding: '12px 16px', borderRadius: '18px', backgroundColor: '#f3f4f6', color: '#6b7280', fontSize: '14px', fontStyle: 'italic' }}>Продавец печатает...</div></div>)}
             <div ref={messagesEndRef} />
           </div>
           <div style={{ padding: '24px', borderTop: '1px solid #e5e7eb', backgroundColor: 'white' }}>
