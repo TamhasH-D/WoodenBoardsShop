@@ -182,14 +182,22 @@ const ChatWindow = () => {
       const result = await apiService.sendMessage(messageData);
       if (result && result.data) { // Check result.data for actual message from backend
         setMessages(prev => prev.map(msg =>
-          msg.id === messageId ? { ...result.data, sending: false } : msg // Replace temp msg with server one
+          msg.id === messageId ? { ...msg, ...result.data, id: result.data.id || msg.id, created_at: result.data.created_at || msg.created_at, sending: false } : msg
         ));
-        if (result.data.id !== messageId) { // If server ID is different
+
+        const finalMessageFromServer = {
+            ...tempMessage,
+            ...result.data,
+            id: result.data.id || messageId,
+            created_at: result.data.created_at || tempMessage.created_at,
+            sending: false
+        };
+
+        if (messageId !== finalMessageFromServer.id) {
             messagesRef.current.delete(messageId);
-            messagesRef.current.set(result.data.id, result.data);
-        } else {
-            messagesRef.current.set(messageId, {...result.data, sending: false});
         }
+        messagesRef.current.set(finalMessageFromServer.id, finalMessageFromServer);
+
       } else { throw new Error('API call did not return expected data.'); }
     } catch (error) {
       console.error('[ChatWindow] Error sending message:', error);
