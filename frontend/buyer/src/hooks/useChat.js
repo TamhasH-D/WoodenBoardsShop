@@ -53,28 +53,35 @@ export const useChat = (options = {}) => {
   // Effect to load threads and handle initialTargetSellerId, and set chat service readiness
   // This is the MAIN effect that reacts to buyerProfile changes.
   useEffect(() => {
-    const currentDBBuyerId = buyerProfile?.id; // Use buyerProfile.id directly for logic here
-    setBuyerId(currentDBBuyerId); // Keep setting the internal buyerId state for other functions to use
+    const rawBuyerIdFromProfile = buyerProfile?.id; // Changed from buyerProfile?.data?.id
 
-    // Updated logging to reflect direct use of buyerProfile.id
-    console.log(`[useChat Main Effect] Direct buyerProfile.id: '${currentDBBuyerId}', initialTargetSellerId: '${initialTargetSellerId}'`);
+    let validDBBuyerId = null;
+    if (rawBuyerIdFromProfile && typeof rawBuyerIdFromProfile === 'string' && rawBuyerIdFromProfile !== "undefined") {
+      validDBBuyerId = rawBuyerIdFromProfile;
+    } else if (rawBuyerIdFromProfile === "undefined") {
+      // This condition might be less likely now if buyerProfile.id is directly from DB and not a string "undefined"
+      console.warn('[useChat] buyerProfile.id is the literal string "undefined". Treating as invalid.');
+    }
 
-    if (currentDBBuyerId) {
+    setBuyerId(validDBBuyerId); // Set the internal buyerId state for other functions to use
+
+    // Updated log to reflect source
+    console.log(`[useChat Main Effect] Processed buyerProfile.id (raw): '${rawBuyerIdFromProfile}', Validated DB BuyerId: '${validDBBuyerId}', initialTargetSellerId: '${initialTargetSellerId}'`);
+
+    if (validDBBuyerId) {
       if (initialTargetSellerId) {
         // ProductChat context
-        console.log(`[useChat DEBUG] ProductChat context: DB buyerId ('${currentDBBuyerId}') available. Setting isChatServiceReady = true.`);
+        console.log(`[useChat DEBUG] ProductChat context: Valid DB buyerId ('${validDBBuyerId}') available. Setting isChatServiceReady = true.`);
         setIsChatServiceReady(true);
         // Load all threads in background.
         // Its success/failure or timing doesn't block ProductChat's initial readiness.
-        loadThreadsInternal(currentDBBuyerId).then(({ loadedThreads, error: loadError }) => {
+        loadThreadsInternal(validDBBuyerId).then(({ loadedThreads, error: loadError }) => {
           console.log(`[useChat DEBUG] ProductChat context: loadThreadsInternal completed. Error: ${loadError}, Loaded Threads: ${loadedThreads?.length}`);
           if (loadError) {
             console.error(`[useChat] Error loading threads in background for ProductChat context: ${loadError}`);
-            // Error is already set by loadThreadsInternal if needed by other parts.
-            // isChatServiceReady is already true, allowing ProductChat to proceed.
             return;
           }
-          if (loadedThreads) { // Check if loadedThreads is not undefined
+          if (loadedThreads) {
               const existingThread = loadedThreads.find(t => t.seller_id === initialTargetSellerId);
               if (existingThread && selectThreadRef.current) {
                   console.log(`[useChat DEBUG] ProductChat context: Existing thread found, selecting threadId: ${existingThread.id}`);
@@ -90,8 +97,8 @@ export const useChat = (options = {}) => {
         });
       } else {
         // General chat context: Wait for all threads to load.
-        console.log(`[useChat DEBUG] General Chat context: DB buyerId ('${currentDBBuyerId}') available. Waiting for loadThreadsInternal.`);
-        loadThreadsInternal(currentDBBuyerId).then(({ error: loadError }) => {
+        console.log(`[useChat DEBUG] General Chat context: Valid DB buyerId ('${validDBBuyerId}') available. Waiting for loadThreadsInternal.`);
+        loadThreadsInternal(validDBBuyerId).then(({ error: loadError }) => {
           console.log(`[useChat DEBUG] General context: loadThreadsInternal completed. Error: ${loadError}. Setting isChatServiceReady = true.`);
           setIsChatServiceReady(true);
           if (loadError) {
@@ -100,7 +107,7 @@ export const useChat = (options = {}) => {
         });
       }
     } else {
-      console.log(`[useChat DEBUG] No DB buyerId from buyerProfile. Resetting states. Setting isChatServiceReady = false.`);
+      console.log(`[useChat DEBUG] No valid DB buyerId from buyerProfile. Resetting states. Setting isChatServiceReady = false.`);
       setThreads([]);
       setSelectedThreadId(null);
       setCurrentThreadSellerId(null);

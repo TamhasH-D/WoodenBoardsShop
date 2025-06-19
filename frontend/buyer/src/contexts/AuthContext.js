@@ -28,21 +28,46 @@ export const AuthProvider = ({ children }) => {
       if (!keycloak_id) {
         throw new Error("Keycloak ID not found in token.");
       }
-      const profile = await getMyBuyerProfile(keycloak_id);
-      setBuyerProfile(profile);
-      if (currentKcInstance?.tokenParsed) {
-        setUserInfo({
-          name: profile.name || currentKcInstance.tokenParsed.name || currentKcInstance.tokenParsed.preferred_username,
-          email: profile.email || currentKcInstance.tokenParsed.email,
-          username: currentKcInstance.tokenParsed.preferred_username,
-        });
+      const profileResponse = await getMyBuyerProfile(keycloak_id); // Renamed to profileResponse
+      const actualProfileData = profileResponse?.data; // Extract the actual data object
+
+      if (actualProfileData) {
+        setBuyerProfile(actualProfileData); // Set with actual data
+        if (currentKcInstance?.tokenParsed) {
+          setUserInfo({
+            name: actualProfileData.name || currentKcInstance.tokenParsed.name || currentKcInstance.tokenParsed.preferred_username,
+            email: actualProfileData.email || currentKcInstance.tokenParsed.email,
+            username: currentKcInstance.tokenParsed.preferred_username,
+          });
+        } else {
+          // Fallback if tokenParsed is not available (less likely but good to handle)
+          setUserInfo({
+            name: actualProfileData.name,
+            email: actualProfileData.email,
+            username: actualProfileData.name // Or another suitable fallback from actualProfileData
+          });
+        }
+        console.log("[AuthContext] Buyer profile synced successfully:", actualProfileData);
       } else {
-        // Fallback if tokenParsed is not available on currentKcInstance for some reason
-         setUserInfo({ name: profile.name, email: profile.email, username: profile.name });
+        // Handle case where profileResponse.data might be missing after a successful API call
+        console.error("[AuthContext] Profile data (profile.data) is missing after fetch, or API response structure is unexpected.");
+        setBuyerProfile(null); // Set to null or handle error appropriately
+        // Set userInfo based on Keycloak only if profile data is missing
+        if (currentKcInstance?.tokenParsed) {
+            setUserInfo({
+                name: currentKcInstance.tokenParsed.name || currentKcInstance.tokenParsed.preferred_username,
+                email: currentKcInstance.tokenParsed.email,
+                username: currentKcInstance.tokenParsed.preferred_username,
+            });
+        } else {
+            setUserInfo(null); // Or some default non-user state
+        }
+        // Optionally, you could throw an error here or set a specific profileError
+        // For now, setting buyerProfile to null and logging error.
+        setProfileError(new Error("Profile data structure was not as expected."));
       }
-      console.log("[AuthContext] Buyer profile synced successfully:", profile);
     } catch (error) {
-      console.error("[AuthContext] Error syncing buyer profile:", error);
+      console.error("[AuthContext] Error fetching/syncing buyer profile:", error); // Clarified error source
       setProfileError(error);
     } finally {
       setProfileLoading(false);
