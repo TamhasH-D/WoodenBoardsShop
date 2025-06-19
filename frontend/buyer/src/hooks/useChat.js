@@ -332,13 +332,13 @@ export const useChat = (options = {}) => {
     setMessages(prev => [...prev, optimisticMessage]);
 
     try {
-      const response = await apiService.sendMessage({
+      // Payload for the API should not include sender_id and sender_type
+      const messagePayloadForApi = {
         id: optimisticMessageId,
         thread_id: threadToUse,
-        sender_id: buyerId,
-        sender_type: 'buyer',
         content: messageText,
-      });
+      };
+      const response = await apiService.sendMessage(messagePayloadForApi);
 
       if (response.success && response.data) {
         setMessages(prev => prev.map(msg => msg.id === optimisticMessageId ? { ...response.data, _optimistic: false } : msg));
