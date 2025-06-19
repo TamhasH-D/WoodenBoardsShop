@@ -8,18 +8,19 @@ export const useChat = (options = {}) => {
   const { initialTargetSellerId = null, productContext = null } = options;
 
   const { user, buyerProfile } = useAuth();
-  const [buyerId, setBuyerId] = useState(null);
+  const [buyerId, setBuyerId] = useState(null); // This will strictly be the Database ID
+  const [isChatServiceReady, setIsChatServiceReady] = useState(false);
 
   const [threads, setThreads] = useState([]);
   const [selectedThreadId, setSelectedThreadId] = useState(null);
-  const [currentThreadSellerId, setCurrentThreadSellerId] = useState(null); // For context before thread ID exists
+  const [currentThreadSellerId, setCurrentThreadSellerId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loadingThreads, setLoadingThreads] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [error, setError] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
-  const [isCreatingThread, setIsCreatingThread] = useState(false); // New state for thread creation process
+  const [isCreatingThread, setIsCreatingThread] = useState(false);
 
   const selectedThreadRef = useRef(null);
   selectedThreadRef.current = selectedThreadId;
@@ -27,12 +28,12 @@ export const useChat = (options = {}) => {
   useEffect(() => {
     if (buyerProfile?.id) {
       setBuyerId(buyerProfile.id);
-    } else if (user?.sub) { // Using user.sub as a fallback if buyerProfile.id isn't immediately ready
-      console.warn("useChat: buyerProfile.id not available yet. Will rely on user.sub for now if needed, but DB ID is preferred for API calls.");
-      // Potentially, you could trigger a fetch for buyer DB ID here if user.sub is present but buyerProfile.id is not.
-      // For now, just warning. Actual API calls needing buyerId should ensure it's the DB ID.
+      // setIsChatServiceReady will be set after initial threads load attempt
+    } else {
+      setBuyerId(null);
+      setIsChatServiceReady(false); // Not ready if no DB ID
     }
-  }, [user, buyerProfile]);
+  }, [buyerProfile]);
 
   // Forward declaration for selectThread to be used in useEffect
   const selectThreadRef = useRef();
@@ -59,28 +60,37 @@ export const useChat = (options = {}) => {
     }
   }, []);
 
-  // Effect to load threads and handle initialTargetSellerId
+  // Effect to load threads and handle initialTargetSellerId, and set chat service readiness
   useEffect(() => {
-    if (buyerId) {
+    if (buyerId) { // buyerId is now guaranteed to be the DB ID if not null
       loadThreadsInternal(buyerId).then(({ loadedThreads, error: loadError }) => {
+        setIsChatServiceReady(true); // Ready for operations after initial load attempt, even if it errors or finds no threads
         if (loadError) {
-          // Error is already set by loadThreadsInternal, and possibly displayed by a component using `error` state
+          // Error is already set by loadThreadsInternal. Components can use `error` and `isChatServiceReady`.
           return;
         }
         if (initialTargetSellerId) {
           const existingThread = loadedThreads.find(t => t.seller_id === initialTargetSellerId);
           if (existingThread && selectThreadRef.current) {
-            selectThreadRef.current(existingThread.id); // Call actual selectThread
+            selectThreadRef.current(existingThread.id);
           } else if (!existingThread) {
-            // No existing thread with the target seller, set sellerId for context for the first message
-            console.log(`[useChat] No existing thread found for sellerId: ${initialTargetSellerId}. Setting for new chat context.`);
+            console.log(`[useChat] No existing thread for sellerId: ${initialTargetSellerId}. Context set for new chat.`);
             setCurrentThreadSellerId(initialTargetSellerId);
-            setSelectedThreadId(null); // Clear any previously selected thread ID
-            setMessages([]); // Clear messages from any previously selected thread
-            setIsConnected(false); // Ensure not marked as connected
+            setSelectedThreadId(null);
+            setMessages([]);
+            setIsConnected(false);
           }
         }
       });
+    } else {
+      // Not yet ready if buyerId (DB ID) is not available.
+      // Reset threads and other states if buyerId is lost (e.g., profile unloaded)
+      setThreads([]);
+      setSelectedThreadId(null);
+      setCurrentThreadSellerId(null);
+      setMessages([]);
+      setIsConnected(false);
+      setIsChatServiceReady(false);
     }
   }, [buyerId, initialTargetSellerId, loadThreadsInternal]);
 
@@ -159,9 +169,10 @@ export const useChat = (options = {}) => {
   }, [buyerId]);
 
   const selectThreadActual = useCallback(async (threadIdToSelect) => {
-    if (!buyerId) {
-      setError("Buyer ID not available to select thread.");
-      return { success: false, error: "Buyer ID not available." };
+    if (!isChatServiceReady || !buyerId) { // Guard with isChatServiceReady
+      const errMsg = "Chat service not ready or Buyer DB ID not available for selecting thread.";
+      setError(errMsg);
+      return { success: false, error: errMsg };
     }
 
     if (selectedThreadId === threadIdToSelect && isConnected) {
@@ -222,8 +233,8 @@ export const useChat = (options = {}) => {
 
 
   const sendMessage = useCallback(async (messageText, targetSellerId = null) => {
-    if (!buyerId) {
-      const errMsg = "Cannot send message: Buyer ID not available.";
+    if (!isChatServiceReady || !buyerId) { // Guard with isChatServiceReady
+      const errMsg = "Chat service not ready or Buyer DB ID not available for sending message.";
       setError(errMsg);
       throw new Error(errMsg);
     }
@@ -360,15 +371,22 @@ export const useChat = (options = {}) => {
     error,
     isConnected,
     typingUsers,
-    buyerId,
-    loadThreads: () => loadThreadsInternal(buyerId),
+    buyerId, // This is now guaranteed to be the DB ID if set
+    isChatServiceReady, // Expose readiness state
+    loadThreads: () => { // Guard this public method as well
+      if (!isChatServiceReady || !buyerId) {
+        console.warn("loadThreads called before chat service is ready or buyerId is available.");
+        return Promise.resolve({ loadedThreads: [], error: "Chat service not ready." });
+      }
+      return loadThreadsInternal(buyerId);
+    },
     selectThread: selectThreadActual,
     sendMessage,
     sendTypingIndicator: sendTypingIndicatorActual,
     hasExistingChatWithSeller: useCallback((sellerIdToCheck) => {
-      if (!threads || !sellerIdToCheck || !buyerId) return false;
+      if (!isChatServiceReady || !threads || !sellerIdToCheck || !buyerId) return false;
       return threads.some(t => t.seller_id === sellerIdToCheck && t.buyer_id === buyerId);
-    }, [threads, buyerId]),
+    }, [threads, buyerId, isChatServiceReady]),
     productContext,
   };
 };

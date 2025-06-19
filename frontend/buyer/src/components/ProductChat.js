@@ -27,6 +27,7 @@ const ProductChat = ({ productId, product, sellerId }) => {
     isCreatingThread, // For new thread creation process
     error: chatHookError,
     buyerId: chatHookBuyerId, // Buyer's DB ID from useChat
+    isChatServiceReady, // Import the new readiness state
     sendMessage,
     sendTypingIndicator,
     hasExistingChatWithSeller, // New function from hook
@@ -44,7 +45,8 @@ const ProductChat = ({ productId, product, sellerId }) => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!isAuthenticated || !newMessage.trim() || isSendingUi) return;
+    // Guard with isChatServiceReady
+    if (!isAuthenticated || !isChatServiceReady || !newMessage.trim() || isSendingUi) return;
 
     const messageText = newMessage.trim();
     setIsSendingUi(true);
@@ -85,29 +87,39 @@ const ProductChat = ({ productId, product, sellerId }) => {
       setNewMessage(`Здравствуйте! Интересует товар "${currentProductTitle}".`);
       setDefaultMessageSet(true);
     }
-  }, [isAuthenticated, currentProductTitle, doesChatExistWithSeller, newMessage, loadingThreads, loadingMessages, profileLoading, isCreatingThread, defaultMessageSet]);
+  }, [isAuthenticated, currentProductTitle, doesChatExistWithSeller, newMessage, loadingThreads, loadingMessages, profileLoading, isCreatingThread, defaultMessageSet, isChatServiceReady]); // Added isChatServiceReady
 
-  const overallChatDisabled = profileLoading || !isAuthenticated || !sellerId || isCreatingThread || (!isConnected && messages.length > 0); // Disable if creating, or if not connected but have messages (implies trying to connect)
-  const initialLoading = loadingThreads || (!selectedThread && loadingMessages && !doesChatExistWithSeller); // More specific initial load
+  // Updated overallChatDisabled logic
+  const overallChatDisabled =
+    profileLoading ||
+    !isAuthenticated ||
+    !sellerId ||
+    !isChatServiceReady || // Key addition: chat service must be ready
+    isCreatingThread ||
+    isSendingUi ||
+    (!isConnected && selectedThread); // If a thread is selected but not connected, disable input
+
+  const initialLoading = loadingThreads || (!selectedThread && loadingMessages && !doesChatExistWithSeller && !isChatServiceReady);
 
   let placeholderText = "Напишите сообщение...";
   if (profileLoading) {
     placeholderText = "Загрузка профиля...";
   } else if (!keycloakAuthenticated) {
     placeholderText = "Войдите, чтобы начать чат";
-  } else if (!isAuthenticated && keycloakAuthenticated) {
+  } else if (!isAuthenticated && keycloakAuthenticated) { // Profile loaded with issues, or not at all
     placeholderText = "Профиль не загружен.";
-  } else if (initialLoading) {
+  } else if (!isChatServiceReady && isAuthenticated) { // Authenticated, profile seems fine, but chat service isn't ready
+    placeholderText = "Инициализация чата...";
+  } else if (initialLoading && isChatServiceReady) { // Chat service ready, but still loading initial threads/messages for this context
     placeholderText = "Загрузка чата...";
   } else if (isCreatingThread) {
     placeholderText = "Создание чата...";
   } else if (chatHookError) {
     placeholderText = "Ошибка чата.";
   } else if (!doesChatExistWithSeller && currentProductTitle && !defaultMessageSet) {
-    // Placeholder will be set by the useEffect for default message
     placeholderText = `Начните чат о "${currentProductTitle}"`;
-  } else if (!isConnected && selectedThread) {
-     placeholderText = "Подключение...";
+  } else if (!isConnected && selectedThread) { // A thread is selected but WS not connected
+     placeholderText = "Подключение к чату...";
   }
 
 
