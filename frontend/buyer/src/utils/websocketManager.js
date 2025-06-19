@@ -53,8 +53,8 @@ class ConnectionInfo {
     this.onStatusChange = onStatusChange;
     this.reconnectAttempts = 0;
     this.isConnecting = false;
-    this.lastPingTime = Date.now();
-    this.pingInterval = null;
+    this.lastPingTime = Date.now(); // Initialized on new connection
+    this.pingTimerId = null; // Changed from pingInterval
     this.reconnectTimeout = null;
   }
 }
@@ -72,6 +72,12 @@ class WebSocketManager {
     this.maxReconnectDelay = 30000; // 30 секунд
     this.pingInterval = 30000; // 30 секунд
     this.pongTimeout = 10000; // 10 секунд
+
+    // Bind online/offline handlers
+    this.handleOnline = this.handleOnline.bind(this);
+    this.handleOffline = this.handleOffline.bind(this);
+    window.addEventListener('online', this.handleOnline);
+    window.addEventListener('offline', this.handleOffline);
   }
 
   /**
@@ -81,7 +87,22 @@ class WebSocketManager {
     console.log(`[WebSocketManager] Connecting to ${threadId}:`, { userId, userType });
 
     // Закрываем существующее соединение если есть
-    this.disconnect(threadId);
+    // this.disconnect(threadId); // Replaced with more nuanced handling below
+    const oldConnection = this.connections.get(threadId);
+    if (oldConnection && oldConnection.ws) {
+        // Prevent old handlers from running, especially onclose which might trigger another reconnect
+        oldConnection.ws.onopen = null;
+        oldConnection.ws.onmessage = null;
+        oldConnection.ws.onclose = null;
+        oldConnection.ws.onerror = null;
+        if (oldConnection.ws.readyState !== WS_STATES.CLOSED && oldConnection.ws.readyState !== WS_STATES.CLOSING) {
+            console.log(`[WebSocketManager] connect: Closing previous WebSocket instance for thread ${threadId} state: ${oldConnection.ws.readyState}`);
+            oldConnection.ws.close(1000, "New connection requested"); // Close with normal code
+        }
+        // Do NOT clear oldConnection.reconnectTimeout here, as scheduleReconnect handles it for the *new* attempt.
+        // Also, do not call the full this.disconnect(oldConnection.threadId) as it clears the timeout we need.
+        this.stopPing(oldConnection); // Stop ping for the old connection
+    }
 
     const wsUrl = getChatWebSocketUrl(threadId, userId, userType);
     console.log(`[WebSocketManager] WebSocket URL:`, wsUrl);
@@ -310,21 +331,29 @@ class WebSocketManager {
   startPing(connectionInfo) {
     this.stopPing(connectionInfo); // Останавливаем предыдущий ping если есть
 
-    connectionInfo.pingInterval = setInterval(() => {
+    connectionInfo.pingTimerId = setInterval(() => {
       if (connectionInfo.ws.readyState === WS_STATES.OPEN) {
-        const pingMessage = {
-          type: WS_MESSAGE_TYPES.PING,
-          timestamp: new Date().toISOString()
-        };
+            // Check for stale connection
+            if ((Date.now() - connectionInfo.lastPingTime) > (this.pingInterval + this.pongTimeout)) {
+                console.warn(`[WebSocketManager] Stale connection presumed for ${connectionInfo.threadId}. No server activity (pong) for approx. ${Math.round((this.pingInterval + this.pongTimeout) / 1000)}s. Closing connection.`);
+                connectionInfo.ws.close(1006, "Stale connection - pong timeout");
+                return; // Exit interval function; onclose will handle reconnection
+            }
 
-        try {
-          connectionInfo.ws.send(JSON.stringify(pingMessage));
-          console.log(`[WebSocketManager] Ping sent to ${connectionInfo.threadId}`);
-        } catch (error) {
-          console.error(`[WebSocketManager] Error sending ping to ${connectionInfo.threadId}:`, error);
-          this.disconnect(connectionInfo.threadId);
+            // If not stale, send Ping
+            const pingMessage = {
+                type: WS_MESSAGE_TYPES.PING,
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                connectionInfo.ws.send(JSON.stringify(pingMessage));
+                // console.log(`[WebSocketManager] Ping sent to ${connectionInfo.threadId}`); // Optional logging
+            } catch (error) {
+                console.error(`[WebSocketManager] Error sending ping to ${connectionInfo.threadId}:`, error);
+                connectionInfo.ws.close(1006, "Ping send failed"); // Changed from this.disconnect()
+            }
         }
-      }
     }, this.pingInterval);
   }
 
@@ -332,9 +361,9 @@ class WebSocketManager {
    * Остановить ping
    */
   stopPing(connectionInfo) {
-    if (connectionInfo.pingInterval) {
-      clearInterval(connectionInfo.pingInterval);
-      connectionInfo.pingInterval = null;
+    if (connectionInfo.pingTimerId) {
+      clearInterval(connectionInfo.pingTimerId);
+      connectionInfo.pingTimerId = null;
     }
   }
 
@@ -358,10 +387,9 @@ class WebSocketManager {
     }
 
     connectionInfo.reconnectAttempts++;
-    const delay = Math.min(
-      this.baseReconnectDelay * Math.pow(2, connectionInfo.reconnectAttempts - 1),
-      this.maxReconnectDelay
-    );
+    let delay = this.baseReconnectDelay * Math.pow(2, connectionInfo.reconnectAttempts - 1);
+    const jitter = Math.random() * this.baseReconnectDelay; // Add jitter
+    delay = Math.min(delay + jitter, this.maxReconnectDelay);
 
     console.log(`[WebSocketManager] Scheduling reconnect for ${connectionInfo.threadId} in ${delay}ms (attempt ${connectionInfo.reconnectAttempts})`);
 
@@ -389,25 +417,49 @@ class WebSocketManager {
     };
     return this.sendMessage(threadId, typingMessage);
   }
+
+  /**
+   * Обработчик события "online" браузера
+   */
+  handleOnline() {
+    console.log('[WebSocketManager] Network connection restored. Checking and attempting to reconnect active/pending connections.');
+    for (const [threadId, connectionInfo] of this.connections) {
+      const ws = connectionInfo.ws;
+      const isEffectivelyDisconnected = !ws || ws.readyState === WS_STATES.CLOSED || ws.readyState === WS_STATES.CLOSING;
+
+      if (isEffectivelyDisconnected && (connectionInfo.onStatusChange || connectionInfo.reconnectAttempts > 0)) {
+        console.log(`[WebSocketManager] Network online: Attempting to reconnect thread ${threadId} (attempts: ${connectionInfo.reconnectAttempts})`);
+        // connectionInfo.reconnectAttempts = 0; // Optional: reset attempts for a fresh start
+        this.connect(
+          connectionInfo.threadId,
+          connectionInfo.userId,
+          connectionInfo.userType,
+          connectionInfo.onStatusChange
+        );
+      }
+    }
+  }
+
+  /**
+   * Обработчик события "offline" браузера
+   */
+  handleOffline() {
+    console.log('[WebSocketManager] Network connection lost. Active connections may be affected.');
+    // Individual ws.onclose events will typically handle the disconnections.
+  }
 }
 
 // Создаем единственный экземпляр менеджера
 const websocketManager = new WebSocketManager();
 
 // Отключаем все WebSocket соединения при закрытии вкладки
+// Note: The 'beforeunload' listener uses the global 'websocketManager' instance directly. This is fine.
 window.addEventListener('beforeunload', () => {
   websocketManager.cleanup();
 });
 
-// Обрабатываем потерю/восстановление соединения с интернетом
-window.addEventListener('online', () => {
-  console.log('[WebSocketManager] Network connection restored, checking connections');
-  // Можно добавить логику для проверки и восстановления соединений
-});
-
-window.addEventListener('offline', () => {
-  console.log('[WebSocketManager] Network connection lost');
-});
+// The old global online/offline listeners are removed as they are now instance methods
+// and registered in the constructor.
 
 export default websocketManager;
 
