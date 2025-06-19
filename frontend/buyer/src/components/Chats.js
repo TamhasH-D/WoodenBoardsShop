@@ -7,6 +7,8 @@ import { BUYER_TEXTS } from '../utils/localization';
 // Removed: import { getCurrentBuyerId } from '../utils/auth';
 import { getChatWebSocketUrl } from '../utils/websocket';
 
+const API_CALL_TIMEOUT = 15000; // 15 seconds
+
 function Chats() {
   const navigate = useNavigate();
   const { showError } = useNotifications();
@@ -46,16 +48,41 @@ function Chats() {
     console.log('[Chats] Loading chats for buyer ID:', buyerId);
     setComponentLoading(true);
     setComponentError(null);
+    let loadedThreads = []; // Initialize loadedThreads
     try {
       // TODO: Ideally, apiService.getBuyerChats would not require buyerId if it can be inferred from token.
-      const result = await apiService.getBuyerChats(buyerId, 0, 100); // Fetch up to 100 threads
-      setThreads(result.data || []);
+      let getChatsPromise = apiService.getBuyerChats(buyerId, 0, 100);
+      let timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('API call timed out')), API_CALL_TIMEOUT)
+      );
+
+      const result = await Promise.race([getChatsPromise, timeoutPromise]);
+      loadedThreads = result.data || []; // Store result in loadedThreads
+      setThreads(loadedThreads);
+      setComponentError(null); // Clear error on success
     } catch (err) {
-      console.error('[Chats] Error loading chats:', err);
-      setComponentError(err.message || 'Не удалось загрузить список чатов.');
-      showError(err.message || 'Не удалось загрузить список чатов.');
+      if (err.message === 'API call timed out') {
+        console.error('[Chats] getBuyerChats timed out:', err);
+        setComponentError('Не удалось загрузить список чатов: превышено время ожидания.');
+        showError('Не удалось загрузить список чатов: превышено время ожидания.');
+      } else {
+        console.error('[Chats] Error loading chats:', err);
+        setComponentError(err.message || 'Не удалось загрузить список чатов.');
+        showError(err.message || 'Не удалось загрузить список чатов.');
+      }
+      loadedThreads = []; // Ensure loadedThreads is empty for the finally block logic
+      setThreads([]); // Also set threads to empty directly
     } finally {
       setComponentLoading(false);
+      if (loadedThreads.length === 0) {
+        if (wsRef.current) {
+          console.log("[Chats] No threads, ensuring WebSocket is closed.");
+          wsRef.current.onclose = null;
+          wsRef.current.close();
+          wsRef.current = null;
+        }
+        setIsConnected(false);
+      }
     }
   }, [buyerId, showError, isAuthenticated]);
 

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiService } from '../services/api';
 import websocketManager from '../utils/websocketManager';
+
+const API_CALL_TIMEOUT = 15000; // 15 seconds
 import { useAuth } from '../contexts/AuthContext'; // Import useAuth
 
 /**
@@ -82,7 +84,13 @@ export const useChat = (sellerId, productTitle) => {
       console.log('[useChat] Initializing/Loading chat for buyer:', buyerId, 'seller:', sellerId);
       // Use getMyBuyerChats if available, or adapt existing. For now, using old method with new buyerId.
       // TODO: Refactor apiService.getBuyerChats to not require buyerId if it can be derived from token (e.g. /me/chats)
-      const result = await apiService.getBuyerChats(buyerId, 0, 100); // Fetch more threads initially if needed
+
+      let getChatsPromise = apiService.getBuyerChats(buyerId, 0, 100);
+      let timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('API call timed out')), API_CALL_TIMEOUT)
+      );
+
+      const result = await Promise.race([getChatsPromise, timeoutPromise]);
       const existingThread = result.data?.find(t => t.seller_id === sellerId && t.buyer_id === buyerId);
 
       if (existingThread) {
@@ -104,8 +112,15 @@ export const useChat = (sellerId, productTitle) => {
         // Do not automatically create a thread here, let sendMessage handle it or a dedicated UI action.
       }
     } catch (err) {
-      console.error('[useChat] Error loading chat:', err);
-      setError('Ошибка загрузки чата');
+      if (err.message === 'API call timed out') {
+        console.error('[useChat] getBuyerChats timed out:', err);
+        setError('Не удалось загрузить историю чата: превышено время ожидания.');
+      } else {
+        console.error('[useChat] Error loading chat:', err);
+        setError('Ошибка загрузки чата');
+      }
+      setThread(null); // Ensure thread is reset on error
+      setMessages([]); // Ensure messages are reset on error
     } finally {
       setLoading(false);
       initializingRef.current = false;
@@ -124,7 +139,13 @@ export const useChat = (sellerId, productTitle) => {
     try {
       console.log('[useChat] Creating new chat thread with seller:', sellerId);
       // TODO: Refactor apiService.startChatWithSeller to not require buyerId if derivable from token
-      const result = await apiService.startChatWithSeller(buyerId, sellerId);
+
+      let startChatPromise = apiService.startChatWithSeller(buyerId, sellerId);
+      let timeoutPromiseCreate = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('API call timed out')), API_CALL_TIMEOUT)
+      );
+
+      const result = await Promise.race([startChatPromise, timeoutPromiseCreate]);
       const newThread = result.data; // Assuming result.data is the thread object
       
       setThread(newThread);
@@ -136,9 +157,14 @@ export const useChat = (sellerId, productTitle) => {
       console.log('[useChat] New chat thread created and connected:', newThread.id);
       return newThread;
     } catch (err) {
-      console.error('[useChat] Error creating chat:', err);
-      setError('Не удалось создать чат.');
-      throw err;
+      if (err.message === 'API call timed out') {
+        console.error('[useChat] startChatWithSeller timed out:', err);
+        setError('Не удалось создать чат: превышено время ожидания.');
+      } else {
+        console.error('[useChat] Error creating chat:', err);
+        setError('Не удалось создать чат.');
+      }
+      throw err; // Re-throw to be caught by sendMessage
     }
   }, [buyerId, sellerId, handleWebSocketMessage, profileAndKeycloakAuthenticated, profileLoading]);
 

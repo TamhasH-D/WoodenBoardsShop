@@ -159,8 +159,19 @@ const ProductChat = ({ productId, product, sellerId }) => {
     if (chatHookLoading) { // Profile is fine, chat hook is loading messages/thread
         return <LoadingStateView message="Загрузка истории сообщений..." />;
     }
-    if (chatHookError) { // Chat hook specific error
-        return <AuthRequiredView message={`Ошибка чата: ${chatHookError}. Попробуйте обновить страницу.`} />;
+    if (chatHookError) {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', padding: '20px', color: '#dc2626' }}>
+          <div style={{ fontSize: '32px', marginBottom: '16px'}}>⚠️</div>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600', color: '#374151' }}>Ошибка чата</h3>
+          <p style={{ margin: '0 0 16px 0', fontSize: '13px', lineHeight: '1.4', maxWidth: '280px', color: '#64748b' }}>
+            {chatHookError} {/* Display the error message from useChat */}
+          </p>
+          <p style={{ margin: '0', fontSize: '13px', lineHeight: '1.4', maxWidth: '280px', color: '#64748b' }}>
+            Вы все еще можете попробовать отправить сообщение.
+          </p>
+        </div>
+      );
     }
     if (messages.length === 0) {
         return <EmptyChatView hasExistingChat={hasExistingChat} />;
