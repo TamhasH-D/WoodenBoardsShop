@@ -1,12 +1,13 @@
+// Create frontend/seller/src/utils/keycloak.js
 import Keycloak from 'keycloak-js';
 
-// Initialize Keycloak instance with placeholder values
-// These values will need to be configured in your Keycloak server
-// and updated here or through environment variables.
-const keycloak = new Keycloak({
-  url: 'https://keycloak.taruman.ru', // e.g., 'http://localhost:8080/auth' or 'https://your-domain.com/auth'
-  realm: 'SellerRealm',    // The name of your Keycloak realm
-  clientId: 'SellerRealm', // The client ID for your frontend application
-});
+// Configuration for the Seller realm
+const keycloakConfig = {
+  realm: 'SellerRealm', // Ensure this matches your Keycloak Seller realm name
+  url: process.env.REACT_APP_KEYCLOAK_URL || 'http://localhost:8080/auth', // Keycloak server URL
+  clientId: process.env.REACT_APP_KEYCLOAK_SELLER_CLIENT_ID || 'seller-app-client', // Keycloak client ID for seller app
+};
 
-export default keycloak;
+const keycloakInstance = new Keycloak(keycloakConfig);
+
+export default keycloakInstance;

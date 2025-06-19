@@ -1312,3 +1312,45 @@ export const apiService = {
 };
 
 export default api;
+
+// Function to update the Authorization header for API requests
+export const updateApiToken = (token) => {
+  // In a real scenario, this would configure a shared Axios instance or similar.
+  // For now, we'll just log it.
+  if (token) {
+    console.log("[api.js] Token updated for API calls:", token ? "Token present" : "Token removed");
+    // Example: axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    console.log("[api.js] Token removed. API calls will be unauthenticated.");
+    // Example: delete axios.defaults.headers.common['Authorization'];
+  }
+};
+
+// Placeholder for fetching seller profile
+// TODO: Implement this function to fetch actual seller data from the backend API
+export const getMySellerProfile = async (keycloakId) => {
+  console.log(`[api.js] getMySellerProfile called for keycloakId: ${keycloakId}`);
+  // Simulate API call
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      // Mock data, replace with actual API call
+      // Ensure the structure matches what AuthContext expects, especially 'name' and 'email'
+      if (keycloakId) { // Simulate success if keycloakId is present
+        resolve({
+          id: 'mock-seller-id-123',
+          keycloak_id: keycloakId,
+          name: 'Mock Seller Name',
+          email: 'seller-from-api@example.com', // This email will be used
+          is_online: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          // ... other seller-specific fields
+        });
+      } else { // Simulate failure if keycloakId is missing
+        reject(new Error("Mock API error: Keycloak ID is required to fetch seller profile."));
+      }
+    }, 1000);
+  });
+};
+
+// Add other seller-specific API functions here as needed.

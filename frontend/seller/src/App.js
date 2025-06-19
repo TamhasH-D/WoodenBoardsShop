@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext'; // Import AuthProvider
 import Dashboard from './components/Dashboard';
 import Products from './components/Products';
 import WoodTypesManager from './components/WoodTypesManager';
@@ -15,9 +16,10 @@ function App() {
 
   return (
     <Router>
-      <div className="flex h-screen bg-gray-50">
-        {/* Sidebar */}
-        <Sidebar />
+      <AuthProvider> {/* Wrap with AuthProvider */}
+        <div className="flex h-screen bg-gray-50">
+          {/* Sidebar */}
+          <Sidebar />
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
@@ -36,6 +38,7 @@ function App() {
 
         </main>
       </div>
+      </AuthProvider> {/* Close AuthProvider */}
     </Router>
   );
 }

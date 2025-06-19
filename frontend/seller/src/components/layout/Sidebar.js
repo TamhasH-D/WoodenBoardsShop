@@ -13,9 +13,10 @@ import {
   X
 } from 'lucide-react';
 import { SELLER_TEXTS } from '../../utils/localization';
-import keycloak from '../../utils/keycloak'; // Import Keycloak instance
+import { useAuth } from '../../contexts/AuthContext'; // Import useAuth
 
 const Sidebar = () => {
+  const { userInfo, logout, keycloakAuthenticated } = useAuth(); // Get userInfo and logout from useAuth
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -66,13 +67,7 @@ const Sidebar = () => {
   ];
 
   const handleLogout = () => {
-    // Очистка локального хранилища - Keycloak handles session cleanup
-    // localStorage.clear();
-    // sessionStorage.clear();
-
-    // Перенаправление на страницу входа или главную страницу - Keycloak handles redirection
-    // window.location.href = '/';
-    keycloak.logout();
+    logout(); // Use logout from AuthContext
   };
 
   return (
@@ -165,29 +160,36 @@ const Sidebar = () => {
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-200">
-          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-              <UserCircle className="w-4 h-4 text-gray-600" />
+          {keycloakAuthenticated ? ( // Conditionally render user info if authenticated
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+              <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                <UserCircle className="w-4 h-4 text-gray-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {userInfo?.name || userInfo?.username || 'Seller'}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {userInfo?.email || 'No email available'}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  handleLogout();
+                  if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+                }}
+                className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
+                title="Выйти из системы"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                Продавец
-              </p>
-              <p className="text-xs text-gray-500 truncate">
-                seller@woodshop.ru
-              </p>
+          ) : (
+            // Optional: Show a login button or placeholder if not authenticated
+            <div className="p-3 text-center text-xs text-gray-500">
+              Please log in.
             </div>
-            <button
-              onClick={() => {
-                handleLogout(); // This will now call keycloak.logout()
-                if (isMobileMenuOpen) setIsMobileMenuOpen(false);
-              }}
-              className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
-              title="Выйти из системы"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
+          )}
         </div>
       </aside>
     </React.Fragment>
