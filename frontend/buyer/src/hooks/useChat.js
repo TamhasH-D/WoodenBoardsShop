@@ -62,17 +62,22 @@ export const useChat = (options = {}) => {
 
   // Effect to load threads and handle initialTargetSellerId, and set chat service readiness
   useEffect(() => {
+    console.log('[useChat Main Effect] buyerId:', buyerId, 'initialTargetSellerId:', initialTargetSellerId);
     if (buyerId) { // buyerId is DB ID
       if (initialTargetSellerId) {
         // ProductChat context: Ready once buyerId is known.
         // Load all threads in background, not critical for ProductChat's initial send readiness.
+        console.log('[useChat Main Effect] ProductChat context: buyerId available, setting isChatServiceReady to true.');
         setIsChatServiceReady(true);
         loadThreadsInternal(buyerId).then(({ loadedThreads, error: loadError }) => {
+          console.log('[useChat Main Effect] ProductChat context: loadThreadsInternal completed. Error:', loadError, 'Loaded Threads:', loadedThreads?.length);
           if (!loadError && loadedThreads) {
             const existingThread = loadedThreads.find(t => t.seller_id === initialTargetSellerId);
             if (existingThread && selectThreadRef.current) {
+              console.log('[useChat Main Effect] ProductChat context: Existing thread found, selecting threadId:', existingThread.id);
               selectThreadRef.current(existingThread.id);
             } else if (!existingThread) {
+              console.log('[useChat Main Effect] ProductChat context: No existing thread for seller. Setting currentThreadSellerId.');
               // This case is for when ProductChat loads, there's a sellerId, but no existing chat.
               // We've already set isChatServiceReady=true.
               // We set currentThreadSellerId so sendMessage knows who to create chat with.
@@ -84,20 +89,23 @@ export const useChat = (options = {}) => {
           } else if (loadError) {
             // Error is set by loadThreadsInternal. isChatServiceReady is already true.
             // ProductChat can still attempt to send; sendMessage will handle thread creation or re-throw.
-            console.warn(`[useChat] Error loading threads in ProductChat context, but service is marked ready for seller ${initialTargetSellerId}: ${loadError}`);
+            console.warn(`[useChat Main Effect] ProductChat context: Error loading threads, but service is marked ready for seller ${initialTargetSellerId}: ${loadError}`);
           }
         });
       } else {
         // General chat context (e.g., ChatsPage): Wait for all threads to load before service is fully ready.
+        console.log('[useChat Main Effect] General context: buyerId available. Loading threads then setting ready.');
         loadThreadsInternal(buyerId).then(({ error: loadError }) => {
+          console.log('[useChat Main Effect] General context: loadThreadsInternal completed. Error:', loadError);
           setIsChatServiceReady(true); // Ready after attempt, error (if any) will be in hook's error state.
           if (loadError) {
-            console.warn(`[useChat] Error loading threads in general context, but service is marked ready: ${loadError}`);
+            console.warn(`[useChat Main Effect] General context: Error loading threads, but service is marked ready: ${loadError}`);
           }
           // No specific thread to select here unless further logic is added for default selection.
         });
       }
     } else {
+      console.log('[useChat Main Effect] No buyerId. Resetting states and setting service not ready.');
       // Not yet ready if buyerId (DB ID) is not available.
       // Reset threads and other states if buyerId is lost (e.g., profile unloaded or error in profile fetch)
       setThreads([]);

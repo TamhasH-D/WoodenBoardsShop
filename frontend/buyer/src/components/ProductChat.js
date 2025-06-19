@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
 const ProductChat = ({ productId, product, sellerId }) => {
+  console.log('[ProductChat] Props received - sellerId:', sellerId, 'product:', product, 'productId:', productId);
   const { isAuthenticated, buyerProfile, profileLoading, profileError, login, keycloakAuthenticated } = useAuth();
   const { showError, showSuccess } = useNotifications();
 
@@ -87,17 +88,21 @@ const ProductChat = ({ productId, product, sellerId }) => {
       setNewMessage(`Здравствуйте! Интересует товар "${currentProductTitle}".`);
       setDefaultMessageSet(true);
     }
-  }, [isAuthenticated, currentProductTitle, doesChatExistWithSeller, newMessage, loadingThreads, loadingMessages, profileLoading, isCreatingThread, defaultMessageSet, isChatServiceReady]); // Added isChatServiceReady
+  }, [isAuthenticated, currentProductTitle, doesChatExistWithSeller, newMessage, loadingThreads, loadingMessages, profileLoading, isCreatingThread, defaultMessageSet, isChatServiceReady]);
 
-  // Updated overallChatDisabled logic
-  const overallChatDisabled =
+  // --- Start of Disabled States and Placeholder Logic ---
+  const inputAreaDisabled =
     profileLoading ||
     !isAuthenticated ||
     !sellerId ||
-    !isChatServiceReady || // Key addition: chat service must be ready
-    isCreatingThread ||
+    !isChatServiceReady ||
+    isCreatingThread;
+
+  const sendButtonDisabled =
+    inputAreaDisabled ||
+    !newMessage.trim() || // Cannot send empty message
     isSendingUi ||
-    (!isConnected && selectedThread); // If a thread is selected but not connected, disable input
+    (selectedThread && !isConnected); // If a thread context exists but not connected
 
   const initialLoading = loadingThreads || (!selectedThread && loadingMessages && !doesChatExistWithSeller && !isChatServiceReady);
 
@@ -106,21 +111,30 @@ const ProductChat = ({ productId, product, sellerId }) => {
     placeholderText = "Загрузка профиля...";
   } else if (!keycloakAuthenticated) {
     placeholderText = "Войдите, чтобы начать чат";
-  } else if (!isAuthenticated && keycloakAuthenticated) { // Profile loaded with issues, or not at all
+  } else if (!isAuthenticated && keycloakAuthenticated) {
     placeholderText = "Профиль не загружен.";
-  } else if (!isChatServiceReady && isAuthenticated) { // Authenticated, profile seems fine, but chat service isn't ready
+  } else if (!isChatServiceReady && isAuthenticated) {
     placeholderText = "Инициализация чата...";
-  } else if (initialLoading && isChatServiceReady) { // Chat service ready, but still loading initial threads/messages for this context
+  } else if (initialLoading && isChatServiceReady) {
     placeholderText = "Загрузка чата...";
   } else if (isCreatingThread) {
     placeholderText = "Создание чата...";
   } else if (chatHookError) {
-    placeholderText = "Ошибка чата.";
-  } else if (!doesChatExistWithSeller && currentProductTitle && !defaultMessageSet) {
+    placeholderText = "Ошибка чата. Обновите страницу.";
+  } else if (!doesChatExistWithSeller && currentProductTitle && !defaultMessageSet && !inputAreaDisabled) {
+    // This ensures default message doesn't overwrite "Initializing chat..." etc.
     placeholderText = `Начните чат о "${currentProductTitle}"`;
-  } else if (!isConnected && selectedThread) { // A thread is selected but WS not connected
+  } else if (selectedThread && !isConnected && !inputAreaDisabled) {
      placeholderText = "Подключение к чату...";
+  } else if (inputAreaDisabled) {
+    // Catch-all for other disabled states if not specifically handled above
+    if (profileLoading) placeholderText = "Загрузка профиля...";
+    else if (!isAuthenticated) placeholderText = "Войдите, чтобы начать чат";
+    else if (!isChatServiceReady) placeholderText = "Инициализация чата...";
+    else if (isCreatingThread) placeholderText = "Создание чата...";
+    else placeholderText = "Чат временно недоступен";
   }
+  // --- End of Disabled States and Placeholder Logic ---
 
 
   const renderHeaderStatus = () => {
@@ -254,6 +268,20 @@ const ProductChat = ({ productId, product, sellerId }) => {
     </div>
   );
 
+  console.log('[ProductChat] Disabled States:', {
+    inputAreaDisabled,
+    sendButtonDisabled,
+    profileLoading,
+    isAuthenticated,
+    sellerIdProvided: !!sellerId,
+    isChatServiceReady,
+    isCreatingThread,
+    isSendingUi,
+    isConnected,
+    selectedThreadExists: !!selectedThread,
+    selectedThreadId: selectedThread?.id,
+    chatHookError
+  });
 
   return (
     <div style={{
@@ -301,29 +329,30 @@ const ProductChat = ({ productId, product, sellerId }) => {
                 style={{
                   width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '12px',
                   fontSize: '15px', outline: 'none', transition: 'all 0.2s ease', resize: 'none',
-                  fontFamily: 'inherit', backgroundColor: overallChatDisabled ? '#eef2f7' : '#fafafa',
-                  opacity: (isSendingUi || overallChatDisabled) ? 0.7 : 1
-                }} // isSendingUi for UI button state
-                onFocus={(e) => { if (!overallChatDisabled && !isSendingUi) { e.target.style.borderColor = '#3b82f6'; e.target.style.backgroundColor = 'white'; e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)'; }}}
-                onBlur={(e) => { if (!overallChatDisabled && !isSendingUi) { e.target.style.borderColor = '#e5e7eb'; e.target.style.backgroundColor = '#fafafa'; e.target.style.boxShadow = 'none'; }}}
-                disabled={isSendingUi || overallChatDisabled}
+                  fontFamily: 'inherit',
+                  backgroundColor: (inputAreaDisabled || isSendingUi) ? '#eef2f7' : '#fafafa', // Use new disabled state
+                  opacity: (inputAreaDisabled || isSendingUi) ? 0.7 : 1
+                }}
+                onFocus={(e) => { if (!(inputAreaDisabled || isSendingUi)) { e.target.style.borderColor = '#3b82f6'; e.target.style.backgroundColor = 'white'; e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)'; }}}
+                onBlur={(e) => { if (!(inputAreaDisabled || isSendingUi)) { e.target.style.borderColor = '#e5e7eb'; e.target.style.backgroundColor = '#fafafa'; e.target.style.boxShadow = 'none'; }}}
+                disabled={inputAreaDisabled || isSendingUi} // Use new disabled state
               />
             </div>
             <button
               type="submit"
-              disabled={!newMessage.trim() || isSendingUi || overallChatDisabled}
+              disabled={sendButtonDisabled} // Use new disabled state
               style={{
                 padding: '12px 20px', backgroundColor: '#3b82f6', color: 'white', border: 'none',
                 borderRadius: '12px', fontSize: '14px', fontWeight: '600',
-                cursor: (!newMessage.trim() || isSendingUi || overallChatDisabled) ? 'not-allowed' : 'pointer',
-                opacity: (!newMessage.trim() || isSendingUi || overallChatDisabled) ? 0.5 : 1,
+                cursor: sendButtonDisabled ? 'not-allowed' : 'pointer', // Use new disabled state
+                opacity: sendButtonDisabled ? 0.5 : 1, // Use new disabled state
                 transition: 'all 0.2s ease', whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(59, 130, 246, 0.25)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', minWidth: '100px'
               }}
-              onMouseEnter={(e) => { if (newMessage.trim() && !isSendingUi && !overallChatDisabled) { e.target.style.backgroundColor = '#2563eb'; e.target.style.transform = 'translateY(-1px)'; }}}
-              onMouseLeave={(e) => { if (newMessage.trim() && !isSendingUi && !overallChatDisabled) { e.target.style.backgroundColor = '#3b82f6'; e.target.style.transform = 'translateY(0)'; }}}
+              onMouseEnter={(e) => { if (!sendButtonDisabled) { e.target.style.backgroundColor = '#2563eb'; e.target.style.transform = 'translateY(-1px)'; }}}
+              onMouseLeave={(e) => { if (!sendButtonDisabled) { e.target.style.backgroundColor = '#3b82f6'; e.target.style.transform = 'translateY(0)'; }}}
             >
-              {isSendingUi ? ( // Use isSendingUi for button's visual state
+              {isSendingUi ? (
                 <><div style={{ width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /><span>Отправка</span></>
               ) : (
                 <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22,2 15,22 11,13 2,9"></polygon></svg><span>Отправить</span></>
