@@ -131,8 +131,7 @@ function Chats() {
   return (
     <div className="max-w-7xl mx-auto p-5 bg-slate-50 min-h-screen">
       <div className="bg-white rounded-2xl mb-8 shadow-xl border border-slate-200 flex flex-col">
-        <OfflineBanner />
-
+        {/* <OfflineBanner /> */}
         {/* Header */}
         <div className="p-7 md:p-8 flex flex-col sm:flex-row justify-between sm:items-center gap-4 sm:gap-0 border-b border-slate-100">
           <div>
