@@ -121,12 +121,12 @@ function Chats() {
   /** ****************************
    * UI helpers
    */
-  const OfflineBanner = () =>
-    !isConnected ? (
-      <div className="sticky top-0 z-20 bg-red-50 text-red-700 text-sm p-2 text-center rounded-t-2xl">
-        Соединение потеряно — офлайн. Данные могут быть неактуальны.
-      </div>
-    ) : null;
+  // const OfflineBanner = () =>
+  //   !isConnected ? (
+  //     <div className="sticky top-0 z-20 bg-red-50 text-red-700 text-sm p-2 text-center rounded-t-2xl">
+  //       Соединение потеряно — офлайн. Данные могут быть неактуальны.
+  //     </div>
+  //   ) : null;
 
   return (
     <div className="max-w-7xl mx-auto p-5 bg-slate-50 min-h-screen">
