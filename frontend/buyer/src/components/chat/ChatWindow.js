@@ -1,243 +1,109 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { useAuth } from '../../contexts/AuthContext'; // Corrected path
-import { apiService } from '../../services/api';
-import websocketManager from '../../utils/websocketManager';
-// Removed: import { getCurrentBuyerId } from '../../utils/auth';
+import { useAuth } from '../../contexts/AuthContext';
+import { useChat } from '../../hooks/useChat'; // Import useChat hook
+// Removed apiService and websocketManager as they will be used via the hook
 
 
 const ChatWindow = () => {
-  const { threadId } = useParams();
+  const { threadId: threadIdFromUrl } = useParams();
   const navigate = useNavigate();
-  const { showError, showInfo } = useNotifications();
+  const { showError } = useNotifications(); // showInfo might be used if hook exposes more WS event types
+
   const {
     buyerProfile,
-    isAuthenticated, // Comprehensive flag
+    isAuthenticated,
     profileLoading,
     profileError,
-    login, // For login prompt
-    keycloakAuthenticated // For more granular checks if needed
+    login,
   } = useAuth();
 
-  const buyerId = buyerProfile?.id; // Derived buyerId
+  const {
+    messages,
+    selectedThread,
+    loadingMessages,
+    error: chatError,
+    isConnected,
+    sendMessage,
+    sendTypingIndicator,
+    selectThread,
+    buyerId: chatHookBuyerId, // Buyer's DB ID from the hook
+    typingUsers,
+  } = useChat();
 
-  const [threadInfo, setThreadInfo] = useState(null);
-  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [isConnected, setIsConnected] = useState(false);
-  const [componentIsLoading, setComponentIsLoading] = useState(true); // Renamed from isLoading
-  const [isSending, setIsSending] = useState(false); // Renamed from sending
-
-  const [otherUserTyping, setOtherUserTyping] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const [hasMoreMessages, setHasMoreMessages] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
-
   const messagesEndRef = useRef(null);
-  const typingTimeoutRef = useRef(null);
-  const messagesRef = useRef(new Map()); // For deduplication
+  const [isSending, setIsSending] = useState(false); // Local state for send button UI
 
-  // Removed useEffect for local buyerId initialization
-
-  const handleWebSocketMessage = useCallback((data) => {
-    console.log('[ChatWindow] WebSocket message received:', data);
-    if (!buyerId) return; // Don't process if buyerId isn't set
-
-    if (data.type === 'message') {
-      if (data.sender_id === buyerId) {
-        console.log('[ChatWindow] Ignoring own message from WebSocket');
-        return;
-      }
-      const messageId = data.message_id || `ws-${Date.now()}`;
-      if (messagesRef.current.has(messageId)) return;
-
-      const newMsg = {
-        id: messageId, message: data.message, sender_id: data.sender_id,
-        sender_type: data.sender_type, created_at: data.timestamp || new Date().toISOString(),
-        thread_id: data.thread_id, buyer_id: data.sender_type === 'buyer' ? data.sender_id : null,
-        seller_id: data.sender_type === 'seller' ? data.sender_id : null,
-        is_read_by_buyer: data.sender_type === 'buyer', is_read_by_seller: data.sender_type === 'seller'
-      };
-      messagesRef.current.set(messageId, newMsg);
-      setMessages(prev => {
-        if (prev.some(m => m.id === messageId)) return prev;
-        return [...prev, newMsg];
-      });
-    } else if (data.type === 'typing' && data.sender_id !== buyerId) {
-      setOtherUserTyping(true); setTimeout(() => setOtherUserTyping(false), 3000);
-    } else if (data.type === 'stop_typing' && data.sender_id !== buyerId) {
-      setOtherUserTyping(false);
-    } else if (data.type === 'user_joined' && data.sender_id !== buyerId) {
-      showInfo('Продавец подключился к чату');
-    } else if (data.type === 'user_left' && data.sender_id !== buyerId) {
-      showInfo('Продавец покинул чат');
+  // Initialize chat context with the hook when threadIdFromUrl is available
+  useEffect(() => {
+    if (threadIdFromUrl && chatHookBuyerId && isAuthenticated) {
+      console.log(`[ChatWindow] Selecting thread ${threadIdFromUrl} via useChat hook.`);
+      selectThread(threadIdFromUrl);
+    } else if (!isAuthenticated && !profileLoading) {
+      showError("Пожалуйста, войдите в систему для просмотра чата.");
     }
-  }, [buyerId, showInfo]);
-
-  const loadChatData = useCallback(async (isInitialLoad = true) => {
-    if (!threadId || !buyerId || !isAuthenticated) {
-      if (isInitialLoad) setComponentIsLoading(false);
-      return;
-    }
-
-    if (isInitialLoad) setComponentIsLoading(true);
-    try {
-      // TODO: Fetch thread info using an endpoint that doesn't require buyerId in path if possible,
-      // or ensure backend verifies thread ownership against authenticated user.
-      const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-      const threadResponse = await fetch(`${apiBaseUrl}/api/v1/chat-threads/${threadId}`); // Consider using apiService if token needed
-      if (threadResponse.ok) {
-        const threadData = await threadResponse.json();
-        setThreadInfo(threadData.data); // Assuming threadData.data is the thread object
-      } else {
-        throw new Error(`Failed to fetch thread info: ${threadResponse.status}`);
-      }
-
-      const messagesResult = await apiService.getChatMessages(threadId, 0, 20);
-      const loadedMessages = messagesResult.data || [];
-      messagesRef.current.clear();
-      loadedMessages.forEach(msg => messagesRef.current.set(msg.id, msg));
-      setMessages(loadedMessages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))); // Ensure sorted
-      setHasMoreMessages(loadedMessages.length === 20);
-      setCurrentPage(0);
-
-      websocketManager.addMessageHandler(threadId, handleWebSocketMessage);
-      websocketManager.connect(threadId, buyerId, 'buyer', setIsConnected);
-    } catch (error) {
-      console.error('[ChatWindow] Error loading chat data:', error);
-      showError('Не удалось загрузить данные чата.');
-    } finally {
-      if (isInitialLoad) setComponentIsLoading(false);
-    }
-  }, [threadId, buyerId, showError, handleWebSocketMessage, isAuthenticated]);
-
-  const loadMoreMessages = useCallback(async () => {
-    if (!threadId || loadingMore || !hasMoreMessages || !isAuthenticated) return;
-    setLoadingMore(true);
-    try {
-      const nextPage = currentPage + 1;
-      const messagesResult = await apiService.getChatMessages(threadId, nextPage, 20); // Assuming page is 0-indexed
-      const newMessages = (messagesResult.data || []).sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
-
-      if (newMessages.length > 0) {
-        const uniqueNewMessages = newMessages.filter(msg => !messagesRef.current.has(msg.id));
-        uniqueNewMessages.forEach(msg => messagesRef.current.set(msg.id, msg));
-        setMessages(prev => [...uniqueNewMessages, ...prev]); // Prepend older messages
-        setCurrentPage(nextPage);
-        setHasMoreMessages(newMessages.length === 20);
-      } else {
-        setHasMoreMessages(false);
-      }
-    } catch (error) {
-      console.error('[ChatWindow] Error loading more messages:', error);
-      showError('Не удалось загрузить больше сообщений.');
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [threadId, loadingMore, hasMoreMessages, currentPage, showError, isAuthenticated]);
+  }, [threadIdFromUrl, selectThread, chatHookBuyerId, isAuthenticated, profileLoading, showError]);
 
   const handleSendMessage = useCallback(async (e) => {
     if (e) e.preventDefault();
-    if (!newMessage.trim() || isSending || !buyerId || !threadId || !isAuthenticated) return;
-
     const messageText = newMessage.trim();
-    setIsSending(true);
-    setNewMessage('');
-    const messageId = crypto.randomUUID ? crypto.randomUUID() : `msg-${Date.now()}`;
-    const tempMessage = {
-      id: messageId, message: messageText, buyer_id: buyerId, seller_id: null,
-      thread_id: threadId, created_at: new Date().toISOString(), is_read_by_buyer: true,
-      is_read_by_seller: false, sending: true
-    };
-    messagesRef.current.set(messageId, tempMessage);
-    setMessages(prev => [...prev, tempMessage]);
+    if (!messageText || !chatHookBuyerId || !selectedThread?.id || !isAuthenticated) return;
 
+    setIsSending(true); // For UI feedback on the button
+    setNewMessage('');
     try {
-      const messageData = {
-        id: messageId, message: messageText, is_read_by_buyer: true, is_read_by_seller: false,
-        thread_id: threadId, buyer_id: buyerId, // TODO: Backend should infer buyer_id from token
-      };
-      const result = await apiService.sendMessage(messageData);
-      if (result && result.data) { // Check result.data for actual message from backend
-        setMessages(prev => prev.map(msg =>
-          msg.id === messageId ? { ...result.data, sending: false } : msg // Replace temp msg with server one
-        ));
-        if (result.data.id !== messageId) { // If server ID is different
-            messagesRef.current.delete(messageId);
-            messagesRef.current.set(result.data.id, result.data);
-        } else {
-            messagesRef.current.set(messageId, {...result.data, sending: false});
-        }
-      } else { throw new Error('API call did not return expected data.'); }
+      await sendMessage(messageText); // Hook handles optimistic updates and errors
+      // Optionally send a 'stop_typing' indicator if implementing detailed typing logic
+      sendTypingIndicator(false);
     } catch (error) {
-      console.error('[ChatWindow] Error sending message:', error);
-      showError('Не удалось отправить сообщение.');
-      setMessages(prev => prev.filter(msg => msg.id !== messageId)); // Remove temp message on error
-      messagesRef.current.delete(messageId);
+      // Error is already handled by the hook and set in `chatError`
+      // Re-set new message if send failed, hook should revert optimistic update.
       setNewMessage(messageText);
     } finally {
       setIsSending(false);
     }
-  }, [newMessage, isSending, buyerId, threadId, showError, isAuthenticated]);
+  }, [newMessage, sendMessage, chatHookBuyerId, selectedThread, isAuthenticated, sendTypingIndicator]);
 
   const handleTyping = useCallback(() => {
-    if (!threadId || !buyerId || !isConnected || !isAuthenticated) return;
-    if (!isTyping) {
-      setIsTyping(true);
-      websocketManager.sendMessage(threadId, { type: 'typing', sender_id: buyerId, thread_id: threadId });
-    }
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    typingTimeoutRef.current = setTimeout(() => {
-      if (isTyping) { // Check isTyping again in case it was reset by fast typing
-        setIsTyping(false);
-        websocketManager.sendMessage(threadId, { type: 'stop_typing', sender_id: buyerId, thread_id: threadId });
-      }
-    }, 2000);
-  }, [threadId, buyerId, isConnected, isTyping, isAuthenticated]);
+    if (!selectedThread?.id || !chatHookBuyerId || !isConnected || !isAuthenticated) return;
+    // Simple: just send true. Hook or server might handle timeout to set to false.
+    sendTypingIndicator(true);
+    // For more granular control (sending false after a pause):
+    // clearTimeout(typingTimeoutRef.current);
+    // typingTimeoutRef.current = setTimeout(() => {
+    //   sendTypingIndicator(false);
+    // }, 2000);
+  }, [selectedThread, chatHookBuyerId, isConnected, sendTypingIndicator, isAuthenticated]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  useEffect(() => {
-    // Load chat data only if user is fully authenticated, buyerId is available, and threadId is present.
-    if (isAuthenticated && buyerId && threadId && !profileLoading) {
-      loadChatData();
-    } else if (!profileLoading && (!isAuthenticated || !buyerId)) {
-      // If profile isn't loading, but user is not authenticated or no buyerId, stop loading.
-      setComponentIsLoading(false);
-    }
-    // If profileLoading is true, we wait. componentIsLoading remains true.
-  }, [isAuthenticated, buyerId, threadId, loadChatData, profileLoading]);
+  // Determine if the other user is typing
+  const otherUserIsTyping = typingUsers.some(userId => userId !== chatHookBuyerId);
 
-  useEffect(() => {
-    return () => { // Cleanup on unmount
-      if (threadId) {
-        console.log('[ChatWindow] Cleaning up WebSocket for thread:', threadId);
-        websocketManager.removeMessageHandler(threadId, handleWebSocketMessage);
-        websocketManager.disconnect(threadId);
-      }
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    };
-  }, [threadId, handleWebSocketMessage]); // Re-added handleWebSocketMessage for safety, though it's memoized
-
-  // ---- UI Rendering based on Auth State ----
+  // ---- UI Rendering based on Auth State & Hook State ----
   if (profileLoading) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px', fontSize: '18px', color: '#6b7280' }}>Загрузка профиля пользователя...</div>;
   }
   if (profileError) {
     return <div style={{ textAlign: 'center', padding: '40px' }}><h3 style={{color: '#dc2626'}}>Ошибка загрузки профиля</h3><p>{profileError.message || "Не удалось загрузить ваш профиль."}</p><button onClick={login} className="btn btn-primary">Попробовать войти снова</button></div>;
   }
-  if (!isAuthenticated || !buyerId) { // Not fully authenticated or buyerId missing
+  if (!isAuthenticated || !chatHookBuyerId) {
     return <div style={{ textAlign: 'center', padding: '40px' }}><h3>Доступ запрещен</h3><p>Пожалуйста, войдите в систему и убедитесь, что ваш профиль загружен, чтобы просмотреть этот чат.</p><button onClick={login} className="btn btn-primary">Войти</button></div>;
   }
-  if (componentIsLoading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px', fontSize: '18px', color: '#6b7280' }}>Загрузка чата...</div>;
+  // Use loadingMessages from useChat hook
+  if (loadingMessages && messages.length === 0) { // Show main loading only if messages are empty
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px', fontSize: '18px', color: '#6b7280' }}>Загрузка сообщений...</div>;
   }
-  if (!threadInfo) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px', fontSize: '18px', color: '#ef4444' }}>Чат не найден или доступ запрещен.</div>;
+  // Display error from useChat hook if it occurs
+  if (chatError && !loadingMessages) { // Added !loadingMessages to prevent showing error during initial load
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px', fontSize: '18px', color: '#ef4444' }}>Ошибка: {chatError}. Попробуйте обновить страницу.</div>;
+  }
+  if (!selectedThread && !loadingMessages && !chatError) { // If no thread is selected (e.g. invalid threadIdFromUrl)
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px', fontSize: '18px', color: '#ef4444' }}>Чат не найден или доступ запрещен. Убедитесь, что ID чата корректен.</div>;
   }
 
   return (
@@ -250,15 +116,18 @@ const ChatWindow = () => {
             <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)' }}>🏪</div>
             <div>
               <h2 style={{ margin: 0, color: '#111827', fontSize: '24px', fontWeight: '800', letterSpacing: '-0.025em' }}>Продавец</h2>
-              <p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: '14px', fontWeight: '500' }}>ID: {threadInfo.seller_id?.substring(0, 8)}...</p>
+              {/* Use selectedThread from useChat hook */}
+              <p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: '14px', fontWeight: '500' }}>ID: {selectedThread?.seller_id?.substring(0, 8)}...</p>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {/* Use isConnected from useChat hook */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px', backgroundColor: isConnected ? '#dcfce7' : '#fef3c7', border: `1px solid ${isConnected ? '#bbf7d0' : '#fcd34d'}` }}>
               <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: isConnected ? '#10b981' : '#f59e0b', animation: isConnected ? 'pulse 2s infinite' : 'none' }} />
               <span style={{ fontSize: '14px', fontWeight: '600', color: isConnected ? '#065f46' : '#92400e' }}>{isConnected ? 'Подключен' : 'Подключение...'}</span>
             </div>
-            {otherUserTyping && (
+            {/* Use otherUserIsTyping derived from useChat hook's typingUsers state */}
+            {otherUserIsTyping && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px', backgroundColor: '#f0f9ff', border: '1px solid #bae6fd' }}>
                 <div style={{ display: 'flex', gap: '2px' }}><div style={{width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#0ea5e9', animation: 'typing 1.4s infinite ease-in-out'}} /><div style={{width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#0ea5e9', animation: 'typing 1.4s infinite ease-in-out 0.2s'}} /><div style={{width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#0ea5e9', animation: 'typing 1.4s infinite ease-in-out 0.4s'}} /></div>
                 <span style={{ fontSize: '12px', fontWeight: '600', color: '#0369a1' }}>печатает...</span>
@@ -271,30 +140,26 @@ const ChatWindow = () => {
       <div style={{ flex: 1, maxWidth: '1200px', width: '100%', margin: '0 auto', padding: '24px', display: 'flex', flexDirection: 'column' }}>
         <div style={{ flex: 1, backgroundColor: 'white', borderRadius: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', overflow: 'hidden', marginBottom: '24px' }}>
           <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: 'linear-gradient(to bottom, #ffffff 0%, #f8fafc 100%)', position: 'relative' }}>
-            {hasMoreMessages && messages.length > 0 && (
-              <div style={{ textAlign: 'center', marginBottom: '24px', position: 'sticky', top: '0', zIndex: 5, paddingTop: '16px' }}>
-                <button onClick={loadMoreMessages} disabled={loadingMore} style={{ padding: '12px 24px', backgroundColor: loadingMore ? '#f3f4f6' : 'white', color: loadingMore ? '#9ca3af' : '#2563eb', border: '2px solid #e5e7eb', borderRadius: '24px', fontSize: '14px', fontWeight: '600', cursor: loadingMore ? 'not-allowed' : 'pointer', transition: 'all 0.3s ease', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '8px', margin: '0 auto' }}
-                  onMouseEnter={(e) => { if (!loadingMore) { e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.borderColor = '#2563eb'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)'; }}}
-                  onMouseLeave={(e) => { if (!loadingMore) { e.currentTarget.style.backgroundColor = 'white'; e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'; }}} >
-                  {loadingMore ? (<><div style={{ width: '16px', height: '16px', border: '2px solid #e5e7eb', borderTop: '2px solid #9ca3af', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />Загрузка...</>) : (<>⬆️ Загрузить еще</>)}
-                </button>
-              </div>
-            )}
-            {messages.length === 0 && !componentIsLoading && (<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center' }}><div style={{ fontSize: '64px', marginBottom: '24px', opacity: 0.6, animation: 'float 3s ease-in-out infinite' }}>💬</div><h3 style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#111827', marginBottom: '12px' }}>Начните разговор</h3><p style={{ margin: 0, fontSize: '16px', color: '#6b7280', maxWidth: '400px', lineHeight: '1.6' }}>Отправьте первое сообщение продавцу.</p></div>)}
+            {/* Load More Messages button removed as pagination is not in the current useChat hook */}
+            {/* Display messages from useChat hook */}
+            {messages.length === 0 && !loadingMessages && (<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center' }}><div style={{ fontSize: '64px', marginBottom: '24px', opacity: 0.6, animation: 'float 3s ease-in-out infinite' }}>💬</div><h3 style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#111827', marginBottom: '12px' }}>Начните разговор</h3><p style={{ margin: 0, fontSize: '16px', color: '#6b7280', maxWidth: '400px', lineHeight: '1.6' }}>Отправьте первое сообщение продавцу.</p></div>)}
             {messages.map((message, index) => {
-              const isOwnMessage = message.buyer_id === buyerId;
+              // Use chatHookBuyerId from useChat hook to determine if message is own
+              const isOwnMessage = message.sender_id === chatHookBuyerId && message.sender_type === 'buyer';
               const prevMessage = messages[index - 1];
               const showAvatar = !isOwnMessage && (!prevMessage || prevMessage.sender_id !== message.sender_id || prevMessage.sender_type !== message.sender_type);
               const isLastInGroup = !messages[index+1] || messages[index+1].sender_id !== message.sender_id || messages[index+1].sender_type !== message.sender_type;
+              // Message structure from useChat might differ slightly (e.g. no 'message.message', but 'message.content')
+              // Assuming message object has: id, content, sender_id, sender_type, created_at, _optimistic (optional)
               return (
                 <div key={message.id} style={{ display: 'flex', justifyContent: isOwnMessage ? 'flex-end' : 'flex-start', marginBottom: isLastInGroup ? '24px' : '4px', alignItems: 'flex-end', gap: '12px' }}>
                   {!isOwnMessage && (<div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0, visibility: showAvatar ? 'visible' : 'hidden' }}>🏪</div>)}
                   <div style={{ maxWidth: '70%', display: 'flex', flexDirection: 'column', alignItems: isOwnMessage ? 'flex-end' : 'flex-start' }}>
-                    <div style={{ padding: '16px 20px', borderRadius: isOwnMessage ? '20px 20px 4px 20px' : '20px 20px 20px 4px', backgroundColor: isOwnMessage ? '#2563eb' : 'white', color: isOwnMessage ? 'white' : '#374151', fontSize: '16px', lineHeight: '1.5', boxShadow: isOwnMessage ? '0 4px 16px rgba(37, 99, 235, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.1)', border: isOwnMessage ? 'none' : '1px solid #e5e7eb', position: 'relative', wordBreak: 'break-word' }}>
-                      <div style={{ marginBottom: '8px' }}>{message.message}</div>
+                    <div style={{ padding: '16px 20px', borderRadius: isOwnMessage ? '20px 20px 4px 20px' : '20px 20px 20px 4px', backgroundColor: isOwnMessage ? '#2563eb' : 'white', color: isOwnMessage ? 'white' : '#374151', fontSize: '16px', lineHeight: '1.5', boxShadow: isOwnMessage ? '0 4px 16px rgba(37, 99, 235, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.1)', border: isOwnMessage ? 'none' : '1px solid #e5e7eb', position: 'relative', wordBreak: 'break-word', opacity: message._optimistic ? 0.7 : 1 }}>
+                      <div style={{ marginBottom: '8px' }}>{message.content || message.message}</div>
                       <div style={{ fontSize: '12px', opacity: 0.8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                         <span>{new Date(message.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
-                        {isOwnMessage && (<div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>{message.sending ? (<div style={{width: '12px', height: '12px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite'}} />) : message.failed ? (<span style={{fontSize: '10px', opacity:0.8, color: '#ef4444'}}>❌</span>) : (<span style={{fontSize: '10px', opacity:0.8, color: message.is_read_by_seller ? '#10b981' : '#6b7280'}}>{message.is_read_by_seller ? '✓✓' : '✓'}</span>)}<span style={{fontSize: '8px', opacity: 0.6, color: message.failed ? '#ef4444' : 'inherit'}}>{message.sending ? 'отправка...' : message.failed ? 'ошибка' : message.is_read_by_seller ? 'прочитано' : 'доставлено'}</span></div>)}
+                        {isOwnMessage && (<div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>{message._optimistic ? (<div style={{width: '12px', height: '12px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite'}} />) : message.failed ? (<span style={{fontSize: '10px', opacity:0.8, color: '#ef4444'}}>❌</span>) : (<span style={{fontSize: '10px', opacity:0.8, color: message.is_read_by_seller ? '#10b981' : '#6b7280'}}>{message.is_read_by_seller ? '✓✓' : '✓'}</span>)}<span style={{fontSize: '8px', opacity: 0.6, color: message.failed ? '#ef4444' : 'inherit'}}>{message._optimistic ? 'отправка...' : message.failed ? 'ошибка' : message.is_read_by_seller ? 'прочитано' : 'доставлено'}</span></div>)}
                       </div>
                     </div>
                   </div>

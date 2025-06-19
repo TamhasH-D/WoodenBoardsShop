@@ -1,271 +1,376 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';
-import websocketManager from '../utils/websocketManager';
-import { useAuth } from '../contexts/AuthContext'; // Import useAuth
+import websocketManager, { WS_MESSAGE_TYPES } from '../utils/websocketManager';
+import { generateEntityUUID, ENTITY_TYPES } from '../utils/uuid';
 
-/**
- * Хук для работы с чатом
- * Обеспечивает стабильную работу WebSocket и управление состоянием чата
- */
-export const useChat = (sellerId, productTitle) => {
-  const { buyerProfile, isAuthenticated: profileAndKeycloakAuthenticated, profileLoading } = useAuth(); // Consume AuthContext
+const useChat = (options = {}) => {
+  const { initialTargetSellerId = null, productContext = null } = options;
 
-  const [thread, setThread] = useState(null);
+  const { user, buyerProfile } = useAuth();
+  const [buyerId, setBuyerId] = useState(null);
+
+  const [threads, setThreads] = useState([]);
+  const [selectedThreadId, setSelectedThreadId] = useState(null);
+  const [currentThreadSellerId, setCurrentThreadSellerId] = useState(null); // For context before thread ID exists
   const [messages, setMessages] = useState([]);
-  const [isConnected, setIsConnected] = useState(false);
-  const [loading, setLoading] = useState(true); // Represents chat loading, not profile loading
+  const [loadingThreads, setLoadingThreads] = useState(false);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const [error, setError] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [typingUsers, setTypingUsers] = useState([]);
+  const [isCreatingThread, setIsCreatingThread] = useState(false); // New state for thread creation process
 
-  // buyerId is now derived from buyerProfile
-  const buyerId = buyerProfile?.id;
+  const selectedThreadRef = useRef(null);
+  selectedThreadRef.current = selectedThreadId;
 
-  const messagesRef = useRef(new Map());
-  const initializingRef = useRef(false); // To prevent multiple initializations
+  useEffect(() => {
+    if (buyerProfile?.id) {
+      setBuyerId(buyerProfile.id);
+    } else if (user?.sub) { // Using user.sub as a fallback if buyerProfile.id isn't immediately ready
+      console.warn("useChat: buyerProfile.id not available yet. Will rely on user.sub for now if needed, but DB ID is preferred for API calls.");
+      // Potentially, you could trigger a fetch for buyer DB ID here if user.sub is present but buyerProfile.id is not.
+      // For now, just warning. Actual API calls needing buyerId should ensure it's the DB ID.
+    }
+  }, [user, buyerProfile]);
 
-  // Обработчик WebSocket сообщений
-  const handleWebSocketMessage = useCallback((data) => {
-    console.log('[useChat] WebSocket message received:', data);
+  // Forward declaration for selectThread to be used in useEffect
+  const selectThreadRef = useRef();
 
-    if (data.type === 'message') {
-      if (!buyerId || data.sender_id === buyerId) { // Check buyerId before ignoring
-        console.log('[useChat] Ignoring own message from WebSocket or buyerId not set');
-        return;
-      }
+  const loadThreadsInternal = useCallback(async (currentBuyerId) => {
+    if (!currentBuyerId) {
+      console.log("loadThreadsInternal: No currentBuyerId provided");
+      return { loadedThreads: [], error: "Buyer ID not available." };
+    }
+    setLoadingThreads(true);
+    setError(null);
+    try {
+      const response = await apiService.getBuyerChats(currentBuyerId, 0, 50);
+      const loadedThreads = response.data || [];
+      setThreads(loadedThreads);
+      return { loadedThreads, error: null };
+    } catch (err) {
+      console.error("Error loading threads:", err);
+      const errMsg = err.message || 'Failed to load chat threads.';
+      setError(errMsg); // Set error state for the hook
+      return { loadedThreads: [], error: errMsg };
+    } finally {
+      setLoadingThreads(false);
+    }
+  }, []);
 
-      const messageId = data.message_id || `ws-${Date.now()}`;
-      if (messagesRef.current.has(messageId)) {
-        console.log('[useChat] Duplicate message ignored:', messageId);
-        return;
-      }
-
-      const newMessage = {
-        id: messageId,
-        message: data.message,
-        sender_id: data.sender_id,
-        sender_type: data.sender_type,
-        created_at: data.timestamp || new Date().toISOString(),
-        thread_id: data.thread_id,
-        buyer_id: data.sender_type === 'buyer' ? data.sender_id : null,
-        seller_id: data.sender_type === 'seller' ? data.sender_id : null,
-        is_read_by_buyer: data.sender_type === 'buyer',
-        is_read_by_seller: data.sender_type === 'seller'
-      };
-      messagesRef.current.set(messageId, newMessage);
-      setMessages(prev => {
-        const exists = prev.some(msg => msg.id === messageId);
-        if (exists) return prev;
-        return [...prev, newMessage];
+  // Effect to load threads and handle initialTargetSellerId
+  useEffect(() => {
+    if (buyerId) {
+      loadThreadsInternal(buyerId).then(({ loadedThreads, error: loadError }) => {
+        if (loadError) {
+          // Error is already set by loadThreadsInternal, and possibly displayed by a component using `error` state
+          return;
+        }
+        if (initialTargetSellerId) {
+          const existingThread = loadedThreads.find(t => t.seller_id === initialTargetSellerId);
+          if (existingThread && selectThreadRef.current) {
+            selectThreadRef.current(existingThread.id); // Call actual selectThread
+          } else if (!existingThread) {
+            // No existing thread with the target seller, set sellerId for context for the first message
+            console.log(`[useChat] No existing thread found for sellerId: ${initialTargetSellerId}. Setting for new chat context.`);
+            setCurrentThreadSellerId(initialTargetSellerId);
+            setSelectedThreadId(null); // Clear any previously selected thread ID
+            setMessages([]); // Clear messages from any previously selected thread
+            setIsConnected(false); // Ensure not marked as connected
+          }
+        }
       });
-    } else if (data.type === 'typing') {
-      console.log('[useChat] User typing:', data.sender_id);
     }
-  }, [buyerId]); // Added buyerId dependency
+  }, [buyerId, initialTargetSellerId, loadThreadsInternal]);
 
-  // Загрузка существующего чата или инициализация
-  const initializeOrLoadChat = useCallback(async () => {
-    if (initializingRef.current || !profileAndKeycloakAuthenticated || !buyerId || !sellerId || profileLoading) {
-      // Wait for auth, profile, or if already initializing.
-      // If not authenticated or buyerId/sellerId missing, set loading to false and potentially an error or specific state.
-      if (!profileAndKeycloakAuthenticated || !buyerId || !sellerId) {
-        setLoading(false);
-        if (!profileAndKeycloakAuthenticated && !profileLoading) setError("Пользователь не аутентифицирован для чата.");
-        else if (!profileLoading) setError("Необходимые данные для чата отсутствуют.");
+
+  const handleWebSocketMessageInternal = useCallback((data, wsThreadId) => {
+    console.log(`[useChat] WebSocket message received for thread ${wsThreadId}:`, data);
+
+    if (wsThreadId === selectedThreadRef.current) { // Check against the ref for current selected thread
+      switch (data.type) {
+        case WS_MESSAGE_TYPES.MESSAGE:
+          setMessages(prev => {
+            const messageExists = prev.some(msg => msg.id === data.message.id || (msg._optimisticId && msg._optimisticId === data.message._optimisticId));
+            if (messageExists) {
+              return prev.map(msg => (msg.id === data.message.id || (msg._optimisticId && msg._optimisticId === data.message._optimisticId)) ? { ...data.message, _optimistic: false } : msg);
+            }
+            return [...prev, data.message];
+          });
+          if (data.message.sender_id !== buyerId) { // If message from other user in selected thread
+            setThreads(prevThreads =>
+              prevThreads.map(t =>
+                t.id === wsThreadId ? { ...t, unread_messages_count: (t.unread_messages_count || 0) + 1 } : t
+              )
+            );
+            // Potentially call markMessagesAsRead here if window is focused
+            if (document.hasFocus() && selectedThreadRef.current === wsThreadId) {
+                apiService.markMessagesAsRead(wsThreadId, buyerId, 'buyer').catch(err => console.error("Failed to mark messages as read on incoming WS message:", err));
+                 setThreads(prev => prev.map(t => t.id === wsThreadId ? {...t, unread_messages_count: 0} : t));
+            }
+          }
+          break;
+        case WS_MESSAGE_TYPES.TYPING:
+          setTypingUsers(prev => {
+            const isUserTyping = data.user_id && data.user_id !== buyerId;
+            if (isUserTyping) {
+              return data.is_typing ? [...new Set([...prev, data.user_id])] : prev.filter(id => id !== data.user_id);
+            }
+            return prev;
+          });
+          break;
+        default:
+          console.log(`[useChat] Unhandled WS message type for selected thread: ${data.type}`);
       }
-      return;
+    } else if (data.type === WS_MESSAGE_TYPES.MESSAGE && data.message.sender_id !== buyerId) {
+        // New message for a non-selected thread
+        setThreads(prevThreads => {
+            const threadExistsInList = prevThreads.some(t => t.id === wsThreadId);
+            if (threadExistsInList) {
+                return prevThreads.map(t =>
+                    t.id === wsThreadId
+                    ? { ...t, last_message: data.message.content, last_message_at: data.message.created_at, unread_messages_count: (t.unread_messages_count || 0) + 1 }
+                    : t
+                );
+            } else {
+                // If thread is not in the list, it might be a new chat initiated by the other party.
+                // Consider fetching the new thread details or refreshing the threads list.
+                // For now, just log it. A full refresh might be better.
+                console.log(`[useChat] Received message for unlisted or new thread ${wsThreadId}. Consider refreshing threads.`);
+                // Or, optimistically add a shell of the thread if enough info is in the message.
+                // This part depends on how robust you want the real-time update of the thread list to be.
+                // For simplicity, we might just rely on a periodic refresh or user action to update the thread list for brand new external threads.
+                return prevThreads;
+            }
+        });
     }
 
-    initializingRef.current = true;
-    setLoading(true);
+    // Generic update for last message on any relevant thread, selected or not
+    if (data.type === WS_MESSAGE_TYPES.MESSAGE) {
+        setThreads(prevThreads =>
+            prevThreads.map(t =>
+            t.id === wsThreadId
+                ? { ...t, last_message: data.message.content, last_message_at: data.message.created_at }
+                : t
+            )
+        );
+    }
+  }, [buyerId]);
+
+  const selectThreadActual = useCallback(async (threadIdToSelect) => {
+    if (!buyerId) {
+      setError("Buyer ID not available to select thread.");
+      return { success: false, error: "Buyer ID not available." };
+    }
+
+    if (selectedThreadId === threadIdToSelect && isConnected) {
+        try { // Still try to mark as read, in case of background updates
+            await apiService.markMessagesAsRead(threadIdToSelect, buyerId, 'buyer');
+            setThreads(prev => prev.map(t => t.id === threadIdToSelect ? {...t, unread_messages_count: 0} : t));
+        } catch (readErr) { console.error("Error marking messages as read on re-select:", readErr); }
+        return { success: true, threadId: threadIdToSelect };
+    }
+
+    console.log(`[useChat] Selecting thread: ${threadIdToSelect}`);
+
+    if (selectedThreadId && selectedThreadId !== threadIdToSelect) {
+      websocketManager.disconnect(selectedThreadId);
+      websocketManager.removeMessageHandler(selectedThreadId, handleWebSocketMessageInternal);
+    }
+
+    setSelectedThreadId(threadIdToSelect);
+    const currentThread = threads.find(t => t.id === threadIdToSelect);
+    setCurrentThreadSellerId(currentThread ? currentThread.seller_id : null);
+
+    setMessages([]);
+    setTypingUsers([]);
+    setLoadingMessages(true);
     setError(null);
 
     try {
-      console.log('[useChat] Initializing/Loading chat for buyer:', buyerId, 'seller:', sellerId);
-      // Use getMyBuyerChats if available, or adapt existing. For now, using old method with new buyerId.
-      // TODO: Refactor apiService.getBuyerChats to not require buyerId if it can be derived from token (e.g. /me/chats)
-      const result = await apiService.getBuyerChats(buyerId, 0, 100); // Fetch more threads initially if needed
-      const existingThread = result.data?.find(t => t.seller_id === sellerId && t.buyer_id === buyerId);
-
-      if (existingThread) {
-        console.log('[useChat] Found existing thread:', existingThread.id);
-        setThread(existingThread);
-        const messagesResult = await apiService.getChatMessages(existingThread.id, 0, 50); // Load last 50 messages
-        const loadedMessages = messagesResult.data || [];
-        messagesRef.current.clear();
-        loadedMessages.forEach(msg => messagesRef.current.set(msg.id, msg));
-        setMessages(loadedMessages);
-
-        websocketManager.addMessageHandler(existingThread.id, handleWebSocketMessage);
-        websocketManager.connect(existingThread.id, buyerId, 'buyer', setIsConnected);
-      } else {
-        console.log('[useChat] No existing thread found with seller:', sellerId);
-        setThread(null);
-        setMessages([]);
-        messagesRef.current.clear();
-        // Do not automatically create a thread here, let sendMessage handle it or a dedicated UI action.
-      }
-    } catch (err) {
-      console.error('[useChat] Error loading chat:', err);
-      setError('Ошибка загрузки чата');
-    } finally {
-      setLoading(false);
-      initializingRef.current = false;
-    }
-  }, [buyerId, sellerId, handleWebSocketMessage, profileAndKeycloakAuthenticated, profileLoading]);
-
-  // Создание нового чата (called by sendMessage if no thread)
-  const createChat = useCallback(async () => {
-    if (!profileAndKeycloakAuthenticated || !buyerId || !sellerId) {
-      throw new Error('User not authenticated or missing IDs for chat creation.');
-    }
-    if (profileLoading) {
-      throw new Error('Profile is still loading, cannot create chat.');
-    }
-
-    try {
-      console.log('[useChat] Creating new chat thread with seller:', sellerId);
-      // TODO: Refactor apiService.startChatWithSeller to not require buyerId if derivable from token
-      const result = await apiService.startChatWithSeller(buyerId, sellerId);
-      const newThread = result.data; // Assuming result.data is the thread object
+      const messagesResponse = await apiService.getChatMessages(threadIdToSelect, 0, 50);
+      setMessages(messagesResponse.data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)) || []);
       
-      setThread(newThread);
-      setMessages([]); // Start with empty messages for new thread
-      messagesRef.current.clear();
+      await apiService.markMessagesAsRead(threadIdToSelect, buyerId, 'buyer');
+      setThreads(prev => prev.map(t => t.id === threadIdToSelect ? {...t, unread_messages_count: 0} : t));
 
-      websocketManager.addMessageHandler(newThread.id, handleWebSocketMessage);
-      websocketManager.connect(newThread.id, buyerId, 'buyer', setIsConnected);
-      console.log('[useChat] New chat thread created and connected:', newThread.id);
-      return newThread;
+      websocketManager.addMessageHandler(threadIdToSelect, handleWebSocketMessageInternal);
+      const connectedStatus = websocketManager.connect(threadIdToSelect, buyerId, 'buyer', (status) => {
+        setIsConnected(status);
+        if (!status && selectedThreadRef.current === threadIdToSelect) { // Check ref here
+          console.warn(`[useChat] WebSocket disconnected for currently selected thread ${threadIdToSelect}`);
+        }
+      });
+      setIsConnected(connectedStatus);
+      return { success: true, threadId: threadIdToSelect };
     } catch (err) {
-      console.error('[useChat] Error creating chat:', err);
-      setError('Не удалось создать чат.');
-      throw err;
+      console.error(`Error selecting thread ${threadIdToSelect}:`, err);
+      setError(err.message || `Failed to load chat for thread ${threadIdToSelect}.`);
+      setIsConnected(false);
+      if(selectedThreadRef.current === threadIdToSelect) setSelectedThreadId(null); // Clear selected thread on error only if it's the one that failed
+      setCurrentThreadSellerId(null);
+      return { success: false, error: err.message || `Failed to load chat for thread ${threadIdToSelect}.` };
+    } finally {
+      setLoadingMessages(false);
     }
-  }, [buyerId, sellerId, handleWebSocketMessage, profileAndKeycloakAuthenticated, profileLoading]);
+  }, [buyerId, selectedThreadId, threads, isConnected, handleWebSocketMessageInternal]);
 
-  // Отправка сообщения
-  const sendMessage = useCallback(async (messageText) => {
-    if (!messageText.trim()) return false;
-    if (!profileAndKeycloakAuthenticated || !buyerId) {
-      setError("Невозможно отправить сообщение: пользователь не аутентифицирован или профиль не загружен.");
-      throw new Error('User not authenticated or buyer ID not available from profile.');
+  useEffect(() => {
+    selectThreadRef.current = selectThreadActual;
+  }, [selectThreadActual]);
+
+
+  const sendMessage = useCallback(async (messageText, targetSellerId = null) => {
+    if (!buyerId) {
+      const errMsg = "Cannot send message: Buyer ID not available.";
+      setError(errMsg);
+      throw new Error(errMsg);
     }
-    if (profileLoading) {
-        setError("Профиль загружается, подождите перед отправкой.");
-        throw new Error('Profile is loading, cannot send message yet.');
+    if (!messageText.trim()) {
+      // Optionally, you could throw an error or just return if the message is empty.
+      // For now, just returning as the button should ideally be disabled for empty messages.
+      return;
     }
 
-    let currentThread = thread;
-    if (!currentThread) {
-      try {
-        console.log('[useChat] No active thread, attempting to create one before sending message.');
-        currentThread = await createChat();
-      } catch (creationError) {
-        console.error('[useChat] Failed to create chat before sending message:', creationError);
-        setError('Не удалось создать чат для отправки сообщения.');
-        throw creationError;
+    let threadToUse = selectedThreadId;
+    let sellerForThreadContext = currentThreadSellerId || targetSellerId;
+
+    if (!threadToUse && sellerForThreadContext) {
+      const existingThread = threads.find(t => t.seller_id === sellerForThreadContext && t.buyer_id === buyerId);
+      if (existingThread) {
+        threadToUse = existingThread.id;
+        const selectionResult = await selectThreadActual(threadToUse);
+        if (!selectionResult.success) {
+          throw new Error(selectionResult.error || "Failed to select existing thread before sending.");
+        }
+      } else {
+        if (!sellerForThreadContext) {
+          const errMsg = "Cannot start new chat: Target Seller ID not provided.";
+          setError(errMsg);
+          throw new Error(errMsg);
+        }
+        setIsCreatingThread(true);
+        try {
+          console.log(`[useChat] Creating new thread with seller ${sellerForThreadContext}`);
+          const newThreadData = await apiService.startChatWithSeller(buyerId, sellerForThreadContext);
+          if (newThreadData && newThreadData.id) {
+            threadToUse = newThreadData.id;
+            // Add to threads list *before* selecting, so selectThreadActual can find it
+            setThreads(prev => [newThreadData, ...prev.filter(t => t.id !== newThreadData.id)]);
+            const selectionResult = await selectThreadActual(threadToUse); // This will connect WS, load messages etc.
+            if (!selectionResult.success) {
+              throw new Error(selectionResult.error || "Failed to select newly created thread.");
+            }
+          } else {
+            throw new Error("Failed to create or retrieve new thread from API.");
+          }
+        } catch (err) {
+          console.error("Error creating new thread:", err);
+          setError(err.message || "Failed to start new chat.");
+          setIsCreatingThread(false);
+          throw err; // Re-throw for the component to handle
+        } finally {
+          setIsCreatingThread(false);
+        }
       }
+    } else if (!threadToUse && !sellerForThreadContext) {
+       const errMsg = "Cannot send message: No active thread and no target seller specified.";
+       setError(errMsg);
+       throw new Error(errMsg);
     }
 
-    if (!currentThread) {
-      throw new Error('Failed to get or create chat thread.');
+    if (!threadToUse) {
+      const errMsg = "Cannot send message: Thread ID could not be established.";
+      setError(errMsg);
+      throw new Error(errMsg);
     }
 
-    const messageId = crypto.randomUUID ? crypto.randomUUID() : `msg-${Date.now()}`;
-    const tempMessage = {
-      id: messageId,
-      message: messageText.trim(),
-      buyer_id: buyerId, // Populated from buyerProfile.id
-      seller_id: null, // Backend will populate based on thread context if needed
-      thread_id: currentThread.id,
+    const optimisticMessageId = generateEntityUUID(null, ENTITY_TYPES.CHAT_MESSAGE);
+    const optimisticMessage = {
+      id: optimisticMessageId,
+      _optimisticId: optimisticMessageId,
+      thread_id: threadToUse,
+      sender_id: buyerId,
+      sender_type: 'buyer',
+      content: messageText,
       created_at: new Date().toISOString(),
       is_read_by_buyer: true,
       is_read_by_seller: false,
-      sending: true
+      // _optimistic: true, // UI can use this to show pending state
     };
 
-    messagesRef.current.set(messageId, tempMessage);
-    setMessages(prev => [...prev, tempMessage]);
+    setMessages(prev => [...prev, optimisticMessage]);
 
     try {
-      const messagePayload = {
-        id: messageId, // Send client-generated ID
-        message: messageText.trim(),
-        thread_id: currentThread.id,
-        // buyer_id and seller_id might be inferred by backend based on authenticated user and thread_id
-        // For now, explicitly sending buyer_id based on current logic.
-        // TODO: Confirm if apiService.sendMessage needs buyer_id or if backend infers it.
-        // If backend infers, this explicit buyer_id can be removed from payload.
-        buyer_id: buyerId,
-      };
-      console.log('[useChat] Sending message via API with payload:', messagePayload);
-      // TODO: Refactor apiService.sendMessage to not require buyer_id if derivable from token
-      const result = await apiService.sendMessage(messagePayload);
+      const response = await apiService.sendMessage({
+        id: optimisticMessageId,
+        thread_id: threadToUse,
+        sender_id: buyerId,
+        sender_type: 'buyer',
+        content: messageText,
+      });
 
-      setMessages(prev => prev.map(msg =>
-        msg.id === messageId
-        ? { ...msg, sending: false, created_at: result.data?.created_at || msg.created_at, id: result.data?.id || msg.id } // Use server ID if available
-        : msg
-      ));
-      if (result.data?.id && result.data.id !== messageId) { // Update ref with server ID
-          messagesRef.current.delete(messageId);
-          messagesRef.current.set(result.data.id, {...tempMessage, sending: false, id: result.data.id });
+      if (response.success && response.data) {
+        setMessages(prev => prev.map(msg => msg.id === optimisticMessageId ? { ...response.data, _optimistic: false } : msg));
+        setThreads(prevThreads =>
+          prevThreads.map(t =>
+            t.id === threadToUse
+              ? { ...t, last_message: response.data.content, last_message_at: response.data.created_at, unread_messages_count: 0 }
+              : t
+          )
+        );
       } else {
-          messagesRef.current.set(messageId, {...tempMessage, sending: false });
+        throw new Error(response.error || 'Failed to send message via API');
       }
-      console.log('[useChat] Message sent successfully, server response:', result.data);
-      return true;
     } catch (err) {
-      console.error('[useChat] Error sending message:', err);
-      messagesRef.current.delete(messageId);
-      setMessages(prev => prev.filter(msg => msg.id !== messageId));
-      setError('Не удалось отправить сообщение.');
-      throw err;
+      console.error("Error sending message via API:", err);
+      setError(err.message || 'Failed to send message.');
+      setMessages(prev => prev.filter(msg => msg.id !== optimisticMessageId));
+      throw err; // Re-throw for the component to handle
     }
-  }, [thread, buyerId, createChat, profileAndKeycloakAuthenticated, profileLoading]);
+  }, [buyerId, selectedThreadId, currentThreadSellerId, threads, selectThreadActual, handleWebSocketMessageInternal]);
 
-  const sendTypingIndicator = useCallback(() => {
-    if (!thread || !buyerId || !profileAndKeycloakAuthenticated) return;
-    const typingMessage = { type: 'typing', sender_id: buyerId, thread_id: thread.id };
-    websocketManager.sendMessage(thread.id, typingMessage);
-  }, [thread, buyerId, profileAndKeycloakAuthenticated]);
 
-  // Effect for initializing or loading chat
+  const sendTypingIndicatorActual = useCallback((isTyping) => {
+    if (!selectedThreadId || !isConnected || !buyerId) return;
+    websocketManager.sendTypingIndicator(selectedThreadId, isTyping, buyerId, 'buyer');
+  }, [selectedThreadId, isConnected, buyerId]);
+
+
   useEffect(() => {
-    // Only proceed if authenticated, profile is available, and sellerId is provided
-    if (profileAndKeycloakAuthenticated && buyerId && sellerId && !profileLoading) {
-      console.log('[useChat] Auth and profile ready, calling initializeOrLoadChat.');
-      initializeOrLoadChat();
-    } else if (!profileAndKeycloakAuthenticated && !profileLoading) {
-      console.log('[useChat] Not authenticated or profile not ready, chat not initialized.');
-      setLoading(false); // Not loading chat if user isn't ready
-      setMessages([]);
-      setThread(null);
-    }
-    // If profileLoading is true, we wait. initializeOrLoadChat checks profileLoading again.
-  }, [profileAndKeycloakAuthenticated, buyerId, sellerId, initializeOrLoadChat, profileLoading]);
-
-  // Cleanup WebSocket connection
-  useEffect(() => {
+    const threadToClean = selectedThreadRef.current;
     return () => {
-      if (thread) {
-        console.log('[useChat] Cleaning up WebSocket for thread:', thread.id);
-        websocketManager.removeMessageHandler(thread.id, handleWebSocketMessage);
-        // Consider if disconnect is needed or if manager handles it.
-        // websocketManager.disconnect(thread.id);
+      if (threadToClean) {
+        console.log(`[useChat] Cleaning up WebSocket for thread ${threadToClean} on unmount or thread change.`);
+        websocketManager.disconnect(threadToClean);
+        websocketManager.removeMessageHandler(threadToClean, handleWebSocketMessageInternal);
       }
     };
-  }, [thread, handleWebSocketMessage]);
+  }, [selectedThreadId, handleWebSocketMessageInternal]);
 
   return {
-    thread,
+    threads,
+    selectedThreadId,
+    selectedThread: threads.find(t => t.id === selectedThreadId),
     messages,
-    isConnected,
-    loading: loading || profileLoading, // Combine chat loading with profile loading status
+    loadingThreads,
+    loadingMessages,
+    isCreatingThread,
     error,
-    buyerId, // Derived from buyerProfile.id
+    isConnected,
+    typingUsers,
+    buyerId,
+    loadThreads: () => loadThreadsInternal(buyerId),
+    selectThread: selectThreadActual,
     sendMessage,
-    sendTypingIndicator,
-    hasExistingChat: !!thread,
-    defaultMessage: productTitle ? `Здравствуйте! Заинтересовал ваш товар "${productTitle}".` : ''
+    sendTypingIndicator: sendTypingIndicatorActual,
+    hasExistingChatWithSeller: useCallback((sellerIdToCheck) => {
+      if (!threads || !sellerIdToCheck || !buyerId) return false;
+      return threads.some(t => t.seller_id === sellerIdToCheck && t.buyer_id === buyerId);
+    }, [threads, buyerId]),
+    productContext,
   };
 };
+
+export default useChat;

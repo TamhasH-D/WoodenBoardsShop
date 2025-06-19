@@ -1,68 +1,77 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNotifications } from '../contexts/NotificationContext';
 import { useChat } from '../hooks/useChat';
-import { useAuth } from '../contexts/AuthContext'; // Corrected import path
-import { Link } from 'react-router-dom'; // For a potential login link/button
+import { useAuth } from '../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 const ProductChat = ({ productId, product, sellerId }) => {
-  // Use the comprehensive 'isAuthenticated' which checks Keycloak auth AND profile readiness.
-  // 'keycloakAuthenticated' can be used if we need to distinguish Keycloak's own auth state.
   const { isAuthenticated, buyerProfile, profileLoading, profileError, login, keycloakAuthenticated } = useAuth();
   const { showError, showSuccess } = useNotifications();
 
   const [newMessage, setNewMessage] = useState('');
-  const [isSending, setIsSending] = useState(false); // Renamed 'sending' to 'isSending' to avoid conflict
+  const [isSendingUi, setIsSendingUi] = useState(false); // UI state for send button
   const [defaultMessageSet, setDefaultMessageSet] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // useChat now gets buyerId from AuthContext internally
+  const hookOptions = {
+    initialTargetSellerId: sellerId,
+    productContext: { productId: product?.id, productTitle: product?.title || product?.name }
+  };
+
   const {
-    thread,
+    selectedThread, // Renamed from 'thread'
     messages,
     isConnected,
-    loading: chatHookLoading, // Renamed to avoid conflict with profileLoading
+    loadingMessages, // More specific loading state
+    loadingThreads,  // For initial thread list load
+    isCreatingThread, // For new thread creation process
     error: chatHookError,
-    // buyerId from useChat is still useful for rendering (e.g., isOwnMessage)
-    // but not for disabling chat, as useAuth().isAuthenticated handles that.
-    buyerId: chatHookBuyerId,
+    buyerId: chatHookBuyerId, // Buyer's DB ID from useChat
     sendMessage,
     sendTypingIndicator,
-    hasExistingChat,
-    defaultMessage
-  } = useChat(sellerId, product?.title || product?.name); // product.name as fallback
+    hasExistingChatWithSeller, // New function from hook
+    // productContext from hook can be used if needed, e.g. for default message if not passed via props
+  } = useChat(hookOptions);
 
-  // Display chat hook errors
+  const currentProductTitle = product?.title || product?.name;
+  const doesChatExistWithSeller = hasExistingChatWithSeller(sellerId);
+
   useEffect(() => {
     if (chatHookError) {
-      showError(chatHookError); // Show error from useChat hook
+      showError(chatHookError);
     }
   }, [chatHookError, showError]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!isAuthenticated || !newMessage.trim() || isSending) return;
+    if (!isAuthenticated || !newMessage.trim() || isSendingUi) return;
 
     const messageText = newMessage.trim();
-    setIsSending(true);
+    setIsSendingUi(true);
 
     try {
-      await sendMessage(messageText);
+      // Pass sellerId to sendMessage for the hook to use if creating a new chat
+      await sendMessage(messageText, sellerId);
       setNewMessage('');
-      if (!hasExistingChat) { // This logic might need adjustment based on how 'hasExistingChat' is updated
-        showSuccess('Сообщение отправлено продавцу');
+      // Check if a new chat was just initiated (selectedThread might be new)
+      // The hook now handles thread creation and selection internally.
+      // We can check if a selectedThread now exists and was previously not known.
+      if (!doesChatExistWithSeller && selectedThread) {
+        showSuccess(`Чат с продавцом по товару "${currentProductTitle}" начат!`);
       }
     } catch (error) {
       console.error('[ProductChat] Error sending message:', error);
-      showError(error.message || 'Не удалось отправить сообщение'); // Show error from sendMessage
+      showError(error.message || 'Не удалось отправить сообщение');
       setNewMessage(messageText); // Restore text on error
     } finally {
-      setIsSending(false);
+      setIsSendingUi(false);
     }
   };
 
   const handleTyping = () => {
-    if (isAuthenticated && thread && isConnected) {
-      sendTypingIndicator();
+    // Send typing indicator only if a thread is selected and connected
+    if (isAuthenticated && selectedThread && isConnected) {
+      sendTypingIndicator(true); // Parameter `true` indicates typing has started
     }
   };
 
@@ -70,40 +79,38 @@ const ProductChat = ({ productId, product, sellerId }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Set default message only once when conditions are met
   useEffect(() => {
-    if (isAuthenticated && !defaultMessageSet && !newMessage && defaultMessage && !hasExistingChat && !chatHookLoading && !profileLoading) {
-      setNewMessage(defaultMessage);
+    const isLoading = loadingThreads || loadingMessages || profileLoading || isCreatingThread;
+    if (isAuthenticated && !defaultMessageSet && !newMessage && currentProductTitle && !doesChatExistWithSeller && !isLoading) {
+      setNewMessage(`Здравствуйте! Интересует товар "${currentProductTitle}".`);
       setDefaultMessageSet(true);
     }
-  }, [isAuthenticated, defaultMessage, hasExistingChat, newMessage, chatHookLoading, profileLoading, defaultMessageSet]);
+  }, [isAuthenticated, currentProductTitle, doesChatExistWithSeller, newMessage, loadingThreads, loadingMessages, profileLoading, isCreatingThread, defaultMessageSet]);
 
-  // Determine overall chat disabled state
-  // Chat is disabled if:
-  // 1. Auth context is loading profile (profileLoading)
-  // 2. User is not fully authenticated (isAuthenticated is false, which means Keycloak not auth'd OR profile not loaded/error)
-  // 3. The chat hook itself is loading its initial state (chatHookLoading)
-  // 4. Seller ID is missing (fundamental requirement for this chat component)
-  const overallChatDisabled = profileLoading || !isAuthenticated || chatHookLoading || !sellerId;
+  const overallChatDisabled = profileLoading || !isAuthenticated || !sellerId || isCreatingThread || (!isConnected && messages.length > 0); // Disable if creating, or if not connected but have messages (implies trying to connect)
+  const initialLoading = loadingThreads || (!selectedThread && loadingMessages && !doesChatExistWithSeller); // More specific initial load
 
-  // Placeholder logic based on auth and loading states
   let placeholderText = "Напишите сообщение...";
   if (profileLoading) {
-    placeholderText = "Загрузка профиля пользователя...";
-  } else if (!keycloakAuthenticated) { // User not logged into Keycloak at all
+    placeholderText = "Загрузка профиля...";
+  } else if (!keycloakAuthenticated) {
     placeholderText = "Войдите, чтобы начать чат";
-  } else if (!isAuthenticated && keycloakAuthenticated) { // Logged into Keycloak, but profile has issues (error or not loaded yet)
-    placeholderText = "Профиль не загружен, чат недоступен.";
-  } else if (chatHookLoading) {
+  } else if (!isAuthenticated && keycloakAuthenticated) {
+    placeholderText = "Профиль не загружен.";
+  } else if (initialLoading) {
     placeholderText = "Загрузка чата...";
+  } else if (isCreatingThread) {
+    placeholderText = "Создание чата...";
   } else if (chatHookError) {
-    placeholderText = "Ошибка чата. Попробуйте позже.";
-  } else if (!hasExistingChat && defaultMessage) {
-    placeholderText = defaultMessage;
+    placeholderText = "Ошибка чата.";
+  } else if (!doesChatExistWithSeller && currentProductTitle && !defaultMessageSet) {
+    // Placeholder will be set by the useEffect for default message
+    placeholderText = `Начните чат о "${currentProductTitle}"`;
+  } else if (!isConnected && selectedThread) {
+     placeholderText = "Подключение...";
   }
 
 
-  // Render different header status based on auth and profile states
   const renderHeaderStatus = () => {
     if (profileLoading && !keycloakAuthenticated) { // Initial load, keycloak also not checked yet
         return <div style={statusBadgeStyle('loading')}>Проверка аутентификации...</div>;

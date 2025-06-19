@@ -1,172 +1,75 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Removed useRef
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../contexts/NotificationContext';
 import { useAuth } from '../contexts/AuthContext'; // Import useAuth
-import { apiService } from '../services/api';
+import { apiService } from '../services/api'; // Will be mostly unused directly
 import { BUYER_TEXTS } from '../utils/localization';
 // Removed: import { getCurrentBuyerId } from '../utils/auth';
-import { getChatWebSocketUrl } from '../utils/websocket';
+// Removed: import { getChatWebSocketUrl } from '../utils/websocket';
+import { useChat } from '../hooks/useChat'; // Import the new hook
 
 function Chats() {
   const navigate = useNavigate();
   const { showError } = useNotifications();
   const {
     buyerProfile,
-    isAuthenticated, // This is the comprehensive flag: Keycloak auth + profile loaded
+    isAuthenticated,
     profileLoading,
     profileError,
-    login, // For login prompt
-    keycloakAuthenticated // To distinguish Keycloak's own auth state if needed
+    login,
   } = useAuth();
 
-  const [threads, setThreads] = useState([]);
-  const [componentLoading, setComponentLoading] = useState(true); // Renamed from 'loading'
-  const [componentError, setComponentError] = useState(null); // Renamed from 'error'
+  const {
+    threads,
+    loadingThreads,
+    error: chatError, // Renamed to avoid conflict with profileError
+    selectThread,
+    loadThreads, // Use this to refresh
+    buyerId: chatHookBuyerId // Exposed by useChat, can be used for confirmation or debugging
+  } = useChat();
 
-  // Derive buyerId from context
-  const buyerId = buyerProfile?.id;
+  // Buyer ID from auth context, primarily used by useChat hook internally
+  const authBuyerId = buyerProfile?.id;
 
-  // eslint-disable-next-line no-unused-vars
-  const [selectedThread, setSelectedThread] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
-
-  const wsRef = useRef(null);
-  const isConnectingRef = useRef(false);
-  const reconnectTimeoutRef = useRef(null);
-
-  // Removed useEffect for initializing buyerId locally
-
-  const loadChats = useCallback(async () => {
-    if (!buyerId || !isAuthenticated) { // Ensure user is fully authenticated and buyerId is available
-      setComponentLoading(false); // Not loading chats if user isn't ready
-      setThreads([]); // Clear threads if no buyerId
-      return;
+  // Effect to explicitly load threads if authBuyerId changes and is available,
+  // though useChat hook already does this internally.
+  // This can be a safety net or for explicit refresh triggers.
+  useEffect(() => {
+    if (isAuthenticated && authBuyerId && !profileLoading) {
+      // loadThreads(); // useChat already loads when its internal buyerId is set.
+                      // Call this if an explicit refresh button is desired.
     }
+  }, [isAuthenticated, authBuyerId, profileLoading, loadThreads]);
 
-    console.log('[Chats] Loading chats for buyer ID:', buyerId);
-    setComponentLoading(true);
-    setComponentError(null);
-    try {
-      // TODO: Ideally, apiService.getBuyerChats would not require buyerId if it can be inferred from token.
-      const result = await apiService.getBuyerChats(buyerId, 0, 100); // Fetch up to 100 threads
-      setThreads(result.data || []);
-    } catch (err) {
-      console.error('[Chats] Error loading chats:', err);
-      setComponentError(err.message || 'Не удалось загрузить список чатов.');
-      showError(err.message || 'Не удалось загрузить список чатов.');
-    } finally {
-      setComponentLoading(false);
+
+  const handleRefreshThreads = useCallback(() => {
+    if (isAuthenticated && authBuyerId) {
+      loadThreads();
+    } else {
+      showError("Необходимо войти в систему для обновления чатов.");
     }
-  }, [buyerId, showError, isAuthenticated]);
-
-  const connectWebSocket = useCallback((threadId) => {
-    if (!threadId || !buyerId || isConnectingRef.current || !isAuthenticated) {
-      console.log('[Chats] WebSocket connection prerequisites not met or already connecting.');
-      return;
-    }
-
-    if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
-      console.log('[Chats] Closing existing WebSocket connection before opening new one.');
-      wsRef.current.close();
-    }
-    wsRef.current = null; // Ensure old instance is cleared
-
-    isConnectingRef.current = true;
-    const wsUrl = getChatWebSocketUrl(threadId, buyerId, 'buyer');
-    console.log('[Chats] Connecting to WebSocket:', wsUrl);
-    wsRef.current = new WebSocket(wsUrl);
-
-    wsRef.current.onopen = () => {
-      console.log('[Chats] WebSocket connected for thread:', threadId);
-      setIsConnected(true);
-      isConnectingRef.current = false;
-    };
-
-    wsRef.current.onmessage = (event) => {
-      console.log('[Chats] WebSocket message received:', event.data);
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'message') {
-          // Check sender_id against the current buyerId from context
-          if (data.sender_id !== buyerId) {
-            console.log('[Chats] Incoming message from another user, reloading chat list for updates.');
-            loadChats(); // Reload to update unread counts or last message
-          }
-        }
-      } catch (error) {
-        console.error('[Chats] Error parsing WebSocket message:', error);
-      }
-    };
-
-    wsRef.current.onclose = (event) => {
-      console.log('[Chats] WebSocket closed for thread:', threadId, 'Event:', event);
-      isConnectingRef.current = false;
-      setIsConnected(false);
-      if (event.wasClean === false && buyerId && threadId && isAuthenticated) { // Only attempt reconnect if not a clean close and user still valid
-        console.log('[Chats] WebSocket closed unexpectedly. Attempting to reconnect in 3s...');
-        clearTimeout(reconnectTimeoutRef.current); // Clear any existing timeout
-        reconnectTimeoutRef.current = setTimeout(() => {
-          connectWebSocket(threadId);
-        }, 3000);
-      }
-    };
-
-    wsRef.current.onerror = (error) => {
-      console.error('[Chats] WebSocket error for thread:', threadId, error);
-      isConnectingRef.current = false;
-      setIsConnected(false);
-      // Don't auto-reconnect on error immediately, onclose will handle retries if appropriate
-    };
-  }, [buyerId, loadChats, isAuthenticated]);
+  }, [isAuthenticated, authBuyerId, loadThreads, showError]);
 
   const handleThreadSelect = async (thread) => {
-    if (!buyerId || !isAuthenticated) {
+    if (!authBuyerId || !isAuthenticated) {
       showError("Пожалуйста, войдите в систему для просмотра чатов.");
       return;
     }
-    setSelectedThread(thread);
-    // connectWebSocket(thread.id); // WebSocket connection might be better handled by ChatWindow itself
+    // The useChat hook's selectThread now handles:
+    // - Setting selectedThreadId
+    // - Loading messages for the thread
+    // - Marking messages as read
+    // - Managing WebSocket connection for the selected thread
+    await selectThread(thread.id);
+    // The hook also updates the 'threads' list (e.g., unread count) internally after marking as read.
 
-    try {
-      // TODO: Ideally, apiService.markMessagesAsRead would not require buyerId if inferred from token.
-      await apiService.markMessagesAsRead(thread.id, buyerId, 'buyer');
-      console.log('[Chats] Messages marked as read for buyer in thread:', thread.id);
-      loadChats(); // Refresh chat list to update unread counts
-    } catch (error) {
-      console.error('[Chats] Failed to mark messages as read:', error);
-      showError('Не удалось обновить статус сообщений.');
-    }
     navigate(`/chats/${thread.id}`);
   };
 
-  useEffect(() => {
-    // Load chats only if user is fully authenticated and buyerId is available
-    if (isAuthenticated && buyerId && !profileLoading) {
-      loadChats();
-    } else if (!isAuthenticated && !profileLoading) {
-      // If not authenticated and not loading profile, clear chats and stop component loading
-      setThreads([]);
-      setComponentLoading(false);
-    }
-    // If profile is loading, componentLoading will be true via initial state or other checks
-  }, [isAuthenticated, buyerId, loadChats, profileLoading]);
-
-  useEffect(() => {
-    return () => { // Cleanup on unmount
-      if (wsRef.current) {
-        console.log('[Chats] Closing WebSocket connection on component unmount.');
-        wsRef.current.onclose = null; // Prevent reconnect attempts
-        wsRef.current.close();
-        wsRef.current = null;
-      }
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      isConnectingRef.current = false;
-    };
-  }, []);
+  // Note: The old useEffect for WebSocket cleanup is removed as useChat handles its own WebSocket lifecycle.
 
   // ---- UI Rendering based on Auth State ----
+  // Profile loading and error states take precedence
   if (profileLoading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: 'calc(100vh - 200px)' }}>
@@ -176,7 +79,7 @@ function Chats() {
     );
   }
 
-  if (profileError) {
+  if (profileError) { // Display profile error
     return (
       <div style={{ textAlign: 'center', padding: '40px' }}>
         <h3 style={{color: '#dc2626'}}>Ошибка загрузки профиля</h3>
@@ -186,7 +89,7 @@ function Chats() {
     );
   }
 
-  if (!isAuthenticated) { // This implies Keycloak not authed OR profile not loaded (but not in error/loading state)
+  if (!isAuthenticated) { // If not authenticated (after profile checks)
     return (
       <div style={{ textAlign: 'center', padding: '40px' }}>
         <h3>Доступ запрещен</h3>
@@ -196,7 +99,8 @@ function Chats() {
     );
   }
 
-  // Main component render after all checks pass
+  // Main component render after all auth and profile checks pass
+  // Now use loadingThreads and chatError from useChat hook
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
       {/* Header */}
@@ -211,18 +115,12 @@ function Chats() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            {/* Connection Status - Note: This is a local WebSocket status, not global connection */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px', backgroundColor: isConnected ? '#dcfce7' : '#fef3c7', border: `1px solid ${isConnected ? '#bbf7d0' : '#fcd34d'}` }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: isConnected ? '#10b981' : '#f59e0b', animation: isConnected ? 'pulse 2s infinite' : 'none' }} />
-              <span style={{ fontSize: '14px', fontWeight: '600', color: isConnected ? '#065f46' : '#92400e' }}>
-                {isConnected ? 'Онлайн (Чат)' : 'Подключение...'}
-              </span>
-            </div>
-            <button onClick={loadChats} disabled={componentLoading || profileLoading} style={{ padding: '12px 20px', backgroundColor: (componentLoading || profileLoading) ? '#9ca3af' : '#2563eb', color: 'white', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '700', cursor: (componentLoading || profileLoading) ? 'not-allowed' : 'pointer', transition: 'all 0.3s ease', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}
-              onMouseEnter={(e) => { if (!(componentLoading || profileLoading)) { e.target.style.backgroundColor = '#1d4ed8'; e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 8px 20px rgba(37, 99, 235, 0.4)'; }}}
-              onMouseLeave={(e) => { if (!(componentLoading || profileLoading)) { e.target.style.backgroundColor = '#2563eb'; e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.3)'; }}}
+            {/* Removed old WebSocket connection status indicator */}
+            <button onClick={handleRefreshThreads} disabled={loadingThreads || profileLoading} style={{ padding: '12px 20px', backgroundColor: (loadingThreads || profileLoading) ? '#9ca3af' : '#2563eb', color: 'white', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '700', cursor: (loadingThreads || profileLoading) ? 'not-allowed' : 'pointer', transition: 'all 0.3s ease', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}
+              onMouseEnter={(e) => { if (!(loadingThreads || profileLoading)) { e.target.style.backgroundColor = '#1d4ed8'; e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 8px 20px rgba(37, 99, 235, 0.4)'; }}}
+              onMouseLeave={(e) => { if (!(loadingThreads || profileLoading)) { e.target.style.backgroundColor = '#2563eb'; e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.3)'; }}}
             >
-              {componentLoading ? (<><div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />Обновление...</>) : (<>🔄 Обновить</>)}
+              {loadingThreads ? (<><div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />Обновление...</>) : (<>🔄 Обновить</>)}
             </button>
           </div>
         </div>
@@ -230,14 +128,14 @@ function Chats() {
 
       {/* Main Content */}
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
-        {componentError && (
+        {chatError && ( // Display error from useChat hook
           <div style={{ padding: '20px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '16px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>⚠️</div>
-            <div><h3 style={{ margin: 0, color: '#dc2626', fontSize: '18px', fontWeight: '700' }}>Ошибка загрузки списка чатов</h3><p style={{ margin: '4px 0 0 0', color: '#7f1d1d', fontSize: '14px' }}>{componentError}</p></div>
+            <div><h3 style={{ margin: 0, color: '#dc2626', fontSize: '18px', fontWeight: '700' }}>Ошибка загрузки списка чатов</h3><p style={{ margin: '4px 0 0 0', color: '#7f1d1d', fontSize: '14px' }}>{chatError}</p></div>
           </div>
         )}
 
-        {componentLoading && !componentError && ( // Show loading only if no error
+        {loadingThreads && !chatError && ( // Show loading only if no error, using loadingThreads from useChat
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '400px', backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
             <div style={{ width: '48px', height: '48px', border: '4px solid #e5e7eb', borderTop: '4px solid #2563eb', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '24px' }} />
             <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>Загрузка чатов...</h3>
@@ -245,37 +143,38 @@ function Chats() {
           </div>
         )}
 
-        {!componentLoading && !componentError && (
+        {!loadingThreads && !chatError && ( // Use loadingThreads and chatError from useChat
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', padding: '20px 24px', backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', border: '1px solid #e5e7eb' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📊</div>
                 <div><h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#111827' }}>Статистика чатов</h3><p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280' }}>Всего активных диалогов: <strong>{threads.length}</strong></p></div>
               </div>
-              <div style={{ padding: '8px 16px', backgroundColor: '#f3f4f6', borderRadius: '20px', fontSize: '14px', fontWeight: '600', color: '#374151' }}>{threads.filter(t => t.unread_count > 0).length} непрочитанных</div>
+              {/* Assuming unread_count is part of the thread object from useChat's threads */}
+              <div style={{ padding: '8px 16px', backgroundColor: '#f3f4f6', borderRadius: '20px', fontSize: '14px', fontWeight: '600', color: '#374151' }}>{threads.filter(t => t.unread_messages_count > 0).length} непрочитанных</div>
             </div>
 
             {threads.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {threads.map((thread) => (
-                  <div key={thread.id} onClick={() => handleThreadSelect(thread)} style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', cursor: 'pointer', transition: 'all 0.3s ease', border: thread.unread_count > 0 ? '2px solid #2563eb' : '1px solid #e5e7eb', position: 'relative', overflow: 'hidden' }}
+                  <div key={thread.id} onClick={() => handleThreadSelect(thread)} style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', cursor: 'pointer', transition: 'all 0.3s ease', border: thread.unread_messages_count > 0 ? '2px solid #2563eb' : '1px solid #e5e7eb', position: 'relative', overflow: 'hidden' }}
                     onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.15)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'; }}
                   >
-                    {thread.unread_count > 0 && (<div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#2563eb', borderRadius: '0 4px 4px 0' }} />)}
+                    {thread.unread_messages_count > 0 && (<div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', backgroundColor: '#2563eb', borderRadius: '0 4px 4px 0' }} />)}
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', marginBottom: '20px' }}>
                       <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)', flexShrink: 0 }}>🏪</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}><h3 style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: '#111827', letterSpacing: '-0.025em' }}>Продавец</h3><div style={{ padding: '4px 8px', backgroundColor: '#f3f4f6', borderRadius: '6px', fontSize: '12px', fontWeight: '600', color: '#6b7280', fontFamily: 'monospace' }}>ID: {thread.seller_id?.substring(0, 8)}</div></div>
                         <p style={{ margin: 0, fontSize: '14px', color: '#6b7280', fontWeight: '500' }}>Диалог создан {new Date(thread.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                       </div>
-                      {thread.unread_count > 0 && (<div style={{ backgroundColor: '#ef4444', color: 'white', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', minWidth: '24px', textAlign: 'center', boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)' }}>{thread.unread_count}</div>)}
+                      {thread.unread_messages_count > 0 && (<div style={{ backgroundColor: '#ef4444', color: 'white', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', minWidth: '24px', textAlign: 'center', boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)' }}>{thread.unread_messages_count}</div>)}
                     </div>
                     <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', marginBottom: '16px', border: '1px solid #e2e8f0' }}>
-                      {thread.last_message ? (<div><div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Последнее сообщение</div><p style={{ margin: 0, fontSize: '14px', color: '#374151', lineHeight: '1.5', fontWeight: '500' }}>"{thread.last_message.length > 80 ? thread.last_message.substring(0, 80) + '...' : thread.last_message}"</p></div>) : (<div style={{ textAlign: 'center', color: '#9ca3af', fontSize: '14px', fontStyle: 'italic' }}>Сообщений пока нет</div>)}
+                      {thread.last_message ? (<div><div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '600', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Последнее сообщение</div><p style={{ margin: 0, fontSize: '14px', color: '#374151', lineHeight: '1.5', fontWeight: '500' }}>"{typeof thread.last_message === 'string' && thread.last_message.length > 80 ? thread.last_message.substring(0, 80) + '...' : thread.last_message}"</p></div>) : (<div style={{ textAlign: 'center', color: '#9ca3af', fontSize: '14px', fontStyle: 'italic' }}>Сообщений пока нет</div>)}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}><span>🕒</span><span>{new Date(thread.updated_at || thread.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span></div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#9ca3af', fontWeight: '500' }}><span>🕒</span><span>{new Date(thread.last_message_at || thread.updated_at || thread.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span></div>
                       <div style={{ padding: '8px 16px', backgroundColor: '#2563eb', color: 'white', borderRadius: '8px', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Открыть чат</div>
                     </div>
                   </div>
