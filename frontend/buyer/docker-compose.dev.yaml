@@ -19,7 +19,7 @@ services:
       - FRONTEND_PORT=${FRONTEND_BUYER_PORT:-8082}
     networks:
       - diplom_default
-    restart: unless-stopped
+    restart: always
     stdin_open: true
     tty: true
 

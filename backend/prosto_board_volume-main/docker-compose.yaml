@@ -20,7 +20,7 @@ services:
       retries: 3
       start_period: 10s
       start_interval: 1s
-    restart: unless-stopped
+    restart: always
 
   yolo_backend:
     build:
@@ -47,6 +47,7 @@ services:
       start_period: 10s
       start_interval: 1s
     restart: unless-stopped
+
 
   # frontend:
   #   build:
