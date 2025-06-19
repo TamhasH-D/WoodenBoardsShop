@@ -180,7 +180,7 @@ const ProductFilters = ({
             backgroundColor: '#f8fafc'
           }}>
             {[
-              { id: 'basic', label: 'Основные' },
+              // { id: 'basic', label: 'Основные' },
               { id: 'price', label: 'Цена и объем' },
               { id: 'delivery', label: 'Доставка' },
               { id: 'sort', label: 'Сортировка' }

@@ -23,64 +23,64 @@ const ChatWindow = memo(({
   // Memoized messages for performance
   const memoizedMessages = useMemoizedMessages(messages, sellerId);
 
-  const windowStyle = {
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    backgroundColor: '#ffffff'
-  };
+  // const windowStyle = { // Removed
+  //   height: '100%',
+  //   display: 'flex',
+  //   flexDirection: 'column',
+  //   backgroundColor: '#ffffff'
+  // };
 
-  const headerStyle = {
-    padding: '20px',
-    borderBottom: '1px solid #e5e7eb',
-    backgroundColor: '#f9fafb',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  };
+  // const headerStyle = { // Removed
+  //   padding: '20px',
+  //   borderBottom: '1px solid #e5e7eb',
+  //   backgroundColor: '#f9fafb',
+  //   display: 'flex',
+  //   justifyContent: 'space-between',
+  //   alignItems: 'center'
+  // };
 
-  const headerInfoStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px'
-  };
+  // const headerInfoStyle = { // Removed
+  //   display: 'flex',
+  //   alignItems: 'center',
+  //   gap: '12px'
+  // };
 
-  const avatarStyle = {
-    width: '40px',
-    height: '40px',
-    borderRadius: '50%',
-    backgroundColor: '#10b981',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '16px',
-    color: 'white'
-  };
+  // const avatarStyle = { // Removed
+  //   width: '40px',
+  //   height: '40px',
+  //   borderRadius: '50%',
+  //   backgroundColor: '#10b981',
+  //   display: 'flex',
+  //   alignItems: 'center',
+  //   justifyContent: 'center',
+  //   fontSize: '16px',
+  //   color: 'white'
+  // };
 
-  const headerTextStyle = {
-    display: 'flex',
-    flexDirection: 'column'
-  };
+  // const headerTextStyle = { // Removed
+  //   display: 'flex',
+  //   flexDirection: 'column'
+  // };
 
-  const threadTitleStyle = {
-    margin: 0,
-    fontSize: '16px',
-    fontWeight: '600',
-    color: '#374151'
-  };
+  // const threadTitleStyle = { // Removed
+  //   margin: 0,
+  //   fontSize: '16px',
+  //   fontWeight: '600',
+  //   color: '#374151'
+  // };
 
-  const buyerInfoStyle = {
-    margin: 0,
-    fontSize: '12px',
-    color: '#6b7280'
-  };
+  // const buyerInfoStyle = { // Removed
+  //   margin: 0,
+  //   fontSize: '12px',
+  //   color: '#6b7280'
+  // };
 
-  const statusIndicatorStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    fontSize: '12px'
-  };
+  // const statusIndicatorStyle = { // Removed
+  //   display: 'flex',
+  //   alignItems: 'center',
+  //   gap: '8px',
+  //   fontSize: '12px'
+  // };
 
   const connectionStatusStyle = {
     display: 'flex',
@@ -92,31 +92,31 @@ const ChatWindow = memo(({
     color: isConnected ? '#166534' : '#dc2626'
   };
 
-  const messagesContainerStyle = {
-    flex: 1,
-    overflowY: 'auto',
-    padding: '20px',
-    backgroundColor: '#f9fafb',
-    backgroundImage: `
-      radial-gradient(circle at 20px 20px, rgba(37, 99, 235, 0.05) 1px, transparent 1px),
-      radial-gradient(circle at 60px 60px, rgba(37, 99, 235, 0.05) 1px, transparent 1px)
-    `,
-    backgroundSize: '80px 80px'
-  };
+  // const messagesContainerStyle = { // Removed
+  //   flex: 1,
+  //   overflowY: 'auto',
+  //   padding: '20px',
+  //   backgroundColor: '#f9fafb',
+  //   backgroundImage: `
+  //     radial-gradient(circle at 20px 20px, rgba(37, 99, 235, 0.05) 1px, transparent 1px),
+  //     radial-gradient(circle at 60px 60px, rgba(37, 99, 235, 0.05) 1px, transparent 1px)
+  //   `,
+  //   backgroundSize: '80px 80px'
+  // };
 
-  const loadingStyle = {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '200px',
-    color: '#6b7280'
-  };
+  // const loadingStyle = { // Removed
+  //   display: 'flex',
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  //   height: '200px',
+  //   color: '#6b7280'
+  // };
 
-  const emptyStateStyle = {
-    textAlign: 'center',
-    padding: '60px 20px',
-    color: '#9ca3af'
-  };
+  // const emptyStateStyle = { // Removed
+  //   textAlign: 'center',
+  //   padding: '60px 20px',
+  //   color: '#9ca3af'
+  // };
 
   const typingIndicatorStyle = {
     display: 'flex',
@@ -143,24 +143,13 @@ const ChatWindow = memo(({
 
   if (!thread) {
     return (
-      <div style={windowStyle}>
-        <div style={{
-          ...emptyStateStyle,
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center'
-        }}>
-          <div style={{ fontSize: '64px', marginBottom: '20px' }}>💬</div>
-          <h3 style={{ 
-            margin: '0 0 12px 0', 
-            color: '#374151',
-            fontSize: '20px'
-          }}>
+      <div className="h-full flex flex-col bg-white">
+        <div className="h-full flex flex-col justify-center items-center text-center p-5 text-slate-400">
+          <div className="text-6xl mb-5">💬</div>
+          <h3 className="m-0 mb-3 text-slate-700 text-xl">
             Выберите чат
           </h3>
-          <p style={{ margin: 0, fontSize: '14px' }}>
+          <p className="m-0 text-sm">
             Выберите чат из списка для начала общения
           </p>
         </div>
@@ -170,18 +159,18 @@ const ChatWindow = memo(({
 
   return (
     <>
-      <div style={windowStyle}>
-        <div style={headerStyle}>
-          <div style={headerInfoStyle}>
-            <div style={avatarStyle}>
+      <div className="h-full w-full flex flex-col bg-white">
+        <div className="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-base text-white">
               👤
             </div>
-            <div style={headerTextStyle}>
-              <h3 style={threadTitleStyle}>
+            <div className="flex flex-col">
+              <h3 className="m-0 text-base font-semibold text-slate-700">
                 Чат с покупателем
               </h3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <p style={buyerInfoStyle}>
+              <div className="flex items-center gap-2">
+                <p className="m-0 text-xs text-slate-500">
                   ID: {thread.buyer_id?.substring(0, 8)}...
                 </p>
                 <OnlineStatus
@@ -192,45 +181,30 @@ const ChatWindow = memo(({
             </div>
           </div>
           
-          <div style={statusIndicatorStyle}>
+          <div className="flex items-center gap-2 text-xs">
             <ConnectionStatus isConnected={isConnected} />
           </div>
         </div>
 
         <div
           ref={messagesContainerRef}
-          style={messagesContainerStyle}
+          className="flex-1 overflow-y-auto p-5 bg-slate-50"
           onClick={handleContainerClick}
         >
           {loading ? (
-            <div style={loadingStyle}>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '12px' 
-              }}>
-                <div style={{
-                  width: '20px',
-                  height: '20px',
-                  border: '2px solid #e5e7eb',
-                  borderTop: '2px solid #2563eb',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite'
-                }} />
-                Загрузка сообщений...
+            <div className="flex justify-center items-center h-52 text-slate-500">
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
+                <span className="ml-3">Загрузка сообщений...</span> {/* Added span with ml-3 for clarity if needed */}
               </div>
             </div>
           ) : messages.length === 0 ? (
-            <div style={emptyStateStyle}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>💬</div>
-              <h4 style={{ 
-                margin: '0 0 8px 0', 
-                color: '#374151',
-                fontSize: '16px'
-              }}>
+            <div className="text-center p-10 text-slate-400">
+              <div className="text-5xl mb-4">💬</div>
+              <h4 className="m-0 mb-2 text-slate-700 text-base">
                 Начните разговор
               </h4>
-              <p style={{ margin: 0, fontSize: '14px' }}>
+              <p className="m-0 text-sm">
                 Отправьте первое сообщение покупателю
               </p>
             </div>

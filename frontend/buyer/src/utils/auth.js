@@ -1,40 +1,24 @@
-import { MOCK_IDS } from './constants';
-import { apiService } from '../services/api';
-
-// Singleton warning to prevent spam across all components
-let mockAuthWarningShown = false;
+// This file contains utility functions related to authentication.
+// Primary authentication logic, including Keycloak instance management and user profile,
+// is handled within AuthContext.js.
+// API service token management is handled by updateApiToken in services/api.js.
 
 /**
- * Get current buyer's Keycloak ID
- * TODO: Replace with real authentication
+ * Creates Authorization headers if a Keycloak instance with a valid token is provided.
+ * @param {object} keycloak - An active Keycloak instance.
+ * @returns {object} Headers object with an Authorization token, or an empty object if not available.
  */
-export const getCurrentBuyerKeycloakId = () => {
-  // Временно используем mock ID для разработки
-  // В продакшене это должно быть заменено на реальную аутентификацию через Keycloak
-  if (!mockAuthWarningShown && process.env.NODE_ENV === 'development') {
-    console.warn('Using mock buyer keycloak ID for development - implement real authentication');
-    mockAuthWarningShown = true;
+export const getAuthHeaders = (keycloak) => {
+  if (keycloak && keycloak.authenticated && keycloak.token) {
+    return { 'Authorization': `Bearer ${keycloak.token}` };
   }
-  return MOCK_IDS.BUYER_ID;
+  return {};
 };
 
-/**
- * Helper function to get buyer_id from keycloak_id
- */
-export const getCurrentBuyerId = async () => {
-  try {
-    const keycloakId = getCurrentBuyerKeycloakId();
-    const buyerResponse = await apiService.getBuyerProfileByKeycloakId(keycloakId);
-    return buyerResponse.data.id;
-  } catch (error) {
-    console.error('Failed to get buyer_id:', error);
-    throw error;
-  }
-};
-
-/**
- * Reset the warning flag (useful for testing)
- */
-export const resetMockAuthWarning = () => {
-  mockAuthWarningShown = false;
-};
+// Note: The main mechanism for adding auth tokens to API requests is now handled by
+// `updateApiToken` in `services/api.js`, which is called from `AuthContext`
+// when the Keycloak token is available or refreshed. The `apiService` instance
+// then uses this token by default for its requests.
+//
+// The `getAuthHeaders` function above can still be useful if there's a need to
+// manually construct headers with a Keycloak token outside of the default `apiService` flow.

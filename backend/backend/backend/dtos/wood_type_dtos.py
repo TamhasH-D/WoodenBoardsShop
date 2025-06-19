@@ -9,7 +9,7 @@ class WoodTypeDTO(BaseOrmModel):
     """WoodType DTO."""
 
     id: UUID
-    name: str # Corrected from neme
+    neme: str
     description: str | None
 
 
@@ -17,12 +17,12 @@ class WoodTypeInputDTO(BaseModel):
     """WoodType input DTO."""
 
     id: UUID
-    name: str # Corrected from neme
+    neme: str
     description: str | None
 
 
 class WoodTypeUpdateDTO(BaseModel):
     """WoodType update DTO."""
 
-    name: str | None = None # Corrected from neme
+    neme: str | None = None
     description: str | None = None

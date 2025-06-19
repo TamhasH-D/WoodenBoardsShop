@@ -67,46 +67,48 @@ const ProductImage = ({
   };
 
   // Определяем размеры в зависимости от size
-  const getSizeStyles = () => {
-    switch (size) {
+  // const getSizeStyles = () => { // Removed
+  //   switch (size) {
+  //     case 'small':
+  //       return { width: '40px', height: '40px' };
+  //     case 'medium':
+  //       return { width: '60px', height: '60px' };
+  //     case 'large':
+  //       return { width: '120px', height: '120px' };
+  //     case 'full':
+  //       return { width: '100%', height: '200px' };
+  //     default:
+  //       return { width: '60px', height: '60px' };
+  //   }
+  // };
+  // const sizeStyles = getSizeStyles(); // Removed
+
+  const getSizeClasses = (sizeProp) => {
+    switch (sizeProp) {
       case 'small':
-        return { width: '40px', height: '40px' };
+        return 'w-10 h-10'; // 40px
       case 'medium':
-        return { width: '60px', height: '60px' };
+        return 'w-16 h-16'; // 64px
       case 'large':
-        return { width: '120px', height: '120px' };
+        return 'w-24 h-24 md:w-32 md:h-32'; // 96px / 128px
       case 'full':
-        return { width: '100%', height: '200px' };
+        return 'w-full h-48 md:h-56'; // 12rem / 14rem
       default:
-        return { width: '60px', height: '60px' };
+        return 'w-16 h-16'; // Default to medium
     }
   };
 
-  const sizeStyles = getSizeStyles();
+  const sizeClasses = getSizeClasses(size);
 
   if (loading) {
     return (
       <div 
-        className={`product-image-container ${className}`}
-        style={{
-          ...sizeStyles,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#f8f9fa',
-          border: '1px solid #e9ecef',
-          borderRadius: '4px'
-        }}
+        className={`product-image-container ${className} ${sizeClasses} flex items-center justify-center bg-slate-100 border border-slate-200 rounded`}
+        // style prop removed
       >
         <div 
-          style={{
-            width: '20px',
-            height: '20px',
-            border: '2px solid #e9ecef',
-            borderTop: '2px solid #007bff',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite'
-          }}
+          className="w-5 h-5 border-2 border-slate-200 border-t-blue-500 rounded-full animate-spin"
+          // style prop removed
         />
       </div>
     );
@@ -115,17 +117,8 @@ const ProductImage = ({
   if (error || !imageUrl) {
     return showPlaceholder ? (
       <div 
-        className={`product-image-container ${className}`}
-        style={{
-          ...sizeStyles,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#f8f9fa',
-          border: '1px solid #e9ecef',
-          borderRadius: '4px',
-          color: '#6c757d'
-        }}
+        className={`product-image-container ${className} ${sizeClasses} flex items-center justify-center bg-slate-100 border border-slate-200 rounded text-slate-500`}
+        // style prop removed
       >
         <Package size={size === 'small' ? 16 : size === 'large' ? 32 : 24} />
       </div>
@@ -143,33 +136,17 @@ const ProductImage = ({
   return (
     <>
       <div
-        className={`product-image-container ${className}`}
-        style={{
-          cursor: 'pointer'
-        }}
+        className={`product-image-container ${className} ${onClick ? 'cursor-pointer' : ''}`}
+        // style prop removed
         onClick={handleClick}
         title="Нажмите для просмотра с анализом досок"
       >
       <img
         src={imageUrl}
         alt={alt}
-        style={{
-          ...sizeStyles,
-          objectFit: 'cover',
-          borderRadius: '4px',
-          border: '1px solid #e9ecef',
-          transition: 'transform 0.2s ease'
-        }}
-        onMouseEnter={(e) => {
-          if (onClick) {
-            e.target.style.transform = 'scale(1.05)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (onClick) {
-            e.target.style.transform = 'scale(1)';
-          }
-        }}
+        className={`${sizeClasses} object-cover rounded border border-slate-200 transition-transform duration-200 ease-in-out ${onClick ? 'hover:scale-105' : ''}`}
+        // style prop removed
+        // onMouseEnter and onMouseLeave removed, hover effect via Tailwind if onClick is present
         onLoad={handleImageLoad}
         onError={handleImageError}
         loading="lazy"
@@ -260,36 +237,22 @@ export const ProductImageGallery = ({
 
   return (
     <div className={`product-gallery-container ${className}`}>
-      <div className="product-gallery" style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
-        gap: '8px',
-        padding: '8px'
-      }}>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 p-2">
         {images.map((image, index) => (
           <div
             key={image.id}
-            className="product-gallery-item"
+            className={`product-gallery-item rounded overflow-hidden border border-slate-200 ${onImageClick ? 'cursor-pointer' : 'cursor-default'}`}
             onClick={() => onImageClick && onImageClick(image, index)}
-            style={{
-              cursor: onImageClick ? 'pointer' : 'default',
-              borderRadius: '4px',
-              overflow: 'hidden',
-              border: '1px solid #e9ecef'
-            }}
+            // style prop removed
           >
             <img
               src={image.url}
               alt={`${alt} ${index + 1}`}
-              style={{
-                width: '100%',
-                height: '120px',
-                objectFit: 'cover',
-                display: 'block'
-              }}
+              className="w-full h-24 sm:h-32 object-cover block"
+              // style prop removed
               loading="lazy"
               onError={(e) => {
-                e.target.style.display = 'none';
+                e.target.style.display = 'none'; // This can remain as a small JS fallback for broken images
               }}
             />
           </div>

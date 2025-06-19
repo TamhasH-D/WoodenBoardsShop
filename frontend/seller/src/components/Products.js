@@ -286,15 +286,15 @@ function Products() {
 
   return (
     <div>
-      <div className="page-header">
-        <h1 className="page-title">{SELLER_TEXTS.PRODUCTS}</h1>
+      <div className="page-header mb-6">
+        <h1 className="page-title text-2xl md:text-3xl font-bold">{SELLER_TEXTS.PRODUCTS}</h1>
         <p className="page-description">{SELLER_TEXTS.MANAGE_INVENTORY_DESC}</p>
       </div>
 
       {/* Search and Filter Section */}
       <div className="card mb-6">
         <div className="card-header">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
             <h2 className="card-title">🔍 Поиск и фильтрация товаров</h2>
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -322,7 +322,7 @@ function Products() {
 
         {/* Simple filters for testing */}
         {showFilters && (
-          <div className="form-grid form-grid-3">
+          <div className="form-grid form-grid-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div className="form-group">
               <label className="form-label">Мин. цена (₽)</label>
               <input
@@ -407,7 +407,7 @@ function Products() {
             </p>
           )}
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-2 md:gap-4">
           <button
             onClick={() => {
               if (!showAddForm) {
@@ -547,10 +547,11 @@ function Products() {
                   </div>
                 </div>
               )}
-              <table className="table">
-                <thead>
-                <tr>
-                  <th>Изображение</th>
+              <div className="overflow-x-auto shadow-md sm:rounded-lg">
+                <table className="table w-full text-sm text-left text-gray-500">
+                  <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                  <tr>
+                    <th scope="col" className="p-2 md:p-4">Изображение</th>
                   <th
                     onClick={() => handleSort('title')}
                     style={{
@@ -611,13 +612,13 @@ function Products() {
                       <ProductImage
                         key={`product-list-${product.id}-${imageRefreshKey}`}
                         productId={product.id}
-                        alt={product.title}
+                        alt={product.title || 'Товар без названия'}
                         size="medium"
                       />
                     </td>
                     <td>
                       <div>
-                        <strong>{product.title}</strong>
+                        <strong>{product.title || 'Товар без названия'}</strong>
                         {(product.descrioption || product.description) && (
                           <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.25rem' }}>
                             {((product.descrioption || product.description).length > 50)
@@ -663,10 +664,11 @@ function Products() {
                 ))}
               </tbody>
               </table>
+              </div>
             </div>
           ) : (
-            <div className="text-center">
-              <p>{SELLER_TEXTS.NO_PRODUCTS_FOUND}</p>
+            <div className="text-center py-10">
+              <p className="text-lg text-gray-600">{SELLER_TEXTS.NO_PRODUCTS_FOUND}</p>
               <button
                 onClick={() => setShowAddForm(true)}
                 className="btn btn-primary mt-4"

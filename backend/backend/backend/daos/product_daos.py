@@ -1,13 +1,21 @@
-import json
-from typing import Any, Union, Type, Optional # Added Optional for update return type
+from typing import Any, Union, Optional
 from uuid import UUID
 
 import sqlalchemy as sa
-from backend.dtos.product_dtos import ProductFilterDTO, ProductInputDTO, ProductUpdateDTO, ProductOutDTO
-from backend.cache_manager import cache_manager
-from backend.daos.base_daos import BaseDAO, PaginationType # InputDTO, UpdateDTO, OutDTO are implicitly available via BaseDAO generics
-from backend.dtos import OffsetPaginationMetadata, OffsetResults, PaginationParamsSortBy
+from pydantic import BaseModel, parse_raw_as
+import redis.asyncio as redis
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.daos.base_daos import BaseDAO, PaginationType
+from backend.dtos import OffsetPaginationMetadata, OffsetResults, PaginationParamsSortBy, PaginationParams
+from backend.dtos.product_dtos import (
+    ProductFilterDTO,
+    ProductInputDTO,
+    ProductUpdateDTO,
+    ProductFullDTO,
+)
 from backend.models.product_models import Product
+from backend.settings import settings # Added
 
 
 class ProductDAO(
@@ -15,49 +23,13 @@ class ProductDAO(
         Product,
         ProductInputDTO,
         ProductUpdateDTO,
-        ProductOutDTO,
+        ProductFullDTO,
     ]
 ):
     """Product DAO."""
 
-    # --- Overridden CUD methods for pattern-based cache invalidation ---
-
-    async def create(self, input_dto: ProductInputDTO) -> Product:
-        """
-        Create a new product, then invalidate product_filter cache.
-        """
-        # BaseDAO.create returns the model instance
-        new_product_instance = await super().create(input_dto)
-        if new_product_instance: # Should always be true if no exception
-            await cache_manager.delete_by_pattern("product_filter:*")
-        return new_product_instance
-
-    async def update(
-        self,
-        item_id: Union[UUID, int, str],
-        update_dto: ProductUpdateDTO, # Use specific DTO for Product
-        out_dto_class: Type[ProductOutDTO] # Use specific DTO for Product
-    ) -> Optional[ProductOutDTO]:
-        """
-        Update a product, then invalidate product_filter cache.
-        """
-        # BaseDAO.update returns the OutDTO instance or None
-        updated_product_dto = await super().update(item_id, update_dto, out_dto_class)
-        if updated_product_dto:
-            await cache_manager.delete_by_pattern("product_filter:*")
-        return updated_product_dto
-
-    async def delete(self, item_id: Union[UUID, int, str]) -> bool:
-        """
-        Delete a product, then invalidate product_filter cache.
-        """
-        # BaseDAO.delete returns a boolean
-        deleted_successfully = await super().delete(item_id)
-        if deleted_successfully:
-            await cache_manager.delete_by_pattern("product_filter:*")
-        return deleted_successfully
-
-    # --- Existing methods ---
+    def __init__(self, session: AsyncSession, redis_client: Optional[redis.Redis] = None):
+        super().__init__(session, redis_client=redis_client)
 
     def _apply_advanced_filters(
         self,
@@ -71,7 +43,7 @@ class ProductDAO(
             query = query.filter(
                 sa.or_(
                     sa.func.lower(Product.title).like(search_term),
-                    sa.func.lower(Product.description).like(search_term) # Corrected typo here
+                    sa.func.lower(Product.description).like(search_term)
                 )
             )
         if filters.price_min is not None:
@@ -89,10 +61,7 @@ class ProductDAO(
         if filters.delivery_possible is not None:
             query = query.filter(Product.delivery_possible == filters.delivery_possible)
         if filters.has_pickup_location is not None:
-            if filters.has_pickup_location:
-                query = query.filter(Product.pickup_location.isnot(None))
-            else:
-                query = query.filter(Product.pickup_location.is_(None))
+            query = query.filter(Product.pickup_location.isnot(None) if filters.has_pickup_location else Product.pickup_location.is_(None))
         if filters.created_after is not None:
             query = query.filter(Product.created_at >= filters.created_after)
         if filters.created_before is not None:
@@ -101,52 +70,86 @@ class ProductDAO(
 
     async def get_filtered_results(
         self,
-        out_dto_class: Type[ProductOutDTO],
         pagination: PaginationType,
         filters: ProductFilterDTO,
-    ) -> OffsetResults[ProductOutDTO]:
+    ) -> OffsetResults[ProductFullDTO]:
         """Get filtered and paginated product results with caching."""
 
-        cache_key_payload = {
-            "filters": filters.model_dump(exclude_none=True),
-            "pagination": pagination.model_dump(exclude_none=True),
-            "out_dto_class": out_dto_class.__name__
-        }
-        sorted_payload_str = json.dumps(cache_key_payload, sort_keys=True)
-        # Note: Python's hash() is not stable across Python processes or versions.
-        # This is a simplification. Production should use a stable hash (e.g., hashlib).
-        cache_key = f"product_filter:{hash(sorted_payload_str)}"
+        filters_json = filters.model_dump_json(exclude_defaults=True)
 
-        target_cache_model = OffsetResults[out_dto_class]
-        cached_results = await cache_manager.get(cache_key, target_cache_model)
-        if cached_results:
-            return cached_results
+        sort_by_val = "created_at"
+        sort_order_val = "desc"
+        if isinstance(pagination, PaginationParamsSortBy) and pagination.sort_by:
+            sort_by_val = pagination.sort_by if isinstance(pagination.sort_by, str) else pagination.sort_by[0]
+            sort_order_val = pagination.sort_order if isinstance(pagination.sort_order, str) else pagination.sort_order[0]
+
+        sort_info = f":sort_by:{sort_by_val}:sort_order:{sort_order_val}"
+        cache_key = f"ProductDAO:filtered:filters:{filters_json}:pagination:{pagination.limit}:{pagination.offset}{sort_info}"
+
+        if self.redis_client:
+            cached_data = await self.redis_client.get(cache_key)
+            if cached_data:
+                try:
+                    return parse_raw_as(OffsetResults[self.out_dto], cached_data)
+                except Exception as e:
+                    print(f"Cache deserialization error for {cache_key}: {e}")
 
         query = sa.select(Product)
         query = self._apply_advanced_filters(query, filters)
 
-        if isinstance(pagination, PaginationParamsSortBy) and pagination.sort_by:
-            sort_by_list = [pagination.sort_by] if isinstance(pagination.sort_by, str) else pagination.sort_by
-            sort_order_list = [pagination.sort_order] if isinstance(pagination.sort_order, str) else pagination.sort_order
-
-            if len(sort_by_list) > 1 and len(sort_order_list) == 1:
-                sort_order_list = sort_order_list * len(sort_by_list)
-
-            for i, sort_field in enumerate(sort_by_list):
-                current_sort_order = sort_order_list[i] if i < len(sort_order_list) else "desc"
-                if hasattr(Product, sort_field):
-                    query = self._apply_sort(query, sort_field, current_sort_order)
-                else:
-                    print(f"Warning: Invalid sort field '{sort_field}' for Product model. Using default sorting.")
-                    query = self._apply_sort(query, "created_at", "desc")
-                    break
+        if hasattr(Product, sort_by_val):
+            query = self._apply_sort(query, sort_by_val, sort_order_val)
+        else:
+            print(f"Warning: Invalid sort field '{sort_by_val}' for Product model. Using default sorting.")
+            query = self._apply_sort(query, "created_at", "desc")
 
         computed_pagination = await self._compute_offset_pagination(query)
         query = query.offset(pagination.offset).limit(pagination.limit)
-        db_result = await self.session.execute(query)
+        result = await self.session.execute(query)
 
-        data_list = [out_dto_class.model_validate(row) for row in db_result.scalars()]
-        results = OffsetResults[out_dto_class](data=data_list, pagination=computed_pagination) # Use generic type correctly
+        validated_data = [self.out_dto.model_validate(obj) for obj in result.scalars()]
+        offset_results_obj = OffsetResults[self.out_dto](
+            data=validated_data,
+            pagination=computed_pagination,
+        )
 
-        await cache_manager.set(cache_key, results)
-        return results
+        if self.redis_client:
+            await self.redis_client.set(
+                cache_key,
+                offset_results_obj.model_dump_json(),
+                ex=settings.redis.cache_ttl_seconds # Updated TTL
+            )
+
+        return offset_results_obj
+
+    async def _invalidate_default_filtered_cache(self):
+        if self.redis_client:
+            default_filters = ProductFilterDTO()
+            filters_json = default_filters.model_dump_json(exclude_defaults=True)
+            default_limit = 10
+            default_offset = 0
+            default_sort_by = "created_at"
+            default_sort_order = "desc"
+            default_sort_info = f":sort_by:{default_sort_by}:sort_order:{default_sort_order}"
+            cache_key_to_invalidate = f"ProductDAO:filtered:filters:{filters_json}:pagination:{default_limit}:{default_offset}{default_sort_info}"
+            await self.redis_client.delete(cache_key_to_invalidate)
+            print(f"Invalidated default filtered cache: {cache_key_to_invalidate}")
+
+    async def create(self, input_dto: ProductInputDTO) -> Product:
+        if not hasattr(self, 'out_dto'):
+            raise AttributeError(f"out_dto is not configured for DAO {self.__class__.__name__}")
+        product = await super().create(input_dto)
+        await self._invalidate_default_filtered_cache()
+        return product
+
+    async def update(self, id: UUID, update_dto: ProductUpdateDTO) -> None:
+        if not hasattr(self, 'out_dto'):
+            raise AttributeError(f"out_dto is not configured for DAO {self.__class__.__name__}")
+        await super().update(id, update_dto)
+        await self._invalidate_default_filtered_cache()
+
+    async def delete_by_id(self, id_: UUID) -> None:
+        if not hasattr(self, 'out_dto'):
+            raise AttributeError(f"out_dto is not configured for DAO {self.__class__.__name__}")
+        await super().delete_by_id(id_)
+        await self._invalidate_default_filtered_cache()

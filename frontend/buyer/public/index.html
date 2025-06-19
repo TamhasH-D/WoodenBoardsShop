@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="Wood Products Marketplace - Find Quality Wood Products" />
+    <!-- Load runtime config if present. Must be before the main app bundle. -->
+    <script src="%PUBLIC_URL%/config.js"></script>
     <title>Wood Products Marketplace</title>
 
     <!-- Umami Analytics -->
@@ -20,7 +22,7 @@
         -moz-osx-font-smoothing: grayscale;
         background-color: #f5f5f5;
       }
-      
+
       code {
         font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
           monospace;

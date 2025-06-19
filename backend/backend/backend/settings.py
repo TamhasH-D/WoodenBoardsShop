@@ -53,6 +53,7 @@ class RedisSettings(BaseSettings):
     port: int = 6379
     password: SecretStr = SecretStr("")
     max_connections: int = 50
+    cache_ttl_seconds: int = 3600  # Default to 1 hour
 
     @property
     def url(self) -> URL:

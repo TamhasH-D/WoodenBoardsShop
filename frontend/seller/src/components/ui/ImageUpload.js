@@ -81,15 +81,11 @@ const ImageUpload = ({ onAnalyze }) => {
   };
 
   return (
-    <div className="card" style={{ maxWidth: '48rem', margin: '0 auto' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        <div style={{ 
-          display: 'grid', 
-          gap: '1.5rem',
-          gridTemplateColumns: window.innerWidth >= 640 ? '1fr 1fr' : '1fr'
-        }}>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <label className="form-label" style={{ marginBottom: '0.25rem' }}>
+    <div className="card max-w-3xl mx-auto"> {/* card class likely provides padding and border */}
+      <div className="flex flex-col gap-6">
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div className="flex flex-col">
+            <label className="form-label mb-1"> {/* Replaced style with mb-1 (0.25rem) */}
               Шаг 1: Введите высоту доски (мм)
             </label>
             <input
@@ -97,32 +93,19 @@ const ImageUpload = ({ onAnalyze }) => {
               inputMode="decimal"
               value={heightMm}
               onChange={(e) => handleInputChange(e.target.value, setHeightMm)}
-              className="form-input"
+              className="form-input rounded-lg border border-slate-300 shadow-sm px-4 py-3 text-base"
               placeholder="например, 50"
-              style={{
-                borderRadius: '0.5rem',
-                border: '1px solid #d1d5db',
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                padding: '0.75rem 1rem',
-                fontSize: '1rem'
-              }}
+              // style prop removed
             />
-            <div style={{
-              marginTop: '0.5rem',
-              backgroundColor: '#dbeafe',
-              padding: '0.75rem',
-              borderRadius: '0.5rem',
-              borderLeft: '4px solid var(--color-primary)',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-            }}>
-              <p style={{ fontSize: '0.875rem', color: '#1e40af', margin: 0 }}>
+            <div className="mt-2 bg-blue-100 p-3 rounded-lg border-l-4 border-blue-600 shadow-sm">
+              <p className="text-sm text-blue-700 m-0">
                 Введите среднюю высоту досок в миллиметрах. Это поможет точно рассчитать объем.
               </p>
             </div>
           </div>
           
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <label className="form-label" style={{ marginBottom: '0.25rem' }}>
+          <div className="flex flex-col">
+            <label className="form-label mb-1"> {/* Replaced style with mb-1 (0.25rem) */}
               Шаг 2: Введите длину доски (мм)
             </label>
             <input
@@ -130,45 +113,24 @@ const ImageUpload = ({ onAnalyze }) => {
               inputMode="decimal"
               value={lengthMm}
               onChange={(e) => handleInputChange(e.target.value, setLengthMm)}
-              className="form-input"
+              className="form-input rounded-lg border border-slate-300 shadow-sm px-4 py-3 text-base"
               placeholder="например, 1000"
-              style={{
-                borderRadius: '0.5rem',
-                border: '1px solid #d1d5db',
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                padding: '0.75rem 1rem',
-                fontSize: '1rem'
-              }}
+              // style prop removed
             />
-            <div style={{
-              marginTop: '0.5rem',
-              backgroundColor: '#dbeafe',
-              padding: '0.75rem',
-              borderRadius: '0.5rem',
-              borderLeft: '4px solid var(--color-primary)',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-            }}>
-              <p style={{ fontSize: '0.875rem', color: '#1e40af', margin: 0 }}>
+            <div className="mt-2 bg-blue-100 p-3 rounded-lg border-l-4 border-blue-600 shadow-sm">
+              <p className="text-sm text-blue-700 m-0">
                 Введите среднюю длину досок в миллиметрах. Это обеспечивает точные расчеты.
               </p>
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <label className="form-label" style={{ marginBottom: '0.5rem' }}>
+        <div className="flex flex-col">
+          <label className="form-label mb-2">
             Шаг 3: Загрузите изображение досок
           </label>
-          <div 
-            style={{
-              position: 'relative',
-              border: `2px dashed ${error ? '#ef4444' : selectedFile ? 'var(--color-primary)' : '#d1d5db'}`,
-              borderRadius: '0.5rem',
-              padding: '1.5rem',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              backgroundColor: selectedFile ? '#dbeafe20' : 'transparent'
-            }}
+          <div
+            className={`relative rounded-lg p-6 cursor-pointer transition-all duration-300 ease-in-out border-2 border-dashed ${error ? 'border-red-500' : selectedFile ? 'border-blue-600' : 'border-slate-300'} ${selectedFile ? 'bg-blue-500/10' : 'bg-transparent'}`}
             onClick={() => fileInputRef.current?.click()}
             onDragOver={(e) => {
               e.preventDefault();
@@ -187,55 +149,32 @@ const ImageUpload = ({ onAnalyze }) => {
             }}
           >
             {preview ? (
-              <div style={{ position: 'relative' }}>
+              <div className="relative">
                 <img 
                   src={preview} 
                   alt="Предварительный просмотр" 
-                  style={{ 
-                    maxHeight: '12rem', 
-                    margin: '0 auto', 
-                    borderRadius: '0.5rem', 
-                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                    display: 'block'
-                  }}
+                  className="max-h-48 mx-auto rounded-lg shadow-md block"
                 />
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     clearFile();
                   }}
-                  style={{
-                    position: 'absolute',
-                    top: '0.5rem',
-                    right: '0.5rem',
-                    padding: '0.375rem',
-                    backgroundColor: '#ef4444',
-                    color: 'white',
-                    borderRadius: '50%',
-                    border: 'none',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                    fontSize: '1rem',
-                    width: '2rem',
-                    height: '2rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
+                  className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full border-none cursor-pointer shadow-sm text-base w-8 h-8 flex items-center justify-center hover:bg-red-600"
                   aria-label="Удалить изображение"
                 >
                   ×
                 </button>
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '1rem' }}>
-                <div style={{ fontSize: '3rem', color: 'var(--color-primary)', marginBottom: '0.5rem' }}>
+              <div className="text-center p-4">
+                <div className="text-5xl text-blue-600 mb-2">
                   📤
                 </div>
-                <p style={{ margin: '0.5rem 0', fontWeight: '500', color: '#374151' }}>
+                <p className="my-2 font-medium text-slate-700">
                   Нажмите для загрузки или перетащите файл
                 </p>
-                <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>
+                <p className="text-xs text-slate-500 m-0">
                   PNG, JPG до 10MB
                 </p>
               </div>
@@ -244,71 +183,31 @@ const ImageUpload = ({ onAnalyze }) => {
           <input
             ref={fileInputRef}
             type="file"
-            style={{ display: 'none' }}
+            className="hidden"
             accept="image/*"
             onChange={handleFileChange}
           />
           
-          <div style={{
-            marginTop: '0.5rem',
-            backgroundColor: '#dbeafe',
-            padding: '0.75rem',
-            borderRadius: '0.5rem',
-            borderLeft: '4px solid var(--color-primary)',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-          }}>
-            <p style={{ fontSize: '0.875rem', color: '#1e40af', margin: 0 }}>
+          <div className="mt-2 bg-blue-100 p-3 rounded-lg border-l-4 border-blue-600 shadow-sm">
+            <p className="text-sm text-blue-700 m-0">
               Загрузите четкое изображение досок. Убедитесь, что все края видны для точного анализа.
             </p>
           </div>
         </div>
 
         {error && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            color: '#dc2626',
-            backgroundColor: '#fef2f2',
-            padding: '0.75rem',
-            borderRadius: '0.5rem',
-            borderLeft: '4px solid #ef4444',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-          }}>
-            <span style={{ fontSize: '1.25rem' }}>⚠️</span>
-            <p style={{ fontSize: '0.875rem', fontWeight: '500', margin: 0 }}>{error}</p>
+          <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg border-l-4 border-red-500 shadow-sm">
+            <span className="text-xl">⚠️</span>
+            <p className="text-sm font-medium m-0">{error}</p>
           </div>
         )}
 
         <button
           onClick={handleAnalyze}
-          className={`btn ${selectedFile ? 'btn-primary' : ''}`}
+          className={`btn ${selectedFile ? 'btn-primary' : ''} w-full rounded-lg font-medium transition-all duration-300 ease-in-out text-white border-none ${selectedFile ? 'shadow-md bg-blue-600 cursor-pointer hover:translate-y-[-1px] hover:shadow-lg' : 'bg-slate-400 cursor-not-allowed shadow-none'}`}
           disabled={!selectedFile}
-          style={{
-            width: '100%',
-            padding: '0.75rem 1rem',
-            borderRadius: '0.5rem',
-            fontWeight: '500',
-            transition: 'all 0.3s ease',
-            backgroundColor: selectedFile ? 'var(--color-primary)' : '#9ca3af',
-            color: 'white',
-            border: 'none',
-            cursor: selectedFile ? 'pointer' : 'not-allowed',
-            boxShadow: selectedFile ? '0 4px 6px rgba(0, 0, 0, 0.1)' : 'none',
-            transform: selectedFile ? 'none' : 'none'
-          }}
-          onMouseEnter={(e) => {
-            if (selectedFile) {
-              e.target.style.transform = 'translateY(-1px)';
-              e.target.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (selectedFile) {
-              e.target.style.transform = 'none';
-              e.target.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-            }
-          }}
+          // style prop removed
+          // onMouseEnter and onMouseLeave removed
         >
           Начать анализ
         </button>

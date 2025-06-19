@@ -19,8 +19,8 @@ const Dashboard = React.memo(() => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
         >
-          <h1 className="text-2xl font-bold mb-2">{SELLER_TEXTS.DASHBOARD}</h1>
-          <p className="text-blue-100">Управляйте своими товарами и взаимодействуйте с покупателями</p>
+          <h1 className="text-xl sm:text-2xl font-bold mb-2">{SELLER_TEXTS.DASHBOARD}</h1>
+          <p className="text-blue-100 text-sm sm:text-base">Управляйте своими товарами и взаимодействуйте с покупателями</p>
         </motion.div>
       </div>
 

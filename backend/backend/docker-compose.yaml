@@ -43,6 +43,8 @@ services:
     networks:
       - app_network
       - diplom_default
+    restart: always
+
 
   backend-pg:
     image: postgres:17.4-bookworm
@@ -63,6 +65,8 @@ services:
       interval: 2s
       timeout: 3s
       retries: 40
+    restart: always
+
 
   redis:
     image: bitnami/redis:7.4
@@ -83,6 +87,8 @@ services:
       retries: 40
     volumes:
       - backend-redis-data:/bitnami/redis/data
+    restart: always
+
 
 volumes:
   backend-pg-data:

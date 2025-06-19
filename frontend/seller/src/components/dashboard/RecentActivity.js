@@ -18,8 +18,8 @@ const ActivityItem = ({ icon: Icon, title, description, time, action, color }) =
         <Icon className="w-4 h-4 text-white" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900">{title}</p>
-        <p className="text-sm text-gray-600 mt-1">{description}</p>
+        <p className="text-sm font-medium text-gray-900 break-words">{title}</p>
+        <p className="text-sm text-gray-600 mt-1 break-words">{description}</p>
         <div className="flex items-center mt-2 text-xs text-gray-500">
           <Clock className="w-3 h-3 mr-1" />
           {time}
@@ -88,7 +88,7 @@ const RecentProducts = () => {
         <ActivityItem
           key={product.product_uuid || index}
           icon={Package}
-          title={product.name || 'Товар без названия'}
+          title={product.title || 'Товар без названия'}
           description={`${formatCurrencyRu(product.price)} • ${product.volume} м³ • ${product.wood_type_name || 'Тип не указан'}`}
           time={formatDateRu(product.created_at, 'SHORT')}
           color="bg-blue-500"
