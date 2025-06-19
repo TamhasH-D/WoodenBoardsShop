@@ -134,7 +134,7 @@ function Home() {
                   <div className="stat-label">Проверенных продавцов</div>
                 </div>
                 <div className="stat-item">
-                  <div className="stat-number">99%</div>
+                  <div className="stat-number">95%</div>
                   <div className="stat-label">Точность ИИ подсчета</div>
                 </div>
               </div>
@@ -199,7 +199,7 @@ function Home() {
                 </svg>
               </div>
               <h3>ИИ подсчет досок</h3>
-              <p>Автоматический подсчет количества досок и расчет объема с точностью 99%</p>
+              <p>Автоматический подсчет количества досок и расчет объема с точностью 95%</p>
             </div>
 
             <div className="feature-card">
