@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiService } from '../services/api';
 import websocketManager from '../utils/websocketManager';
+import { useAuth } from '../contexts/AuthContext'; // Import useAuth
 
 const API_CALL_TIMEOUT = 15000; // 15 seconds
-import { useAuth } from '../contexts/AuthContext'; // Import useAuth
 
 /**
  * Хук для работы с чатом
