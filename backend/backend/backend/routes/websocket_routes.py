@@ -1,6 +1,7 @@
 import json
 import logging
 import asyncio
+import random
 from datetime import datetime, timezone
 from uuid import UUID
 from typing import Dict, Set, Optional
@@ -36,7 +37,7 @@ class ConnectionManager:
         # Структура: {thread_id: {user_id: ConnectionInfo}}
         self.active_connections: Dict[str, Dict[str, ConnectionInfo]] = {}
         self.ping_interval = 30  # Интервал ping в секундах
-        self.ping_timeout = 10   # Таймаут ответа на ping
+        self.ping_timeout = 30   # Таймаут ответа на ping
         self._ping_tasks: Dict[str, asyncio.Task] = {}
 
     async def connect(self, websocket: WebSocket, thread_id: str, user_id: str, user_type: str):
@@ -163,7 +164,8 @@ class ConnectionManager:
         async def ping_loop():
             while True:
                 try:
-                    await asyncio.sleep(self.ping_interval)
+                    jitter = random.uniform(0, 5)
+                    await asyncio.sleep(self.ping_interval + jitter)
 
                     if thread_id not in self.active_connections or user_id not in self.active_connections[thread_id]:
                         break

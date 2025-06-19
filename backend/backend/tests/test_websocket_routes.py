@@ -130,6 +130,20 @@ def test_websocket_route_imports():
     except ImportError as e:
         pytest.skip(f"Не удалось импортировать websocket_routes: {e}")
 
+def test_connection_manager_ping_settings():
+    """Тест проверяет настройки ping_interval и ping_timeout в глобальном ConnectionManager."""
+    import sys
+    import os
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+    try:
+        from backend.routes.websocket_routes import manager as global_manager
+    except ImportError as e:
+        pytest.skip(f"Не удалось импортировать manager из websocket_routes: {e}")
+
+    assert global_manager.ping_timeout == 30, "ping_timeout должен быть 30"
+    assert global_manager.ping_interval == 30, "ping_interval должен быть 30 (базовый, до добавления jitter)"
+
 def test_uuid_validation_logic():
     """Тест логики валидации UUID в WebSocket функции."""
     

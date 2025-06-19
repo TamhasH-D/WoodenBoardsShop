@@ -1,18 +1,6 @@
-import React, { memo, useState } from 'react';
-import { useNotifications } from '../../hooks/useNotifications';
+import React, { memo } from 'react';
 
 const ChatSettings = memo(({ isOpen, onClose }) => {
-  const {
-    permission,
-    soundsEnabled,
-    notificationsEnabled,
-    toggleSounds,
-    toggleNotifications,
-    requestPermission
-  } = useNotifications();
-
-  const [soundVolume, setSoundVolume] = useState(0.5);
-
   if (!isOpen) return null;
 
   const overlayStyle = {
@@ -149,13 +137,6 @@ const ChatSettings = memo(({ isOpen, onClose }) => {
     cursor: 'not-allowed'
   };
 
-  const handleVolumeChange = (e) => {
-    const volume = parseFloat(e.target.value);
-    setSoundVolume(volume);
-    // Apply volume change to sound manager
-    // soundManager.setVolume(volume);
-  };
-
   return (
     <>
       <div style={overlayStyle} onClick={onClose}>
@@ -170,86 +151,6 @@ const ChatSettings = memo(({ isOpen, onClose }) => {
             >
               ×
             </button>
-          </div>
-
-          {/* Notifications Section */}
-          <div style={sectionStyle}>
-            <h3 style={sectionTitleStyle}>🔔 Уведомления</h3>
-            
-            <div style={settingItemStyle}>
-              <div>
-                <div style={settingLabelStyle}>Браузерные уведомления</div>
-                <div style={settingDescStyle}>
-                  Показывать уведомления о новых сообщениях
-                </div>
-              </div>
-              <button
-                style={toggleStyle(notificationsEnabled)}
-                onClick={toggleNotifications}
-              >
-                <div style={toggleKnobStyle(notificationsEnabled)} />
-              </button>
-            </div>
-
-            {permission !== 'granted' && (
-              <div style={settingItemStyle}>
-                <div>
-                  <div style={settingLabelStyle}>Разрешение на уведомления</div>
-                  <div style={settingDescStyle}>
-                    Необходимо для показа уведомлений
-                  </div>
-                </div>
-                <button
-                  style={permission === 'denied' ? disabledButtonStyle : buttonStyle}
-                  onClick={requestPermission}
-                  disabled={permission === 'denied'}
-                >
-                  {permission === 'denied' ? 'Запрещено' : 'Разрешить'}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Sounds Section */}
-          <div style={sectionStyle}>
-            <h3 style={sectionTitleStyle}>🔊 Звуки</h3>
-            
-            <div style={settingItemStyle}>
-              <div>
-                <div style={settingLabelStyle}>Звуковые уведомления</div>
-                <div style={settingDescStyle}>
-                  Воспроизводить звуки при получении сообщений
-                </div>
-              </div>
-              <button
-                style={toggleStyle(soundsEnabled)}
-                onClick={toggleSounds}
-              >
-                <div style={toggleKnobStyle(soundsEnabled)} />
-              </button>
-            </div>
-
-            {soundsEnabled && (
-              <div style={settingItemStyle}>
-                <div>
-                  <div style={settingLabelStyle}>Громкость звуков</div>
-                  <div style={settingDescStyle}>
-                    Настройка громкости уведомлений
-                  </div>
-                </div>
-                <div style={{ width: '100px' }}>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    value={soundVolume}
-                    onChange={handleVolumeChange}
-                    style={sliderStyle}
-                  />
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Appearance Section */}

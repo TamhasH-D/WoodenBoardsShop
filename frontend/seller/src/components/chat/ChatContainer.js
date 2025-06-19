@@ -1,7 +1,6 @@
 import React, { useState, useCallback, memo } from 'react';
 import ChatSidebar from './ChatSidebar';
 import ChatWindow from './ChatWindow';
-import ChatSettings from './ChatSettings';
 import { ConnectionStatus } from './StatusIndicators';
 
 const ChatContainer = memo(({ 
@@ -21,7 +20,6 @@ const ChatContainer = memo(({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   // const [isMobile, setIsMobile] = useState(window.innerWidth < 768); // Removed isMobile state
-  const [showSettings, setShowSettings] = useState(false);
 
   // Handle window resize for responsive design - REMOVED
   // React.useEffect(() => {
@@ -35,14 +33,6 @@ const ChatContainer = memo(({
 
   const handleSearchChange = useCallback((query) => {
     setSearchQuery(query);
-  }, []);
-
-  const handleOpenSettings = useCallback(() => {
-    setShowSettings(true);
-  }, []);
-
-  const handleCloseSettings = useCallback(() => {
-    setShowSettings(false);
   }, []);
 
   // const containerStyle = { // Removed
@@ -144,7 +134,6 @@ const ChatContainer = memo(({
             onRefresh={onRefresh}
             searchQuery={searchQuery}
             onSearchChange={handleSearchChange}
-            onOpenSettings={handleOpenSettings}
           />
         </div>
 
@@ -177,11 +166,6 @@ const ChatContainer = memo(({
           <ConnectionStatus isConnected={isConnected} />
         </div>
       )}
-
-      <ChatSettings
-        isOpen={showSettings}
-        onClose={handleCloseSettings}
-      />
     </div>
   );
 });

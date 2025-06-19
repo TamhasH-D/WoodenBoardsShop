@@ -11,8 +11,7 @@ const ChatSidebar = memo(({
   loading,
   onRefresh,
   searchQuery,
-  onSearchChange,
-  onOpenSettings
+  onSearchChange
 }) => {
   // const sidebarStyle = { // Removed
   //   width: '100%',
@@ -214,17 +213,6 @@ const ChatSidebar = memo(({
           >
             {loading ? '🔄' : '↻'} Обновить
           </button>
-
-          {onOpenSettings && (
-            <button
-              onClick={onOpenSettings}
-              className="px-3 py-2 bg-slate-500 text-white border-none rounded-lg text-xs cursor-pointer transition-all duration-200 ease-in-out flex items-center gap-1.5 hover:bg-slate-600 hover:-translate-y-0.5"
-              // onMouseEnter and onMouseLeave removed
-              title="Настройки чата"
-            >
-              ⚙️
-            </button>
-          )}
         </div>
       </div>
 
