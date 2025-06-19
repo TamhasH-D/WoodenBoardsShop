@@ -286,15 +286,25 @@ class WebSocketManager {
     ws.onclose = (event) => {
       console.log(`[WebSocketManager] ❌ Disconnected from ${threadId}:`, event.code, event.reason);
 
-      // Останавливаем ping
       this.stopPing(connectionInfo);
-
-      // Уведомляем о отключении
       onStatusChange && onStatusChange(false);
 
-      // Пытаемся переподключиться если это не намеренное закрытие
-      if (event.code !== 1000 && connectionInfo.reconnectAttempts < this.maxReconnectAttempts) {
+      const isGlobalChannel = connectionInfo.threadId.startsWith('global_');
+      const isAbnormalCloseNoStatus = event.code === 1005;
+
+      let currentMaxReconnectAttempts = this.maxReconnectAttempts;
+
+      if (isGlobalChannel && isAbnormalCloseNoStatus) {
+        console.log(`[WebSocketManager] Applying special reconnect strategy for global channel ${threadId} due to close code 1005.`);
+        currentMaxReconnectAttempts = 3; // Reduced attempts for this specific scenario
+      }
+
+      if (event.code !== 1000 && connectionInfo.reconnectAttempts < currentMaxReconnectAttempts) {
         this.scheduleReconnect(connectionInfo);
+      } else {
+        if (event.code !== 1000) {
+            console.log(`[WebSocketManager] Max reconnect attempts reached for ${threadId} or intentional close (1000).`);
+        }
       }
     };
 
