@@ -202,15 +202,21 @@ const ChatWindow = () => {
   }, [messages]);
 
   useEffect(() => {
-    // Load chat data only if user is fully authenticated, buyerId is available, and threadId is present.
     if (isAuthenticated && buyerId && threadId && !profileLoading) {
       loadChatData();
-    } else if (!profileLoading && (!isAuthenticated || !buyerId)) {
-      // If profile isn't loading, but user is not authenticated or no buyerId, stop loading.
-      setComponentIsLoading(false);
+    } else if (!profileLoading) { // Profile loading is complete (or was not needed)
+      setComponentIsLoading(false); // Stop chat-specific loading indicator
+      if (!isAuthenticated) {
+        // This case is likely already handled by the main return statement's auth checks leading to a login prompt.
+        // However, a specific error notification can be added if desired, though it might be redundant.
+        // console.warn('[ChatWindow] User not authenticated after profile check. Chat cannot load.');
+      } else if (!buyerId) { // Authenticated with Keycloak, profile processing done, but no buyerId
+        console.warn('[ChatWindow] BuyerId is missing after profile processing. Chat cannot load.');
+        showError("Идентификатор покупателя не найден после обработки профиля. Чат не может быть загружен.");
+      }
     }
-    // If profileLoading is true, we wait. componentIsLoading remains true.
-  }, [isAuthenticated, buyerId, threadId, loadChatData, profileLoading]);
+    // If profileLoading is true, we wait. componentIsLoading (and profileLoading) will keep loading indicators active.
+  }, [isAuthenticated, buyerId, threadId, loadChatData, profileLoading, showError]); // Added showError to dependencies
 
   useEffect(() => {
     return () => { // Cleanup on unmount

@@ -44,6 +44,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error("[AuthContext] Error syncing buyer profile:", error);
       setProfileError(error);
+      setBuyerProfile(null); // Add this line
     } finally {
       setProfileLoading(false);
     }

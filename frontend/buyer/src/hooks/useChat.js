@@ -231,18 +231,27 @@ export const useChat = (sellerId, productTitle) => {
 
   // Effect for initializing or loading chat
   useEffect(() => {
-    // Only proceed if authenticated, profile is available, and sellerId is provided
     if (profileAndKeycloakAuthenticated && buyerId && sellerId && !profileLoading) {
       console.log('[useChat] Auth and profile ready, calling initializeOrLoadChat.');
       initializeOrLoadChat();
-    } else if (!profileAndKeycloakAuthenticated && !profileLoading) {
-      console.log('[useChat] Not authenticated or profile not ready, chat not initialized.');
-      setLoading(false); // Not loading chat if user isn't ready
+    } else if (!profileLoading) {
+      console.log('[useChat] Conditions not fully met for chat initialization after profile attempt.');
+      setLoading(false);
       setMessages([]);
       setThread(null);
+      if (keycloakAuthenticated && !buyerId) {
+        console.warn('[useChat] Profile loaded (or an attempt was made) but buyerId is missing.');
+        setError("Профиль пользователя обработан, но идентификатор покупателя отсутствует. Чат не может быть инициализирован.");
+      } else if (!profileAndKeycloakAuthenticated) {
+        console.warn('[useChat] User not fully authenticated for chat (Keycloak or Profile).');
+        if (!keycloakAuthenticated) {
+             setError("Пользователь не аутентифицирован в системе. Войдите, чтобы использовать чат.");
+        } else {
+             setError("Профиль пользователя не загружен или содержит ошибки. Чат недоступен.");
+        }
+      }
     }
-    // If profileLoading is true, we wait. initializeOrLoadChat checks profileLoading again.
-  }, [profileAndKeycloakAuthenticated, buyerId, sellerId, initializeOrLoadChat, profileLoading]);
+  }, [profileAndKeycloakAuthenticated, buyerId, sellerId, initializeOrLoadChat, profileLoading, keycloakAuthenticated]);
 
   // Cleanup WebSocket connection
   useEffect(() => {
