@@ -139,6 +139,7 @@ export const SELLER_TEXTS = {
   FAILED_TO_LOAD_PRICES: 'Не удалось загрузить цены',
   WOOD_TYPE_NAME_REQUIRED_ERROR: 'Название типа древесины обязательно',
   VALID_INITIAL_PRICE_ERROR: 'Пожалуйста, введите корректную начальную цену',
+  WOOD_TYPE_ALREADY_EXISTS_ERROR: 'Тип древесины с таким названием уже существует.',
 
   // Confirmation Messages
   CONFIRM_DELETE_WOOD_TYPE_FULL: 'Вы уверены, что хотите удалить этот тип древесины? Это также удалит все связанные цены.',
