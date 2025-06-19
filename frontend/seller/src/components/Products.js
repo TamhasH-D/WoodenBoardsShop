@@ -612,13 +612,13 @@ function Products() {
                       <ProductImage
                         key={`product-list-${product.id}-${imageRefreshKey}`}
                         productId={product.id}
-                        alt={product.title}
+                        alt={product.title || 'Товар без названия'}
                         size="medium"
                       />
                     </td>
                     <td>
                       <div>
-                        <strong>{product.title}</strong>
+                        <strong>{product.title || 'Товар без названия'}</strong>
                         {(product.descrioption || product.description) && (
                           <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '0.25rem' }}>
                             {((product.descrioption || product.description).length > 50)

@@ -88,7 +88,7 @@ const RecentProducts = () => {
         <ActivityItem
           key={product.product_uuid || index}
           icon={Package}
-          title={product.name || 'Товар без названия'}
+          title={product.title || 'Товар без названия'}
           description={`${formatCurrencyRu(product.price)} • ${product.volume} м³ • ${product.wood_type_name || 'Тип не указан'}`}
           time={formatDateRu(product.created_at, 'SHORT')}
           color="bg-blue-500"
