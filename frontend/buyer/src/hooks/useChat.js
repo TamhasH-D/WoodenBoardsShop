@@ -320,13 +320,15 @@ export const useChat = (options = {}) => {
       id: optimisticMessageId,
       _optimisticId: optimisticMessageId,
       thread_id: threadToUse,
-      sender_id: buyerId,
-      sender_type: 'buyer',
-      message: messageText, // Changed from content
+      sender_id: buyerId,    // This is correct for identifying sender
+      sender_type: 'buyer',  // Correct
+      buyer_id: buyerId,     // Explicitly set for UI consistency
+      seller_id: null,       // Explicitly set for UI consistency
+      message: messageText,
       created_at: new Date().toISOString(),
       is_read_by_buyer: true,
       is_read_by_seller: false,
-      // _optimistic: true, // UI can use this to show pending state
+      _optimistic: true, // Explicitly mark as optimistic for UI
     };
 
     setMessages(prev => [...prev, optimisticMessage]);
@@ -344,19 +346,28 @@ export const useChat = (options = {}) => {
 
       if (response.success && response.data) {
         const serverMessage = response.data;
-        // Ensure the server message has all necessary fields, including its own server-generated ID
-        // Update the local messages array by replacing the optimistic message with the server-confirmed one.
+        console.log('[useChat sendMessage] Server message received:', serverMessage);
+        console.log('[useChat sendMessage] Server message created_at:', serverMessage.created_at, typeof serverMessage.created_at);
+
+        // Construct final message ensuring all UI-needed fields are present
+        const finalMessage = {
+          ...serverMessage, // Includes server-generated id, thread_id, message, created_at, sender_id, sender_type
+          buyer_id: serverMessage.sender_type === 'buyer' ? serverMessage.sender_id : null,
+          seller_id: serverMessage.sender_type === 'seller' ? serverMessage.sender_id : null,
+          _optimistic: false, // Mark as no longer optimistic
+        };
+
         setMessages(prevMessages =>
           prevMessages.map(msg =>
             msg._optimisticId === optimisticMessageId
-              ? { ...serverMessage, _optimistic: false } // serverMessage already contains the final ID
+              ? finalMessage
               : msg
           )
         );
         setThreads(prevThreads =>
           prevThreads.map(t =>
             t.id === threadToUse
-              ? { ...t, last_message: serverMessage.message, last_message_at: serverMessage.created_at, unread_messages_count: 0 } // Use serverMessage.message
+              ? { ...t, last_message: finalMessage.message, last_message_at: finalMessage.created_at, unread_messages_count: 0 }
               : t
           )
         );
@@ -366,7 +377,8 @@ export const useChat = (options = {}) => {
     } catch (err) {
       console.error("Error sending message via API:", err);
       setError(err.message || 'Failed to send message.');
-      setMessages(prev => prev.filter(msg => msg.id !== optimisticMessageId));
+      // Revert optimistic update by removing the message with the _optimisticId
+      setMessages(prev => prev.filter(msg => msg._optimisticId !== optimisticMessageId));
       throw err; // Re-throw for the component to handle
     }
   }, [buyerId, selectedThreadId, currentThreadSellerId, threads, selectThreadActual, handleWebSocketMessageInternal]);

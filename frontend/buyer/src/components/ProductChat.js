@@ -201,8 +201,8 @@ const ProductChat = ({ productId, product, sellerId }) => {
     return (
       <>
         {messages.map((message) => {
-          // Use chatHookBuyerId which is derived from buyerProfile.id within useChat
-          const isOwnMessage = message.buyer_id === chatHookBuyerId && message.sender_type !== 'seller';
+          // Standardized isOwnMessage check
+          const isOwnMessage = message.sender_id === chatHookBuyerId && message.sender_type === 'buyer';
           return (
             <div key={message.id || message.temp_id} style={{ display: 'flex', justifyContent: isOwnMessage ? 'flex-end' : 'flex-start', marginBottom: '12px' }}>
               <div style={{
