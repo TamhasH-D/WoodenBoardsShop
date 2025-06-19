@@ -397,6 +397,16 @@ export const apiService = {
     }
   },
 
+  async getChatThreadDetails(threadId) {
+    try {
+      const response = await api.get(`/api/v1/chat-threads/${threadId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`[apiService] Error fetching chat thread details for thread ${threadId}:`, error.response ? error.response.data : error.message);
+      throw error;
+    }
+  },
+
   async getBuyerChatsByKeycloakId(keycloakId, page = 0, size = 10) {
     // DEPRECATED: AuthContext should provide buyer profile, then use getMyBuyerChats (new method to be created)
     console.warn("[apiService] getBuyerChatsByKeycloakId is deprecated.");
