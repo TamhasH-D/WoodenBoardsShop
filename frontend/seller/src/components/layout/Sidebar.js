@@ -19,6 +19,9 @@ const Sidebar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
+  // Get user email with a fallback
+  const userEmail = keycloak.tokenParsed?.email || keycloak.tokenParsed?.preferred_username || "Loading...";
+
   const isActive = (path) => {
     if (path === '/') {
       return location.pathname === '/';
@@ -174,7 +177,7 @@ const Sidebar = () => {
                 Продавец
               </p>
               <p className="text-xs text-gray-500 truncate">
-                seller@woodshop.ru
+                {userEmail}
               </p>
             </div>
             <button
