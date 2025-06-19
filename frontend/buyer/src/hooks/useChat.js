@@ -219,8 +219,26 @@ export const useChat = (options = {}) => {
 
     try {
       const messagesResponse = await apiService.getChatMessages(threadIdToSelect, 0, 50);
-      setMessages(messagesResponse.data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)) || []);
-      
+      // Assuming messagesResponse.data.data is the array based on apiService.getChatMessages structure
+      // However, api.js shows getChatMessages returns { data: messages, total: ..., offset: ..., limit: ... }
+      // where messages = response.data.data || response.data || []
+      // So, messagesResponse.data should be the array of messages directly if the endpoint is /api/v1/chat-messages/by-thread/{threadId}
+      // Let's assume messagesResponse.data is the array.
+      const fetchedMessages = messagesResponse.data || [];
+
+      console.log(`[useChat selectThreadActual] Fetched messages for thread ${threadIdToSelect} (raw sample):`, fetchedMessages.slice(0, 3));
+
+      const processedMessages = (fetchedMessages || []).map(msg => ({
+        ...msg,
+        // Ensure buyer_id and seller_id are correctly derived for these historical messages
+        // This assumes sender_id and sender_type are present on historical messages.
+        buyer_id: msg.sender_type === 'buyer' ? msg.sender_id : null,
+        seller_id: msg.sender_type === 'seller' ? msg.sender_id : null,
+      })).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+      console.log(`[useChat selectThreadActual] Processed messages for thread ${threadIdToSelect} (sample with derived IDs):`, processedMessages.slice(0, 3));
+      setMessages(processedMessages);
+
       await apiService.markMessagesAsRead(threadIdToSelect, buyerId, 'buyer');
       setThreads(prev => prev.map(t => t.id === threadIdToSelect ? {...t, unread_messages_count: 0} : t));
 
@@ -341,45 +359,54 @@ export const useChat = (options = {}) => {
         message: messageText,
         buyer_id: buyerId,
         sender_type: 'buyer',
+        is_read_by_buyer: true, // Add this field
       };
       const response = await apiService.sendMessage(messagePayloadForApi);
 
-      if (response.success && response.data) {
-        const serverMessage = response.data;
-        console.log('[useChat sendMessage] Server message received:', serverMessage);
-        console.log('[useChat sendMessage] Server message created_at:', serverMessage.created_at, typeof serverMessage.created_at);
+      // Modified server response processing
+      if (response.success && response.data && response.data.data) {
+        const serverMessageData = response.data.data; // Access the nested data object
+        console.log('[useChat sendMessage] Server actual message data received:', serverMessageData);
+        console.log('[useChat sendMessage] Server message created_at:', serverMessageData.created_at, typeof serverMessageData.created_at);
 
-        // Construct final message ensuring all UI-needed fields are present
         const finalMessage = {
-          ...serverMessage, // Includes server-generated id, thread_id, message, created_at, sender_id, sender_type
-          buyer_id: serverMessage.sender_type === 'buyer' ? serverMessage.sender_id : null,
-          seller_id: serverMessage.sender_type === 'seller' ? serverMessage.sender_id : null,
-          _optimistic: false, // Mark as no longer optimistic
+          ...serverMessageData, // Spread the actual message data
+          buyer_id: serverMessageData.sender_type === 'buyer' ? serverMessageData.sender_id : null,
+          seller_id: serverMessageData.sender_type === 'seller' ? serverMessageData.sender_id : null,
+          _optimistic: false
         };
 
         setMessages(prevMessages =>
           prevMessages.map(msg =>
-            msg._optimisticId === optimisticMessageId
-              ? finalMessage
-              : msg
+            msg._optimisticId === optimisticMessageId ? finalMessage : msg
           )
         );
+
         setThreads(prevThreads =>
           prevThreads.map(t =>
             t.id === threadToUse
-              ? { ...t, last_message: finalMessage.message, last_message_at: finalMessage.created_at, unread_messages_count: 0 }
+              ? { ...t,
+                  last_message: finalMessage.message,
+                  last_message_at: finalMessage.created_at,
+                  unread_messages_count: 0
+                }
               : t
           )
         );
       } else {
-        throw new Error(response.error || 'Failed to send message via API');
+        // Handle cases where response.data.data might be missing, or response.success is false
+        console.error('[useChat sendMessage] Server response was successful but data format is unexpected or success flag missing. Response:', response);
+        setError('Failed to confirm message with server (unexpected response format).');
+        setMessages(prev => prev.map(msg =>
+          msg._optimisticId === optimisticMessageId ? { ...msg, _optimistic: false, _error: 'Server response format error' } : msg
+        ));
+        // No throw new Error here, as we've handled it by marking the message and setting error state
       }
     } catch (err) {
       console.error("Error sending message via API:", err);
       setError(err.message || 'Failed to send message.');
-      // Revert optimistic update by removing the message with the _optimisticId
       setMessages(prev => prev.filter(msg => msg._optimisticId !== optimisticMessageId));
-      throw err; // Re-throw for the component to handle
+      throw err; // Re-throw for the component to handle if it needs to react further
     }
   }, [buyerId, selectedThreadId, currentThreadSellerId, threads, selectThreadActual, handleWebSocketMessageInternal]);
 
