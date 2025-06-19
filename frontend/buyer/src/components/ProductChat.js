@@ -163,14 +163,14 @@ const ProductChat = ({ productId, product, sellerId }) => {
     if (!isAuthenticated && keycloakAuthenticated) { // Profile not loaded for some other reason, or still loading (covered by profileLoading)
         return <AuthRequiredView message="Профиль пользователя не загружен. Чат временно недоступен." />;
     }
-    if (chatHookLoading) { // Profile is fine, chat hook is loading messages/thread
+    if (initialLoading) { // Replaced chatHookLoading with initialLoading
         return <LoadingStateView message="Загрузка истории сообщений..." />;
     }
     if (chatHookError) { // Chat hook specific error
         return <AuthRequiredView message={`Ошибка чата: ${chatHookError}. Попробуйте обновить страницу.`} />;
     }
     if (messages.length === 0) {
-        return <EmptyChatView hasExistingChat={hasExistingChat} />;
+        return <EmptyChatView hasExistingChat={doesChatExistWithSeller} productTitle={currentProductTitle} />;
     }
     return (
       <>
@@ -183,19 +183,19 @@ const ProductChat = ({ productId, product, sellerId }) => {
                 maxWidth: window.innerWidth >= 768 ? '75%' : '85%',
                 padding: '12px 16px',
                 borderRadius: isOwnMessage ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                backgroundColor: isOwnMessage ? '#3b82f6' : (message.sending ? '#e0e0e0' : 'white'),
+                backgroundColor: isOwnMessage ? '#3b82f6' : (message._optimistic || message.sending ? '#e0e0e0' : 'white'), // Check _optimistic flag
                 color: isOwnMessage ? 'white' : '#1f2937',
                 fontSize: '15px', lineHeight: '1.4',
                 boxShadow: isOwnMessage ? '0 4px 12px rgba(59, 130, 246, 0.25)' : '0 2px 8px rgba(0, 0, 0, 0.08)',
                 border: isOwnMessage ? 'none' : '1px solid #e5e7eb',
                 position: 'relative', animation: 'messageSlideIn 0.2s ease-out',
-                opacity: message.sending ? 0.7 : 1,
+                opacity: (message._optimistic || message.sending) ? 0.7 : 1, // Check _optimistic flag
               }}>
-                <div style={{ marginBottom: '6px', wordBreak: 'break-word' }}>{message.message}</div>
+                <div style={{ marginBottom: '6px', wordBreak: 'break-word' }}>{message.content || message.message}</div>
                 <div style={{ fontSize: '11px', opacity: isOwnMessage ? 0.8 : 0.6, textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
                   <span>{new Date(message.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
-                  {isOwnMessage && !message.sending && <span style={{ fontSize: '10px' }}>✓</span>}
-                  {isOwnMessage && message.sending && <span style={{ fontSize: '10px' }}>◌</span>}
+                  {isOwnMessage && !(message._optimistic || message.sending) && <span style={{ fontSize: '10px' }}>✓</span>}
+                  {(isOwnMessage && (message._optimistic || message.sending)) && <span style={{ fontSize: '10px' }}>◌</span>}
                 </div>
               </div>
             </div>
@@ -228,16 +228,16 @@ const ProductChat = ({ productId, product, sellerId }) => {
     </div>
   );
 
-  const EmptyChatView = ({ hasExistingChat }) => (
+  const EmptyChatView = ({ hasExistingChat, productTitle }) => (
      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', color: '#64748b' }}>
         <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: 'linear-gradient(135deg, #e2e8f0, #cbd5e1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '16px' }}>
             💬
         </div>
         <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600', color: '#374151' }}>
-            {hasExistingChat ? 'Сообщений пока нет' : 'Начните диалог первым'}
+            {hasExistingChat ? 'Сообщений пока нет' : `Начните диалог о "${productTitle}"`}
         </h3>
         <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.4', maxWidth: '240px', color: '#64748b' }}>
-            Обсудите детали товара, условия доставки или договоритесь о цене.
+            {hasExistingChat ? 'Отправьте сообщение ниже.' : 'Задайте свой вопрос продавцу.'}
         </p>
     </div>
   );
@@ -259,7 +259,7 @@ const ProductChat = ({ productId, product, sellerId }) => {
               Связь с продавцом
             </h2>
             <p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: '14px', fontWeight: '400' }}>
-              {isAuthenticated && hasExistingChat ? 'Продолжите переписку' : isAuthenticated ? 'Задайте вопрос о товаре' : 'Войдите, чтобы задать вопрос'}
+              {isAuthenticated && doesChatExistWithSeller ? 'Продолжите переписку' : isAuthenticated ? `Задайте вопрос о "${currentProductTitle}"` : 'Войдите, чтобы задать вопрос'}
             </p>
           </div>
           {renderHeaderStatus()}
@@ -267,7 +267,7 @@ const ProductChat = ({ productId, product, sellerId }) => {
       </div>
 
       <div style={{
-        height: hasExistingChat || isAuthenticated ? (window.innerWidth >= 768 ? '400px' : '320px') : (window.innerWidth >= 768 ? '280px' : '240px'), // Adjust height based on state
+        height: doesChatExistWithSeller || isAuthenticated ? (window.innerWidth >= 768 ? '400px' : '320px') : (window.innerWidth >= 768 ? '280px' : '240px'), // Adjust height based on state
         overflowY: 'auto', padding: window.innerWidth >= 768 ? '24px' : '16px',
         backgroundColor: '#fafafa', backgroundImage: 'linear-gradient(135deg, #fafafa 0%, #f8fafc 100%)'
       }}>
@@ -290,28 +290,28 @@ const ProductChat = ({ productId, product, sellerId }) => {
                   width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '12px',
                   fontSize: '15px', outline: 'none', transition: 'all 0.2s ease', resize: 'none',
                   fontFamily: 'inherit', backgroundColor: overallChatDisabled ? '#eef2f7' : '#fafafa',
-                  opacity: (isSending || overallChatDisabled) ? 0.7 : 1
-                }}
-                onFocus={(e) => { if (!overallChatDisabled && !isSending) { e.target.style.borderColor = '#3b82f6'; e.target.style.backgroundColor = 'white'; e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)'; }}}
-                onBlur={(e) => { if (!overallChatDisabled && !isSending) { e.target.style.borderColor = '#e5e7eb'; e.target.style.backgroundColor = '#fafafa'; e.target.style.boxShadow = 'none'; }}}
-                disabled={isSending || overallChatDisabled}
+                  opacity: (isSendingUi || overallChatDisabled) ? 0.7 : 1
+                }} // isSendingUi for UI button state
+                onFocus={(e) => { if (!overallChatDisabled && !isSendingUi) { e.target.style.borderColor = '#3b82f6'; e.target.style.backgroundColor = 'white'; e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)'; }}}
+                onBlur={(e) => { if (!overallChatDisabled && !isSendingUi) { e.target.style.borderColor = '#e5e7eb'; e.target.style.backgroundColor = '#fafafa'; e.target.style.boxShadow = 'none'; }}}
+                disabled={isSendingUi || overallChatDisabled}
               />
             </div>
             <button
               type="submit"
-              disabled={!newMessage.trim() || isSending || overallChatDisabled}
+              disabled={!newMessage.trim() || isSendingUi || overallChatDisabled}
               style={{
                 padding: '12px 20px', backgroundColor: '#3b82f6', color: 'white', border: 'none',
                 borderRadius: '12px', fontSize: '14px', fontWeight: '600',
-                cursor: (!newMessage.trim() || isSending || overallChatDisabled) ? 'not-allowed' : 'pointer',
-                opacity: (!newMessage.trim() || isSending || overallChatDisabled) ? 0.5 : 1,
+                cursor: (!newMessage.trim() || isSendingUi || overallChatDisabled) ? 'not-allowed' : 'pointer',
+                opacity: (!newMessage.trim() || isSendingUi || overallChatDisabled) ? 0.5 : 1,
                 transition: 'all 0.2s ease', whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(59, 130, 246, 0.25)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', minWidth: '100px'
               }}
-              onMouseEnter={(e) => { if (newMessage.trim() && !isSending && !overallChatDisabled) { e.target.style.backgroundColor = '#2563eb'; e.target.style.transform = 'translateY(-1px)'; }}}
-              onMouseLeave={(e) => { if (newMessage.trim() && !isSending && !overallChatDisabled) { e.target.style.backgroundColor = '#3b82f6'; e.target.style.transform = 'translateY(0)'; }}}
+              onMouseEnter={(e) => { if (newMessage.trim() && !isSendingUi && !overallChatDisabled) { e.target.style.backgroundColor = '#2563eb'; e.target.style.transform = 'translateY(-1px)'; }}}
+              onMouseLeave={(e) => { if (newMessage.trim() && !isSendingUi && !overallChatDisabled) { e.target.style.backgroundColor = '#3b82f6'; e.target.style.transform = 'translateY(0)'; }}}
             >
-              {isSending ? (
+              {isSendingUi ? ( // Use isSendingUi for button's visual state
                 <><div style={{ width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite' }} /><span>Отправка</span></>
               ) : (
                 <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22,2 15,22 11,13 2,9"></polygon></svg><span>Отправить</span></>
