@@ -62,29 +62,44 @@ export const useChat = (options = {}) => {
 
   // Effect to load threads and handle initialTargetSellerId, and set chat service readiness
   useEffect(() => {
-    if (buyerId) { // buyerId is now guaranteed to be the DB ID if not null
-      loadThreadsInternal(buyerId).then(({ loadedThreads, error: loadError }) => {
-        setIsChatServiceReady(true); // Ready for operations after initial load attempt, even if it errors or finds no threads
-        if (loadError) {
-          // Error is already set by loadThreadsInternal. Components can use `error` and `isChatServiceReady`.
-          return;
-        }
-        if (initialTargetSellerId) {
-          const existingThread = loadedThreads.find(t => t.seller_id === initialTargetSellerId);
-          if (existingThread && selectThreadRef.current) {
-            selectThreadRef.current(existingThread.id);
-          } else if (!existingThread) {
-            console.log(`[useChat] No existing thread for sellerId: ${initialTargetSellerId}. Context set for new chat.`);
-            setCurrentThreadSellerId(initialTargetSellerId);
-            setSelectedThreadId(null);
-            setMessages([]);
-            setIsConnected(false);
+    if (buyerId) { // buyerId is DB ID
+      if (initialTargetSellerId) {
+        // ProductChat context: Ready once buyerId is known.
+        // Load all threads in background, not critical for ProductChat's initial send readiness.
+        setIsChatServiceReady(true);
+        loadThreadsInternal(buyerId).then(({ loadedThreads, error: loadError }) => {
+          if (!loadError && loadedThreads) {
+            const existingThread = loadedThreads.find(t => t.seller_id === initialTargetSellerId);
+            if (existingThread && selectThreadRef.current) {
+              selectThreadRef.current(existingThread.id);
+            } else if (!existingThread) {
+              // This case is for when ProductChat loads, there's a sellerId, but no existing chat.
+              // We've already set isChatServiceReady=true.
+              // We set currentThreadSellerId so sendMessage knows who to create chat with.
+              setCurrentThreadSellerId(initialTargetSellerId);
+              setSelectedThreadId(null);
+              setMessages([]); // Ensure no messages from a previous context linger
+              setIsConnected(false); // Ensure not marked as connected to a previous thread
+            }
+          } else if (loadError) {
+            // Error is set by loadThreadsInternal. isChatServiceReady is already true.
+            // ProductChat can still attempt to send; sendMessage will handle thread creation or re-throw.
+            console.warn(`[useChat] Error loading threads in ProductChat context, but service is marked ready for seller ${initialTargetSellerId}: ${loadError}`);
           }
-        }
-      });
+        });
+      } else {
+        // General chat context (e.g., ChatsPage): Wait for all threads to load before service is fully ready.
+        loadThreadsInternal(buyerId).then(({ error: loadError }) => {
+          setIsChatServiceReady(true); // Ready after attempt, error (if any) will be in hook's error state.
+          if (loadError) {
+            console.warn(`[useChat] Error loading threads in general context, but service is marked ready: ${loadError}`);
+          }
+          // No specific thread to select here unless further logic is added for default selection.
+        });
+      }
     } else {
       // Not yet ready if buyerId (DB ID) is not available.
-      // Reset threads and other states if buyerId is lost (e.g., profile unloaded)
+      // Reset threads and other states if buyerId is lost (e.g., profile unloaded or error in profile fetch)
       setThreads([]);
       setSelectedThreadId(null);
       setCurrentThreadSellerId(null);
