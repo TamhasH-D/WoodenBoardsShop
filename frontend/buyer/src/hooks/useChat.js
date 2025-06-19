@@ -322,7 +322,7 @@ export const useChat = (options = {}) => {
       thread_id: threadToUse,
       sender_id: buyerId,
       sender_type: 'buyer',
-      content: messageText,
+      message: messageText, // Changed from content
       created_at: new Date().toISOString(),
       is_read_by_buyer: true,
       is_read_by_seller: false,
@@ -332,10 +332,10 @@ export const useChat = (options = {}) => {
     setMessages(prev => [...prev, optimisticMessage]);
 
     try {
-      // Payload for the API should only include thread_id and content
+      // Payload for the API should only include thread_id and message
       const messagePayloadForApi = {
         thread_id: threadToUse,
-        content: messageText,
+        message: messageText, // Changed from content
       };
       const response = await apiService.sendMessage(messagePayloadForApi);
 
@@ -353,7 +353,7 @@ export const useChat = (options = {}) => {
         setThreads(prevThreads =>
           prevThreads.map(t =>
             t.id === threadToUse
-              ? { ...t, last_message: response.data.content, last_message_at: response.data.created_at, unread_messages_count: 0 }
+              ? { ...t, last_message: serverMessage.message, last_message_at: serverMessage.created_at, unread_messages_count: 0 } // Use serverMessage.message
               : t
           )
         );
