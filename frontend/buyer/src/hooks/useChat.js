@@ -65,14 +65,10 @@ export const useChat = (sellerId, productTitle) => {
 
   // Загрузка существующего чата или инициализация
   const initializeOrLoadChat = useCallback(async () => {
-    if (initializingRef.current || !profileAndKeycloakAuthenticated || !buyerId || !sellerId || profileLoading) {
-      // Wait for auth, profile, or if already initializing.
-      // If not authenticated or buyerId/sellerId missing, set loading to false and potentially an error or specific state.
-      if (!profileAndKeycloakAuthenticated || !buyerId || !sellerId) {
-        setLoading(false);
-        if (!profileAndKeycloakAuthenticated && !profileLoading) setError("Пользователь не аутентифицирован для чата.");
-        else if (!profileLoading) setError("Необходимые данные для чата отсутствуют.");
-      }
+    if (initializingRef.current) return;
+    if (!profileAndKeycloakAuthenticated || !buyerId || !sellerId) {
+      setError("Пользователь не аутентифицирован или отсутствуют необходимые данные для чата.");
+      setLoading(false);
       return;
     }
 
@@ -257,18 +253,18 @@ export const useChat = (sellerId, productTitle) => {
 
   // Effect for initializing or loading chat
   useEffect(() => {
-    // Only proceed if authenticated, profile is available, and sellerId is provided
-    if (profileAndKeycloakAuthenticated && buyerId && sellerId && !profileLoading) {
-      console.log('[useChat] Auth and profile ready, calling initializeOrLoadChat.');
-      initializeOrLoadChat();
-    } else if (!profileAndKeycloakAuthenticated && !profileLoading) {
-      console.log('[useChat] Not authenticated or profile not ready, chat not initialized.');
-      setLoading(false); // Not loading chat if user isn't ready
-      setMessages([]);
-      setThread(null);
+    if (!profileLoading) {
+      if (profileAndKeycloakAuthenticated && buyerId && sellerId) {
+        console.log('[useChat] Auth and profile loaded, calling initializeOrLoadChat.');
+        initializeOrLoadChat();
+      } else {
+        console.log('[useChat] Profile loaded but missing auth/data, setting chat to empty.');
+        setLoading(false);
+        setMessages([]);
+        setThread(null);
+      }
     }
-    // If profileLoading is true, we wait. initializeOrLoadChat checks profileLoading again.
-  }, [profileAndKeycloakAuthenticated, buyerId, sellerId, initializeOrLoadChat, profileLoading]);
+  }, [profileLoading, profileAndKeycloakAuthenticated, buyerId, sellerId, initializeOrLoadChat]);
 
   // Cleanup WebSocket connection
   useEffect(() => {
