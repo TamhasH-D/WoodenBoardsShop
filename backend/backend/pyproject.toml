@@ -27,6 +27,7 @@ dependencies = [
     "aiofiles>=24.1.0",
     "python-multipart>=0.0.20",
     "aiohttp>=3.12.12",
+    "PyJWT>=2.0.0,<3.0.0",
 ]
 
 [tool.pytest.ini_options]
