@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext'; // Import useAuth
  * Обеспечивает стабильную работу WebSocket и управление состоянием чата
  */
 export const useChat = (sellerId, productTitle) => {
-  const { buyerProfile, isAuthenticated: profileAndKeycloakAuthenticated, profileLoading } = useAuth(); // Consume AuthContext
+  const { buyerProfile, isAuthenticated: profileAndKeycloakAuthenticated, profileLoading, keycloakAuthenticated } = useAuth(); // Consume AuthContext
 
   const [thread, setThread] = useState(null);
   const [messages, setMessages] = useState([]);
