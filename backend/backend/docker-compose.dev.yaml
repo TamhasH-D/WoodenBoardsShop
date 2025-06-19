@@ -5,7 +5,6 @@ services:
       dockerfile: Dockerfile.dev
     image: backend:dev
     container_name: backend-api-dev
-    restart: unless-stopped
     ports:
       - "${BACKEND_PORT:-8000}:${BACKEND_PORT:-8000}"
     depends_on:
@@ -43,7 +42,6 @@ services:
       POSTGRES_DB: ${BACKEND_PG_DATABASE:-backend}
     volumes:
       - backend-pg-data-dev:/var/lib/postgresql/data
-    restart: unless-stopped
     networks:
       - app_network
       - diplom_default
@@ -60,7 +58,6 @@ services:
     container_name: backend-redis-dev
     ports:
       - "6379:6379"
-    restart: unless-stopped
     environment:
       ALLOW_EMPTY_PASSWORD: ${BACKEND_REDIS_PASSWORD:+"no"}${BACKEND_REDIS_PASSWORD:-"yes"}
       REDIS_PASSWORD: ${BACKEND_REDIS_PASSWORD:-""}
