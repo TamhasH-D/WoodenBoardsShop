@@ -1,290 +1,166 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { useAuth } from '../../contexts/AuthContext'; // Corrected path
+import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api';
-import websocketManager from '../../utils/websocketManager';
-// Removed: import { getCurrentBuyerId } from '../../utils/auth';
+import { useChat } from '../../hooks/useChat'; // Import the useChat hook
 
 const formatTime = (createdAt) => {
   if (!createdAt || typeof createdAt !== 'string') {
-    // console.warn('formatTime: received invalid createdAt type:', typeof createdAt, createdAt);
-    return 'Time N/A'; // Or some other suitable placeholder
+    return 'Time N/A';
   }
   try {
     const dateObj = new Date(createdAt);
     if (isNaN(dateObj.getTime())) {
-      // console.warn('formatTime: failed to parse date string:', createdAt);
-      return 'Invalid time'; // Fallback for invalid date after parsing attempt
+      return 'Invalid time';
     }
     return dateObj.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   } catch (e) {
-    // console.error('formatTime: error during date formatting:', createdAt, e);
-    return 'Time Error'; // Fallback for unexpected errors
+    return 'Time Error';
   }
 };
 
 const ChatWindow = () => {
-  const { threadId } = useParams();
+  const { threadId: routeThreadId } = useParams(); // Renamed to avoid conflict if threadId comes from useChat
   const navigate = useNavigate();
-  const { showError, showInfo } = useNotifications();
+  const { showError, showInfo } = useNotifications(); // showInfo might be used by useChat or for other user notifications
   const {
     buyerProfile,
-    isAuthenticated, // Comprehensive flag
+    isAuthenticated,
     profileLoading,
     profileError,
-    login, // For login prompt
-    keycloakAuthenticated // For more granular checks if needed
+    login,
   } = useAuth();
 
-  const buyerId = buyerProfile?.id; // Derived buyerId
+  const buyerId = buyerProfile?.id;
 
+  // State for fetching threadInfo (seller details, etc.)
   const [threadInfo, setThreadInfo] = useState(null);
-  const [messages, setMessages] = useState([]);
+  const [threadInfoLoading, setThreadInfoLoading] = useState(true);
+  const [threadInfoError, setThreadInfoError] = useState(null);
+
   const [newMessage, setNewMessage] = useState('');
-  const [isConnected, setIsConnected] = useState(false);
-  const [componentIsLoading, setComponentIsLoading] = useState(true); // Renamed from isLoading
-  const [isSending, setIsSending] = useState(false); // Renamed from sending
-  const [chatDataError, setChatDataError] = useState(null);
-
-  const [otherUserTyping, setOtherUserTyping] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const [hasMoreMessages, setHasMoreMessages] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
-
-  const messagesEndRef = useRef(null);
+  // Typing state specific to this component's input
+  const [isTypingLocal, setIsTypingLocal] = useState(false);
   const typingTimeoutRef = useRef(null);
-  const messagesRef = useRef(new Map()); // For deduplication
+  const messagesEndRef = useRef(null);
 
-  // Removed useEffect for local buyerId initialization
-
-  const handleWebSocketMessage = useCallback((data) => {
-    console.log('[ChatWindow] WebSocket message received:', data);
-    if (!buyerId) return; // Don't process if buyerId isn't set
-
-    if (data.type === 'message') {
-      if (data.sender_id === buyerId) {
-        console.log('[ChatWindow] Ignoring own message from WebSocket');
-        return;
-      }
-      const messageId = data.message_id || `ws-${Date.now()}`;
-      if (messagesRef.current.has(messageId)) return;
-
-      const newMsg = {
-        id: messageId, message: data.message, sender_id: data.sender_id,
-        sender_type: data.sender_type, created_at: data.timestamp || new Date().toISOString(),
-        thread_id: data.thread_id, buyer_id: data.sender_type === 'buyer' ? data.sender_id : null,
-        seller_id: data.sender_type === 'seller' ? data.sender_id : null,
-        is_read_by_buyer: data.sender_type === 'buyer', is_read_by_seller: data.sender_type === 'seller'
-      };
-      messagesRef.current.set(messageId, newMsg);
-      setMessages(prev => {
-        if (prev.some(m => m.id === messageId)) return prev;
-        return [...prev, newMsg];
-      });
-    } else if (data.type === 'typing' && data.sender_id !== buyerId) {
-      setOtherUserTyping(true); setTimeout(() => setOtherUserTyping(false), 3000);
-    } else if (data.type === 'stop_typing' && data.sender_id !== buyerId) {
-      setOtherUserTyping(false);
-    } else if (data.type === 'user_joined' && data.sender_id !== buyerId) {
-      showInfo('Продавец подключился к чату');
-    } else if (data.type === 'user_left' && data.sender_id !== buyerId) {
-      showInfo('Продавец покинул чат');
+  // Fetch threadInfo (seller details, etc.) when component mounts or threadId from route changes
+  useEffect(() => {
+    if (routeThreadId) {
+      setThreadInfoLoading(true);
+      setThreadInfoError(null);
+      apiService.getChatThreadDetails(routeThreadId) // Assuming this function exists or is adapted
+        .then(response => {
+          setThreadInfo(response.data);
+        })
+        .catch(error => {
+          console.error('[ChatWindow] Error fetching thread details:', error);
+          setThreadInfoError(error);
+          showError('Не удалось загрузить информацию о чате.');
+        })
+        .finally(() => {
+          setThreadInfoLoading(false);
+        });
     }
-  }, [buyerId, showInfo]);
+  }, [routeThreadId, showError]);
 
-  const loadChatData = useCallback(async (isInitialLoad = true) => {
-    if (!threadId || !buyerId || !isAuthenticated) {
-      if (isInitialLoad) setComponentIsLoading(false);
-      return;
-    }
+  // Initialize useChat hook
+  // It's called conditionally based on threadInfo being available.
+  // SellerId from threadInfo is passed to useChat. initialThreadId is routeThreadId.
+  const {
+    messages,
+    isConnected: isChatConnected,
+    loading: chatHookLoading,
+    error: chatHookError,
+    sendMessage,
+    sendTypingIndicator,
+    // otherUserTyping from useChat (if/when implemented)
+    // hasMoreMessages from useChat (if/when implemented)
+    // loadMoreMessages from useChat (if/when implemented)
+  } = useChat(threadInfo?.seller_id, null, routeThreadId, {
+    // Options object for useChat, e.g., to enable/disable features
+    // autoConnect: !!(isAuthenticated && buyerId && routeThreadId && threadInfo?.seller_id && !profileLoading),
+  });
 
-    if (isInitialLoad) setComponentIsLoading(true);
-    try {
-      // TODO: Fetch thread info using an endpoint that doesn't require buyerId in path if possible,
-      // or ensure backend verifies thread ownership against authenticated user.
-      const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-      const threadResponse = await fetch(`${apiBaseUrl}/api/v1/chat-threads/${threadId}`); // Consider using apiService if token needed
-      if (threadResponse.ok) {
-        const threadData = await threadResponse.json();
-        setThreadInfo(threadData.data); // Assuming threadData.data is the thread object
-      } else {
-        throw new Error(`Failed to fetch thread info: ${threadResponse.status}`);
-      }
-
-      const messagesResult = await apiService.getChatMessages(threadId, 0, 20);
-      const loadedMessages = messagesResult.data || [];
-      messagesRef.current.clear();
-      loadedMessages.forEach(msg => messagesRef.current.set(msg.id, msg));
-      setMessages(loadedMessages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))); // Ensure sorted
-      setHasMoreMessages(loadedMessages.length === 20);
-      setCurrentPage(0);
-
-      websocketManager.addMessageHandler(threadId, handleWebSocketMessage);
-      websocketManager.connect(threadId, buyerId, 'buyer', setIsConnected);
-      setChatDataError(null); // Clear previous error on successful load
-    } catch (error) {
-      console.error('[ChatWindow] Error loading chat data:', error);
-      showError('Не удалось загрузить данные чата.');
-      setChatDataError(error); // Set error state
-    } finally {
-      if (isInitialLoad) setComponentIsLoading(false);
-    }
-  }, [threadId, buyerId, showError, handleWebSocketMessage, isAuthenticated]); // Note: setChatDataError is not needed here as it's a setter from useState
-
-  const loadMoreMessages = useCallback(async () => {
-    if (!threadId || loadingMore || !hasMoreMessages || !isAuthenticated) return;
-    setLoadingMore(true);
-    try {
-      const nextPage = currentPage + 1;
-      const messagesResult = await apiService.getChatMessages(threadId, nextPage, 20); // Assuming page is 0-indexed
-      const newMessages = (messagesResult.data || []).sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
-
-      if (newMessages.length > 0) {
-        const uniqueNewMessages = newMessages.filter(msg => !messagesRef.current.has(msg.id));
-        uniqueNewMessages.forEach(msg => messagesRef.current.set(msg.id, msg));
-        setMessages(prev => [...uniqueNewMessages, ...prev]); // Prepend older messages
-        setCurrentPage(nextPage);
-        setHasMoreMessages(newMessages.length === 20);
-      } else {
-        setHasMoreMessages(false);
-      }
-    } catch (error) {
-      console.error('[ChatWindow] Error loading more messages:', error);
-      showError('Не удалось загрузить больше сообщений.');
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [threadId, loadingMore, hasMoreMessages, currentPage, showError, isAuthenticated]);
 
   const handleSendMessage = useCallback(async (e) => {
     if (e) e.preventDefault();
-    if (!newMessage.trim() || isSending || !buyerId || !threadId || !isAuthenticated) return;
+    if (!newMessage.trim() || !isChatConnected) return; // Check isChatConnected from useChat
 
+    // Optimistic UI update for local input clearing can remain,
+    // but actual message state management is handled by useChat.
     const messageText = newMessage.trim();
-    setIsSending(true);
-    setNewMessage('');
-    const messageId = crypto.randomUUID ? crypto.randomUUID() : `msg-${Date.now()}`;
-    const tempMessage = {
-      id: messageId, message: messageText, buyer_id: buyerId, seller_id: null,
-      thread_id: threadId, created_at: new Date().toISOString(), is_read_by_buyer: true,
-      is_read_by_seller: false, sending: true
-    };
-    messagesRef.current.set(messageId, tempMessage);
-    setMessages(prev => [...prev, tempMessage]);
+    setNewMessage(''); // Clear input
+    setIsTypingLocal(false); // Reset local typing state
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
 
     try {
-      const messageData = {
-        id: messageId, message: messageText, is_read_by_buyer: true, is_read_by_seller: false,
-        thread_id: threadId, buyer_id: buyerId, // TODO: Backend should infer buyer_id from token
-      };
-      const result = await apiService.sendMessage(messageData);
-      if (result && result.data) { // Check result.data for actual message from backend
-        setMessages(prev => prev.map(msg =>
-          msg.id === messageId ? { ...msg, ...result.data, id: result.data.id || msg.id, created_at: result.data.created_at || msg.created_at, sending: false } : msg
-        ));
-
-        const finalMessageFromServer = {
-            ...tempMessage,
-            ...result.data,
-            id: result.data.id || messageId,
-            created_at: result.data.created_at || tempMessage.created_at,
-            sending: false
-        };
-
-        if (messageId !== finalMessageFromServer.id) {
-            messagesRef.current.delete(messageId);
-        }
-        messagesRef.current.set(finalMessageFromServer.id, finalMessageFromServer);
-
-      } else { throw new Error('API call did not return expected data.'); }
+      await sendMessage(messageText); // Call sendMessage from useChat
+      // No direct setMessages or messagesRef manipulation here.
     } catch (error) {
-      console.error('[ChatWindow] Error sending message:', error);
-      showError('Не удалось отправить сообщение.');
-      setMessages(prev => prev.filter(msg => msg.id !== messageId)); // Remove temp message on error
-      messagesRef.current.delete(messageId);
-      setNewMessage(messageText);
-    } finally {
-      setIsSending(false);
+      // Error already handled by useChat and its error state (chatHookError)
+      // and potentially a notification via showError from useChat's context if it uses one.
+      // If specific error display for sending is needed here, it could be added.
+      // For now, relying on useChat's error state.
+      // Re-populate newMessage for user to retry, if desired:
+      // setNewMessage(messageText);
+      console.error('[ChatWindow] Error sending message (reported by useChat or promise rejection):', error);
+       showError('Не удалось отправить сообщение. Попробуйте еще раз.'); // More direct feedback
     }
-  }, [newMessage, isSending, buyerId, threadId, showError, isAuthenticated]);
+  }, [newMessage, sendMessage, isChatConnected, showError]);
 
-  const handleTyping = useCallback(() => {
-    if (!threadId || !buyerId || !isConnected || !isAuthenticated) return;
-    if (!isTyping) {
-      setIsTyping(true);
-      websocketManager.sendMessage(threadId, { type: 'typing', sender_id: buyerId, thread_id: threadId });
+
+  const handleTypingLocal = useCallback(() => {
+    if (!isChatConnected || !sendTypingIndicator) return;
+
+    if (!isTypingLocal) {
+      setIsTypingLocal(true);
+      sendTypingIndicator(); // Call sendTypingIndicator from useChat
     }
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
-      if (isTyping) { // Check isTyping again in case it was reset by fast typing
-        setIsTyping(false);
-        websocketManager.sendMessage(threadId, { type: 'stop_typing', sender_id: buyerId, thread_id: threadId });
-      }
+      setIsTypingLocal(false);
+      // sendStopTypingIndicator if useChat supports it
     }, 2000);
-  }, [threadId, buyerId, isConnected, isTyping, isAuthenticated]);
+  }, [isChatConnected, sendTypingIndicator, isTypingLocal]);
 
+  // Scroll to bottom when new messages arrive from useChat
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  useEffect(() => {
-    if (isAuthenticated && buyerId && threadId && !profileLoading && !isConnected && !chatDataError) {
-      // Only attempt to load data and connect if not already connected and no prior load error.
-      console.log('[ChatWindow] Conditions met, not connected, no prior error. Calling loadChatData.');
-      loadChatData();
-    } else if (!profileLoading) { // Profile loading is complete (or wasn't needed)
-      setComponentIsLoading(false); // Stop chat-specific loading indicator for this component
+  // Global loading state
+  const isLoading = profileLoading || threadInfoLoading || chatHookLoading;
+  const displayError = profileError || threadInfoError || chatHookError;
 
-      if (isConnected && (!isAuthenticated || !buyerId || !threadId)) { // If we are connected, but conditions became invalid
-        console.warn('[ChatWindow] Chat conditions (auth, buyerId, threadId) became invalid while connected. Disconnecting.');
-        if (threadId) { // Check if threadId is available before calling disconnect
-            websocketManager.disconnect(threadId);
-        }
-      }
-
-      // Original error handling for missing auth/buyerId when not profileLoading and not connected
-      // Ensure these errors are shown only if not connected, to avoid overriding valid connected state if other logic handles it.
-      if (!isConnected && !chatDataError) { // Also check for chatDataError here
-          if (!isAuthenticated) {
-            // Consider if showError is needed here or if page guards are sufficient.
-            // console.warn('[ChatWindow] User not authenticated after profile check and not connected.');
-          } else if (!buyerId) {
-            console.warn('[ChatWindow] BuyerId is missing after profile processing and not connected. Chat cannot load.');
-            showError("Идентификатор покупателя не найден после обработки профиля. Чат не может быть загружен.");
-          }
-      }
-    }
-    // If profileLoading is true, we do nothing here; existing UI should show profile loading.
-  }, [isAuthenticated, buyerId, threadId, loadChatData, profileLoading, showError, isConnected, chatDataError]); // Added isConnected and chatDataError
-
-  useEffect(() => {
-    return () => { // Cleanup on unmount
-      if (threadId) {
-        console.log('[ChatWindow] Cleaning up WebSocket for thread:', threadId);
-        websocketManager.removeMessageHandler(threadId, handleWebSocketMessage);
-        websocketManager.disconnect(threadId);
-      }
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    };
-  }, [threadId, handleWebSocketMessage]); // Re-added handleWebSocketMessage for safety, though it's memoized
-
-  // ---- UI Rendering based on Auth State ----
-  if (profileLoading) {
+  // ---- UI Rendering based on Auth State & Loading ----
+  if (profileLoading) { // Highest priority loading/error state
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px', fontSize: '18px', color: '#6b7280' }}>Загрузка профиля пользователя...</div>;
   }
   if (profileError) {
     return <div style={{ textAlign: 'center', padding: '40px' }}><h3 style={{color: '#dc2626'}}>Ошибка загрузки профиля</h3><p>{profileError.message || "Не удалось загрузить ваш профиль."}</p><button onClick={login} className="btn btn-primary">Попробовать войти снова</button></div>;
   }
-  if (!isAuthenticated || !buyerId) { // Not fully authenticated or buyerId missing
+  if (!isAuthenticated || !buyerId) {
     return <div style={{ textAlign: 'center', padding: '40px' }}><h3>Доступ запрещен</h3><p>Пожалуйста, войдите в систему и убедитесь, что ваш профиль загружен, чтобы просмотреть этот чат.</p><button onClick={login} className="btn btn-primary">Войти</button></div>;
   }
-  if (componentIsLoading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px', fontSize: '18px', color: '#6b7280' }}>Загрузка чата...</div>;
+
+  // Next, loading for thread info or chat hook initialization
+  if (isLoading) {
+     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px', fontSize: '18px', color: '#6b7280' }}>Загрузка данных чата...</div>;
   }
-  if (!threadInfo) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px', fontSize: '18px', color: '#ef4444' }}>Чат не найден или доступ запрещен.</div>;
+
+  // Displaying specific errors from threadInfo fetching or chat hook
+  if (threadInfoError) {
+    return <div style={{ textAlign: 'center', padding: '40px' }}><h3 style={{color: '#ef4444'}}>Ошибка загрузки информации о чате</h3><p>{threadInfoError.message || "Не удалось получить данные этого чата."}</p><button onClick={() => window.location.reload()} className="btn btn-primary">Попробовать снова</button></div>;
+  }
+   if (chatHookError) {
+    return <div style={{ textAlign: 'center', padding: '40px' }}><h3 style={{color: '#ef4444'}}>Ошибка инициализации чата</h3><p>{typeof chatHookError === 'string' ? chatHookError : chatHookError.message || "Не удалось подключиться к чату."}</p><button onClick={() => window.location.reload()} className="btn btn-primary">Попробовать снова</button></div>;
+  }
+
+  if (!threadInfo) { // Should be caught by threadInfoLoading or threadInfoError, but as a safeguard
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px', fontSize: '18px', color: '#ef4444' }}>Чат не найден или информация о нем недоступна.</div>;
   }
 
   return (
@@ -296,20 +172,17 @@ const ChatWindow = () => {
             <button onClick={() => navigate('/chats')} style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#f3f4f6', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s ease', fontSize: '16px' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e5e7eb'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}> ← </button>
             <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)' }}>🏪</div>
             <div>
-              <h2 style={{ margin: 0, color: '#111827', fontSize: '24px', fontWeight: '800', letterSpacing: '-0.025em' }}>Продавец</h2>
-              <p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: '14px', fontWeight: '500' }}>ID: {threadInfo.seller_id?.substring(0, 8)}...</p>
+              <h2 style={{ margin: 0, color: '#111827', fontSize: '24px', fontWeight: '800', letterSpacing: '-0.025em' }}>{threadInfo.product_title || 'Продавец'}</h2>
+              <p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: '14px', fontWeight: '500' }}>ID Продавца: {threadInfo.seller_id?.substring(0, 8)}...</p>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px', backgroundColor: isConnected ? '#dcfce7' : '#fef3c7', border: `1px solid ${isConnected ? '#bbf7d0' : '#fcd34d'}` }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: isConnected ? '#10b981' : '#f59e0b', animation: isConnected ? 'pulse 2s infinite' : 'none' }} />
-              <span style={{ fontSize: '14px', fontWeight: '600', color: isConnected ? '#065f46' : '#92400e' }}>{isConnected ? 'Подключен' : 'Подключение...'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px', backgroundColor: isChatConnected ? '#dcfce7' : '#fef3c7', border: `1px solid ${isChatConnected ? '#bbf7d0' : '#fcd34d'}` }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: isChatConnected ? '#10b981' : '#f59e0b', animation: isChatConnected ? 'pulse 2s infinite' : 'none' }} />
+              <span style={{ fontSize: '14px', fontWeight: '600', color: isChatConnected ? '#065f46' : '#92400e' }}>{isChatConnected ? 'Подключен' : 'Подключение...'}</span>
             </div>
-            {otherUserTyping && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px', backgroundColor: '#f0f9ff', border: '1px solid #bae6fd' }}>
-                <div style={{ display: 'flex', gap: '2px' }}><div style={{width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#0ea5e9', animation: 'typing 1.4s infinite ease-in-out'}} /><div style={{width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#0ea5e9', animation: 'typing 1.4s infinite ease-in-out 0.2s'}} /><div style={{width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#0ea5e9', animation: 'typing 1.4s infinite ease-in-out 0.4s'}} /></div>
-                <span style={{ fontSize: '12px', fontWeight: '600', color: '#0369a1' }}>печатает...</span>
-              </div>)}
+            {/* Placeholder for otherUserTyping from useChat if it gets implemented */}
+            {/* {otherUserTypingFromHook && (...) } */}
           </div>
         </div>
       </div>
@@ -318,23 +191,20 @@ const ChatWindow = () => {
       <div style={{ flex: 1, maxWidth: '1200px', width: '100%', margin: '0 auto', padding: '24px', display: 'flex', flexDirection: 'column' }}>
         <div style={{ flex: 1, backgroundColor: 'white', borderRadius: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', overflow: 'hidden', marginBottom: '24px' }}>
           <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: 'linear-gradient(to bottom, #ffffff 0%, #f8fafc 100%)', position: 'relative' }}>
-            {hasMoreMessages && messages.length > 0 && (
-              <div style={{ textAlign: 'center', marginBottom: '24px', position: 'sticky', top: '0', zIndex: 5, paddingTop: '16px' }}>
-                <button onClick={loadMoreMessages} disabled={loadingMore} style={{ padding: '12px 24px', backgroundColor: loadingMore ? '#f3f4f6' : 'white', color: loadingMore ? '#9ca3af' : '#2563eb', border: '2px solid #e5e7eb', borderRadius: '24px', fontSize: '14px', fontWeight: '600', cursor: loadingMore ? 'not-allowed' : 'pointer', transition: 'all 0.3s ease', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '8px', margin: '0 auto' }}
-                  onMouseEnter={(e) => { if (!loadingMore) { e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.borderColor = '#2563eb'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)'; }}}
-                  onMouseLeave={(e) => { if (!loadingMore) { e.currentTarget.style.backgroundColor = 'white'; e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'; }}} >
-                  {loadingMore ? (<><div style={{ width: '16px', height: '16px', border: '2px solid #e5e7eb', borderTop: '2px solid #9ca3af', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />Загрузка...</>) : (<>⬆️ Загрузить еще</>)}
-                </button>
-              </div>
-            )}
-            {messages.length === 0 && !componentIsLoading && (<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center' }}><div style={{ fontSize: '64px', marginBottom: '24px', opacity: 0.6, animation: 'float 3s ease-in-out infinite' }}>💬</div><h3 style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#111827', marginBottom: '12px' }}>Начните разговор</h3><p style={{ margin: 0, fontSize: '16px', color: '#6b7280', maxWidth: '400px', lineHeight: '1.6' }}>Отправьте первое сообщение продавцу.</p></div>)}
+            {/* Load more messages button - functionality removed, placeholder for future from useChat */}
+            {/* {hasMoreMessagesFromHook && messages.length > 0 && (...) } */}
+
+            {messages.length === 0 && !chatHookLoading && (<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center' }}><div style={{ fontSize: '64px', marginBottom: '24px', opacity: 0.6, animation: 'float 3s ease-in-out infinite' }}>💬</div><h3 style={{ margin: 0, fontSize: '24px', fontWeight: '700', color: '#111827', marginBottom: '12px' }}>Начните разговор</h3><p style={{ margin: 0, fontSize: '16px', color: '#6b7280', maxWidth: '400px', lineHeight: '1.6' }}>Отправьте первое сообщение продавцу.</p></div>)}
+
             {messages.map((message, index) => {
-              const isOwnMessage = message.buyer_id === buyerId;
+              const isOwnMessage = message.buyer_id === buyerId; // or message.sender_type === 'buyer' depending on useChat's message structure
+              // Avatar logic might need adjustment based on useChat's message structure (sender_id vs sender_type)
               const prevMessage = messages[index - 1];
-              const showAvatar = !isOwnMessage && (!prevMessage || prevMessage.sender_id !== message.sender_id || prevMessage.sender_type !== message.sender_type);
-              const isLastInGroup = !messages[index+1] || messages[index+1].sender_id !== message.sender_id || messages[index+1].sender_type !== message.sender_type;
+              const showAvatar = !isOwnMessage && (!prevMessage || message.sender_id !== prevMessage.sender_id);
+
+
               return (
-                <div key={message.id} style={{ display: 'flex', justifyContent: isOwnMessage ? 'flex-end' : 'flex-start', marginBottom: isLastInGroup ? '24px' : '4px', alignItems: 'flex-end', gap: '12px' }}>
+                <div key={message.id} style={{ display: 'flex', justifyContent: isOwnMessage ? 'flex-end' : 'flex-start', marginBottom: '4px', alignItems: 'flex-end', gap: '12px' }}>
                   {!isOwnMessage && (<div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0, visibility: showAvatar ? 'visible' : 'hidden' }}>🏪</div>)}
                   <div style={{ maxWidth: '70%', display: 'flex', flexDirection: 'column', alignItems: isOwnMessage ? 'flex-end' : 'flex-start' }}>
                     <div style={{ padding: '16px 20px', borderRadius: isOwnMessage ? '20px 20px 4px 20px' : '20px 20px 20px 4px', backgroundColor: isOwnMessage ? '#2563eb' : 'white', color: isOwnMessage ? 'white' : '#374151', fontSize: '16px', lineHeight: '1.5', boxShadow: isOwnMessage ? '0 4px 16px rgba(37, 99, 235, 0.3)' : '0 4px 16px rgba(0, 0, 0, 0.1)', border: isOwnMessage ? 'none' : '1px solid #e5e7eb', position: 'relative', wordBreak: 'break-word' }}>
@@ -348,24 +218,25 @@ const ChatWindow = () => {
                   {isOwnMessage && (<div style={{ width: '32px', flexShrink: 0 }} />)}
                 </div>);
             })}
-            {otherUserTyping && (<div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '16px' }}><div style={{ padding: '12px 16px', borderRadius: '18px', backgroundColor: '#f3f4f6', color: '#6b7280', fontSize: '14px', fontStyle: 'italic' }}>Продавец печатает...</div></div>)}
+            {/* Placeholder for otherUserTyping display from useChat */}
             <div ref={messagesEndRef} />
           </div>
           <div style={{ padding: '24px', borderTop: '1px solid #e5e7eb', backgroundColor: 'white' }}>
             <form onSubmit={handleSendMessage}>
               <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
                 <div style={{ flex: 1, position: 'relative' }}>
-                  <textarea value={newMessage} onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }} placeholder={isConnected ? "Напишите сообщение..." : "Подключение к чату..."} rows={1} style={{ width: '100%', padding: '16px 20px', border: '2px solid #e5e7eb', borderRadius: '20px', fontSize: '16px', outline: 'none', transition: 'all 0.3s ease', resize: 'none', fontFamily: 'inherit', backgroundColor: isConnected ? 'white' : '#f9fafb', minHeight: '56px', maxHeight: '120px', lineHeight: '1.5' }}
-                    onFocus={(e) => { if (isConnected) { e.target.style.borderColor = '#2563eb'; e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)'; }}}
+                  <textarea value={newMessage} onChange={(e) => { setNewMessage(e.target.value); handleTypingLocal(); }} placeholder={isChatConnected ? "Напишите сообщение..." : "Подключение к чату..."} rows={1} style={{ width: '100%', padding: '16px 20px', border: '2px solid #e5e7eb', borderRadius: '20px', fontSize: '16px', outline: 'none', transition: 'all 0.3s ease', resize: 'none', fontFamily: 'inherit', backgroundColor: isChatConnected ? 'white' : '#f9fafb', minHeight: '56px', maxHeight: '120px', lineHeight: '1.5' }}
+                    onFocus={(e) => { if (isChatConnected) { e.target.style.borderColor = '#2563eb'; e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)'; }}}
                     onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.boxShadow = 'none'; }}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); }}}
-                    disabled={!isAuthenticated || profileLoading || !isConnected || isSending} />
+                    disabled={!isAuthenticated || profileLoading || !isChatConnected /* isSending from useChat could be added here if available */} />
                   <div style={{ position: 'absolute', bottom: '-20px', right: '8px', fontSize: '12px', color: newMessage.length > 1000 ? '#ef4444' : '#9ca3af' }}>{newMessage.length}/1000</div>
                 </div>
-                <button type="submit" disabled={!newMessage.trim() || !isConnected || isSending || newMessage.length > 1000} style={{ width: '56px', height: '56px', backgroundColor: (!newMessage.trim() || !isConnected || isSending) ? '#9ca3af' : '#2563eb', color: 'white', border: 'none', borderRadius: '50%', fontSize: '20px', cursor: (!newMessage.trim() || !isConnected || isSending) ? 'not-allowed' : 'pointer', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: (!newMessage.trim() || !isConnected || isSending) ? 'none' : '0 4px 16px rgba(37, 99, 235, 0.3)', transform: 'scale(1)', flexShrink: 0 }}
-                  onMouseEnter={(e) => { if (newMessage.trim() && isConnected && !isSending) { e.currentTarget.style.backgroundColor = '#1d4ed8'; e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(37, 99, 235, 0.4)'; }}}
-                  onMouseLeave={(e) => { if (newMessage.trim() && isConnected && !isSending) { e.currentTarget.style.backgroundColor = '#2563eb'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(37, 99, 235, 0.3)'; }}} >
-                  {isSending ? (<div style={{width: '20px', height: '20px', border: '3px solid rgba(255,255,255,0.3)', borderTop: '3px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite'}}/>) : '🚀'}
+                <button type="submit" disabled={!newMessage.trim() || !isChatConnected /* || isSending from useChat */} style={{ width: '56px', height: '56px', backgroundColor: (!newMessage.trim() || !isChatConnected /* || isSending from useChat */) ? '#9ca3af' : '#2563eb', color: 'white', border: 'none', borderRadius: '50%', fontSize: '20px', cursor: (!newMessage.trim() || !isChatConnected /* || isSending from useChat */) ? 'not-allowed' : 'pointer', transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: (!newMessage.trim() || !isChatConnected /* || isSending from useChat */) ? 'none' : '0 4px 16px rgba(37, 99, 235, 0.3)', transform: 'scale(1)', flexShrink: 0 }}
+                  onMouseEnter={(e) => { if (newMessage.trim() && isChatConnected /* && !isSending from useChat */) { e.currentTarget.style.backgroundColor = '#1d4ed8'; e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(37, 99, 235, 0.4)'; }}}
+                  onMouseLeave={(e) => { if (newMessage.trim() && isChatConnected /* && !isSending from useChat */) { e.currentTarget.style.backgroundColor = '#2563eb'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(37, 99, 235, 0.3)'; }}} >
+                  {/* {isSendingFromHook ? (<div style={{width: '20px', height: '20px', border: '3px solid rgba(255,255,255,0.3)', borderTop: '3px solid white', borderRadius: '50%', animation: 'spin 1s linear infinite'}}/>) : '🚀'} */}
+                  🚀
                 </button>
               </div>
               <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>

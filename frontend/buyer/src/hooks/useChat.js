@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext'; // Import useAuth
  * Хук для работы с чатом
  * Обеспечивает стабильную работу WebSocket и управление состоянием чата
  */
-export const useChat = (sellerId, productTitle) => {
+export const useChat = (sellerId, productTitle, initialThreadId = null) => {
   const { buyerProfile, isAuthenticated: profileAndKeycloakAuthenticated, profileLoading, keycloakAuthenticated } = useAuth(); // Consume AuthContext
 
   const [thread, setThread] = useState(null);
@@ -63,15 +63,19 @@ export const useChat = (sellerId, productTitle) => {
 
   // Загрузка существующего чата или инициализация
   const initializeOrLoadChat = useCallback(async () => {
-    if (initializingRef.current || !profileAndKeycloakAuthenticated || !buyerId || !sellerId || profileLoading) {
-      // Wait for auth, profile, or if already initializing.
-      // If not authenticated or buyerId/sellerId missing, set loading to false and potentially an error or specific state.
-      if (!profileAndKeycloakAuthenticated || !buyerId || !sellerId) {
+    if (initializingRef.current || !profileAndKeycloakAuthenticated || !buyerId || profileLoading) {
+      if (!profileAndKeycloakAuthenticated || !buyerId) {
         setLoading(false);
         if (!profileAndKeycloakAuthenticated && !profileLoading) setError("Пользователь не аутентифицирован для чата.");
-        else if (!profileLoading) setError("Необходимые данные для чата отсутствуют.");
+        else if (!profileLoading) setError("Необходимые данные для чата отсутствуют (buyerId).");
       }
       return;
+    }
+    // Additional check: if not using initialThreadId, sellerId must be present.
+    if (!initialThreadId && !sellerId) {
+        setLoading(false);
+        if (!profileLoading) setError("Необходимые данные для чата отсутствуют (sellerId).");
+        return;
     }
 
     initializingRef.current = true;
@@ -79,29 +83,43 @@ export const useChat = (sellerId, productTitle) => {
     setError(null);
 
     try {
-      console.log('[useChat] Initializing/Loading chat for buyer:', buyerId, 'seller:', sellerId);
-      // Use getMyBuyerChats if available, or adapt existing. For now, using old method with new buyerId.
-      // TODO: Refactor apiService.getBuyerChats to not require buyerId if it can be derived from token (e.g. /me/chats)
-      const result = await apiService.getBuyerChats(buyerId, 0, 100); // Fetch more threads initially if needed
-      const existingThread = result.data?.find(t => t.seller_id === sellerId && t.buyer_id === buyerId);
+      if (initialThreadId) {
+        console.log('[useChat] Initializing with provided threadId:', initialThreadId, 'for buyer:', buyerId);
+        // SellerId might be null here if useChat was called with only initialThreadId.
+        // The thread object structure should ideally be consistent or handle potential missing seller_id if it's used elsewhere.
+        setThread({ id: initialThreadId, buyer_id: buyerId, seller_id: sellerId });
 
-      if (existingThread) {
-        console.log('[useChat] Found existing thread:', existingThread.id);
-        setThread(existingThread);
-        const messagesResult = await apiService.getChatMessages(existingThread.id, 0, 50); // Load last 50 messages
+        const messagesResult = await apiService.getChatMessages(initialThreadId, 0, 50);
         const loadedMessages = messagesResult.data || [];
         messagesRef.current.clear();
         loadedMessages.forEach(msg => messagesRef.current.set(msg.id, msg));
         setMessages(loadedMessages);
 
-        websocketManager.addMessageHandler(existingThread.id, handleWebSocketMessage);
-        websocketManager.connect(existingThread.id, buyerId, 'buyer', setIsConnected);
-      } else {
-        console.log('[useChat] No existing thread found with seller:', sellerId);
-        setThread(null);
-        setMessages([]);
-        messagesRef.current.clear();
-        // Do not automatically create a thread here, let sendMessage handle it or a dedicated UI action.
+        websocketManager.addMessageHandler(initialThreadId, handleWebSocketMessage);
+        websocketManager.connect(initialThreadId, buyerId, 'buyer', setIsConnected);
+
+      } else if (sellerId) { // This block handles the original logic when initialThreadId is not provided
+        console.log('[useChat] Initializing/Loading chat for buyer:', buyerId, 'seller:', sellerId);
+        const result = await apiService.getBuyerChats(buyerId, 0, 100);
+        const existingThread = result.data?.find(t => t.seller_id === sellerId && t.buyer_id === buyerId);
+
+        if (existingThread) {
+          console.log('[useChat] Found existing thread:', existingThread.id);
+          setThread(existingThread);
+          const messagesResult = await apiService.getChatMessages(existingThread.id, 0, 50);
+          const loadedMessages = messagesResult.data || [];
+          messagesRef.current.clear();
+          loadedMessages.forEach(msg => messagesRef.current.set(msg.id, msg));
+          setMessages(loadedMessages);
+
+          websocketManager.addMessageHandler(existingThread.id, handleWebSocketMessage);
+          websocketManager.connect(existingThread.id, buyerId, 'buyer', setIsConnected);
+        } else {
+          console.log('[useChat] No existing thread found with seller:', sellerId);
+          setThread(null);
+          setMessages([]);
+          messagesRef.current.clear();
+        }
       }
     } catch (err) {
       console.error('[useChat] Error loading chat:', err);
@@ -110,7 +128,7 @@ export const useChat = (sellerId, productTitle) => {
       setLoading(false);
       initializingRef.current = false;
     }
-  }, [buyerId, sellerId, handleWebSocketMessage, profileAndKeycloakAuthenticated, profileLoading]);
+  }, [buyerId, sellerId, initialThreadId, handleWebSocketMessage, profileAndKeycloakAuthenticated, profileLoading]);
 
   // Создание нового чата (called by sendMessage if no thread)
   const createChat = useCallback(async () => {
@@ -231,27 +249,41 @@ export const useChat = (sellerId, productTitle) => {
 
   // Effect for initializing or loading chat
   useEffect(() => {
-    if (profileAndKeycloakAuthenticated && buyerId && sellerId && !profileLoading) {
-      console.log('[useChat] Auth and profile ready, calling initializeOrLoadChat.');
+    const canInitializeForExistingThread = initialThreadId && profileAndKeycloakAuthenticated && buyerId && !profileLoading;
+    const canInitializeForSeller = !initialThreadId && sellerId && profileAndKeycloakAuthenticated && buyerId && !profileLoading;
+
+    if (canInitializeForExistingThread) {
+      console.log('[useChat] Auth and profile ready, initialThreadId provided. Calling initializeOrLoadChat for existing thread.');
+      initializeOrLoadChat();
+    } else if (canInitializeForSeller) {
+      console.log('[useChat] Auth and profile ready, sellerId provided (no initialThreadId). Calling initializeOrLoadChat for seller.');
       initializeOrLoadChat();
     } else if (!profileLoading) {
       console.log('[useChat] Conditions not fully met for chat initialization after profile attempt.');
       setLoading(false);
       setMessages([]);
       setThread(null);
+      // Specific error if keycloak is auth'd but buyerId is missing (profile issue)
       if (keycloakAuthenticated && !buyerId) {
         console.warn('[useChat] Profile loaded (or an attempt was made) but buyerId is missing.');
         setError("Профиль пользователя обработан, но идентификатор покупателя отсутствует. Чат не может быть инициализирован.");
-      } else if (!profileAndKeycloakAuthenticated) {
+      }
+      // Specific error if not fully authenticated (either keycloak or profile part failed)
+      else if (!profileAndKeycloakAuthenticated) {
         console.warn('[useChat] User not fully authenticated for chat (Keycloak or Profile).');
         if (!keycloakAuthenticated) {
              setError("Пользователь не аутентифицирован в системе. Войдите, чтобы использовать чат.");
-        } else {
+        } else { // Keycloak is authenticated, so profile must be the issue (missing or error)
              setError("Профиль пользователя не загружен или содержит ошибки. Чат недоступен.");
         }
       }
+      // Error if essential IDs (threadId or sellerId) are missing, given other conditions might be met
+      else if (!initialThreadId && !sellerId) {
+        console.warn('[useChat] Chat cannot be initialized without either initialThreadId or sellerId.');
+        setError("Необходим идентификатор чата или продавца для инициализации.");
+      }
     }
-  }, [profileAndKeycloakAuthenticated, buyerId, sellerId, initializeOrLoadChat, profileLoading, keycloakAuthenticated]);
+  }, [initialThreadId, sellerId, profileAndKeycloakAuthenticated, buyerId, initializeOrLoadChat, profileLoading, keycloakAuthenticated]);
 
   // Cleanup WebSocket connection
   useEffect(() => {
