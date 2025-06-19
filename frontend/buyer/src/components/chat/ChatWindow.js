@@ -203,20 +203,36 @@ const ChatWindow = () => {
 
   useEffect(() => {
     if (isAuthenticated && buyerId && threadId && !profileLoading) {
-      loadChatData();
-    } else if (!profileLoading) { // Profile loading is complete (or was not needed)
-      setComponentIsLoading(false); // Stop chat-specific loading indicator
-      if (!isAuthenticated) {
-        // This case is likely already handled by the main return statement's auth checks leading to a login prompt.
-        // However, a specific error notification can be added if desired, though it might be redundant.
-        // console.warn('[ChatWindow] User not authenticated after profile check. Chat cannot load.');
-      } else if (!buyerId) { // Authenticated with Keycloak, profile processing done, but no buyerId
-        console.warn('[ChatWindow] BuyerId is missing after profile processing. Chat cannot load.');
-        showError("Идентификатор покупателя не найден после обработки профиля. Чат не может быть загружен.");
+      if (!isConnected) { // Only attempt to load data and connect if not already connected.
+        console.log('[ChatWindow] Conditions met and not connected. Calling loadChatData.');
+        loadChatData();
+      } else {
+        // Optional: console.log('[ChatWindow] Conditions met but already connected. Skipping loadChatData.');
+      }
+    } else if (!profileLoading) { // Profile loading is complete (or wasn't needed)
+      setComponentIsLoading(false); // Stop chat-specific loading indicator for this component
+
+      if (isConnected && (!isAuthenticated || !buyerId || !threadId)) { // If we are connected, but conditions became invalid
+        console.warn('[ChatWindow] Chat conditions (auth, buyerId, threadId) became invalid while connected. Disconnecting.');
+        if (threadId) { // Check if threadId is available before calling disconnect
+            websocketManager.disconnect(threadId);
+        }
+      }
+
+      // Original error handling for missing auth/buyerId when not profileLoading and not connected
+      // Ensure these errors are shown only if not connected, to avoid overriding valid connected state if other logic handles it.
+      if (!isConnected) {
+          if (!isAuthenticated) {
+            // Consider if showError is needed here or if page guards are sufficient.
+            // console.warn('[ChatWindow] User not authenticated after profile check and not connected.');
+          } else if (!buyerId) {
+            console.warn('[ChatWindow] BuyerId is missing after profile processing and not connected. Chat cannot load.');
+            showError("Идентификатор покупателя не найден после обработки профиля. Чат не может быть загружен.");
+          }
       }
     }
-    // If profileLoading is true, we wait. componentIsLoading (and profileLoading) will keep loading indicators active.
-  }, [isAuthenticated, buyerId, threadId, loadChatData, profileLoading, showError]); // Added showError to dependencies
+    // If profileLoading is true, we do nothing here; existing UI should show profile loading.
+  }, [isAuthenticated, buyerId, threadId, loadChatData, profileLoading, showError, isConnected]); // Added isConnected
 
   useEffect(() => {
     return () => { // Cleanup on unmount
