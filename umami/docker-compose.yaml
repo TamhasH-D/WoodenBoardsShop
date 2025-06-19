@@ -20,6 +20,8 @@ services:
       retries: 5
     networks:
       - diplom_default
+
+      
   umami-db:
     image: postgres:15-alpine
     environment:
