@@ -4,7 +4,7 @@ import { apiService } from '../services/api';
 import websocketManager, { WS_MESSAGE_TYPES } from '../utils/websocketManager';
 import { generateEntityUUID, ENTITY_TYPES } from '../utils/uuid';
 
-const useChat = (options = {}) => {
+export const useChat = (options = {}) => {
   const { initialTargetSellerId = null, productContext = null } = options;
 
   const { user, buyerProfile } = useAuth();
@@ -372,5 +372,3 @@ const useChat = (options = {}) => {
     productContext,
   };
 };
-
-export default useChat;
